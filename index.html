@@ -58,12 +58,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
       <span style="width:14px;height:14px;background:var(--ac);display:inline-block"></span>
       <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase">Ministerio de Alabanza</span>
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
-      <a href="Repertorio Formulario.dc.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Gestionar Eventos</a>
-      <button onClick="{{ copiarWa }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;cursor:pointer">Copiar para WhatsApp</button>
-      <button onClick="{{ imprimir }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ac);background:var(--ac);color:#fff;cursor:pointer">Imprimir / PDF</button>
-    </div>
   </div>
 
   <header style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:32px 0 24px;border-bottom:2px solid var(--ink)">
@@ -71,7 +65,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
       <div style="font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ kicker }}</div>
       <h1 style="font-size:76px;line-height:.92;font-weight:800;letter-spacing:-.03em;margin:12px 0 0;text-transform:uppercase">{{ mesLabel }}</h1>
     </div>
-    <div style="font-size:13px;line-height:1.6;color:#54514f;max-width:500px">{{ nota }}</div>
   </header>
 
   <div class="noprint" style="display:flex;gap:2px;flex-wrap:wrap;padding:16px 0 0">
@@ -140,7 +133,13 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   <div style="font-size:14px;color:#7d7979;padding:40px 0 0">{{ vacio }}</div>
 
   <footer style="display:flex;justify-content:space-between;gap:20px;padding:24px 0 0;font-size:12px;letter-spacing:.06em;color:#6b6866;flex-wrap:wrap">
-    <span>Tonalidad entre paréntesis · ↗ abre la pista de referencia</span>
+    <span>{{ nota }}</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
+      <a href="Repertorio Formulario.dc.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Gestionar Eventos</a>
+      <button onClick="{{ copiarWa }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;cursor:pointer">Copiar para WhatsApp</button>
+      <button onClick="{{ imprimir }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ac);background:var(--ac);color:#fff;cursor:pointer">Imprimir / PDF</button>
+    </div>
   </footer>
 </div>
 
