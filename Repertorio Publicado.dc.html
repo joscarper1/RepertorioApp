@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="omelette-owns-print" content="1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/styles.css">
+<script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
+<script src="repertorio-data.js"></script>
+<style>
+:root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body,Archivo),Archivo,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--ac-dk);text-decoration:none;border-bottom:1px solid var(--ac)}
+a:hover{color:#fff;background:var(--ac)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+::selection{background:var(--ac-lt)}
+@media print{
+  @page{size:letter portrait;margin:7mm}
+  body{background:#fff}
+  .noprint{display:none !important}
+  .rowlink{display:block !important}
+  section{break-inside:auto;padding-top:6px !important}
+  .grid{display:block !important;columns:2;column-gap:2px;border:0 !important;padding:0 !important}
+  .evt{break-inside:avoid;display:inline-block;width:100%;margin:0 0 2px !important;padding:8px 10px !important;vertical-align:top}
+  .body{gap:5px !important;margin-top:6px !important}
+  .temawrap{padding:5px 0 0 !important}
+  .dia{font-size:26px !important}
+  .sub{font-size:13px !important;margin-top:2px !important;padding-bottom:4px !important}
+  .tema{font-size:17px !important;margin-top:2px !important;line-height:1.2 !important}
+  .cita{font-size:13px !important;margin-top:2px !important;padding-left:8px !important;line-height:1.3 !important}
+  .nota{font-size:13px !important;margin-top:2px !important;line-height:1.3 !important}
+  .blabel{font-size:11px !important}
+  .rows{margin-top:3px !important;gap:1px !important}
+  .row{padding:3px 8px !important;line-height:1.15 !important}
+  .cn{font-size:16px !important}
+  .cd{font-size:13px !important;margin-top:0 !important}
+  .ck{font-size:13px !important;padding:1px 4px !important}
+  h1{font-size:34px !important}
+}
+</style>
+</helmet>
+<div style="max-width:1320px;margin:0 auto;padding:0 24px 96px">
+
+  <div class="noprint" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink);flex-wrap:wrap">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span style="width:14px;height:14px;background:var(--ac);display:inline-block"></span>
+      <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase">Ministerio de Alabanza</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
+      <a href="Repertorio Formulario.dc.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Añadir Evento</a>
+      <button onClick="{{ copiarWa }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;cursor:pointer">Copiar para WhatsApp</button>
+      <button onClick="{{ imprimir }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ac);background:var(--ac);color:#fff;cursor:pointer">Imprimir / PDF</button>
+    </div>
+  </div>
+
+  <header style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:32px 0 24px;border-bottom:2px solid var(--ink)">
+    <div>
+      <div style="font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ kicker }}</div>
+      <h1 style="font-size:76px;line-height:.92;font-weight:800;letter-spacing:-.03em;margin:12px 0 0;text-transform:uppercase">{{ mesLabel }}</h1>
+    </div>
+    <div style="font-size:13px;line-height:1.6;color:#54514f;max-width:500px">{{ nota }}</div>
+  </header>
+
+  <div class="noprint" style="display:flex;gap:2px;flex-wrap:wrap;padding:16px 0 0">
+    <sc-for list="{{ meses }}" as="m" hint-placeholder-count="3">
+      <button onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button>
+    </sc-for>
+  </div>
+
+  <sc-for list="{{ semanas }}" as="sem" hint-placeholder-count="2">
+    <section style="padding-top:40px">
+      <div style="display:flex;align-items:center;gap:16px;background:var(--ink);color:var(--bg);padding:12px 16px">
+        <span style="font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px">{{ sem.titulo }}</span>
+        <span style="font-size:14px;font-weight:600;letter-spacing:.06em;color:#d7d3d3">{{ sem.rango }}</span>
+      </div>
+      <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px;background:var(--sf);border:2px solid var(--ink);border-top:0">
+        <sc-for list="{{ sem.eventos }}" as="ev" hint-placeholder-count="3">
+          <article class="evt" style="background:var(--sf);padding:24px;outline:2px solid var(--ink)">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+              <div class="dia" style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1;text-transform:uppercase">{{ ev.dia }}</div>
+              <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
+            </div>
+            <div class="sub" style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac-dk);margin-top:8px;padding-bottom:12px;border-bottom:2px solid var(--ink)">{{ ev.sub }}</div>
+            <div class="temawrap" style="padding:16px 0 4px">
+              <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tema</div>
+              <div class="tema" style="font-size:19px;font-weight:600;line-height:1.3;margin-top:8px;text-wrap:pretty">{{ ev.tema }}</div>
+              <div class="cita" style="font-size:14px;line-height:1.55;color:#54514f;margin-top:8px;border-left:2px solid var(--ac);padding-left:12px;text-wrap:pretty">{{ ev.cita }}</div>
+            </div>
+            <div class="body" style="display:flex;flex-direction:column;gap:16px;margin-top:24px">
+              <sc-for list="{{ ev.bloques }}" as="bl" hint-placeholder-count="5">
+                <div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">{{ bl.titulo }}</span>
+                    <span style="flex:1;height:2px;background:var(--ink)"></span>
+                  </div>
+                  <div class="rows" style="display:flex;flex-direction:column;gap:2px;margin-top:8px">
+                    <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
+                      <div class="row" style="display:grid;grid-template-columns:1fr 46px 20px;gap:8px;align-items:baseline;background:#fff;padding:8px 12px;position:relative">
+                        <a class="rowlink" href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
+                        <div>
+                          <span class="cn" style="font-size:16px;font-weight:600">{{ cn.t }}</span>
+                          <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
+                        </div>
+                        <span class="ck" style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center">{{ cn.k }}</span>
+                        <a href="{{ cn.u }}" target="_blank" rel="noopener" style="font-size:12px;font-weight:800;border-bottom:none;justify-self:end">↗</a>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+              <sc-if value="{{ ev.tieneNotas }}" hint-placeholder-val="{{ true }}">
+                <div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Notas del ensayo</span>
+                    <span style="flex:1;height:2px;background:var(--ink)"></span>
+                  </div>
+                  <div class="nota" style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.notas }}</div>
+                </div>
+              </sc-if>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+
+  <div style="font-size:14px;color:#7d7979;padding:40px 0 0">{{ vacio }}</div>
+
+  <footer style="display:flex;justify-content:space-between;gap:20px;padding:24px 0 0;font-size:12px;letter-spacing:.06em;color:#6b6866;flex-wrap:wrap">
+    <span>Tonalidad entre paréntesis · ↗ abre la pista de referencia</span>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { data: null, mes: '', estado: '' };
+
+  componentDidMount() {
+    const R = window.RepertorioData;
+    const read = () => {
+      const d = R.load();
+      this.setState((s) => {
+        let mes = s.mes;
+        const keys = Array.from(new Set(d.eventos.map((e) => R.monthKey(e.fecha)))).sort();
+        if (!mes) {
+          const hoy = R.hoyKey();
+          mes = keys.indexOf(hoy) >= 0 ? hoy : (keys[keys.length - 1] || hoy);
+        }
+        return { data: d, mes: mes };
+      });
+    };
+    read();
+    this._onHash = read;
+    this._onStorage = (e) => { if (!e.key || e.key === R.KEY) read(); };
+    window.addEventListener('hashchange', this._onHash);
+    window.addEventListener('storage', this._onStorage);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('hashchange', this._onHash);
+    window.removeEventListener('storage', this._onStorage);
+  }
+
+  flash(msg) {
+    this.setState({ estado: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ estado: '' }), 2000);
+  }
+
+  renderVals() {
+    const R = window.RepertorioData;
+    const s = this.state;
+    if (!s.data || !R) return { estado: 'Cargando…' };
+
+    const keys = Array.from(new Set(s.data.eventos.map((e) => R.monthKey(e.fecha)))).sort();
+    const hoy = R.hoyKey();
+    if (keys.indexOf(hoy) < 0) keys.push(hoy);
+    keys.sort();
+
+    const meses = keys.map((k) => ({
+      label: R.monthLabel(k) + (k === hoy ? ' · mes en curso' : ''),
+      style: 'font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;cursor:pointer;border:2px solid var(--ink);background:' +
+        (k === s.mes ? 'var(--ink)' : 'transparent') + ';color:' + (k === s.mes ? 'var(--bg)' : 'var(--ink)'),
+      pick: () => this.setState({ mes: k })
+    }));
+
+    const delMes = s.data.eventos
+      .filter((e) => R.monthKey(e.fecha) === s.mes)
+      .sort((a, b) => (a.fecha + ' ' + a.hora).localeCompare(b.fecha + ' ' + b.hora));
+
+    const grupos = {};
+    delMes.forEach((ev) => {
+      const w = R.semanaDelMes(ev.fecha);
+      (grupos[w] = grupos[w] || []).push(ev);
+    });
+
+    const rango = (evs) => {
+      const dias = evs.map((e) => R.parse(e.fecha).getDate());
+      const a = Math.min.apply(null, dias), b = Math.max.apply(null, dias);
+      const mesNombre = R.MESES[R.parse(evs[0].fecha).getMonth()];
+      return a === b ? (a + ' de ' + mesNombre) : (a + ' — ' + b + ' de ' + mesNombre);
+    };
+
+    const semanas = Object.keys(grupos).sort((a, b) => a - b).map((w) => ({
+      titulo: 'Semana ' + w,
+      rango: rango(grupos[w]),
+      eventos: grupos[w].map((ev) => ({
+        dia: R.diaNombre(ev.fecha),
+        hora: ev.hora,
+        sub: [R.fechaLarga(ev.fecha), ev.servicio].filter(Boolean).join(' · '),
+        tema: ev.tema || 'Por confirmar',
+        cita: ev.cita,
+        notas: ev.notas,
+        tieneNotas: !!(ev.notas && ev.notas.trim()),
+        bloques: ev.bloques
+          .map((bl) => ({
+            titulo: bl.titulo,
+            canciones: bl.canciones.filter((c) => c.t && c.t.trim()).map((c) => ({
+              t: c.t, d: c.d ? 'dirige ' + c.d : '', k: c.k || '—', u: c.u || '#'
+            }))
+          }))
+          .filter((bl) => bl.canciones.length)
+      }))
+    }));
+
+    return {
+      estado: s.estado,
+      kicker: s.data.kicker || 'Repertorio mensual',
+      mesLabel: R.monthLabel(s.mes),
+      nota: s.data.nota || '',
+      meses: meses,
+      semanas: semanas,
+      vacio: semanas.length ? '' : 'Todavía no hay participaciones cargadas para este mes. Ve a "Capturar" para agregarlas.',
+      imprimir: () => window.print(),
+      copiarWa: () => {
+        const out = [];
+        semanas.forEach((sem) => {
+          sem.eventos.forEach((ev) => {
+            out.push('🎼 ' + ev.dia + ' ' + ev.hora + ' — ' + ev.sub);
+            out.push('Tema: ' + ev.tema);
+            if (ev.cita) out.push(ev.cita);
+            out.push('');
+            ev.bloques.forEach((bl) => {
+              out.push('- ' + bl.titulo + ':');
+              bl.canciones.forEach((c) => {
+                out.push('🎶 ' + c.t + (c.k && c.k !== '—' ? ' (' + c.k + ')' : '') + (c.d ? ' · ' + c.d : '') + (c.u && c.u !== '#' ? '\n' + c.u : ''));
+              });
+              out.push('');
+            });
+            if (ev.tieneNotas) { out.push(ev.notas); out.push(''); }
+            out.push('———');
+            out.push('');
+          });
+        });
+        const text = out.join('\n');
+        const done = () => this.flash('Copiado');
+        if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done);
+        else done();
+      }
+    };
+  }
+}
+
+</script>
+</body>
+</html>
