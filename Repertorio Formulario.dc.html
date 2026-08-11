@@ -6,6 +6,19 @@
 <script src="./support.js"></script>
 </head>
 <body>
+<div id="repertorio-gate" style="position:fixed;inset:0;background:rgba(243,242,242,.97);display:flex;align-items:center;justify-content:center;z-index:2147483647;padding:20px">
+  <div style="width:min(100%,420px);background:#fff;border:2px solid var(--ink,#201e1d);padding:24px 24px 20px;box-shadow:0 16px 40px rgba(0,0,0,.12)">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk,#08512c)">Acceso restringido</div>
+    <h2 style="font-size:28px;font-weight:800;margin:10px 0 0;text-transform:uppercase">Ingresa la contraseña</h2>
+    <p style="font-size:14px;line-height:1.5;color:#54514f;margin:10px 0 0">Este formulario está protegido.</p>
+    <form id="repertorio-gate-form" style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
+      <input id="repertorio-gate-password" type="password" placeholder="Contraseña" style="font-size:16px;padding:10px 12px;border:2px solid var(--ink,#201e1d);background:#fff" />
+      <button type="submit" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac,#0f7d45);background:var(--ac,#0f7d45);color:#fff;padding:10px 14px;cursor:pointer">Entrar</button>
+      <div id="repertorio-gate-error" style="min-height:18px;font-size:13px;color:#b00020"></div>
+    </form>
+  </div>
+</div>
+<div id="repertorio-content" style="display:none">
 <x-dc>
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -202,6 +215,96 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 </div>
 
 </x-dc>
+</div>
+<script>
+(() => {
+  const KEY = 'repertorio-form-gate-v1';
+  const EXPECTED_HASH = '2f519adb1a5e171fe54c28ac9779335b145ddd6b9578afdd6348f937b0566ac0';
+  const TTL_MS = 120 * 60 * 1000;
+
+  function getStored() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.expiresAt !== 'number') return null;
+      return parsed;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveUnlock() {
+    const expiresAt = Date.now() + TTL_MS;
+    try { localStorage.setItem(KEY, JSON.stringify({ expiresAt })); } catch (e) {}
+  }
+
+  function unlock() {
+    const gate = document.getElementById('repertorio-gate');
+    const content = document.getElementById('repertorio-content');
+    if (gate) gate.style.display = 'none';
+    if (content) content.style.display = 'block';
+  }
+
+  function lock() {
+    const gate = document.getElementById('repertorio-gate');
+    const content = document.getElementById('repertorio-content');
+    if (gate) gate.style.display = 'flex';
+    if (content) content.style.display = 'none';
+  }
+
+  function isValid() {
+    const stored = getStored();
+    if (!stored) return false;
+    if (Date.now() > stored.expiresAt) {
+      try { localStorage.removeItem(KEY); } catch (e) {}
+      return false;
+    }
+    return true;
+  }
+
+  async function hashText(value) {
+    const bytes = new TextEncoder().encode(value);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const gate = document.getElementById('repertorio-gate');
+    const content = document.getElementById('repertorio-content');
+    const form = document.getElementById('repertorio-gate-form');
+    const error = document.getElementById('repertorio-gate-error');
+    const input = document.getElementById('repertorio-gate-password');
+
+    if (!gate || !content || !form || !error || !input) return;
+
+    if (isValid()) {
+      unlock();
+      return;
+    }
+
+    lock();
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const value = (input.value || '').trim();
+      if (!value) {
+        error.textContent = 'Escribe la contraseña.';
+        return;
+      }
+
+      const enteredHash = await hashText(value);
+      if (enteredHash === EXPECTED_HASH) {
+        error.textContent = '';
+        saveUnlock();
+        unlock();
+      } else {
+        error.textContent = 'Contraseña incorrecta.';
+      }
+    });
+  });
+})();
+</script>
 <script type="text/x-dc" data-dc-script data-props="{}">
 const D = () => window.RepertorioData;
 
