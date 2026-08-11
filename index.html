@@ -126,14 +126,18 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                   </div>
                   <div class="rows" style="display:flex;flex-direction:column;gap:2px;margin-top:8px">
                     <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
-                      <div class="row" style="display:grid;grid-template-columns:1fr 46px 20px;gap:8px;align-items:baseline;background:#fff;padding:8px 12px;position:relative">
-                        <a class="rowlink" href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
+                      <div class="row" style="display:grid;grid-template-columns:1fr auto 20px;gap:8px;align-items:baseline;background:#fff;padding:8px 12px;position:relative">
+                        <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
+                          <a class="rowlink" href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
+                        </sc-if>
                         <div>
                           <span class="cn" style="font-size:16px;font-weight:600">{{ cn.t }}</span>
                           <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
                         </div>
-                        <span class="ck" style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center">{{ cn.k }}</span>
-                        <a href="{{ cn.u }}" target="_blank" rel="noopener" style="font-size:12px;font-weight:800;border-bottom:none;justify-self:end">↗</a>
+                        <span class="ck" style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
+                        <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
+                          <a href="{{ cn.u }}" target="_blank" rel="noopener" style="font-size:12px;font-weight:800;border-bottom:none;justify-self:end">↗</a>
+                        </sc-if>
                       </div>
                     </sc-for>
                   </div>
@@ -228,7 +232,8 @@ class Component extends DCLogic {
         .map((bl) => ({
           titulo: bl.titulo,
           canciones: bl.canciones.filter((c) => c.t && c.t.trim()).map((c) => ({
-            t: c.t, d: c.d ? 'dirige ' + c.d : '', k: c.k || '—', u: c.u || '#'
+            t: c.t, d: c.d ? 'dirige ' + c.d : '', k: c.k || '—', u: c.u || '#',
+            tieneUrl: !!(c.u && c.u.trim())
           }))
         }))
         .filter((bl) => bl.canciones.length)
