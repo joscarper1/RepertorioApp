@@ -14,6 +14,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/styles.css">
 <script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
@@ -149,8 +151,7 @@ class Component extends DCLogic {
 
   componentDidMount() {
     const R = window.RepertorioData;
-    const read = () => {
-      const d = R.load();
+    const apply = (d) => {
       this.setState((s) => {
         let mes = s.mes;
         const keys = Array.from(new Set(d.eventos.map((e) => R.monthKey(e.fecha)))).sort();
@@ -161,16 +162,26 @@ class Component extends DCLogic {
         return { data: d, mes: mes };
       });
     };
+
+    /* Un enlace con datos incrustados en el hash es una foto fija para
+       compartir, no la publicación en vivo: no nos suscribimos a la nube. */
+    const porHash = () => String(location.hash || '').indexOf('data=') >= 0;
+
+    const read = () => apply(R.load());
+    this._onHash = () => {
+      if (this._unwatch) { this._unwatch(); this._unwatch = null; }
+      if (porHash()) read(); else this._subscribe();
+    };
+    this._subscribe = () => { this._unwatch = R.watchCloud(apply); };
+
     read();
-    this._onHash = read;
-    this._onStorage = (e) => { if (!e.key || e.key === R.KEY) read(); };
+    if (!porHash()) this._subscribe();
     window.addEventListener('hashchange', this._onHash);
-    window.addEventListener('storage', this._onStorage);
   }
 
   componentWillUnmount() {
     window.removeEventListener('hashchange', this._onHash);
-    window.removeEventListener('storage', this._onStorage);
+    if (this._unwatch) this._unwatch();
   }
 
   flash(msg) {

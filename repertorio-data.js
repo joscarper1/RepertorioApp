@@ -2,6 +2,16 @@
    en formato ISO (YYYY-MM-DD); el mes y la semana se derivan de ahí. */
 (function (w) {
   var KEY = 'repertorio-data-v2';
+  var DB_PATH = 'repertorio';
+  var FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDLMmgs75ekQJRDSHfIVt2ojp2A9fnuh58",
+    authDomain: "repertoriodb-b84d8.firebaseapp.com",
+    databaseURL: "https://repertoriodb-b84d8-default-rtdb.firebaseio.com",
+    projectId: "repertoriodb-b84d8",
+    storageBucket: "repertoriodb-b84d8.firebasestorage.app",
+    messagingSenderId: "768768401559",
+    appId: "1:768768401559:web:eba18fdb7919069fef89d2"
+  };
 
   var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -150,8 +160,50 @@
     } catch (e) {}
     return seed();
   }
-  function save(data) { try { localStorage.setItem(KEY, JSON.stringify(data)); return true; } catch (e) { return false; } }
+  function save(data) {
+    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+    saveCloud(data);
+    return true;
+  }
   function reset() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+  /* La base de datos en la nube es la fuente de verdad compartida entre
+     usuarios; localStorage sólo sirve como caché para el primer pintado. */
+  function dbRef() {
+    if (!w.firebase) return null;
+    try {
+      if (!w.firebase.apps || !w.firebase.apps.length) w.firebase.initializeApp(FIREBASE_CONFIG);
+      return w.firebase.database().ref(DB_PATH);
+    } catch (e) { return null; }
+  }
+
+  function saveCloud(data, cb) {
+    var ref = dbRef();
+    if (!ref) { cb && cb(false); return; }
+    ref.set(data).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  function loadCloudOnce() {
+    var ref = dbRef();
+    if (!ref) return Promise.resolve(null);
+    return ref.once('value').then(function (snap) {
+      var d = snap.val();
+      return (d && d.eventos) ? d : null;
+    }, function () { return null; });
+  }
+
+  /* onData se llama cada vez que cambian los datos en la nube (incluyendo la
+     primera vez). Devuelve una función para cancelar la suscripción. */
+  function watchCloud(onData) {
+    var ref = dbRef();
+    if (!ref) return function () {};
+    var handler = function (snap) {
+      var d = snap.val();
+      if (d && d.eventos) onData(d);
+    };
+    ref.on('value', handler);
+    return function () { ref.off('value', handler); };
+  }
 
   w.RepertorioData = {
     KEY: KEY, MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
@@ -160,6 +212,7 @@
     diaNombre: diaNombre, fechaLarga: fechaLarga, semanaDelMes: semanaDelMes,
     hoyKey: hoyKey, calendario: calendario,
     seed: seed, clone: clone, encode: encode, decode: decode,
-    load: load, save: save, reset: reset
+    load: load, save: save, reset: reset,
+    loadCloudOnce: loadCloudOnce, watchCloud: watchCloud
   };
 })(window);

@@ -26,6 +26,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/styles.css">
 <script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
@@ -210,7 +212,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
   </sc-if>
 
   <footer style="padding:32px 0 0;font-size:12px;letter-spacing:.06em;color:#6b6866">
-    Se guarda en este navegador. "Copiar enlace" genera una dirección con todo el repertorio incrustado para compartir.
+    Los cambios se publican de inmediato para todos. "Copiar enlace" genera una dirección con una foto fija del repertorio incrustada, útil para compartir sin depender de la conexión.
   </footer>
 </div>
 
@@ -315,6 +317,15 @@ class Component extends DCLogic {
     const R = D();
     const hoy = R.hoyKey();
     this.setState({ data: R.load(), mes: hoy, fecha: '' });
+    /* Sólo se refresca desde la nube cuando no hay un borrador abierto, para
+       no pisar una participación que el usuario está editando. */
+    this._unwatch = R.watchCloud((d) => {
+      this.setState((s) => (s.draft ? null : { data: d }));
+    });
+  }
+
+  componentWillUnmount() {
+    if (this._unwatch) this._unwatch();
   }
 
   persist(data, msg) {
