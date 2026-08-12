@@ -74,7 +74,17 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
       <sc-for list="{{ meses }}" as="m" hint-placeholder-count="3">
         <button onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button>
       </sc-for>
+      <sc-if value="{{ hayMesesAnteriores }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ toggleMeses }}" style="{{ mesesBtnStyle }}">{{ mesesBtnLabel }}</button>
+      </sc-if>
     </div>
+    <sc-if value="{{ mesesAbierto }}" hint-placeholder-val="{{ true }}">
+      <div class="noprint" style="background:var(--sf);border:2px solid var(--ink);margin-top:8px;padding:12px;display:flex;flex-wrap:wrap;gap:2px;max-height:min(50vh,320px);overflow-y:auto">
+        <sc-for list="{{ mesesAnteriores }}" as="m" hint-placeholder-count="3">
+          <button onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button>
+        </sc-for>
+      </div>
+    </sc-if>
   </sc-if>
 
   <div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0 0">
@@ -123,7 +133,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                 </div>
                 <div style="height:2px;background:var(--ink);margin-top:8px"></div>
                 <sc-if value="{{ ev.tieneBanda }}" hint-placeholder-val="{{ true }}">
-                  <div class="banda" style="border:2px solid var(--ink);padding:12px;margin-top:14px">
+                  <div class="banda" style="border-bottom:2px solid var(--ink);padding:12px;margin-top:14px">
                     <div onClick="{{ ev.toggleBanda }}" style="display:flex;align-items:center;gap:10px;cursor:pointer">
                       <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Banda</span>
                       <span style="flex:1;height:2px;background:#d7d3d3"></span>
@@ -230,7 +240,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
-  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, bandaAbierta: {}, tareaAbierta: {} };
+  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false };
 
   componentDidMount() {
     const R = window.RepertorioData;
@@ -314,9 +324,13 @@ class Component extends DCLogic {
   renderEvento(ev) {
     const R = window.RepertorioData;
     const bandaLista = this.renderBanda(ev.banda, ev.id);
-    /* Cerrado por defecto: el recuadro de banda sólo se expande cuando el
-       usuario lo pide, para no alargar la tarjeta en pantallas pequeñas. */
-    const bandaAbierta = !!this.state.bandaAbierta[ev.id];
+    const tieneRepertorio = (ev.bloques || []).some((bl) => bl.canciones.some((c) => c.t && c.t.trim()));
+    /* Cerrado por defecto para no alargar la tarjeta, salvo que no haya
+       repertorio: ahí la banda es la información principal y debe verse
+       de una vez. El usuario puede alternarlo igual en cualquier caso. */
+    const bandaAbiertaDefault = !tieneRepertorio;
+    const bandaAbierta = Object.prototype.hasOwnProperty.call(this.state.bandaAbierta, ev.id)
+      ? this.state.bandaAbierta[ev.id] : bandaAbiertaDefault;
     return {
       dia: R.diaNombre(ev.fecha),
       hora: ev.hora,
@@ -383,12 +397,18 @@ class Component extends DCLogic {
     if (keys.indexOf(hoy) < 0) keys.push(hoy);
     keys.sort();
 
-    const meses = keys.map((k) => ({
+    const mesBtn = (k) => ({
       label: R.monthLabel(k) + (k === hoy ? ' · mes en curso' : ''),
       style: 'font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;cursor:pointer;border:2px solid var(--ink);background:' +
         (k === s.mes ? 'var(--ink)' : 'transparent') + ';color:' + (k === s.mes ? 'var(--bg)' : 'var(--ink)'),
-      pick: () => this.setState({ mes: k })
-    }));
+      pick: () => this.setState({ mes: k, mesesAbierto: false })
+    });
+    /* El mes en curso y cualquier mes futuro ya programado quedan siempre a
+       la vista; los meses pasados se guardan en un panel aparte para que la
+       fila no crezca sin límite a medida que pasa el tiempo. */
+    const mesesAnterioresKeys = keys.filter((k) => k < hoy);
+    const meses = keys.filter((k) => k >= hoy).map(mesBtn);
+    const mesesAnteriores = mesesAnterioresKeys.map(mesBtn);
 
     // ---- filtro de búsqueda: elige un evento puntual de todo el repertorio
     const eventoActivo = s.filtroId ? (s.data.eventos.find((e) => e.id === s.filtroId) || null) : null;
@@ -464,6 +484,13 @@ class Component extends DCLogic {
       nota: s.data.nota || '',
       meses: meses,
       mesesVisibles: !filtroActivo,
+      hayMesesAnteriores: mesesAnterioresKeys.length > 0,
+      mesesAnteriores: mesesAnteriores,
+      mesesAbierto: s.mesesAbierto,
+      mesesBtnLabel: s.mesesAbierto ? 'Cerrar meses anteriores ✕' : ('Meses anteriores (' + mesesAnterioresKeys.length + ')'),
+      mesesBtnStyle: 'font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;cursor:pointer;border:2px solid var(--ink);background:' +
+        (s.mesesAbierto ? 'var(--ink)' : 'transparent') + ';color:' + (s.mesesAbierto ? 'var(--bg)' : 'var(--ink)'),
+      toggleMeses: () => this.setState((st) => ({ mesesAbierto: !st.mesesAbierto })),
       semanas: semanas,
       vacio: semanas.length ? '' : 'Todavía no hay participaciones cargadas para este mes. Ve a "Capturar" para agregarlas.',
 
