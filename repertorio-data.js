@@ -15,7 +15,12 @@
 
   var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  var SERVICIOS = ['Cultos Dominicales','Culto Familiar','Vigilia General','Vigilia Juvenil','Evento Especial'];
+  var SERVICIOS = ['Cultos Dominicales','Culto Familiar','Vigilia General','Vigilia Juvenil','Evento Especial', 'Capacitación', 'Convocatoria', 'Otro'];
+  /* Estos tipos de evento llevan repertorio musical (paso 3 con bloques de
+     canciones); el resto sólo pide detalles/responsable y personas requeridas. */
+  var SERVICIOS_CON_REPERTORIO = ['Cultos Dominicales','Culto Familiar','Vigilia General','Vigilia Juvenil','Evento Especial'];
+
+  function usaRepertorio(servicio) { return SERVICIOS_CON_REPERTORIO.indexOf(servicio) >= 0; }
 
   function song(t, d, k, u) { return { t: t || '', d: d || '', k: k || '', u: u || '' }; }
 
@@ -36,12 +41,14 @@
     return {
       id: o.id || uid(),
       fecha: o.fecha || '',
-      hora: o.hora || '9:00 am',
+      hora: o.hora || '8:00 am',
       servicio: o.servicio || SERVICIOS[0],
       tema: o.tema || '',
       cita: o.cita || '',
       notas: o.notas || '',
-      bloques: o.bloques || defaultBlocks()
+      bloques: o.bloques || defaultBlocks(),
+      detalles: o.detalles || '',
+      personas: o.personas || ''
     };
   }
 
@@ -64,11 +71,12 @@
     var d = parse(isoStr);
     return d.getDate() + ' de ' + MESES[d.getMonth()];
   }
-  /* Semana del mes según la fila del calendario (domingo a sábado), tope 5. */
+  /* Semana del mes según la fila del calendario (domingo a sábado), tope 6:
+     un mes puede empezar en sábado y tener 31 días, lo que ocupa 6 filas. */
   function semanaDelMes(isoStr) {
     var d = parse(isoStr);
     var primero = new Date(d.getFullYear(), d.getMonth(), 1).getDay();
-    return Math.min(5, Math.floor((d.getDate() + primero - 1) / 7) + 1);
+    return Math.min(6, Math.floor((d.getDate() + primero - 1) / 7) + 1);
   }
   function hoyKey() {
     var n = new Date();
@@ -207,6 +215,7 @@
 
   w.RepertorioData = {
     KEY: KEY, MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
+    SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
     song: song, defaultBlocks: defaultBlocks, newEvento: newEvento, uid: uid,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,
     diaNombre: diaNombre, fechaLarga: fechaLarga, semanaDelMes: semanaDelMes,

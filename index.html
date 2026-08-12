@@ -100,59 +100,87 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 
   <sc-for list="{{ semanas }}" as="sem" hint-placeholder-count="2">
     <section style="padding-top:40px">
-      <div style="display:flex;align-items:center;gap:16px;background:var(--ink);color:var(--bg);padding:12px 16px">
+      <div onClick="{{ sem.toggle }}" style="display:flex;align-items:center;gap:16px;background:var(--ink);color:var(--bg);padding:12px 16px;cursor:pointer">
         <span style="font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px">{{ sem.titulo }}</span>
         <span style="font-size:14px;font-weight:600;letter-spacing:.06em;color:#d7d3d3">{{ sem.rango }}</span>
+        <span style="flex:1"></span>
+        <span class="noprint" style="color:#fff;font-size:14px;line-height:1">{{ sem.icono }}</span>
       </div>
-      <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px;background:var(--sf);border:2px solid var(--ink);border-top:0">
-        <sc-for list="{{ sem.eventos }}" as="ev" hint-placeholder-count="3">
+      <div class="grid" style="display:{{ sem.gridDisplay }};grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px;background:var(--sf);border:2px solid var(--ink);border-top:0">
+        <sc-for list="{{ sem.dias }}" as="dia" hint-placeholder-count="3">
           <article class="evt" style="background:var(--sf);padding:24px;outline:2px solid var(--ink)">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
-              <div class="dia" style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1;text-transform:uppercase">{{ ev.dia }}</div>
-              <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
-            </div>
-            <div class="sub" style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac-dk);margin-top:8px;padding-bottom:12px;border-bottom:2px solid var(--ink)">{{ ev.sub }}</div>
-            <div class="temawrap" style="padding:16px 0 4px">
-              <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tema</div>
-              <div class="tema" style="font-size:19px;font-weight:600;line-height:1.3;margin-top:8px;text-wrap:pretty">{{ ev.tema }}</div>
-              <div class="cita" style="font-size:14px;line-height:1.55;color:#54514f;margin-top:8px;border-left:2px solid var(--ac);padding-left:12px;text-wrap:pretty">{{ ev.cita }}</div>
-            </div>
-            <div class="body" style="display:flex;flex-direction:column;gap:16px;margin-top:24px">
-              <sc-for list="{{ ev.bloques }}" as="bl" hint-placeholder-count="5">
-                <div>
-                  <div style="display:flex;align-items:center;gap:8px">
-                    <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">{{ bl.titulo }}</span>
-                    <span style="flex:1;height:2px;background:var(--ink)"></span>
-                  </div>
-                  <div class="rows" style="display:flex;flex-direction:column;gap:2px;margin-top:8px">
-                    <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
-                      <div class="row" style="display:grid;grid-template-columns:1fr auto 20px;gap:8px;align-items:baseline;background:#fff;padding:8px 12px;position:relative">
-                        <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
-                          <a class="rowlink" href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
-                        </sc-if>
-                        <div>
-                          <span class="cn" style="font-size:16px;font-weight:600">{{ cn.t }}</span>
-                          <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
-                        </div>
-                        <span class="ck" style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
-                        <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
-                          <a href="{{ cn.u }}" target="_blank" rel="noopener" style="font-size:12px;font-weight:800;border-bottom:none;justify-self:end">↗</a>
-                        </sc-if>
-                      </div>
-                    </sc-for>
-                  </div>
-                </div>
-              </sc-for>
-              <sc-if value="{{ ev.tieneNotas }}" hint-placeholder-val="{{ true }}">
-                <div>
-                  <div style="display:flex;align-items:center;gap:8px">
-                    <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Notas del ensayo</span>
-                    <span style="flex:1;height:2px;background:var(--ink)"></span>
-                  </div>
-                  <div class="nota" style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.notas }}</div>
-                </div>
+            <div class="dia" style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1;text-transform:uppercase">{{ dia.diaNombre }}</div>
+            <sc-for list="{{ dia.eventos }}" as="ev" hint-placeholder-count="2">
+              <sc-if value="{{ ev.separador }}" hint-placeholder-val="{{ true }}">
+                <div style="height:2px;background:var(--ink);opacity:.25;margin:20px 0"></div>
               </sc-if>
-            </div>
+              <div style="{{ ev.wrapStyle }}">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+                  <span class="sub" style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac-dk)">{{ ev.sub }}</span>
+                  <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
+                </div>
+                <div style="height:2px;background:var(--ink);margin-top:8px"></div>
+                <div class="temawrap" style="padding:16px 0 4px">
+                  <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tema</div>
+                  <div class="tema" style="font-size:19px;font-weight:600;line-height:1.3;margin-top:8px;text-wrap:pretty">{{ ev.tema }}</div>
+                  <div class="cita" style="font-size:14px;line-height:1.55;color:#54514f;margin-top:8px;border-left:2px solid var(--ac);padding-left:12px;text-wrap:pretty">{{ ev.cita }}</div>
+                </div>
+                <div class="body" style="display:flex;flex-direction:column;gap:16px;margin-top:24px">
+                  <sc-for list="{{ ev.bloques }}" as="bl" hint-placeholder-count="5">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">{{ bl.titulo }}</span>
+                        <span style="flex:1;height:2px;background:var(--ink)"></span>
+                      </div>
+                      <div class="rows" style="display:flex;flex-direction:column;gap:2px;margin-top:8px">
+                        <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
+                          <div class="row" style="display:grid;grid-template-columns:1fr auto 20px;gap:8px;align-items:baseline;background:#fff;padding:8px 12px;position:relative">
+                            <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
+                              <a class="rowlink" href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
+                            </sc-if>
+                            <div>
+                              <span class="cn" style="font-size:16px;font-weight:600">{{ cn.t }}</span>
+                              <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
+                            </div>
+                            <span class="ck" style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
+                            <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
+                              <a href="{{ cn.u }}" target="_blank" rel="noopener" style="font-size:12px;font-weight:800;border-bottom:none;justify-self:end">↗</a>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ ev.tieneDetalles }}" hint-placeholder-val="{{ true }}">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Detalles y responsable</span>
+                        <span style="flex:1;height:2px;background:var(--ink)"></span>
+                      </div>
+                      <div class="nota" style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.detalles }}</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ ev.tienePersonas }}" hint-placeholder-val="{{ true }}">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Personas requeridas</span>
+                        <span style="flex:1;height:2px;background:var(--ink)"></span>
+                      </div>
+                      <div class="nota" style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.personas }}</div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ ev.tieneNotas }}" hint-placeholder-val="{{ true }}">
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Notas del ensayo</span>
+                        <span style="flex:1;height:2px;background:var(--ink)"></span>
+                      </div>
+                      <div class="nota" style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.notas }}</div>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
           </article>
         </sc-for>
       </div>
@@ -175,7 +203,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
-  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null };
+  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {} };
 
   componentDidMount() {
     const R = window.RepertorioData;
@@ -228,6 +256,10 @@ class Component extends DCLogic {
       cita: ev.cita,
       notas: ev.notas,
       tieneNotas: !!(ev.notas && ev.notas.trim()),
+      detalles: ev.detalles,
+      tieneDetalles: !!(ev.detalles && ev.detalles.trim()),
+      personas: ev.personas,
+      tienePersonas: !!(ev.personas && ev.personas.trim()),
       bloques: ev.bloques
         .map((bl) => ({
           titulo: bl.titulo,
@@ -238,6 +270,30 @@ class Component extends DCLogic {
         }))
         .filter((bl) => bl.canciones.length)
     };
+  }
+
+  /* Agrupa eventos de un mismo día en una sola columna: cada uno conserva su
+     propio bloque, con un separador visual entre ellos cuando hay más de uno. */
+  renderDia(fecha, evs) {
+    const R = window.RepertorioData;
+    return {
+      diaNombre: R.diaNombre(fecha),
+      fechaLarga: R.fechaLarga(fecha),
+      eventos: evs.map((ev, i) => Object.assign(this.renderEvento(ev), {
+        separador: i > 0,
+        wrapStyle: i === 0 ? 'margin-top:16px' : 'margin-top:20px'
+      }))
+    };
+  }
+
+  agruparDias(evs) {
+    const orden = [];
+    const grupos = {};
+    evs.forEach((ev) => {
+      if (!grupos[ev.fecha]) { grupos[ev.fecha] = []; orden.push(ev.fecha); }
+      grupos[ev.fecha].push(ev);
+    });
+    return orden.map((f) => this.renderDia(f, grupos[f]));
   }
 
   renderVals() {
@@ -273,12 +329,16 @@ class Component extends DCLogic {
       onClick: () => this.setState({ filtroId: ev.id, filtroAbierto: false, filtroTexto: '' })
     }));
 
+    const hoyLocal = new Date();
+    const hoyISO = hoyLocal.getFullYear() + '-' + String(hoyLocal.getMonth() + 1).padStart(2, '0') + '-' + String(hoyLocal.getDate()).padStart(2, '0');
+
     let semanas;
     if (filtroActivo) {
       semanas = [{
         titulo: 'Resultado del filtro',
         rango: R.diaNombre(eventoActivo.fecha) + ' ' + R.fechaLarga(eventoActivo.fecha),
-        eventos: [this.renderEvento(eventoActivo)]
+        dias: this.agruparDias([eventoActivo]),
+        expandido: true, gridDisplay: 'grid', icono: '', toggle: () => {}
       }];
     } else {
       const delMes = s.data.eventos
@@ -298,11 +358,26 @@ class Component extends DCLogic {
         return a === b ? (a + ' de ' + mesNombre) : (a + ' — ' + b + ' de ' + mesNombre);
       };
 
-      semanas = Object.keys(grupos).sort((a, b) => a - b).map((w) => ({
-        titulo: 'Semana ' + w,
-        rango: rango(grupos[w]),
-        eventos: grupos[w].map((ev) => this.renderEvento(ev))
-      }));
+      semanas = Object.keys(grupos).sort((a, b) => a - b).map((w) => {
+        const evs = grupos[w];
+        const key = s.mes + '-S' + w;
+        /* Por defecto, una semana ya transcurrida (todas sus fechas anteriores
+           a hoy) aparece colapsada; el usuario puede alternarla igualmente. */
+        const yaPaso = evs.every((ev) => ev.fecha < hoyISO);
+        const colapsada = Object.prototype.hasOwnProperty.call(s.colapsadas, key) ? s.colapsadas[key] : yaPaso;
+        return {
+          titulo: 'Semana ' + w,
+          rango: rango(evs),
+          dias: this.agruparDias(evs),
+          expandido: !colapsada,
+          gridDisplay: colapsada ? 'none' : 'grid',
+          icono: colapsada ? '▲' : '▼',
+          toggle: () => this.setState((st) => {
+            const actual = Object.prototype.hasOwnProperty.call(st.colapsadas, key) ? st.colapsadas[key] : yaPaso;
+            return { colapsadas: Object.assign({}, st.colapsadas, { [key]: !actual }) };
+          })
+        };
+      });
     }
 
     return {
@@ -332,21 +407,25 @@ class Component extends DCLogic {
       copiarWa: () => {
         const out = [];
         semanas.forEach((sem) => {
-          sem.eventos.forEach((ev) => {
-            out.push('🎼 ' + ev.dia + ' ' + ev.hora + ' — ' + ev.sub);
-            out.push('Tema: ' + ev.tema);
-            if (ev.cita) out.push(ev.cita);
-            out.push('');
-            ev.bloques.forEach((bl) => {
-              out.push('- ' + bl.titulo + ':');
-              bl.canciones.forEach((c) => {
-                out.push('🎶 ' + c.t + (c.k && c.k !== '—' ? ' (' + c.k + ')' : '') + (c.d ? ' · ' + c.d : '') + (c.u && c.u !== '#' ? '\n' + c.u : ''));
+          sem.dias.forEach((dia) => {
+            dia.eventos.forEach((ev) => {
+              out.push('🎼 ' + ev.dia + ' ' + ev.hora + ' — ' + ev.sub);
+              out.push('Tema: ' + ev.tema);
+              if (ev.cita) out.push(ev.cita);
+              out.push('');
+              ev.bloques.forEach((bl) => {
+                out.push('- ' + bl.titulo + ':');
+                bl.canciones.forEach((c) => {
+                  out.push('🎶 ' + c.t + (c.k && c.k !== '—' ? ' (' + c.k + ')' : '') + (c.d ? ' · ' + c.d : '') + (c.u && c.u !== '#' ? '\n' + c.u : ''));
+                });
+                out.push('');
               });
+              if (ev.tieneDetalles) { out.push('Detalles y responsable: ' + ev.detalles); out.push(''); }
+              if (ev.tienePersonas) { out.push('Personas requeridas: ' + ev.personas); out.push(''); }
+              if (ev.tieneNotas) { out.push(ev.notas); out.push(''); }
+              out.push('———');
               out.push('');
             });
-            if (ev.tieneNotas) { out.push(ev.notas); out.push(''); }
-            out.push('———');
-            out.push('');
           });
         });
         const text = out.join('\n');

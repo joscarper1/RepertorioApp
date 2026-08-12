@@ -47,7 +47,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink);flex-wrap:wrap">
     <div style="display:flex;align-items:baseline;gap:12px">
       <span style="width:14px;height:14px;background:var(--ac);display:inline-block"></span>
-      <span style="font-weight: 800; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; position: relative">REGISTRO DE LISTA DE ALABANZA</span>
+      <span style="font-weight: 800; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; position: relative">ADMINISTRACIÓN DE EVENTOS</span>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
@@ -91,7 +91,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-top:32px;border-bottom:2px solid var(--ink);padding-bottom:8px">
         <h3 style="font-size:16px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin:0">{{ fechaTitulo }}</h3>
-        <button onClick="{{ nuevoEvento }}" style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">+ Participación</button>
+        <button onClick="{{ nuevoEvento }}" style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">+ Agregar</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;margin-top:12px">
         <sc-for list="{{ eventosDelDia }}" as="ev" hint-placeholder-count="2">
@@ -120,7 +120,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           <input value="{{ dHora }}" onChange="{{ onHora }}" placeholder="8:00 am" style="font-size:16px;padding:10px 12px;border:2px solid var(--ink);background:#fff">
         </label>
         <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tipo de servicio</span>
+          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tipo de Evento</span>
           <select value="{{ dServicio }}" onChange="{{ onServicio }}" style="font-size:16px;padding:10px 12px;border:2px solid var(--ink);background:#fff;appearance:none">
             <sc-for list="{{ servicios }}" as="s" hint-placeholder-count="5">
               <option value="{{ s.label }}">{{ s.label }}</option>
@@ -128,26 +128,29 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           </select>
         </label>
       </div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px;padding-bottom:20px">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tema</span>
+          <input value="{{ dTema }}" onChange="{{ onTema }}" placeholder="Agregar el tema del evento" style="font-size:18px;font-weight:600;padding:10px 12px;border:2px solid var(--ink);background:#fff">
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Objetivo/Cita bíblica</span>
+          <textarea value="{{ dCita }}" onChange="{{ onCita }}" rows="2" placeholder="Colocar objetivo del evento o cita bíblica" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
+        </label>
+      </div>
     </section>
   </sc-if>
 
-  <sc-if value="{{ esPaso3 }}" hint-placeholder-val="{{ true }}">
+  <sc-if value="{{ esPaso3Repertorio }}" hint-placeholder-val="{{ true }}">
     <section style="padding-top:32px">
       <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ draftFecha }}</div>
-      <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">Repertorio</h2>
-
-      <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px;padding-bottom:20px;border-bottom:2px solid var(--ink)">
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tema</span>
-          <input value="{{ dTema }}" onChange="{{ onTema }}" placeholder="Jesucristo, nuestra esperanza de vida eterna" style="font-size:18px;font-weight:600;padding:10px 12px;border:2px solid var(--ink);background:#fff">
-        </label>
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Cita bíblica</span>
-          <textarea value="{{ dCita }}" onChange="{{ onCita }}" rows="2" placeholder="«Señor, ¿a quién iremos?...». Juan 6:68" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
-        </label>
-      </div>
+      <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">Repertorio del Evento</h2>
 
       <p style="font-size:13px;color:#6b6866;margin:20px 0 0">Deja en blanco lo que no se use: solo se publica lo que tenga nombre.</p>
+      <label style="display:flex;flex-direction:column;gap:6px;margin-top:24px">
+        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Notas del ensayo</span>
+        <textarea value="{{ dNotas }}" onChange="{{ onNotas }}" rows="3" placeholder="Indicaciones especiales para el ensayo o del repertorio" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
+      </label>      
 
       <div style="display:flex;flex-direction:column;gap:20px;margin-top:24px">
         <sc-for list="{{ bloques }}" as="bl" hint-placeholder-count="5">
@@ -174,30 +177,57 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
     </section>
   </sc-if>
 
+  <sc-if value="{{ esPaso3Otro }}" hint-placeholder-val="{{ true }}">
+    <section style="padding-top:32px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ draftFecha }}</div>
+      <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">Detalles del Evento</h2>
+
+      <div style="display:flex;flex-direction:column;gap:20px;margin-top:24px">
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Detalles del evento y responsable</span>
+          <textarea value="{{ dDetalles }}" onChange="{{ onDetalles }}" rows="4" placeholder="Describe el evento y quién es la persona responsable" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
+        </label>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Personas requeridas</span>
+          <textarea value="{{ dPersonas }}" onChange="{{ onPersonas }}" rows="3" placeholder="Quiénes se necesitan y para qué" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
+        </label>
+      </div>
+    </section>
+  </sc-if>
+
   <sc-if value="{{ esPaso4 }}" hint-placeholder-val="{{ true }}">
     <section style="padding-top:32px">
       <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ draftFecha }}</div>
       <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">Notas y revisión</h2>
 
-      <label style="display:flex;flex-direction:column;gap:6px;margin-top:24px">
-        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Notas del ensayo</span>
-        <textarea value="{{ dNotas }}" onChange="{{ onNotas }}" rows="3" placeholder="Lectura bíblica, hora de ensayo, vestimenta…" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
-      </label>
-
       <div style="background:var(--sf);outline:2px solid var(--ink);padding:20px;margin-top:24px">
         <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Resumen</div>
         <div style="font-size:26px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;margin-top:8px">{{ resumenTitulo }}</div>
         <div style="font-size:14px;color:#54514f;margin-top:6px">{{ resumenTema }}</div>
-        <div style="display:flex;flex-direction:column;gap:2px;margin-top:16px">
-          <sc-for list="{{ resumen }}" as="r" hint-placeholder-count="4">
-            <div style="display:flex;gap:12px;background:#fff;padding:8px 12px;align-items:baseline">
-              <span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979;width:120px;flex:none">{{ r.bloque }}</span>
-              <span style="font-size:15px;font-weight:600;flex:1">{{ r.titulo }}</span>
-              <span style="font-size:12px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);padding:2px 6px">{{ r.tono }}</span>
+        <sc-if value="{{ resumenEsRepertorio }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:2px;margin-top:16px">
+            <sc-for list="{{ resumen }}" as="r" hint-placeholder-count="4">
+              <div style="display:flex;gap:12px;background:#fff;padding:8px 12px;align-items:baseline">
+                <span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979;width:120px;flex:none">{{ r.bloque }}</span>
+                <span style="font-size:15px;font-weight:600;flex:1">{{ r.titulo }}</span>
+                <span style="font-size:12px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);padding:2px 6px">{{ r.tono }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:13px;color:#7d7979;margin-top:10px">{{ resumenVacio }}</div>
+        </sc-if>
+        <sc-if value="{{ resumenEsOtro }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:2px;margin-top:16px">
+            <div style="background:#fff;padding:8px 12px">
+              <span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979">Detalles y responsable</span>
+              <div style="font-size:14px;margin-top:4px">{{ resumenDetalles }}</div>
             </div>
-          </sc-for>
-        </div>
-        <div style="font-size:13px;color:#7d7979;margin-top:10px">{{ resumenVacio }}</div>
+            <div style="background:#fff;padding:8px 12px">
+              <span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979">Personas requeridas</span>
+              <div style="font-size:14px;margin-top:4px">{{ resumenPersonas }}</div>
+            </div>
+          </div>
+        </sc-if>
       </div>
     </section>
   </sc-if>
@@ -375,7 +405,7 @@ class Component extends DCLogic {
       return 'flex:1;text-align:center;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:10px 6px;background:' +
         (on ? 'var(--ac)' : (done ? '#605d5d' : 'var(--bg)')) + ';color:' + (on || done ? '#fff' : '#7d7979');
     };
-    const pasos = ['1. Fecha', '2. evento', '3. Lista', '4. Revisión'].map((label, i) => ({
+    const pasos = ['1. Fecha', '2. evento', '3. Detalles', '4. Revisión Final'].map((label, i) => ({
       label: label, style: pasoStyle(i + 1)
     }));
 
@@ -448,7 +478,8 @@ class Component extends DCLogic {
       pasos: pasos,
       esPaso1: !enWizard,
       esPaso2: enWizard && paso === 2,
-      esPaso3: enWizard && paso === 3,
+      esPaso3Repertorio: enWizard && paso === 3 && R.usaRepertorio(dr.servicio),
+      esPaso3Otro: enWizard && paso === 3 && !R.usaRepertorio(dr.servicio),
       esPaso4: enWizard && paso === 4,
       enWizard: enWizard,
 
@@ -474,8 +505,11 @@ class Component extends DCLogic {
       dTema: dr ? dr.tema : '',
       dCita: dr ? dr.cita : '',
       dNotas: dr ? dr.notas : '',
+      dDetalles: dr ? dr.detalles : '',
+      dPersonas: dr ? dr.personas : '',
       onHora: field('hora'), onServicio: field('servicio'), onTema: field('tema'),
       onCita: field('cita'), onNotas: field('notas'),
+      onDetalles: field('detalles'), onPersonas: field('personas'),
       servicios: (dr && dr.servicio && R.SERVICIOS.indexOf(dr.servicio) < 0
         ? [dr.servicio].concat(R.SERVICIOS) : R.SERVICIOS).map((label) => ({ label: label })),
       bloques: bloques,
@@ -483,6 +517,10 @@ class Component extends DCLogic {
       resumenVacio: resumen.length ? '' : 'Aún no hay canciones con nombre.',
       resumenTitulo: dr ? (R.diaNombre(dr.fecha) + ' ' + dr.hora) : '',
       resumenTema: dr ? (dr.tema || 'Sin tema') : '',
+      resumenEsRepertorio: dr ? R.usaRepertorio(dr.servicio) : false,
+      resumenEsOtro: dr ? !R.usaRepertorio(dr.servicio) : false,
+      resumenDetalles: dr && dr.detalles ? dr.detalles : 'Sin detalles aún',
+      resumenPersonas: dr && dr.personas ? dr.personas : 'Sin personas asignadas aún',
 
       siguienteLabel: paso === 4 ? 'Guardar participación' : 'Siguiente',
       siguiente: () => {
