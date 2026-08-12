@@ -15,10 +15,10 @@
 
   var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  var SERVICIOS = ['Cultos Dominicales','Culto Familiar','Vigilia General','Vigilia Juvenil','Evento Especial', 'Capacitación', 'Convocatoria', 'Otro'];
+  var SERVICIOS = ['Cultos Dominicales','Culto Familiar','Vigilia General','Vigilia Juvenil','Evento Especial','Ensayo','Capacitación', 'Convocatoria', 'Otro'];
   /* Estos tipos de evento llevan repertorio musical (paso 3 con bloques de
      canciones); el resto sólo pide detalles/responsable y personas requeridas. */
-  var SERVICIOS_CON_REPERTORIO = ['Cultos Dominicales','Culto Familiar','Vigilia General','Vigilia Juvenil','Evento Especial'];
+  var SERVICIOS_CON_REPERTORIO = ['Cultos Dominicales','Culto Familiar','Vigilia General','Vigilia Juvenil','Evento Especial', 'Ensayo'];
 
   function usaRepertorio(servicio) { return SERVICIOS_CON_REPERTORIO.indexOf(servicio) >= 0; }
 
@@ -34,6 +34,39 @@
     ];
   }
 
+  /* Roles de banda que se solicitan por defecto. Los que llevan "numerar"
+     muestran su número desde el primero (Piano 1); el resto no muestra
+     número hasta que se agregue un segundo del mismo tipo (Bajo, Bajo 2). */
+  var BANDA_ROLES = [
+    { tipo: 'Director de Alabanza', cantidad: 2, numerar: true },
+    { tipo: 'Corista', cantidad: 3, numerar: true },
+    { tipo: 'Piano', cantidad: 1, numerar: true },
+    { tipo: 'Guitarra Eléctrica', cantidad: 1, numerar: false },
+    { tipo: 'Guitarra Acústica', cantidad: 1, numerar: false },
+    { tipo: 'Bajo', cantidad: 1, numerar: false },
+    { tipo: 'Batería', cantidad: 1, numerar: false }
+  ];
+
+  function bandaSlot(tipo, numero) { return { id: uid(), tipo: tipo, numero: numero || null, nombre: '', resaltado: false, tarea: '' }; }
+
+  function defaultBanda() {
+    var out = [];
+    BANDA_ROLES.forEach(function (r) {
+      for (var i = 1; i <= r.cantidad; i++) out.push(bandaSlot(r.tipo, r.numerar ? i : null));
+    });
+    return out;
+  }
+
+  function bandaLabel(slot) { return slot.numero ? (slot.tipo + ' ' + slot.numero) : slot.tipo; }
+
+  /* Siguiente número disponible para agregar otro integrante del mismo tipo
+     (un slot sin número cuenta como 1, así la próxima incorporación es 2). */
+  function bandaSiguienteNumero(banda, tipo) {
+    var existentes = (banda || []).filter(function (b) { return b.tipo === tipo; }).map(function (b) { return b.numero || 1; });
+    var max = existentes.length ? Math.max.apply(null, existentes) : 0;
+    return max + 1;
+  }
+
   function uid() { return 'e' + Math.random().toString(36).slice(2, 9); }
 
   function newEvento(o) {
@@ -47,6 +80,7 @@
       cita: o.cita || '',
       notas: o.notas || '',
       bloques: o.bloques || defaultBlocks(),
+      banda: o.banda || defaultBanda(),
       detalles: o.detalles || '',
       personas: o.personas || ''
     };
@@ -217,6 +251,8 @@
     KEY: KEY, MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
     song: song, defaultBlocks: defaultBlocks, newEvento: newEvento, uid: uid,
+    BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
+    bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,
     diaNombre: diaNombre, fechaLarga: fechaLarga, semanaDelMes: semanaDelMes,
     hoyKey: hoyKey, calendario: calendario,
