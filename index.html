@@ -234,6 +234,13 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 
   <div style="font-size:14px;color:#7d7979;padding:40px 0 0">{{ vacio }}</div>
 
+  <div class="noprint" style="display:flex;justify-content:center;padding:32px 0 0">
+    <button onClick="{{ volverArriba }}" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.04em;padding:10px 16px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer">
+      <span aria-hidden="true" style="font-size:14px;line-height:1">↑</span>
+      Volver arriba
+    </button>
+  </div>
+
   <footer style="display:flex;justify-content:space-between;gap:20px;padding:24px 0 0;font-size:12px;letter-spacing:.06em;color:#6b6866;flex-wrap:wrap">
     <span>{{ nota }}</span>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -533,6 +540,7 @@ class Component extends DCLogic {
       onFiltroTexto: (e) => { const v = e.target.value; this.setState({ filtroTexto: v }); },
 
       imprimir: () => window.print(),
+      volverArriba: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
       copiarWa: () => {
         const out = [];
         semanas.forEach((sem) => {
