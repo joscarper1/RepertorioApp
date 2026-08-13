@@ -18,7 +18,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
-:root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
+:root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--gold:#c9982e;--gold-dk:#7a5610;--gold-lt:#f6ecd3;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--font-body,Archivo),Archivo,sans-serif;-webkit-font-smoothing:antialiased}
@@ -128,7 +128,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
               </sc-if>
               <div style="{{ ev.wrapStyle }}">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
-                  <span class="sub" style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac-dk)">{{ ev.sub }}</span>
+                  <span class="sub" style="{{ ev.subStyle }}">{{ ev.sub }}</span>
                   <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
                   <span class="noprint">
                   <div style="display:flex;gap:6px">
@@ -351,6 +351,12 @@ class Component extends DCLogic {
       dia: R.diaNombre(ev.fecha),
       hora: ev.hora,
       sub: [R.fechaLarga(ev.fecha), ev.servicio].filter(Boolean).join(' · '),
+      /* Cuando el tipo de servicio no usa repertorio musical (ver
+         SERVICIOS_CON_REPERTORIO), se resalta en dorado para que salte a
+         la vista frente a los que sí lo llevan. */
+      subStyle: 'font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;' + (R.usaRepertorio(ev.servicio)
+        ? 'color:var(--ac-dk)'
+        : 'color:var(--gold-dk);background:var(--gold-lt);padding:4px 8px;margin:-4px 0 0 -8px'),
       tema: ev.tema || 'Por confirmar',
       cita: ev.cita,
       notas: ev.notas,
