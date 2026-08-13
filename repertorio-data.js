@@ -69,6 +69,150 @@
 
   function uid() { return 'e' + Math.random().toString(36).slice(2, 9); }
 
+  /* La iglesia opera en horario de El Salvador (UTC-6, sin horario de
+     verano), así que la hora local del evento se ancla a esa zona al
+     construir el .ics / enlace de Google Calendar: así muestran la hora
+     correcta sin depender de la zona horaria del dispositivo del usuario. */
+  var TZ_OFFSET_HORAS = 6;
+  var DURACION_DEFECTO_MIN = 90;
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function parseHora12(horaStr) {
+    var m = /^(\d{1,2}):(\d{2})\s*([ap]m)$/i.exec(String(horaStr || '').trim());
+    if (!m) return { h: 9, m: 0 };
+    var h = Number(m[1]) % 12;
+    if (/pm/i.test(m[3])) h += 12;
+    return { h: h, m: Number(m[2]) };
+  }
+
+  /* Minutos desde medianoche para poder comparar/ordenar horas en formato
+     "H:MM am/pm" numéricamente (una comparación de texto ordenaría "10:00 am"
+     antes de "9:00 am"). */
+  function horaMinutos(horaStr) {
+    var t = parseHora12(horaStr);
+    return t.h * 60 + t.m;
+  }
+
+  function eventoInicioUTC(ev) {
+    var f = parse(ev.fecha);
+    var t = parseHora12(ev.hora);
+    return new Date(Date.UTC(f.getFullYear(), f.getMonth(), f.getDate(), t.h + TZ_OFFSET_HORAS, t.m, 0));
+  }
+  function eventoFinUTC(ev) {
+    return new Date(eventoInicioUTC(ev).getTime() + DURACION_DEFECTO_MIN * 60000);
+  }
+  function stampUTC(d) {
+    return d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + 'T' +
+      pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + pad2(d.getUTCSeconds()) + 'Z';
+  }
+
+  function eventoTitulo(ev) {
+    return [ev.servicio, (ev.tema || '').trim()].filter(Boolean).join(' — ') || 'Evento';
+  }
+
+  /* Descripción para calendario externo (.ics / Google Calendar): sin
+     enlaces, sólo texto plano. Para eventos con repertorio musical incluye
+     banda y canciones (con tono); para el resto, únicamente la descripción
+     del evento y las personas requeridas. */
+  function eventoDescripcion(ev) {
+    var out = [];
+    if (usaRepertorio(ev.servicio)) {
+      var orden = BANDA_ROLES.map(function (r) { return r.tipo; });
+      var banda = (ev.banda || [])
+        .filter(function (b) { return b.nombre && b.nombre.trim(); })
+        .slice()
+        .sort(function (a, b) {
+          var d = orden.indexOf(a.tipo) - orden.indexOf(b.tipo);
+          return d !== 0 ? d : (a.numero || 0) - (b.numero || 0);
+        });
+      if (banda.length) {
+        out.push('Banda:');
+        banda.forEach(function (b) { out.push(b.tipo + ': ' + b.nombre.trim()); });
+        out.push('');
+      }
+      var canciones = [];
+      (ev.bloques || []).forEach(function (bl) {
+        (bl.canciones || []).forEach(function (c) { if (c.t && c.t.trim()) canciones.push(c); });
+      });
+      if (canciones.length) {
+        out.push('Canciones:');
+        canciones.forEach(function (c) { out.push('- ' + c.t.trim() + (c.k && c.k.trim() ? ' (' + c.k.trim() + ')' : '')); });
+        out.push('');
+      }
+      out.push('Descripción:');
+      out.push(ev.tema && ev.tema.trim() ? ev.tema.trim() : 'Por confirmar');
+      if (ev.cita && ev.cita.trim()) out.push(ev.cita.trim());
+    } else {
+      if (ev.detalles && ev.detalles.trim()) out.push(ev.detalles.trim());
+      if (ev.personas && ev.personas.trim()) {
+        if (out.length) out.push('');
+        out.push('Personas requeridas:');
+        out.push(ev.personas.trim());
+      }
+    }
+    return out.join('\n');
+  }
+
+  function icsEscape(text) {
+    return String(text || '')
+      .replace(/\\/g, '\\\\')
+      .replace(/;/g, '\\;')
+      .replace(/,/g, '\\,')
+      .replace(/\r\n|\n|\r/g, '\\n');
+  }
+
+  /* Pliegue de línea a 75 octetos según RFC5545; las continuaciones llevan
+     un espacio inicial. */
+  function icsFoldLine(line) {
+    var out = [];
+    var s = line;
+    while (s.length > 75) {
+      out.push(s.slice(0, 75));
+      s = ' ' + s.slice(75);
+    }
+    out.push(s);
+    return out.join('\r\n');
+  }
+
+  function buildIcs(ev) {
+    var lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Ministerio de Alabanza//RepertorioApp//ES',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      'UID:' + ev.id + '@repertorio-app',
+      'DTSTAMP:' + stampUTC(new Date()),
+      'DTSTART:' + stampUTC(eventoInicioUTC(ev)),
+      'DTEND:' + stampUTC(eventoFinUTC(ev)),
+      'SUMMARY:' + icsEscape(eventoTitulo(ev)),
+      'DESCRIPTION:' + icsEscape(eventoDescripcion(ev)),
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ];
+    return lines.map(icsFoldLine).join('\r\n') + '\r\n';
+  }
+
+  function icsDataHref(ev) {
+    return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(buildIcs(ev));
+  }
+
+  function icsFilename(ev) {
+    return 'evento-' + (ev.fecha || 'sf') + '.ics';
+  }
+
+  function googleCalendarUrl(ev) {
+    var params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: eventoTitulo(ev),
+      dates: stampUTC(eventoInicioUTC(ev)) + '/' + stampUTC(eventoFinUTC(ev)),
+      details: eventoDescripcion(ev)
+    });
+    return 'https://calendar.google.com/calendar/render?' + params.toString();
+  }
+
   function newEvento(o) {
     o = o || {};
     return {
@@ -133,7 +277,7 @@
 
   function seed() {
     return {
-      kicker: 'Repertorio mensual',
+      kicker: 'Calendario mensual',
       nota: '"El Espíritu del Señor está sobre mí, por cuanto me ha ungido para dar buenas nuevas a los pobres; me ha enviado a sanar a los quebrantados de corazón; a pregonar libertad a los cautivos, y vista a los ciegos" - Lucas 4:18',
       eventos: [
         newEvento({ fecha: '2026-08-02', hora: '9:00 am', servicio: 'Servicio matutino',
@@ -258,6 +402,9 @@
     hoyKey: hoyKey, calendario: calendario,
     seed: seed, clone: clone, encode: encode, decode: decode,
     load: load, save: save, reset: reset,
-    loadCloudOnce: loadCloudOnce, watchCloud: watchCloud
+    loadCloudOnce: loadCloudOnce, watchCloud: watchCloud,
+    eventoTitulo: eventoTitulo, eventoDescripcion: eventoDescripcion,
+    icsDataHref: icsDataHref, icsFilename: icsFilename, googleCalendarUrl: googleCalendarUrl,
+    horaMinutos: horaMinutos
   };
 })(window);

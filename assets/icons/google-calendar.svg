@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Google Calendar">
+<defs><clipPath id="gc-r"><rect x="0" y="0" width="48" height="48" rx="6" ry="6"/></clipPath></defs>
+<g clip-path="url(#gc-r)">
+<rect x="0" y="0" width="48" height="48" fill="#fff"/>
+<rect x="0" y="0" width="48" height="12" fill="#4285f4"/>
+<path d="M36 0H48V12Z" fill="#1967d2"/>
+<rect x="0" y="36" width="36" height="12" fill="#34a853"/>
+<path d="M36 48H48V36Z" fill="#ea4335"/>
+<text x="24" y="32" font-family="Arial,Helvetica,sans-serif" font-size="15" font-weight="700" fill="#1967d2" text-anchor="middle">31</text>
+</g>
+</svg>

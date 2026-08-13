@@ -130,6 +130,14 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
                   <span class="sub" style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac-dk)">{{ ev.sub }}</span>
                   <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
+                  <span class="noprint">
+                  <div style="display:flex;gap:6px">
+                    <a href="{{ ev.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar" aria-label="Guardar en Google Calendar" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;text-decoration:none">
+                      <img src="assets/icons/google-calendar.svg" alt="Google Calendar" width="22" height="22" style="display:block">
+                    </a>
+                    <a href="{{ ev.icsHref }}" download="{{ ev.icsFilename }}" title="Agregar al calendario" aria-label="Agregar al calendario" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;font-size:20px;text-decoration:none;line-height:1">📅</a>
+                  </span>
+                </div>
                 </div>
                 <div style="height:2px;background:var(--ink);margin-top:8px"></div>
                 <sc-if value="{{ ev.tieneBanda }}" hint-placeholder-val="{{ true }}">
@@ -283,6 +291,14 @@ class Component extends DCLogic {
     this._t = setTimeout(() => this.setState({ estado: '' }), 2000);
   }
 
+  /* Orden cronológico real por fecha y hora: comparar "hora" como texto
+     pondría "10:00 am" antes de "9:00 am", así que se convierte a minutos. */
+  ordenFechaHora(a, b) {
+    const R = window.RepertorioData;
+    if (a.fecha !== b.fecha) return a.fecha < b.fecha ? -1 : 1;
+    return R.horaMinutos(a.hora) - R.horaMinutos(b.hora);
+  }
+
   /* Una fila por integrante con nombre, con el mismo look de las filas de
      canciones (reutiliza .row/.cn/.cd/.ck) para que la tarjeta luzca
      consistente. Ordenadas según BANDA_ROLES. Los resaltados llevan sombreado
@@ -338,6 +354,9 @@ class Component extends DCLogic {
       tema: ev.tema || 'Por confirmar',
       cita: ev.cita,
       notas: ev.notas,
+      icsHref: R.icsDataHref(ev),
+      icsFilename: R.icsFilename(ev),
+      gcalHref: R.googleCalendarUrl(ev),
       tieneNotas: !!(ev.notas && ev.notas.trim()),
       bandaLista: bandaLista,
       tieneBanda: bandaLista.length > 0,
@@ -415,7 +434,7 @@ class Component extends DCLogic {
     const filtroActivo = !!eventoActivo;
 
     const q = String(s.filtroTexto || '').trim().toLowerCase();
-    const todos = s.data.eventos.slice().sort((a, b) => (a.fecha + ' ' + a.hora).localeCompare(b.fecha + ' ' + b.hora));
+    const todos = s.data.eventos.slice().sort((a, b) => this.ordenFechaHora(a, b));
     const filtroLista = todos.filter((ev) => {
       if (!q) return true;
       const hay = [R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio, ev.tema].join(' ').toLowerCase();
@@ -440,7 +459,7 @@ class Component extends DCLogic {
     } else {
       const delMes = s.data.eventos
         .filter((e) => R.monthKey(e.fecha) === s.mes)
-        .sort((a, b) => (a.fecha + ' ' + a.hora).localeCompare(b.fecha + ' ' + b.hora));
+        .sort((a, b) => this.ordenFechaHora(a, b));
 
       const grupos = {};
       delMes.forEach((ev) => {
@@ -479,7 +498,7 @@ class Component extends DCLogic {
 
     return {
       estado: s.estado,
-      kicker: filtroActivo ? 'Filtrado por fecha' : (s.data.kicker || 'Calendario de Eventos'),
+      kicker: filtroActivo ? 'Filtrado por fecha' : 'Calendario Mensual',
       mesLabel: filtroActivo ? 'Resultado del filtro' : R.monthLabel(s.mes),
       nota: s.data.nota || '',
       meses: meses,

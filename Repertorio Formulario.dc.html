@@ -411,6 +411,14 @@ class Component extends DCLogic {
     this._t = setTimeout(() => this.setState({ estado: '' }), 1800);
   }
 
+  /* Orden cronológico real por fecha y hora: comparar "hora" como texto
+     pondría "10:00 am" antes de "9:00 am", así que se convierte a minutos. */
+  ordenFechaHora(a, b) {
+    const R = D();
+    if (a.fecha !== b.fecha) return a.fecha < b.fecha ? -1 : 1;
+    return R.horaMinutos(a.hora) - R.horaMinutos(b.hora);
+  }
+
   setDraft(fn) {
     this.setState((s) => {
       const dr = JSON.parse(JSON.stringify(s.draft));
@@ -431,7 +439,7 @@ class Component extends DCLogic {
     const data = JSON.parse(JSON.stringify(this.state.data));
     const i = data.eventos.findIndex((e) => e.id === dr.id);
     if (i >= 0) data.eventos[i] = dr; else data.eventos.push(dr);
-    data.eventos.sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+    data.eventos.sort((a, b) => this.ordenFechaHora(a, b));
     this.setState({ draft: null, editId: null, paso: 1 });
     this.persist(data, 'Participación guardada');
   }
@@ -462,7 +470,7 @@ class Component extends DCLogic {
     const pasos = pasosDef.map((p, i) => ({ label: (i + 1) + '. ' + p.texto, style: pasoStyle(p.n) }));
 
     // ---- calendario
-    const delDia = (iso) => s.data.eventos.filter((e) => e.fecha === iso);
+    const delDia = (iso) => s.data.eventos.filter((e) => e.fecha === iso).sort((a, b) => this.ordenFechaHora(a, b));
     const filas = R.calendario(year, month - 1).map((fila, fi) => ({
       celdas: fila.map((c, ci) => {
         if (!c) return { dia: '', marca: '', marcaStyle: 'display:none', style: 'border:0;background:var(--bg);min-height:64px;cursor:default', onClick: () => {} };
