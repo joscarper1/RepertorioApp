@@ -22,7 +22,81 @@
 
   function usaRepertorio(servicio) { return SERVICIOS_CON_REPERTORIO.indexOf(servicio) >= 0; }
 
-  function song(t, d, k, u) { return { t: t || '', d: d || '', k: k || '', u: u || '' }; }
+  function song(t, d, k, u, sm) { return { t: t || '', d: d || '', k: k || '', u: u || '', sm: sm || '' }; }
+
+  /* Etiqueta con la que se muestra una canción donde sea que aparezca su
+     nombre: si tiene salmista (artista/versión de origen), se concatena
+     entre paréntesis para distinguir covers del mismo título. */
+  function songLabel(c) {
+    var t = ((c && c.t) || '').trim();
+    var sm = ((c && c.sm) || '').trim();
+    return sm ? (t + ' (' + sm + ')') : t;
+  }
+
+  /* Extrae el ID de video de un link de YouTube en cualquiera de sus formas
+     usuales (youtu.be, watch?v=, embed/, shorts/), ignorando parámetros extra
+     como &t= o &list=. Devuelve '' si el link no es de YouTube o no trae ID. */
+  function youtubeId(url) {
+    var m = /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/))([A-Za-z0-9_-]{6,})/i.exec(String(url || ''));
+    return m ? m[1] : '';
+  }
+
+  /* Controlador de un único reproductor de YouTube oculto, compartido por
+     todas las filas de canciones de una página (evita crear un iframe por
+     fila). onChange(key|null) se llama con la llave de la fila que quedó
+     sonando, o null cuando se detiene/termina, para que el componente sólo
+     tenga que reflejar ese valor en su estado. */
+  function youtubeController(elementId, onChange) {
+    var player = null, ready = false, pending = null, current = null;
+
+    function start() {
+      if (player || !w.YT || !w.YT.Player) return;
+      player = new w.YT.Player(elementId, {
+        height: '0', width: '0',
+        playerVars: { controls: 0, disablekb: 1, playsinline: 1 },
+        events: {
+          onReady: function () {
+            ready = true;
+            if (pending) { var p = pending; pending = null; toggle(p.key, p.videoId); }
+          },
+          onStateChange: function (e) {
+            if (e.data === w.YT.PlayerState.ENDED) { current = null; if (onChange) onChange(null); }
+          }
+        }
+      });
+    }
+
+    if (w.YT && w.YT.Player) start();
+    else {
+      var prevReady = w.onYouTubeIframeAPIReady;
+      w.onYouTubeIframeAPIReady = function () { if (prevReady) prevReady(); start(); };
+      if (!document.getElementById('yt-iframe-api')) {
+        var tag = document.createElement('script');
+        tag.id = 'yt-iframe-api';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(tag);
+      }
+    }
+
+    function toggle(key, videoId) {
+      if (!videoId) return;
+      if (!ready) { pending = { key: key, videoId: videoId }; return; }
+      if (current === key) {
+        player.stopVideo();
+        current = null;
+        if (onChange) onChange(null);
+      } else {
+        player.loadVideoById(videoId);
+        player.playVideo();
+        current = key;
+        if (onChange) onChange(key);
+      }
+    }
+
+    function destroy() { if (player && player.destroy) player.destroy(); }
+
+    return { toggle: toggle, destroy: destroy };
+  }
 
   function defaultBlocks() {
     return [
@@ -394,7 +468,7 @@
   w.RepertorioData = {
     KEY: KEY, MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
-    song: song, defaultBlocks: defaultBlocks, newEvento: newEvento, uid: uid,
+    song: song, songLabel: songLabel, youtubeId: youtubeId, youtubeController: youtubeController, defaultBlocks: defaultBlocks, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,

@@ -45,7 +45,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   .nota{font-size:13px !important;margin-top:2px !important;line-height:1.3 !important}
   .blabel{font-size:11px !important}
   .rows{margin-top:3px !important;gap:1px !important}
-  .row{padding:3px 8px !important;line-height:1.15 !important}
+  .row{padding:3px 8px !important;line-height:1.15 !important;grid-template-columns:1fr auto 20px !important}
   .cn{font-size:16px !important}
   .cd{font-size:13px !important;margin-top:0 !important}
   .ck{font-size:13px !important;padding:1px 4px !important}
@@ -113,9 +113,10 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   <sc-for list="{{ semanas }}" as="sem" hint-placeholder-count="2">
     <section style="padding-top:40px">
       <div onClick="{{ sem.toggle }}" style="display:flex;align-items:center;gap:16px;background:var(--ink);color:var(--bg);padding:12px 16px;cursor:pointer">
-        <span style="font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px">{{ sem.titulo }}</span>
-        <span style="font-size:14px;font-weight:600;letter-spacing:.06em;color:#d7d3d3">{{ sem.rango }}</span>
+        <span style="{{ sem.tituloStyle }}">{{ sem.titulo }}</span>
+        <span style="{{ sem.rangoStyle }}">{{ sem.rango }}</span>
         <span style="flex:1"></span>
+        <span style="{{ sem.estadoStyle }}">{{ sem.estadoLabel }}</span>
         <span class="noprint" style="color:#fff;font-size:14px;line-height:1">{{ sem.icono }}</span>
       </div>
       <div class="grid" style="display:{{ sem.gridDisplay }};grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px;background:var(--sf);border:2px solid var(--ink);border-top:0">
@@ -135,7 +136,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                     <a href="{{ ev.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar" aria-label="Guardar en Google Calendar" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;text-decoration:none">
                       <img src="assets/icons/google-calendar.svg" alt="Google Calendar" width="22" height="22" style="display:block">
                     </a>
-                    <a href="{{ ev.icsHref }}" download="{{ ev.icsFilename }}" title="Agregar al calendario" aria-label="Agregar al calendario" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;font-size:20px;text-decoration:none;line-height:1">📅</a>
+                    <!--a href="{{ ev.icsHref }}" download="{{ ev.icsFilename }}" title="Agregar al calendario" aria-label="Agregar al calendario" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;font-size:20px;text-decoration:none;line-height:1">📅</a-->
                   </span>
                 </div>
                 </div>
@@ -179,7 +180,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                       </div>
                       <div class="rows" style="display:flex;flex-direction:column;gap:2px;margin-top:8px">
                         <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
-                          <div class="row" style="display:grid;grid-template-columns:1fr auto 20px;gap:8px;align-items:baseline;background:#fff;padding:8px 12px;position:relative">
+                          <div class="row" style="display:grid;grid-template-columns:1fr auto 22px 20px;gap:8px;align-items:center;background:#fff;padding:8px 12px;position:relative">
                             <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
                               <a class="rowlink" href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
                             </sc-if>
@@ -188,6 +189,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                               <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
                             </div>
                             <span class="ck" style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
+                            <button class="noprint" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
                             <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
                               <a href="{{ cn.u }}" target="_blank" rel="noopener" style="font-size:12px;font-weight:800;border-bottom:none;justify-self:end">↗</a>
                             </sc-if>
@@ -253,9 +255,10 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 </div>
 
 </x-dc>
+<div id="yt-audio-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
 <script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
-  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false };
+  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false, reproduciendoKey: null };
 
   componentDidMount() {
     const R = window.RepertorioData;
@@ -285,11 +288,20 @@ class Component extends DCLogic {
     read();
     if (!porHash()) this._subscribe();
     window.addEventListener('hashchange', this._onHash);
+    /* Un solo reproductor de YouTube oculto y compartido por toda la página
+       (vive fuera del árbol de React, ver #yt-audio-player en el HTML) para
+       que cada botón de canción sólo tenga que decirle qué video cargar. */
+    this._yt = R.youtubeController('yt-audio-player', (key) => this.setState({ reproduciendoKey: key }));
   }
 
   componentWillUnmount() {
     window.removeEventListener('hashchange', this._onHash);
     if (this._unwatch) this._unwatch();
+    if (this._yt) this._yt.destroy();
+  }
+
+  togglePlay(key, videoId) {
+    if (this._yt) this._yt.toggle(key, videoId);
   }
 
   flash(msg) {
@@ -384,12 +396,29 @@ class Component extends DCLogic {
       personas: ev.personas,
       tienePersonas: !!(ev.personas && ev.personas.trim()),
       bloques: ev.bloques
-        .map((bl) => ({
+        .map((bl, blIdx) => ({
           titulo: bl.titulo,
-          canciones: bl.canciones.filter((c) => c.t && c.t.trim()).map((c) => ({
-            t: c.t, d: c.d ? 'dirige ' + c.d : '', k: c.k || '—', u: c.u || '#',
-            tieneUrl: !!(c.u && c.u.trim())
-          }))
+          canciones: bl.canciones.filter((c) => c.t && c.t.trim()).map((c, i) => {
+            const videoId = R.youtubeId(c.u);
+            const key = ev.id + '|' + blIdx + '|' + i;
+            const activa = this.state.reproduciendoKey === key;
+            return {
+              t: R.songLabel(c), d: c.d ? 'dirige ' + c.d : '', k: c.k || '—', u: c.u || '#',
+              tieneUrl: !!(c.u && c.u.trim()),
+              playIcon: activa ? '■' : '▶',
+              playLabel: activa ? 'Detener audio' : 'Reproducir audio',
+              /* El botón siempre se renderiza (nunca sc-if) para no romper las
+                 columnas del grid; cuando no hay video se oculta con
+                 visibility:hidden en vez de display:none, así conserva su
+                 espacio y el resto de la fila no se desalinea. */
+              playBtnStyle: 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
+                'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+                (activa ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
+                        : 'border:1.5px solid var(--ac);background:#fff;color:var(--ac)') +
+                (videoId ? '' : ';visibility:hidden;pointer-events:none'),
+              onPlay: () => this.togglePlay(key, videoId)
+            };
+          })
         }))
         .filter((bl) => bl.canciones.length)
     };
@@ -447,7 +476,11 @@ class Component extends DCLogic {
     const filtroActivo = !!eventoActivo;
 
     const q = String(s.filtroTexto || '').trim().toLowerCase();
-    const todos = s.data.eventos.slice().sort((a, b) => this.ordenFechaHora(a, b));
+    /* Acotado al mes que se está viendo (no a todo el historial): filtrar es
+       para ubicar un evento dentro del mes actual, no buscar en toda la base. */
+    const todos = s.data.eventos
+      .filter((ev) => R.monthKey(ev.fecha) === s.mes)
+      .sort((a, b) => this.ordenFechaHora(a, b));
     const filtroLista = todos.filter((ev) => {
       if (!q) return true;
       const hay = [R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio, ev.tema].join(' ').toLowerCase();
@@ -466,6 +499,10 @@ class Component extends DCLogic {
       semanas = [{
         titulo: 'Resultado del filtro',
         rango: R.diaNombre(eventoActivo.fecha) + ' ' + R.fechaLarga(eventoActivo.fecha),
+        tituloStyle: 'font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px',
+        rangoStyle: 'font-size:14px;font-weight:600;letter-spacing:.06em;color:#d7d3d3',
+        estadoLabel: '',
+        estadoStyle: 'display:none',
         dias: this.agruparDias([eventoActivo]),
         expandido: true, gridDisplay: 'grid', icono: '', toggle: () => {}
       }];
@@ -490,13 +527,32 @@ class Component extends DCLogic {
       semanas = Object.keys(grupos).sort((a, b) => a - b).map((w) => {
         const evs = grupos[w];
         const key = s.mes + '-S' + w;
-        /* Por defecto, una semana ya transcurrida (todas sus fechas anteriores
-           a hoy) aparece colapsada; el usuario puede alternarla igualmente. */
-        const yaPaso = evs.every((ev) => ev.fecha < hoyISO);
+        const fechas = evs.map((ev) => ev.fecha);
+        const primeraFecha = fechas.reduce((a, b) => (a < b ? a : b));
+        const ultimaFecha = fechas.reduce((a, b) => (a > b ? a : b));
+        /* El estado depende de los eventos agendados en la semana, no del
+           rango completo domingo—sábado: si el único evento de la semana ya
+           pasó, la semana está Finalizada aunque hoy aún caiga dentro de esos
+           mismos siete días calendario. */
+        const yaPaso = ultimaFecha < hoyISO;
+        const esFutura = primeraFecha > hoyISO;
+        const badge = yaPaso
+          ? { label: 'Finalizada', bg: 'var(--ac)', color: '#fff' }
+          : esFutura
+            ? { label: 'Próximamente', bg: '#c7cad0', color: '#3a3f47' }
+            : { label: 'En curso', bg: 'var(--gold)', color: '#fff' };
         const colapsada = Object.prototype.hasOwnProperty.call(s.colapsadas, key) ? s.colapsadas[key] : yaPaso;
         return {
           titulo: 'Semana ' + w,
           rango: rango(evs),
+          /* Tachado solo cuando la semana ya finalizó, para señalar de un
+             vistazo que ya pasó sin tener que abrirla. */
+          tituloStyle: 'font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px' +
+            (yaPaso ? ';text-decoration:line-through' : ''),
+          rangoStyle: 'font-size:14px;font-weight:600;letter-spacing:.06em;color:#d7d3d3' +
+            (yaPaso ? ';text-decoration:line-through' : ''),
+          estadoLabel: badge.label,
+          estadoStyle: 'font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;white-space:nowrap;background:' + badge.bg + ';color:' + badge.color,
           dias: this.agruparDias(evs),
           expandido: !colapsada,
           gridDisplay: colapsada ? 'none' : 'grid',

@@ -161,7 +161,16 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                 <div style="display:flex;flex-direction:column;gap:8px;background:#fff;outline:2px solid #eae9e9;padding:10px">
                   <div style="display:grid;grid-template-columns:170px 1fr auto 20px;gap:8px;align-items:center">
                     <span style="font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--ac-dk);background:var(--ac-lt);padding:6px 8px;text-align:center">{{ sl.label }}</span>
-                    <input value="{{ sl.nombre }}" onChange="{{ sl.onNombre }}" placeholder="Nombre" style="font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
+                    <div style="position:relative">
+                      <input value="{{ sl.nombre }}" onChange="{{ sl.onNombre }}" onFocus="{{ sl.onFocusNombre }}" onBlur="{{ sl.onBlurNombre }}" placeholder="Nombre" autoComplete="off" style="width:100%;font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
+                      <sc-if value="{{ sl.nombreAbierto }}" hint-placeholder-val="{{ true }}">
+                        <div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--ink);z-index:20;max-height:180px;overflow-y:auto;box-shadow:0 8px 16px rgba(0,0,0,.14)">
+                          <sc-for list="{{ sl.sugerenciasNombre }}" as="sug" hint-placeholder-count="3">
+                            <button type="button" onMouseDown="{{ sug.onPick }}" style="display:block;width:100%;text-align:left;font-size:13px;padding:8px 10px;border:0;border-bottom:1px solid #eae9e9;background:#fff;cursor:pointer">{{ sug.nombre }}</button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
                     <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#6b6866;cursor:pointer;white-space:nowrap">
                       <input type="checkbox" checked="{{ sl.resaltado }}" onChange="{{ sl.onResaltado }}" style="width:16px;height:16px;cursor:pointer">
                       Resaltado
@@ -201,12 +210,45 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
               <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
-                <div style="display:grid;grid-template-columns:1fr 120px 64px 20px;gap:8px;background:#fff;outline:2px solid #eae9e9;padding:10px;align-items:center">
-                  <input value="{{ cn.t }}" onChange="{{ cn.onT }}" placeholder="Nombre de la canción" style="font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
-                  <input value="{{ cn.d }}" onChange="{{ cn.onD }}" placeholder="dirige" style="font-size:13px;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
-                  <input value="{{ cn.k }}" onChange="{{ cn.onK }}" placeholder="Tono" style="font-size:13px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);border:0;padding:5px;text-align:center">
-                  <button onClick="{{ cn.remove }}" title="Quitar" style="font-size:13px;border:0;background:transparent;color:#bab6b6;cursor:pointer;padding:0">−</button>
-                  <input value="{{ cn.u }}" onChange="{{ cn.onU }}" placeholder="https://… enlace de la pista" style="grid-column:span 4;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#7d7979;border:0;border-bottom:1px solid #eae9e9;background:transparent;padding:5px 2px">
+                <div style="display:flex;flex-direction:column;gap:8px;background:#fff;outline:2px solid #eae9e9;padding:10px">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    <div style="position:relative">
+                      <input value="{{ cn.t }}" onChange="{{ cn.onT }}" onFocus="{{ cn.onFocusT }}" onBlur="{{ cn.onBlurT }}" placeholder="Nombre de la canción" autoComplete="off" style="width:100%;font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
+                      <sc-if value="{{ cn.autocompleteAbierto }}" hint-placeholder-val="{{ true }}">
+                        <div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--ink);z-index:20;max-height:180px;overflow-y:auto;box-shadow:0 8px 16px rgba(0,0,0,.14)">
+                          <sc-for list="{{ cn.sugerencias }}" as="sug" hint-placeholder-count="3">
+                            <button type="button" onMouseDown="{{ sug.onPick }}" style="display:block;width:100%;text-align:left;font-size:13px;padding:8px 10px;border:0;border-bottom:1px solid #eae9e9;background:#fff;cursor:pointer">{{ sug.nombre }}</button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                    <div style="position:relative">
+                      <input value="{{ cn.sm }}" onChange="{{ cn.onSm }}" onFocus="{{ cn.onFocusSm }}" onBlur="{{ cn.onBlurSm }}" placeholder="Salmista / artista original" autoComplete="off" style="width:100%;font-size:15px;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
+                      <sc-if value="{{ cn.salmistaAbierto }}" hint-placeholder-val="{{ true }}">
+                        <div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--ink);z-index:20;max-height:180px;overflow-y:auto;box-shadow:0 8px 16px rgba(0,0,0,.14)">
+                          <sc-for list="{{ cn.sugerenciasSm }}" as="sug" hint-placeholder-count="3">
+                            <button type="button" onMouseDown="{{ sug.onPick }}" style="display:block;width:100%;text-align:left;font-size:13px;padding:8px 10px;border:0;border-bottom:1px solid #eae9e9;background:#fff;cursor:pointer">{{ sug.nombre }}</button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 64px 22px 20px;gap:8px;align-items:center">
+                    <input value="{{ cn.u }}" onChange="{{ cn.onU }}" onBlur="{{ cn.onBlurU }}" placeholder="https://… enlace de la pista" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#7d7979;border:0;border-bottom:1px solid #eae9e9;background:transparent;padding:5px 2px">
+                    <input value="{{ cn.k }}" onChange="{{ cn.onK }}" placeholder="Tono" style="font-size:13px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);border:0;padding:5px;text-align:center">
+                    <button onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
+                    <button onClick="{{ cn.remove }}" title="Quitar" style="font-size:13px;border:0;background:transparent;color:#bab6b6;cursor:pointer;padding:0">−</button>
+                  </div>
+                  <div style="position:relative">
+                    <input value="{{ cn.d }}" onChange="{{ cn.onD }}" onFocus="{{ cn.onFocusD }}" onBlur="{{ cn.onBlurD }}" placeholder="Nombre de quien dirige" autoComplete="off" style="width:100%;font-size:13px;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
+                    <sc-if value="{{ cn.dirigeAbierto }}" hint-placeholder-val="{{ true }}">
+                      <div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--ink);z-index:20;max-height:180px;overflow-y:auto;box-shadow:0 8px 16px rgba(0,0,0,.14)">
+                        <sc-for list="{{ cn.sugerenciasD }}" as="sug" hint-placeholder-count="3">
+                          <button type="button" onMouseDown="{{ sug.onPick }}" style="display:block;width:100%;text-align:left;font-size:13px;padding:8px 10px;border:0;border-bottom:1px solid #eae9e9;background:#fff;cursor:pointer">{{ sug.nombre }}</button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
                 </div>
               </sc-for>
             </div>
@@ -293,6 +335,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 </div>
 
 </x-dc>
+<div id="yt-audio-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
 </div>
 <script>
 (() => {
@@ -387,7 +430,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 const D = () => window.RepertorioData;
 
 class Component extends DCLogic {
-  state = { data: null, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '' };
+  state = { data: null, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '', autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {}, reproduciendoKey: null };
 
   componentDidMount() {
     const R = D();
@@ -398,10 +441,16 @@ class Component extends DCLogic {
     this._unwatch = R.watchCloud((d) => {
       this.setState((s) => (s.draft ? null : { data: d }));
     });
+    this._yt = R.youtubeController('yt-audio-player', (key) => this.setState({ reproduciendoKey: key }));
   }
 
   componentWillUnmount() {
     if (this._unwatch) this._unwatch();
+    if (this._yt) this._yt.destroy();
+  }
+
+  togglePlay(key, videoId) {
+    if (this._yt) this._yt.toggle(key, videoId);
   }
 
   persist(data, msg) {
@@ -425,6 +474,49 @@ class Component extends DCLogic {
       fn(dr);
       return { draft: dr };
     });
+  }
+
+  /* Detecta "mismo nombre base + mismo salmista, pero un link distinto al que
+     ya existe" en toda la base de datos: la señal de que esto es en realidad
+     una versión/cover distinta. Cuando eso pasa, sugiere un correlativo
+     agregándolo al nombre (editable de inmediato, el usuario decide si lo
+     deja); si no hay conflicto, no toca nada. */
+  sugerirVersion(bi, ci) {
+    const s = this.state;
+    const dr = s.draft;
+    if (!dr) return;
+    const cn = dr.bloques[bi].canciones[ci];
+    const t = (cn.t || '').trim();
+    const sm = (cn.sm || '').trim();
+    const u = (cn.u || '').trim();
+    if (!t || !u) return;
+
+    const base = t.replace(/\s+v(\d+)$/i, '').trim();
+    const smClave = sm.toLowerCase();
+
+    const variantes = [];
+    (s.data.eventos || []).forEach((ev) => (ev.bloques || []).forEach((bl) => (bl.canciones || []).forEach((c) => {
+      const ct = (c.t || '').trim();
+      if (!ct) return;
+      const cBase = ct.replace(/\s+v(\d+)$/i, '').trim();
+      const cSm = (c.sm || '').trim();
+      if (cBase.toLowerCase() === base.toLowerCase() && cSm.toLowerCase() === smClave) {
+        variantes.push({ t: ct, u: (c.u || '').trim() });
+      }
+    })));
+
+    // Si este link ya es una de las variantes conocidas, no hay nada nuevo.
+    if (variantes.some((v) => v.u && v.u === u)) return;
+    // Sin otra variante con link distinto, no hay conflicto que resolver.
+    if (!variantes.some((v) => v.u && v.u !== u)) return;
+
+    let maxV = 1;
+    variantes.forEach((v) => {
+      const m = /\sv(\d+)$/i.exec(v.t);
+      maxV = Math.max(maxV, m ? parseInt(m[1], 10) : 1);
+    });
+    const nuevoNombre = base + ' v' + (maxV + 1);
+    this.setDraft((x) => { x.bloques[bi].canciones[ci].t = nuevoNombre; });
   }
 
   shiftMonth(delta) {
@@ -510,6 +602,26 @@ class Component extends DCLogic {
     // dr.banda puede faltar en registros guardados antes de esta función.
     const drBanda = dr ? (dr.banda || []) : [];
 
+    /* Catálogo de integrantes ya registrados, agrupado por tipo de rol (para
+       no sugerir un nombre de "Batería" en el campo de "Piano"). No es una
+       llave de nada (a diferencia de salmista): solo evita re-escribir el
+       mismo nombre cada vez. */
+    const catalogoBanda = (() => {
+      const porTipo = {};
+      (s.data.eventos || []).forEach((ev) => (ev.banda || []).forEach((b) => {
+        const nombre = (b.nombre || '').trim();
+        if (!nombre) return;
+        if (!porTipo[b.tipo]) porTipo[b.tipo] = new Map();
+        const mapa = porTipo[b.tipo];
+        if (!mapa.has(nombre.toLowerCase())) mapa.set(nombre.toLowerCase(), nombre);
+      }));
+      const result = {};
+      Object.keys(porTipo).forEach((tipo) => {
+        result[tipo] = Array.from(porTipo[tipo].values()).sort((a, b) => a.localeCompare(b, 'es'));
+      });
+      return result;
+    })();
+
     const bandaGrupos = dr ? R.BANDA_ROLES.map((r) => ({
       tipo: r.tipo,
       addSlot: () => this.setDraft((x) => {
@@ -517,7 +629,14 @@ class Component extends DCLogic {
         const num = R.bandaSiguienteNumero(x.banda, r.tipo);
         x.banda.push(R.bandaSlot(r.tipo, num));
       }),
-      slots: drBanda.filter((b) => b.tipo === r.tipo).map((b) => ({
+      slots: drBanda.filter((b) => b.tipo === r.tipo).map((b) => {
+        const abrirNombre = (abierto) => this.setState((st) => ({ bandaNombreAbierto: Object.assign({}, st.bandaNombreAbierto, { [b.id]: abierto }) }));
+        const catalogoTipo = catalogoBanda[r.tipo] || [];
+        const query = (b.nombre || '').trim().toLowerCase();
+        const coincidencias = query
+          ? catalogoTipo.filter((nm) => nm.toLowerCase().indexOf(query) >= 0).slice(0, 6)
+          : [];
+        return {
         id: b.id,
         label: R.bandaLabel(b),
         nombre: b.nombre,
@@ -529,7 +648,21 @@ class Component extends DCLogic {
             const idx = (x.banda || []).findIndex((sl) => sl.id === b.id);
             if (idx >= 0) x.banda[idx].nombre = v;
           });
+          abrirNombre(true);
         },
+        onFocusNombre: () => abrirNombre(true),
+        onBlurNombre: () => abrirNombre(false),
+        nombreAbierto: !!s.bandaNombreAbierto[b.id] && coincidencias.length > 0,
+        sugerenciasNombre: coincidencias.map((nm) => ({
+          nombre: nm,
+          onPick: () => {
+            this.setDraft((x) => {
+              const idx = (x.banda || []).findIndex((sl) => sl.id === b.id);
+              if (idx >= 0) x.banda[idx].nombre = nm;
+            });
+            abrirNombre(false);
+          }
+        })),
         onResaltado: (e) => {
           const v = e.target.checked;
           this.setDraft((x) => {
@@ -551,7 +684,8 @@ class Component extends DCLogic {
           if (mismos.length > 1) x.banda.splice(idx, 1);
           else { x.banda[idx].nombre = ''; x.banda[idx].resaltado = false; x.banda[idx].tarea = ''; }
         })
-      }))
+        };
+      })
     })) : [];
 
     const resumenBanda = dr ? R.BANDA_ROLES.map((r) => {
@@ -559,15 +693,135 @@ class Component extends DCLogic {
       return nombres.length ? { tipo: r.tipo, nombres: nombres.join(', ') } : null;
     }).filter(Boolean) : [];
 
+    /* Catálogo de canciones ya alimentadas en toda la base (no sólo el
+       borrador actual), deduplicado por nombre + salmista: dos versiones del
+       mismo título pero de distinto salmista son entradas distintas (cada
+       una con su propio link), mientras que el tono queda fuera a propósito
+       — es un dato de cada participación, no una llave de la canción. */
+    const catalogo = (() => {
+      const porClave = new Map();
+      (s.data.eventos || []).forEach((ev) => {
+        (ev.bloques || []).forEach((bl) => {
+          (bl.canciones || []).forEach((c) => {
+            const nombre = (c.t || '').trim();
+            if (!nombre) return;
+            const salmista = (c.sm || '').trim();
+            const clave = nombre.toLowerCase() + '|' + salmista.toLowerCase();
+            const actual = porClave.get(clave);
+            if (!actual || (!actual.u && c.u)) porClave.set(clave, { nombre: nombre, salmista: salmista, u: c.u || '' });
+          });
+        });
+      });
+      return Array.from(porClave.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    })();
+
+    /* Catálogo de salmistas: también es una llave (identifica versiones), así
+       que necesita su propio autocomplete para no fragmentarse en variantes
+       de mayúsculas/espacios ("Miel San Marcos" vs "miel san marcos"). */
+    const catalogoSalmistas = (() => {
+      const porClave = new Map();
+      (s.data.eventos || []).forEach((ev) => (ev.bloques || []).forEach((bl) => (bl.canciones || []).forEach((c) => {
+        const sm = (c.sm || '').trim();
+        if (!sm || porClave.has(sm.toLowerCase())) return;
+        porClave.set(sm.toLowerCase(), sm);
+      })));
+      return Array.from(porClave.values()).sort((a, b) => a.localeCompare(b, 'es'));
+    })();
+
+    /* Catálogo de quienes dirigen: no es una llave de la canción (no entra en
+       el correlativo de versiones), solo se reutiliza para no re-escribir el
+       mismo nombre una y otra vez. */
+    const catalogoDirige = (() => {
+      const porClave = new Map();
+      (s.data.eventos || []).forEach((ev) => (ev.bloques || []).forEach((bl) => (bl.canciones || []).forEach((c) => {
+        const d = (c.d || '').trim();
+        if (!d || porClave.has(d.toLowerCase())) return;
+        porClave.set(d.toLowerCase(), d);
+      })));
+      return Array.from(porClave.values()).sort((a, b) => a.localeCompare(b, 'es'));
+    })();
+
     const bloques = dr ? dr.bloques.map((bl, bi) => ({
       titulo: bl.titulo,
       onTitulo: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].titulo = v; }); },
       addCancion: () => this.setDraft((x) => { x.bloques[bi].canciones.push(R.song()); }),
       canciones: bl.canciones.map((cn, ci) => {
         const g = (campo) => (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].canciones[ci][campo] = v; }); };
+        const rowKey = bi + '-' + ci;
+        const abrirFila = (abierto) => this.setState((st) => ({ autocompleteAbierto: Object.assign({}, st.autocompleteAbierto, { [rowKey]: abierto }) }));
+        const abrirSalmista = (abierto) => this.setState((st) => ({ salmistaAbierto: Object.assign({}, st.salmistaAbierto, { [rowKey]: abierto }) }));
+        const abrirDirige = (abierto) => this.setState((st) => ({ dirigeAbierto: Object.assign({}, st.dirigeAbierto, { [rowKey]: abierto }) }));
+        const query = (cn.t || '').trim().toLowerCase();
+        const coincidencias = query
+          ? catalogo.filter((so) => so.nombre.toLowerCase().indexOf(query) >= 0).slice(0, 6)
+          : [];
+        const querySm = (cn.sm || '').trim().toLowerCase();
+        const coincidenciasSm = querySm
+          ? catalogoSalmistas.filter((nm) => nm.toLowerCase().indexOf(querySm) >= 0).slice(0, 6)
+          : [];
+        const queryD = (cn.d || '').trim().toLowerCase();
+        const coincidenciasD = queryD
+          ? catalogoDirige.filter((nm) => nm.toLowerCase().indexOf(queryD) >= 0).slice(0, 6)
+          : [];
+        /* Se habilita solo con un link de YouTube reconocible en `u`, sin
+           importar si llegó ahí por autocomplete o escrito/pegado a mano. */
+        const videoId = R.youtubeId(cn.u);
+        const activa = s.reproduciendoKey === rowKey;
         return {
-          t: cn.t, d: cn.d, k: cn.k, u: cn.u,
-          onT: g('t'), onD: g('d'), onK: g('k'), onU: g('u'),
+          t: cn.t, d: cn.d, k: cn.k, u: cn.u, sm: cn.sm,
+          onT: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].canciones[ci].t = v; }); abrirFila(true); },
+          onD: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].canciones[ci].d = v; }); abrirDirige(true); },
+          onK: g('k'),
+          onU: g('u'),
+          onBlurU: () => this.sugerirVersion(bi, ci),
+          onSm: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].canciones[ci].sm = v; }); abrirSalmista(true); },
+          onFocusT: () => abrirFila(true),
+          onBlurT: () => { abrirFila(false); this.sugerirVersion(bi, ci); },
+          onFocusSm: () => abrirSalmista(true),
+          onBlurSm: () => { abrirSalmista(false); this.sugerirVersion(bi, ci); },
+          onFocusD: () => abrirDirige(true),
+          onBlurD: () => abrirDirige(false),
+          dirigeAbierto: !!s.dirigeAbierto[rowKey] && coincidenciasD.length > 0,
+          sugerenciasD: coincidenciasD.map((nm) => ({
+            nombre: nm,
+            onPick: () => {
+              this.setDraft((x) => { x.bloques[bi].canciones[ci].d = nm; });
+              abrirDirige(false);
+            }
+          })),
+          autocompleteAbierto: !!s.autocompleteAbierto[rowKey] && coincidencias.length > 0,
+          sugerencias: coincidencias.map((so) => ({
+            nombre: so.salmista ? (so.nombre + ' — ' + so.salmista) : so.nombre,
+            /* onMouseDown (no onClick) para que el pick se aplique antes de
+               que el blur del input cierre el desplegable. */
+            onPick: () => {
+              this.setDraft((x) => {
+                x.bloques[bi].canciones[ci].t = so.nombre;
+                x.bloques[bi].canciones[ci].sm = so.salmista;
+                x.bloques[bi].canciones[ci].u = so.u;
+              });
+              abrirFila(false);
+            }
+          })),
+          salmistaAbierto: !!s.salmistaAbierto[rowKey] && coincidenciasSm.length > 0,
+          sugerenciasSm: coincidenciasSm.map((nm) => ({
+            nombre: nm,
+            onPick: () => {
+              this.setDraft((x) => { x.bloques[bi].canciones[ci].sm = nm; });
+              abrirSalmista(false);
+            }
+          })),
+          playIcon: activa ? '■' : '▶',
+          playLabel: activa ? 'Detener audio' : 'Reproducir audio',
+          /* El botón siempre se renderiza (nunca sc-if) para no romper las
+             columnas del grid; sin video válido se oculta con
+             visibility:hidden en vez de display:none. */
+          playBtnStyle: 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
+            'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+            (activa ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
+                    : 'border:1.5px solid var(--ac);background:#fff;color:var(--ac)') +
+            (videoId ? '' : ';visibility:hidden;pointer-events:none'),
+          onPlay: () => this.togglePlay(rowKey, videoId),
           remove: () => this.setDraft((x) => {
             const arr = x.bloques[bi].canciones;
             if (arr.length > 1) arr.splice(ci, 1); else arr[ci] = R.song();
@@ -578,7 +832,7 @@ class Component extends DCLogic {
 
     const resumen = [];
     if (dr) dr.bloques.forEach((bl) => bl.canciones.forEach((c) => {
-      if (c.t && c.t.trim()) resumen.push({ bloque: bl.titulo, titulo: c.t + (c.d ? ' · ' + c.d : ''), tono: c.k || '—' });
+      if (c.t && c.t.trim()) resumen.push({ bloque: bl.titulo, titulo: R.songLabel(c) + (c.d ? ' · ' + c.d : ''), tono: c.k || '—' });
     }));
 
     const validar = () => {
