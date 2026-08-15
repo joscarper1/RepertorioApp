@@ -255,7 +255,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 <div id="yt-audio-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
 <script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
-  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false, reproduciendoKey: null };
+  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false };
 
   componentDidMount() {
     const R = window.RepertorioData;
@@ -288,7 +288,7 @@ class Component extends DCLogic {
     /* Un solo reproductor de YouTube oculto y compartido por toda la página
        (vive fuera del árbol de React, ver #yt-audio-player en el HTML) para
        que cada botón de canción sólo tenga que decirle qué video cargar. */
-    this._yt = R.youtubeController('yt-audio-player', (key) => this.setState({ reproduciendoKey: key }));
+    this._yt = R.youtubeController('yt-audio-player', (key, paused) => this.setState({ reproduciendoKey: key, reproduciendoPausado: paused }));
   }
 
   componentWillUnmount() {
@@ -399,13 +399,14 @@ class Component extends DCLogic {
             const videoId = R.youtubeId(c.u);
             const key = ev.id + '|' + blIdx + '|' + i;
             const activa = this.state.reproduciendoKey === key;
+            const enPausa = activa && this.state.reproduciendoPausado;
             return {
               t: R.songLabel(c), d: c.d ? 'dirige ' + c.d : '', k: c.k || '—', u: c.u || '#',
               tieneUrl: !!(c.u && c.u.trim()),
               rowTitle: c.u && c.u.trim() ? 'Doble click para abrir el enlace' : '',
               onOpen: () => { if (c.u && c.u.trim()) window.open(c.u, '_blank', 'noopener'); },
-              playIcon: activa ? '■' : '▶',
-              playLabel: activa ? 'Detener audio' : 'Reproducir audio',
+              playIcon: activa && !enPausa ? '❚❚' : '▶',
+              playLabel: activa && !enPausa ? 'Pausar audio' : (enPausa ? 'Reanudar audio' : 'Reproducir audio'),
               /* El botón siempre se renderiza (nunca sc-if) para no romper las
                  columnas del grid; cuando no hay video se oculta con
                  visibility:hidden en vez de display:none, así conserva su

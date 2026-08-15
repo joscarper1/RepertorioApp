@@ -430,7 +430,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 const D = () => window.RepertorioData;
 
 class Component extends DCLogic {
-  state = { data: null, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '', autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {}, reproduciendoKey: null };
+  state = { data: null, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '', autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {}, reproduciendoKey: null, reproduciendoPausado: false };
 
   componentDidMount() {
     const R = D();
@@ -441,7 +441,7 @@ class Component extends DCLogic {
     this._unwatch = R.watchCloud((d) => {
       this.setState((s) => (s.draft ? null : { data: d }));
     });
-    this._yt = R.youtubeController('yt-audio-player', (key) => this.setState({ reproduciendoKey: key }));
+    this._yt = R.youtubeController('yt-audio-player', (key, paused) => this.setState({ reproduciendoKey: key, reproduciendoPausado: paused }));
   }
 
   componentWillUnmount() {
@@ -767,6 +767,7 @@ class Component extends DCLogic {
            importar si llegó ahí por autocomplete o escrito/pegado a mano. */
         const videoId = R.youtubeId(cn.u);
         const activa = s.reproduciendoKey === rowKey;
+        const enPausa = activa && s.reproduciendoPausado;
         return {
           t: cn.t, d: cn.d, k: cn.k, u: cn.u, sm: cn.sm,
           onT: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].canciones[ci].t = v; }); abrirFila(true); },
@@ -811,8 +812,8 @@ class Component extends DCLogic {
               abrirSalmista(false);
             }
           })),
-          playIcon: activa ? '■' : '▶',
-          playLabel: activa ? 'Detener audio' : 'Reproducir audio',
+          playIcon: activa && !enPausa ? '❚❚' : '▶',
+          playLabel: activa && !enPausa ? 'Pausar audio' : (enPausa ? 'Reanudar audio' : 'Reproducir audio'),
           /* El botón siempre se renderiza (nunca sc-if) para no romper las
              columnas del grid; sin video válido se oculta con
              visibility:hidden en vez de display:none. */

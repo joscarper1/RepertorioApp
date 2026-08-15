@@ -43,11 +43,11 @@
 
   /* Controlador de un único reproductor de YouTube oculto, compartido por
      todas las filas de canciones de una página (evita crear un iframe por
-     fila). onChange(key|null) se llama con la llave de la fila que quedó
-     sonando, o null cuando se detiene/termina, para que el componente sólo
-     tenga que reflejar ese valor en su estado. */
+     fila). onChange(key|null, paused) se llama con la llave de la fila que
+     quedó cargada (o null cuando se termina) y si está en pausa, para que el
+     componente sólo tenga que reflejar esos valores en su estado. */
   function youtubeController(elementId, onChange) {
-    var player = null, ready = false, pending = null, current = null;
+    var player = null, ready = false, pending = null, current = null, paused = false;
 
     function start() {
       if (player || !w.YT || !w.YT.Player) return;
@@ -60,7 +60,7 @@
             if (pending) { var p = pending; pending = null; toggle(p.key, p.videoId); }
           },
           onStateChange: function (e) {
-            if (e.data === w.YT.PlayerState.ENDED) { current = null; if (onChange) onChange(null); }
+            if (e.data === w.YT.PlayerState.ENDED) { current = null; paused = false; if (onChange) onChange(null, false); }
           }
         }
       });
@@ -78,18 +78,20 @@
       }
     }
 
+    /* Misma canción ya cargada: alterna pausa/reanudar sin perder la
+       posición. Canción distinta: carga y reproduce desde el inicio. */
     function toggle(key, videoId) {
       if (!videoId) return;
       if (!ready) { pending = { key: key, videoId: videoId }; return; }
       if (current === key) {
-        player.stopVideo();
-        current = null;
-        if (onChange) onChange(null);
+        if (paused) { player.playVideo(); paused = false; } else { player.pauseVideo(); paused = true; }
+        if (onChange) onChange(key, paused);
       } else {
         player.loadVideoById(videoId);
         player.playVideo();
         current = key;
-        if (onChange) onChange(key);
+        paused = false;
+        if (onChange) onChange(key, false);
       }
     }
 
