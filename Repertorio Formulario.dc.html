@@ -9,13 +9,10 @@
 <div id="repertorio-gate" style="position:fixed;inset:0;background:rgba(243,242,242,.97);display:flex;align-items:center;justify-content:center;z-index:2147483647;padding:20px">
   <div style="width:min(100%,420px);background:#fff;border:2px solid var(--ink,#201e1d);padding:24px 24px 20px;box-shadow:0 16px 40px rgba(0,0,0,.12)">
     <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk,#08512c)">Acceso restringido</div>
-    <h2 style="font-size:28px;font-weight:800;margin:10px 0 0;text-transform:uppercase">Ingresa la contraseña</h2>
-    <p style="font-size:14px;line-height:1.5;color:#54514f;margin:10px 0 0">Este formulario está protegido.</p>
-    <form id="repertorio-gate-form" style="display:flex;flex-direction:column;gap:10px;margin-top:18px">
-      <input id="repertorio-gate-password" type="password" placeholder="Contraseña" style="font-size:16px;padding:10px 12px;border:2px solid var(--ink,#201e1d);background:#fff" />
-      <button type="submit" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac,#0f7d45);background:var(--ac,#0f7d45);color:#fff;padding:10px 14px;cursor:pointer">Entrar</button>
-      <div id="repertorio-gate-error" style="min-height:18px;font-size:13px;color:#b00020"></div>
-    </form>
+    <h2 style="font-size:28px;font-weight:800;margin:10px 0 0;text-transform:uppercase">Inicia sesión</h2>
+    <p style="font-size:14px;line-height:1.5;color:#54514f;margin:10px 0 0">Este formulario es solo para el equipo de alabanza. Entra con la cuenta de Google autorizada.</p>
+    <button id="repertorio-gate-signin" type="button" style="width:100%;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac,#0f7d45);background:var(--ac,#0f7d45);color:#fff;padding:10px 14px;cursor:pointer;margin-top:18px">Iniciar sesión con Google</button>
+    <div id="repertorio-gate-error" style="min-height:18px;font-size:13px;color:#b00020;margin-top:8px"></div>
   </div>
 </div>
 <div id="repertorio-content" style="display:none">
@@ -28,6 +25,7 @@
 <script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
@@ -45,15 +43,19 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 <div style="max-width:820px;margin:0 auto;padding:0 20px 96px">
 
   <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink);flex-wrap:wrap">
-    <div style="display:flex;align-items:baseline;gap:12px">
-      <span style="width:14px;height:14px;background:var(--ac);display:inline-block"></span>
-      <span style="font-weight: 800; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; position: relative">ADMINISTRACIÓN DE EVENTOS</span>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px">
+      <div style="display:flex;align-items:baseline;gap:12px">
+        <span style="width:14px;height:14px;background:var(--ac);display:inline-block"></span>
+        <span style="font-weight: 800; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; position: relative">ADMINISTRACIÓN DE EVENTOS</span>
+      </div>
       <a href="index.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink);border-bottom-width:2px">Ver publicado</a>
-      <button onClick="{{ copiarEnlace }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;cursor:pointer">Copiar enlace</button>
-      <button onClick="{{ descargar }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;cursor:pointer">JSON</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
+        <button onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
+      </div>
     </div>
   </div>
 
@@ -81,7 +83,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
             <sc-for list="{{ fila.celdas }}" as="c" hint-placeholder-count="7">
               <button onClick="{{ c.onClick }}" style="{{ c.style }}">
-                <span style="font-size:15px;font-weight:600">{{ c.dia }}</span>
+                <span style="{{ c.diaStyle }}">{{ c.dia }}</span>
                 <span style="{{ c.marcaStyle }}">{{ c.marca }}</span>
               </button>
             </sc-for>
@@ -338,28 +340,12 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 <div id="yt-audio-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
 </div>
 <script>
+/* La pantalla sólo oculta el formulario mientras no hay sesión; quien de
+   verdad decide si se puede guardar son las reglas de la base de datos en
+   Firebase (deben exigir auth != null y el correo autorizado), no este
+   script. Firebase recuerda la sesión entre visitas por su cuenta, así que
+   no hace falta un TTL propio como antes. */
 (() => {
-  const KEY = 'repertorio-form-gate-v1';
-  const EXPECTED_HASH = '2f519adb1a5e171fe54c28ac9779335b145ddd6b9578afdd6348f937b0566ac0';
-  const TTL_MS = 120 * 60 * 1000;
-
-  function getStored() {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || typeof parsed.expiresAt !== 'number') return null;
-      return parsed;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function saveUnlock() {
-    const expiresAt = Date.now() + TTL_MS;
-    try { localStorage.setItem(KEY, JSON.stringify({ expiresAt })); } catch (e) {}
-  }
-
   function unlock() {
     const gate = document.getElementById('repertorio-gate');
     const content = document.getElementById('repertorio-content');
@@ -374,54 +360,26 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
     if (content) content.style.display = 'none';
   }
 
-  function isValid() {
-    const stored = getStored();
-    if (!stored) return false;
-    if (Date.now() > stored.expiresAt) {
-      try { localStorage.removeItem(KEY); } catch (e) {}
-      return false;
-    }
-    return true;
-  }
-
-  async function hashText(value) {
-    const bytes = new TextEncoder().encode(value);
-    const digest = await crypto.subtle.digest('SHA-256', bytes);
-    return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-  }
-
   document.addEventListener('DOMContentLoaded', () => {
     const gate = document.getElementById('repertorio-gate');
     const content = document.getElementById('repertorio-content');
-    const form = document.getElementById('repertorio-gate-form');
+    const signInBtn = document.getElementById('repertorio-gate-signin');
     const error = document.getElementById('repertorio-gate-error');
-    const input = document.getElementById('repertorio-gate-password');
+    const R = window.RepertorioData;
 
-    if (!gate || !content || !form || !error || !input) return;
-
-    if (isValid()) {
-      unlock();
-      return;
-    }
+    if (!gate || !content || !signInBtn || !error || !R) return;
 
     lock();
+    R.onAuthChange((user) => {
+      if (user) { error.textContent = ''; unlock(); } else { lock(); }
+    });
 
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const value = (input.value || '').trim();
-      if (!value) {
-        error.textContent = 'Escribe la contraseña.';
-        return;
-      }
-
-      const enteredHash = await hashText(value);
-      if (enteredHash === EXPECTED_HASH) {
-        error.textContent = '';
-        saveUnlock();
-        unlock();
-      } else {
-        error.textContent = 'Contraseña incorrecta.';
-      }
+    signInBtn.addEventListener('click', () => {
+      error.textContent = '';
+      R.signInWithGoogle().catch((e) => {
+        console.error('Fallo el inicio de sesión con Google:', e);
+        error.textContent = 'No se pudo iniciar sesión (' + (e && e.code ? e.code : 'error desconocido') + ').';
+      });
     });
   });
 })();
@@ -430,7 +388,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 const D = () => window.RepertorioData;
 
 class Component extends DCLogic {
-  state = { data: null, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '', autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {}, reproduciendoKey: null, reproduciendoPausado: false };
+  state = { data: null, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '', autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {}, reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null };
 
   componentDidMount() {
     const R = D();
@@ -442,11 +400,13 @@ class Component extends DCLogic {
       this.setState((s) => (s.draft ? null : { data: d }));
     });
     this._yt = R.youtubeController('yt-audio-player', (key, paused) => this.setState({ reproduciendoKey: key, reproduciendoPausado: paused }));
+    this._unauth = R.onAuthChange((user) => this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null }));
   }
 
   componentWillUnmount() {
     if (this._unwatch) this._unwatch();
     if (this._yt) this._yt.destroy();
+    if (this._unauth) this._unauth();
   }
 
   togglePlay(key, videoId) {
@@ -454,8 +414,16 @@ class Component extends DCLogic {
   }
 
   persist(data, msg) {
-    D().save(data);
     this.setState({ data: data, estado: msg || 'Guardado' });
+    /* El caché local ya se actualizó arriba; si la nube rechaza el guardado
+       (por ejemplo, sesión sin permiso en las reglas de Firebase) hay que
+       avisar, porque de lo contrario el resto del equipo nunca ve el cambio
+       aunque en este navegador parezca "Guardado". */
+    D().save(data, (ok) => {
+      if (ok) return;
+      clearTimeout(this._t);
+      this.setState({ estado: 'No se guardó en la nube: revisa tu sesión o conexión' });
+    });
     clearTimeout(this._t);
     this._t = setTimeout(() => this.setState({ estado: '' }), 1800);
   }
@@ -563,13 +531,21 @@ class Component extends DCLogic {
 
     // ---- calendario
     const delDia = (iso) => s.data.eventos.filter((e) => e.fecha === iso).sort((a, b) => this.ordenFechaHora(a, b));
+    const hoyDate = new Date();
+    const hoyIso = R.iso(hoyDate.getFullYear(), hoyDate.getMonth(), hoyDate.getDate());
     const filas = R.calendario(year, month - 1).map((fila, fi) => ({
       celdas: fila.map((c, ci) => {
-        if (!c) return { dia: '', marca: '', marcaStyle: 'display:none', style: 'border:0;background:var(--bg);min-height:64px;cursor:default', onClick: () => {} };
+        if (!c) return { dia: '', marca: '', marcaStyle: 'display:none', diaStyle: '', style: 'border:0;background:var(--bg);min-height:64px;cursor:default', onClick: () => {} };
         const n = delDia(c.iso).length;
         const sel = s.fecha === c.iso;
+        const esHoy = c.iso === hoyIso;
         return {
           dia: String(c.dia),
+          /* El círculo verde de "hoy" ayuda a ubicarse en el mes; si además
+             es el día seleccionado (fondo ya verde con texto blanco), se
+             marca con un aro blanco en vez de repetir el mismo verde. */
+          diaStyle: 'display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:15px;font-weight:600' +
+            (esHoy ? (sel ? ';border:2px solid #fff' : ';background:var(--ac);color:#fff') : ''),
           marca: n ? (n + (n > 1 ? ' eventos' : ' evento')) : '',
           marcaStyle: n
             ? ('display:block;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-top:4px;color:' + (sel ? '#fff' : 'var(--ac-dk)'))
@@ -843,6 +819,8 @@ class Component extends DCLogic {
 
     return {
       estado: s.estado,
+      usuarioNombre: s.usuarioNombre || '',
+      cerrarSesion: () => D().signOutUser(),
       pasos: pasos,
       esPaso1: !enWizard,
       esPaso2: enWizard && paso === 2,
@@ -906,24 +884,7 @@ class Component extends DCLogic {
         const prev = (paso === 4 && !usaBanda) ? 2 : paso - 1;
         this.setState({ paso: prev });
       },
-      cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '' }),
-
-      copiarEnlace: () => {
-        const base = location.href.replace(/[^/]*$/, '') + 'Repertorio Publicado.dc.html';
-        const url = base + '#data=' + R.encode(s.data);
-        if (navigator.clipboard) navigator.clipboard.writeText(url).then(
-          () => this.setState({ estado: 'Enlace copiado' }),
-          () => this.setState({ estado: 'No se pudo copiar' })
-        );
-      },
-      descargar: () => {
-        const blob = new Blob([JSON.stringify(s.data, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'repertorio.json';
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-      }
+      cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '' })
     };
   }
 }

@@ -422,9 +422,13 @@
     } catch (e) {}
     return seed();
   }
-  function save(data) {
+  /* cb(ok) es opcional: avisa si la escritura en la nube fue rechazada (por
+     ejemplo, por las reglas de Firebase si la sesión no tiene permiso), para
+     que quien llama no asuma que todos ya ven el cambio cuando en realidad
+     sólo quedó en el caché local de este navegador. */
+  function save(data, cb) {
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
-    saveCloud(data);
+    saveCloud(data, cb);
     return true;
   }
   function reset() { try { localStorage.removeItem(KEY); } catch (e) {} }
@@ -437,6 +441,36 @@
       if (!w.firebase.apps || !w.firebase.apps.length) w.firebase.initializeApp(FIREBASE_CONFIG);
       return w.firebase.database().ref(DB_PATH);
     } catch (e) { return null; }
+  }
+
+  /* Autenticación con Google, usada sólo por el formulario de edición: la
+     lectura del repertorio publicado se queda pública (ver index.html), pero
+     escribir requiere una sesión que las reglas de la base de datos puedan
+     verificar del lado del servidor (ver README de reglas de Firebase). */
+  function ensureAuthApp() {
+    if (!w.firebase || !w.firebase.auth) return null;
+    if (!w.firebase.apps || !w.firebase.apps.length) w.firebase.initializeApp(FIREBASE_CONFIG);
+    return w.firebase.auth();
+  }
+
+  function signInWithGoogle() {
+    var auth = ensureAuthApp();
+    if (!auth) return Promise.reject(new Error('Firebase Auth no disponible'));
+    return auth.signInWithPopup(new w.firebase.auth.GoogleAuthProvider());
+  }
+
+  function signOutUser() {
+    var auth = ensureAuthApp();
+    return auth ? auth.signOut() : Promise.resolve();
+  }
+
+  /* cb(user|null) se llama de inmediato con el estado actual y de nuevo cada
+     vez que cambia (login/logout, incluso en otra pestaña). Devuelve una
+     función para dejar de escuchar. */
+  function onAuthChange(cb) {
+    var auth = ensureAuthApp();
+    if (!auth) { cb(null); return function () {}; }
+    return auth.onAuthStateChanged(cb);
   }
 
   function saveCloud(data, cb) {
@@ -479,6 +513,7 @@
     seed: seed, clone: clone, encode: encode, decode: decode,
     load: load, save: save, reset: reset,
     loadCloudOnce: loadCloudOnce, watchCloud: watchCloud,
+    signInWithGoogle: signInWithGoogle, signOutUser: signOutUser, onAuthChange: onAuthChange,
     eventoTitulo: eventoTitulo, eventoDescripcion: eventoDescripcion,
     icsDataHref: icsDataHref, icsFilename: icsFilename, googleCalendarUrl: googleCalendarUrl,
     horaMinutos: horaMinutos
