@@ -16,6 +16,7 @@
 <script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--gold:#c9982e;--gold-dk:#7a5610;--gold-lt:#f6ecd3;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
@@ -53,13 +54,60 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 }
 </style>
 </helmet>
-<div style="max-width:1320px;margin:0 auto;padding:0 24px 96px">
 
-  <div class="noprint" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink);flex-wrap:wrap">
-    <div style="display:flex;align-items:baseline;gap:12px">
+<sc-if value="{{ esCargando }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:480px;margin:80px auto;text-align:center;padding:0 20px">
+    <p style="font-size:14px;color:#7d7979">Cargando…</p>
+  </div>
+</sc-if>
+
+<sc-if value="{{ esError }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:480px;margin:80px auto;text-align:center;padding:0 20px">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Agrupación no encontrada</div>
+    <h1 style="font-size:28px;font-weight:800;margin:14px 0 0;text-transform:uppercase">No pudimos encontrar esta página</h1>
+    <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:12px">El enlace que abriste no corresponde a ninguna agrupación registrada. Verifica el enlace o contacta a quien te lo compartió.</p>
+  </div>
+</sc-if>
+
+<sc-if value="{{ esPendiente }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:480px;margin:80px auto;text-align:center;padding:0 20px">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">Cuenta creada</div>
+    <h1 style="font-size:28px;font-weight:800;margin:14px 0 0;text-transform:uppercase">Un administrador te asignará pronto</h1>
+    <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:12px">Tu cuenta de Google ya quedó registrada. En cuanto un administrador te vincule con tu agrupación, verás aquí su calendario.</p>
+    <button onClick="{{ cerrarSesion }}" style="margin-top:18px;font-size:13px;font-weight:600;letter-spacing:.04em;padding:10px 16px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer">Cerrar sesión</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ esBienvenida }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:640px;margin:60px auto;text-align:center;padding:0 20px">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px">
       <span style="width:14px;height:14px;background:var(--ac);display:inline-block"></span>
       <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase">Ministerio de Alabanza</span>
     </div>
+    <h1 style="font-size:44px;line-height:1;font-weight:800;letter-spacing:-.02em;text-transform:uppercase;margin:0">RepertorioApp</h1>
+    <p style="font-size:16px;line-height:1.6;color:#54514f;margin-top:16px">Calendario y repertorio de alabanza para iglesias y ministerios: cada agrupación gestiona sus propios eventos, banda y canciones, con un calendario público listo para compartir.</p>
+    <button onClick="{{ iniciarSesion }}" style="margin-top:24px;font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:12px 22px;cursor:pointer">Iniciar sesión con Google</button>
+    <div style="min-height:18px;font-size:13px;color:#b00020;margin-top:10px">{{ errorLogin }}</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ esCalendario }}" hint-placeholder-val="{{ true }}">
+<div style="max-width:1320px;margin:0 auto;padding:0 24px 96px">
+
+  <div class="noprint" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
+    <div style="display:flex;align-items:baseline;gap:12px;min-width:0;flex:1 1 auto">
+      <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
+      <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Ministerio de Alabanza</span>
+    </div>
+    <sc-if value="{{ sesionActiva }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto">
+        <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
+        <button onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ sesionInactiva }}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{ irABienvenida }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;flex:0 0 auto">Iniciar sesión</button>
+    </sc-if>
   </div>
 
   <header style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:32px 0 24px;border-bottom:2px solid var(--ink)">
@@ -244,57 +292,97 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
     <span>{{ nota }}</span>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
-      <a href="Repertorio Formulario.dc.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Gestionar Eventos</a>
+      <a href="admin.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Gestionar Eventos</a>
       <button onClick="{{ copiarWa }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;cursor:pointer">Copiar para WhatsApp</button>
       <button onClick="{{ imprimir }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ac);background:var(--ac);color:#fff;cursor:pointer">Imprimir / PDF</button>
     </div>
   </footer>
 </div>
+</sc-if>
 
 </x-dc>
 <div id="yt-audio-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
 <script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
-  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false };
+  state = {
+    modo: 'cargando', org: null, eventos: [], mes: '', estado: '', errorLogin: '', usuarioNombre: null,
+    filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false,
+    reproduciendoKey: null, reproduciendoPausado: false
+  };
 
   componentDidMount() {
     const R = window.RepertorioData;
-    const apply = (d) => {
-      this.setState((s) => {
-        let mes = s.mes;
-        const keys = Array.from(new Set(d.eventos.map((e) => R.monthKey(e.fecha)))).sort();
-        if (!mes) {
-          const hoy = R.hoyKey();
-          mes = keys.indexOf(hoy) >= 0 ? hoy : (keys[keys.length - 1] || hoy);
-        }
-        return { data: d, mes: mes };
-      });
-    };
-
-    /* Un enlace con datos incrustados en el hash es una foto fija para
-       compartir, no la publicación en vivo: no nos suscribimos a la nube. */
-    const porHash = () => String(location.hash || '').indexOf('data=') >= 0;
-
-    const read = () => apply(R.load());
-    this._onHash = () => {
-      if (this._unwatch) { this._unwatch(); this._unwatch = null; }
-      if (porHash()) read(); else this._subscribe();
-    };
-    this._subscribe = () => { this._unwatch = R.watchCloud(apply); };
-
-    read();
-    if (!porHash()) this._subscribe();
-    window.addEventListener('hashchange', this._onHash);
-    /* Un solo reproductor de YouTube oculto y compartido por toda la página
-       (vive fuera del árbol de React, ver #yt-audio-player en el HTML) para
-       que cada botón de canción sólo tenga que decirle qué video cargar. */
     this._yt = R.youtubeController('yt-audio-player', (key, paused) => this.setState({ reproduciendoKey: key, reproduciendoPausado: paused }));
+
+    const slug = new URLSearchParams(location.search).get('group');
+
+    if (slug) {
+      /* En el calendario de una organización la sesión solo controla el
+         bloque de usuario del encabezado (nombre + cerrar sesión, o botón
+         de iniciar sesión) — no redirige a nadie, la vista es pública. */
+      this._unauth = R.onAuthChange((user) => {
+        this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null });
+      });
+      R.getOrganizationBySlug(slug.trim(), (org) => {
+        if (!org) { this.setState({ modo: 'error' }); return; }
+        this.setState({ modo: 'calendario', org: org });
+        this._unwatch = R.watchEventsForOrg(org.id, (evs) => {
+          this.setState((s) => {
+            let mes = s.mes;
+            const keys = Array.from(new Set(evs.map((e) => R.monthKey(e.fecha)))).sort();
+            if (!mes) {
+              const hoy = R.hoyKey();
+              mes = keys.indexOf(hoy) >= 0 ? hoy : (keys[keys.length - 1] || hoy);
+            }
+            return { eventos: evs, mes: mes };
+          });
+        });
+      });
+      return;
+    }
+
+    /* Sin parámetro: depende de la sesión. Un usuario ya vinculado a una
+       organización se manda directo a su calendario; sin sesión (o sin
+       organización asignada todavía) se queda en esta misma página, que
+       renderiza bienvenida/pendiente según corresponda. */
+    this._unauth = R.onAuthChange((user) => {
+      this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null });
+      if (!user) {
+        /* Mientras solo exista una organización registrada, no tiene
+           sentido pedirle a un visitante anónimo que se registre: se manda
+           directo a su calendario público. En cuanto haya más de una, no
+           hay forma de adivinar cuál le corresponde y se muestra la
+           bienvenida con el botón de inicio de sesión, como antes. */
+        if (this._unwatchOrgsCheck) return;
+        this._unwatchOrgsCheck = R.watchAllOrganizations((orgs) => {
+          if (this._unwatchOrgsCheck) { this._unwatchOrgsCheck(); this._unwatchOrgsCheck = null; }
+          if (orgs.length === 1) { window.location.href = 'index.html?group=' + orgs[0].slug; return; }
+          this.setState({ modo: 'bienvenida' });
+        });
+        return;
+      }
+      R.ensureUserRegistered(user, (doc) => {
+        const ids = R.userOrgIds(doc);
+        if (!ids.length) { this.setState({ modo: 'pendiente' }); return; }
+        R.redirectToUserLanding(doc);
+      });
+    });
   }
 
   componentWillUnmount() {
-    window.removeEventListener('hashchange', this._onHash);
     if (this._unwatch) this._unwatch();
+    if (this._unauth) this._unauth();
+    if (this._unwatchOrgsCheck) this._unwatchOrgsCheck();
     if (this._yt) this._yt.destroy();
+  }
+
+  iniciarSesion() {
+    const R = window.RepertorioData;
+    this.setState({ errorLogin: '' });
+    R.signInWithGoogle().catch((e) => {
+      console.error('Fallo el inicio de sesión con Google:', e);
+      this.setState({ errorLogin: 'No se pudo iniciar sesión (' + (e && e.code ? e.code : 'error desconocido') + ').' });
+    });
   }
 
   togglePlay(key, videoId) {
@@ -451,9 +539,24 @@ class Component extends DCLogic {
   renderVals() {
     const R = window.RepertorioData;
     const s = this.state;
-    if (!s.data || !R) return { estado: 'Cargando…' };
 
-    const keys = Array.from(new Set(s.data.eventos.map((e) => R.monthKey(e.fecha)))).sort();
+    const base = {
+      esCargando: s.modo === 'cargando',
+      esError: s.modo === 'error',
+      esBienvenida: s.modo === 'bienvenida',
+      esPendiente: s.modo === 'pendiente',
+      esCalendario: s.modo === 'calendario',
+      iniciarSesion: () => this.iniciarSesion(),
+      cerrarSesion: () => R.signOutUser(),
+      errorLogin: s.errorLogin || '',
+      usuarioNombre: s.usuarioNombre || '',
+      sesionActiva: !!s.usuarioNombre,
+      sesionInactiva: !s.usuarioNombre,
+      irABienvenida: () => { window.location.href = 'index.html'; }
+    };
+    if (s.modo !== 'calendario' || !s.org) return Object.assign(base, { estado: 'Cargando…' });
+
+    const keys = Array.from(new Set(s.eventos.map((e) => R.monthKey(e.fecha)))).sort();
     const hoy = R.hoyKey();
     if (keys.indexOf(hoy) < 0) keys.push(hoy);
     keys.sort();
@@ -472,13 +575,13 @@ class Component extends DCLogic {
     const mesesAnteriores = mesesAnterioresKeys.map(mesBtn);
 
     // ---- filtro de búsqueda: elige un evento puntual de todo el repertorio
-    const eventoActivo = s.filtroId ? (s.data.eventos.find((e) => e.id === s.filtroId) || null) : null;
+    const eventoActivo = s.filtroId ? (s.eventos.find((e) => e.id === s.filtroId) || null) : null;
     const filtroActivo = !!eventoActivo;
 
     const q = String(s.filtroTexto || '').trim().toLowerCase();
     /* Acotado al mes que se está viendo (no a todo el historial): filtrar es
        para ubicar un evento dentro del mes actual, no buscar en toda la base. */
-    const todos = s.data.eventos
+    const todos = s.eventos
       .filter((ev) => R.monthKey(ev.fecha) === s.mes)
       .sort((a, b) => this.ordenFechaHora(a, b));
     const filtroLista = todos.filter((ev) => {
@@ -507,7 +610,7 @@ class Component extends DCLogic {
         expandido: true, gridDisplay: 'grid', icono: '', toggle: () => {}
       }];
     } else {
-      const delMes = s.data.eventos
+      const delMes = s.eventos
         .filter((e) => R.monthKey(e.fecha) === s.mes)
         .sort((a, b) => this.ordenFechaHora(a, b));
 
@@ -565,11 +668,11 @@ class Component extends DCLogic {
       });
     }
 
-    return {
+    return Object.assign(base, {
       estado: s.estado,
       kicker: filtroActivo ? 'Filtrado por fecha' : 'Calendario Mensual',
       mesLabel: filtroActivo ? 'Resultado del filtro' : R.monthLabel(s.mes),
-      nota: s.data.nota || '',
+      nota: s.org.nota || '',
       meses: meses,
       mesesVisibles: !filtroActivo,
       hayMesesAnteriores: mesesAnterioresKeys.length > 0,
@@ -630,7 +733,7 @@ class Component extends DCLogic {
         if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done);
         else done();
       }
-    };
+    });
   }
 }
 

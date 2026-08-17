@@ -1,8 +1,22 @@
-/* Modelo de datos del repertorio. Los eventos se guardan planos, con la fecha
-   en formato ISO (YYYY-MM-DD); el mes y la semana se derivan de ahí. */
+/* Modelo de datos del repertorio, multi-organizacional. Los eventos se
+   guardan planos en /events/{id} con un campo organizationId; las
+   organizaciones viven en /organizations/{id} y los usuarios/roles en
+   /users/{uid}, todo en Firebase Realtime Database. La fecha de cada evento
+   se guarda en formato ISO (YYYY-MM-DD); el mes y la semana se derivan de
+   ahí. */
 (function (w) {
-  var KEY = 'repertorio-data-v2';
-  var DB_PATH = 'repertorio';
+  var ORGS_PATH = 'organizations';
+  var USERS_PATH = 'users';
+  var EVENTS_PATH = 'events';
+  var INVITES_PATH = 'invitaciones';
+  /* Correos que ya editaban el repertorio antes de que existiera el rol de
+     admin (ver reglas de seguridad previas). La primera vez que inicien
+     sesión después de la migración multi-organización, se auto-registran
+     como 'admin' de la organización por defecto en vez de quedar
+     pendientes — así no hace falta crear su doc de usuario a mano. Una vez
+     migrado, la promoción de nuevos admins se hace desde el panel. */
+  var BOOTSTRAP_ADMIN_EMAILS = ['joscarper@gmail.com', 'josuevaldizon1601@gmail.com'];
+  var BOOTSTRAP_ORG_SLUG = 'templobetel';
   var FIREBASE_CONFIG = {
     apiKey: "AIzaSyDLMmgs75ekQJRDSHfIVt2ojp2A9fnuh58",
     authDomain: "repertoriodb-b84d8.firebaseapp.com",
@@ -302,7 +316,8 @@
       bloques: o.bloques || defaultBlocks(),
       banda: o.banda || defaultBanda(),
       detalles: o.detalles || '',
-      personas: o.personas || ''
+      personas: o.personas || '',
+      organizationId: o.organizationId || ''
     };
   }
 
@@ -351,105 +366,27 @@
     return filas;
   }
 
-  function seed() {
-    return {
-      kicker: 'Calendario mensual',
-      nota: '"El Espíritu del Señor está sobre mí, por cuanto me ha ungido para dar buenas nuevas a los pobres; me ha enviado a sanar a los quebrantados de corazón; a pregonar libertad a los cautivos, y vista a los ciegos" - Lucas 4:18',
-      eventos: [
-        newEvento({ fecha: '2026-08-02', hora: '9:00 am', servicio: 'Servicio matutino',
-          tema: 'La fidelidad de Dios en cada generación',
-          cita: '«Grande es tu fidelidad; nuevas son cada mañana sus misericordias». Lamentaciones 3:23',
-          notas: 'Lectura bíblica: Salmo 100 — lee Fernando. Ensayo el martes 7:00 pm.',
-          bloques: [
-            { titulo: 'Alabanza de inicio', canciones: [song('Grande es tu fidelidad', 'Yessy', 'G', 'https://youtu.be')] },
-            { titulo: 'Júbilo', canciones: [song('Alabaré', 'Marcos', 'D', 'https://youtu.be'), song()] },
-            { titulo: 'Adoración', canciones: [song('Renuévame', 'Yessy', 'E', 'https://youtu.be'), song()] },
-            { titulo: 'Himno', canciones: [song()] },
-            { titulo: 'Ofrenda', canciones: [song()] }
-          ] }),
-        newEvento({ fecha: '2026-08-05', hora: '7:00 pm', servicio: 'Servicio de oración',
-          tema: 'Un corazón que busca su presencia',
-          cita: '«Cerca está el Señor de los que le invocan». Salmo 145:18',
-          notas: 'Repasar la transición entre las dos canciones.',
-          bloques: [
-            { titulo: 'Alabanza de inicio', canciones: [song('Dulce refugio', 'Yessy', 'F', 'https://youtu.be')] },
-            { titulo: 'Júbilo', canciones: [song(), song()] },
-            { titulo: 'Adoración', canciones: [song('Al que está sentado en el trono', 'Karla', 'A', 'https://youtu.be'), song()] },
-            { titulo: 'Himno', canciones: [song()] },
-            { titulo: 'Ofrenda', canciones: [song()] }
-          ] }),
-        newEvento({ fecha: '2026-08-09', hora: '9:00 am', servicio: 'Servicio matutino',
-          tema: 'Jesucristo, nuestra esperanza de vida eterna',
-          cita: '«Señor, ¿a quién iremos? Solo Tú tienes palabras de vida eterna». Juan 6:68',
-          notas: 'Lectura bíblica: Juan 6:60-69 — lee Daniel.',
-          bloques: [
-            { titulo: 'Alabanza de inicio', canciones: [song('Dulce refugio', 'Yessy', 'F', 'https://youtu.be')] },
-            { titulo: 'Júbilo', canciones: [song('Vamos a cantar', 'Yessy', 'C', 'https://youtu.be'), song()] },
-            { titulo: 'Adoración', canciones: [song('Cristo, mi esperanza es', 'Karla', 'D', 'https://youtu.be'), song()] },
-            { titulo: 'Himno', canciones: [song()] },
-            { titulo: 'Ofrenda', canciones: [song()] }
-          ] }),
-        newEvento({ fecha: '2026-08-09', hora: '6:00 pm', servicio: 'Servicio vespertino',
-          tema: 'Noche de gratitud', cita: '«Entrad por sus puertas con acción de gracias». Salmo 100:4',
-          notas: 'Ensayo el sábado 4:00 pm.',
-          bloques: [
-            { titulo: 'Alabanza de inicio', canciones: [song()] },
-            { titulo: 'Júbilo', canciones: [song('Cantaré de tu amor', 'Marcos', 'G', 'https://youtu.be'), song()] },
-            { titulo: 'Adoración', canciones: [song('Tu fidelidad', 'Yessy', 'Bb', 'https://youtu.be'), song()] },
-            { titulo: 'Himno', canciones: [song()] },
-            { titulo: 'Ofrenda', canciones: [song()] }
-          ] })
-      ]
-    };
-  }
-
   function clone(x) { return JSON.parse(JSON.stringify(x)); }
-  function encode(data) { return btoa(unescape(encodeURIComponent(JSON.stringify(data)))); }
-  function decode(str) { try { return JSON.parse(decodeURIComponent(escape(atob(str)))); } catch (e) { return null; } }
 
-  function fromHash() {
-    var h = String(location.hash || '');
-    var i = h.indexOf('data=');
-    return i >= 0 ? decode(h.slice(i + 5)) : null;
-  }
+  /* --- Conexión con Firebase (Auth + Realtime Database) --- */
 
-  function load() {
-    var byUrl = fromHash();
-    if (byUrl && byUrl.eventos) return byUrl;
-    try {
-      var raw = localStorage.getItem(KEY);
-      if (raw) { var d = JSON.parse(raw); if (d && d.eventos) return d; }
-    } catch (e) {}
-    return seed();
-  }
-  /* cb(ok) es opcional: avisa si la escritura en la nube fue rechazada (por
-     ejemplo, por las reglas de Firebase si la sesión no tiene permiso), para
-     que quien llama no asuma que todos ya ven el cambio cuando en realidad
-     sólo quedó en el caché local de este navegador. */
-  function save(data, cb) {
-    try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
-    saveCloud(data, cb);
+  function ensureApp() {
+    if (!w.firebase) return false;
+    if (!w.firebase.apps || !w.firebase.apps.length) w.firebase.initializeApp(FIREBASE_CONFIG);
     return true;
   }
-  function reset() { try { localStorage.removeItem(KEY); } catch (e) {} }
 
-  /* La base de datos en la nube es la fuente de verdad compartida entre
-     usuarios; localStorage sólo sirve como caché para el primer pintado. */
-  function dbRef() {
-    if (!w.firebase) return null;
-    try {
-      if (!w.firebase.apps || !w.firebase.apps.length) w.firebase.initializeApp(FIREBASE_CONFIG);
-      return w.firebase.database().ref(DB_PATH);
-    } catch (e) { return null; }
+  function dbRoot() {
+    if (!ensureApp() || !w.firebase.database) return null;
+    try { return w.firebase.database().ref(); } catch (e) { return null; }
   }
 
-  /* Autenticación con Google, usada sólo por el formulario de edición: la
-     lectura del repertorio publicado se queda pública (ver index.html), pero
-     escribir requiere una sesión que las reglas de la base de datos puedan
-     verificar del lado del servidor (ver README de reglas de Firebase). */
+  /* Autenticación con Google, usada por admin.html y por el Formulario: la
+     lectura del calendario publicado se queda pública, pero escribir
+     requiere una sesión que las reglas de la base de datos puedan verificar
+     del lado del servidor. */
   function ensureAuthApp() {
-    if (!w.firebase || !w.firebase.auth) return null;
-    if (!w.firebase.apps || !w.firebase.apps.length) w.firebase.initializeApp(FIREBASE_CONFIG);
+    if (!ensureApp() || !w.firebase.auth) return null;
     return w.firebase.auth();
   }
 
@@ -473,49 +410,379 @@
     return auth.onAuthStateChanged(cb);
   }
 
-  function saveCloud(data, cb) {
-    var ref = dbRef();
-    if (!ref) { cb && cb(false); return; }
-    ref.set(data).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  /* Convierte un DataSnapshot de un nodo de "muchos hijos" en un arreglo
+     plano de objetos (cada uno con su key ya mezclada si el objeto no trae
+     id propio). */
+  function snapshotToArray(snap) {
+    var out = [];
+    snap.forEach(function (child) {
+      var v = child.val() || {};
+      if (!v.id) v.id = child.key;
+      out.push(v);
+    });
+    return out;
   }
 
-  function loadCloudOnce() {
-    var ref = dbRef();
-    if (!ref) return Promise.resolve(null);
-    return ref.once('value').then(function (snap) {
-      var d = snap.val();
-      return (d && d.eventos) ? d : null;
-    }, function () { return null; });
+  /* minúsculas, sin acentos/diacríticos, solo [a-z0-9]: "Templo Betel" ->
+     "templobetel". No garantiza unicidad por sí sola (ver createOrganization,
+     que revisa colisiones antes de guardar). */
+  function slugify(name) {
+    return String(name || '')
+      .normalize('NFD')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
   }
 
-  /* onData se llama cada vez que cambian los datos en la nube (incluyendo la
-     primera vez). Devuelve una función para cancelar la suscripción. */
-  function watchCloud(onData) {
-    var ref = dbRef();
-    if (!ref) return function () {};
+  /* Las llaves de Realtime Database no admiten '.', así que un correo no
+     puede usarse tal cual como llave de /invitaciones. Solo se sustituye el
+     punto (el único carácter prohibido que aparece en la práctica en un
+     correo real); esta misma sustitución se replica del lado de las reglas
+     de seguridad para poder validar el auto-consumo de la invitación. */
+  function emailKey(email) {
+    return String(email || '').trim().toLowerCase().replace(/\./g, ',');
+  }
+
+  /* --- Organizaciones --- */
+
+  function watchAllOrganizations(cb) {
+    var root = dbRoot();
+    if (!root) return function () {};
+    var ref = root.child(ORGS_PATH);
+    var handler = function (snap) { cb(snapshotToArray(snap)); };
+    ref.on('value', handler);
+    return function () { ref.off('value', handler); };
+  }
+
+  function getOrganization(orgId, cb) {
+    var root = dbRoot();
+    if (!root || !orgId) { cb(null); return; }
+    root.child(ORGS_PATH).child(orgId).once('value').then(function (snap) {
+      var v = snap.val();
+      if (v) v.id = orgId;
+      cb(v);
+    }, function () { cb(null); });
+  }
+
+  function getOrganizationBySlug(slug, cb) {
+    var root = dbRoot();
+    if (!root) { cb(null); return; }
+    root.child(ORGS_PATH).orderByChild('slug').equalTo(slug).once('value').then(function (snap) {
+      var arr = snapshotToArray(snap);
+      cb(arr.length ? arr[0] : null);
+    }, function () { cb(null); });
+  }
+
+  /* cb(org|null, error|null). Revisa que el slug generado del nombre no
+     colisione con uno existente antes de escribir (agrega un sufijo numérico
+     si hace falta). */
+  function createOrganization(name, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(null, new Error('Firebase no disponible')); return; }
+    var base = slugify(name) || 'organizacion';
+    root.child(ORGS_PATH).once('value').then(function (snap) {
+      var existentes = snapshotToArray(snap).map(function (o) { return o.slug; });
+      var slug = base, n = 2;
+      while (existentes.indexOf(slug) >= 0) { slug = base + n; n++; }
+      var id = root.child(ORGS_PATH).push().key;
+      var org = { id: id, name: name, slug: slug, kicker: 'Calendario mensual', nota: '', createdAt: Date.now() };
+      root.child(ORGS_PATH).child(id).set(org).then(function () { cb && cb(org, null); }, function (err) { cb && cb(null, err); });
+    }, function (err) { cb && cb(null, err); });
+  }
+
+  /* patch no puede tocar id/slug (el slug es inmutable una vez creado para
+     no romper enlaces ?group=slug ya compartidos). */
+  function updateOrganization(orgId, patch, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    var safe = { name: patch.name, kicker: patch.kicker, nota: patch.nota };
+    root.child(ORGS_PATH).child(orgId).update(safe).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  function countEventsForOrg(orgId, cb) {
+    var root = dbRoot();
+    if (!root) { cb(0); return; }
+    root.child(EVENTS_PATH).orderByChild('organizationId').equalTo(orgId).once('value').then(function (snap) {
+      cb(snap.numChildren());
+    }, function () { cb(0); });
+  }
+
+  function countUsersForOrg(orgId, cb) {
+    var root = dbRoot();
+    if (!root) { cb(0); return; }
+    root.child(USERS_PATH).once('value').then(function (snap) {
+      var n = 0;
+      snap.forEach(function (child) {
+        var v = child.val();
+        if (v && v.organizationIds && v.organizationIds[orgId]) n++;
+      });
+      cb(n);
+    }, function () { cb(0); });
+  }
+
+  /* Borra la organización, todos sus eventos, y la referencia a ella en
+     cualquier usuario que la tuviera asignada — en una sola escritura
+     multi-ruta (atómica): o se aplica todo, o no se aplica nada. */
+  function deleteOrganization(orgId, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    root.child(EVENTS_PATH).orderByChild('organizationId').equalTo(orgId).once('value').then(function (eventsSnap) {
+      root.child(USERS_PATH).once('value').then(function (usersSnap) {
+        var updates = {};
+        updates[ORGS_PATH + '/' + orgId] = null;
+        eventsSnap.forEach(function (child) { updates[EVENTS_PATH + '/' + child.key] = null; });
+        usersSnap.forEach(function (child) {
+          var v = child.val();
+          if (v && v.organizationIds && v.organizationIds[orgId]) {
+            updates[USERS_PATH + '/' + child.key + '/organizationIds/' + orgId] = null;
+          }
+        });
+        root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+      }, function () { cb && cb(false); });
+    }, function () { cb && cb(false); });
+  }
+
+  /* --- Usuarios --- */
+
+  /* Se llama justo después de cada login. Si el usuario no tiene doc en
+     /users todavía, lo crea como 'normal' sin organizaciones asignadas
+     (queda pendiente de que un admin lo vincule). cb(userDoc). */
+  function ensureUserRegistered(firebaseUser, cb) {
+    var root = dbRoot();
+    if (!root || !firebaseUser) { cb && cb(null); return; }
+    var ref = root.child(USERS_PATH).child(firebaseUser.uid);
+    var email = firebaseUser.email || '';
+
+    /* El ascenso a admin de un correo "bootstrap" no depende de en qué orden
+       pasaron las cosas: se intenta tanto al crear el doc por primera vez
+       como en cada visita posterior mientras siga pendiente (organización
+       por defecto todavía no existía cuando se registró la primera vez). */
+    function promoverSiAplica(doc, onDone) {
+      if (BOOTSTRAP_ADMIN_EMAILS.indexOf(email) < 0 || doc.role === 'admin') { onDone(doc); return; }
+      getOrganizationBySlug(BOOTSTRAP_ORG_SLUG, function (org) {
+        if (!org) { onDone(doc); return; }
+        doc.role = 'admin';
+        doc.organizationIds = {};
+        doc.organizationIds[org.id] = true;
+        ref.update({ role: doc.role, organizationIds: doc.organizationIds }).then(function () { onDone(doc); }, function () { onDone(doc); });
+      });
+    }
+
+    /* Si un admin ya invitó este correo (rol + organizaciones definidos de
+       antemano desde el panel), se usa eso en vez del valor por defecto
+       'normal' sin organización; la invitación se borra una vez consumida
+       para no volver a aplicarse en un futuro cambio de rol manual. */
+    function crearConInvitacionSiAplica(onDone) {
+      var key = emailKey(email);
+      root.child(INVITES_PATH).child(key).once('value').then(function (inviteSnap) {
+        var doc = {
+          uid: firebaseUser.uid,
+          email: email,
+          displayName: firebaseUser.displayName || email,
+          role: 'normal',
+          createdAt: Date.now()
+        };
+        if (inviteSnap.exists()) {
+          var invite = inviteSnap.val();
+          doc.role = invite.role === 'admin' ? 'admin' : 'normal';
+          if (invite.organizationIds) doc.organizationIds = invite.organizationIds;
+        }
+        ref.set(doc).then(function () {
+          if (inviteSnap.exists()) root.child(INVITES_PATH).child(key).remove();
+          onDone(doc);
+        }, function () { onDone(doc); });
+      }, function () {
+        var doc = { uid: firebaseUser.uid, email: email, displayName: firebaseUser.displayName || email, role: 'normal', createdAt: Date.now() };
+        ref.set(doc).then(function () { onDone(doc); }, function () { onDone(doc); });
+      });
+    }
+
+    function intentar(reintentosRestantes) {
+      ref.once('value').then(function (snap) {
+        if (snap.exists()) {
+          var v = snap.val();
+          v.uid = firebaseUser.uid;
+          promoverSiAplica(v, function (doc) { cb && cb(doc); });
+          return;
+        }
+        crearConInvitacionSiAplica(function (doc) {
+          promoverSiAplica(doc, function (d) { cb && cb(d); });
+        });
+      }, function (err) {
+        /* Justo después de recargar la página, el evento de sesión de
+           Firebase Auth puede llegar antes de que la conexión de Realtime
+           Database termine de propagar el token: la primera lectura puede
+           salir "permission_denied" aunque la sesión sí sea válida. Forzar
+           la renovación del token empuja al SDK a reautenticar la conexión
+           de la base de datos, además de darle más tiempo con reintentos. */
+        if (reintentosRestantes > 0 && err && err.code === 'PERMISSION_DENIED') {
+          var auth = ensureAuthApp();
+          var actual = auth && auth.currentUser;
+          var refrescar = actual ? actual.getIdToken(true) : Promise.resolve();
+          refrescar.then(function () {
+            setTimeout(function () { intentar(reintentosRestantes - 1); }, 1200);
+          }, function () {
+            setTimeout(function () { intentar(reintentosRestantes - 1); }, 1200);
+          });
+          return;
+        }
+        cb && cb(null);
+      });
+    }
+
+    intentar(5);
+  }
+
+  function watchUser(uid, cb) {
+    var root = dbRoot();
+    if (!root) return function () {};
+    var ref = root.child(USERS_PATH).child(uid);
     var handler = function (snap) {
-      var d = snap.val();
-      if (d && d.eventos) onData(d);
+      var v = snap.val();
+      if (v) v.uid = uid;
+      cb(v);
     };
     ref.on('value', handler);
     return function () { ref.off('value', handler); };
   }
 
+  /* Solo debe llamarse si el usuario actual ya es 'admin' (las reglas del
+     servidor lo exigen igualmente). */
+  function watchAllUsers(cb) {
+    var root = dbRoot();
+    if (!root) return function () {};
+    var ref = root.child(USERS_PATH);
+    var handler = function (snap) { cb(snapshotToArray(snap)); };
+    ref.on('value', handler);
+    return function () { ref.off('value', handler); };
+  }
+
+  function setUserRole(uid, role, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    root.child(USERS_PATH).child(uid).child('role').set(role).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  function deleteUser(uid, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    root.child(USERS_PATH).child(uid).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  /* orgIds: arreglo de organizationId. Se guarda como mapa {orgId: true}
+     para que las reglas de seguridad puedan usar hasChild(orgId) al validar
+     pertenencia (un arreglo JS se guarda como objeto con llaves "0","1",...
+     lo que no sirve para ese chequeo). */
+  function setUserOrgs(uid, orgIds, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    var map = {};
+    (orgIds || []).forEach(function (id) { map[id] = true; });
+    root.child(USERS_PATH).child(uid).child('organizationIds').set(map).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  /* El doc de usuario guarda organizationIds como mapa {orgId:true}; esta
+     función la vuelve un arreglo de ids para que el resto de la app (que
+     piensa en listas) no tenga que conocer ese detalle de almacenamiento. */
+  function userOrgIds(userDoc) {
+    return userDoc && userDoc.organizationIds ? Object.keys(userDoc.organizationIds) : [];
+  }
+
+  /* Usada por admin.html y el Formulario cuando a un usuario no le toca
+     estar ahí (rol 'normal', o sin organización asignada todavía): lo manda
+     al calendario público de su primera organización, o a index.html a
+     secas si aún no tiene ninguna (ahí verá el mensaje de "esperando
+     asignación"). */
+  function redirectToUserLanding(userDoc) {
+    var ids = userOrgIds(userDoc);
+    if (!ids.length) { w.location.href = 'index.html'; return; }
+    getOrganization(ids[0], function (org) {
+      w.location.href = org ? ('index.html?group=' + org.slug) : 'index.html';
+    });
+  }
+
+  /* --- Invitaciones (alta de usuarios antes de su primer login) --- */
+
+  /* orgIds: arreglo de organizationId, igual que setUserOrgs. Sobrescribe
+     cualquier invitación previa para ese mismo correo. */
+  function createInvitation(email, role, orgIds, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    var map = {};
+    (orgIds || []).forEach(function (id) { map[id] = true; });
+    var doc = {
+      email: String(email || '').trim().toLowerCase(),
+      role: role === 'admin' ? 'admin' : 'normal',
+      organizationIds: map,
+      createdAt: Date.now()
+    };
+    root.child(INVITES_PATH).child(emailKey(email)).set(doc).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  /* Solo debe llamarse si el usuario actual ya es 'admin' (las reglas del
+     servidor lo exigen igualmente). */
+  function watchInvitations(cb) {
+    var root = dbRoot();
+    if (!root) return function () {};
+    var ref = root.child(INVITES_PATH);
+    var handler = function (snap) { cb(snapshotToArray(snap)); };
+    ref.on('value', handler);
+    return function () { ref.off('value', handler); };
+  }
+
+  function deleteInvitation(key, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    root.child(INVITES_PATH).child(key).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  /* --- Eventos --- */
+
+  function watchEventsForOrg(orgId, cb) {
+    var root = dbRoot();
+    if (!root) return function () {};
+    var ref = root.child(EVENTS_PATH).orderByChild('organizationId').equalTo(orgId);
+    var handler = function (snap) { cb(snapshotToArray(snap)); };
+    ref.on('value', handler);
+    return function () { ref.off('value', handler); };
+  }
+
+  /* cb(ok) avisa si la escritura fue rechazada (por ejemplo, por las reglas
+     de Firebase si la sesión no tiene permiso de admin sobre esa
+     organización), para que quien llama no asuma que ya quedó guardado. */
+  function saveEvent(evento, orgId, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    var ev = clone(evento);
+    ev.organizationId = orgId || ev.organizationId;
+    root.child(EVENTS_PATH).child(ev.id).set(ev).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  function deleteEvent(id, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    root.child(EVENTS_PATH).child(id).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
   w.RepertorioData = {
-    KEY: KEY, MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
+    MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
     song: song, songLabel: songLabel, youtubeId: youtubeId, youtubeController: youtubeController, defaultBlocks: defaultBlocks, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,
     diaNombre: diaNombre, fechaLarga: fechaLarga, semanaDelMes: semanaDelMes,
-    hoyKey: hoyKey, calendario: calendario,
-    seed: seed, clone: clone, encode: encode, decode: decode,
-    load: load, save: save, reset: reset,
-    loadCloudOnce: loadCloudOnce, watchCloud: watchCloud,
+    hoyKey: hoyKey, calendario: calendario, clone: clone,
     signInWithGoogle: signInWithGoogle, signOutUser: signOutUser, onAuthChange: onAuthChange,
     eventoTitulo: eventoTitulo, eventoDescripcion: eventoDescripcion,
     icsDataHref: icsDataHref, icsFilename: icsFilename, googleCalendarUrl: googleCalendarUrl,
-    horaMinutos: horaMinutos
+    horaMinutos: horaMinutos,
+    slugify: slugify,
+    watchAllOrganizations: watchAllOrganizations, getOrganizationBySlug: getOrganizationBySlug, getOrganization: getOrganization,
+    createOrganization: createOrganization, updateOrganization: updateOrganization, deleteOrganization: deleteOrganization,
+    countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,
+    ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
+    setUserRole: setUserRole, setUserOrgs: setUserOrgs, deleteUser: deleteUser, userOrgIds: userOrgIds, redirectToUserLanding: redirectToUserLanding,
+    createInvitation: createInvitation, watchInvitations: watchInvitations, deleteInvitation: deleteInvitation,
+    watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, deleteEvent: deleteEvent
   };
 })(window);

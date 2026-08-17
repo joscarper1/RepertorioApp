@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de Administración</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<div id="repertorio-checking" style="position:fixed;inset:0;background:var(--bg,#f3f2f2);display:flex;align-items:center;justify-content:center;z-index:2147483647">
+  <p style="font-size:14px;color:#7d7979;font-family:Archivo,sans-serif">Cargando…</p>
+</div>
+<div id="repertorio-gate" style="position:fixed;inset:0;background:rgba(243,242,242,.97);display:none;align-items:center;justify-content:center;z-index:2147483647;padding:20px">
+  <div style="width:min(100%,420px);background:#fff;border:2px solid var(--ink,#201e1d);padding:24px 24px 20px;box-shadow:0 16px 40px rgba(0,0,0,.12)">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk,#08512c)">Acceso restringido</div>
+    <h2 style="font-size:28px;font-weight:800;margin:10px 0 0;text-transform:uppercase">Inicia sesión</h2>
+    <p style="font-size:14px;line-height:1.5;color:#54514f;margin:10px 0 0">El panel de administración es solo para administradores. Entra con tu cuenta de Google.</p>
+    <button id="repertorio-gate-signin" type="button" style="width:100%;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac,#0f7d45);background:var(--ac,#0f7d45);color:#fff;padding:10px 14px;cursor:pointer;margin-top:18px">Iniciar sesión con Google</button>
+    <div id="repertorio-gate-error" style="min-height:18px;font-size:13px;color:#b00020;margin-top:8px"></div>
+  </div>
+</div>
+<div id="repertorio-content" style="display:none">
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/styles.css">
+<script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="repertorio-data.js"></script>
+<style>
+:root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body,Archivo),Archivo,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--ac-dk);text-decoration:none;border-bottom:1px solid var(--ac)}
+a:hover{color:#fff;background:var(--ac)}
+input,textarea,button,select{font-family:inherit;color:inherit;border-radius:0}
+input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+input::placeholder,textarea::placeholder{color:#bab6b6}
+::selection{background:var(--ac-lt)}
+.admin-shell{display:flex;align-items:stretch;margin-top:24px;min-height:60vh;border:2px solid var(--ink);position:relative}
+.admin-side{width:240px;flex:0 0 240px;border-right:2px solid var(--ink);background:#fff;display:flex;flex-direction:column;transition:transform .25s ease}
+.admin-main{flex:1;min-width:0;padding:28px 32px;background:#fff}
+.side-group{padding:16px 14px;border-bottom:1px solid #eae9e9}
+.side-kicker{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#9a9694;padding:0 2px 8px}
+.admin-burger{display:none;width:38px;height:38px;align-items:center;justify-content:center;border:2px solid var(--ink);background:transparent;cursor:pointer;font-size:16px;flex:0 0 auto}
+.admin-backdrop{display:none}
+@media (max-width:860px){
+  .admin-burger{display:inline-flex}
+  .admin-shell{border:0;display:block}
+  .admin-side{position:fixed;top:0;left:0;bottom:0;width:270px;z-index:1000;transform:translateX(-100%);box-shadow:6px 0 28px rgba(0,0,0,.2)}
+  .admin-side.abierto{transform:translateX(0)}
+  .admin-main{border:2px solid var(--ink);padding:20px}
+  .admin-backdrop.abierto{display:block;position:fixed;inset:0;background:rgba(20,18,17,.45);z-index:999}
+}
+</style>
+</helmet>
+<div style="max-width:1100px;margin:0 auto;padding:0 20px 96px">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
+    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 auto">
+      <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ true }}">
+        <button type="button" class="admin-burger" onClick="{{ toggleSidebar }}" aria-label="Abrir menú">☰</button>
+      </sc-if>
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto">
+        <div style="display:flex;align-items:baseline;gap:12px;min-width:0">
+          <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
+          <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Panel de Administración</span>
+        </div>
+        <a href="{{ verPublicadoHref }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Ver publicado</a>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
+        <button onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ cargando }}" hint-placeholder-val="{{ false }}">
+    <p style="padding:40px 0;font-size:14px;color:#7d7979">Cargando…</p>
+  </sc-if>
+
+  <sc-if value="{{ denegado }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:480px;margin:60px auto;text-align:center;border:2px solid var(--ink);padding:32px 24px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Acceso denegado</div>
+      <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:10px">Tu cuenta no tiene permisos de administrador. Te llevaremos a tu página correspondiente…</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ true }}">
+    <div class="{{ backdropClase }}" onClick="{{ cerrarSidebarMovil }}"></div>
+    <div class="admin-shell">
+      <div class="{{ sidebarClase }}">
+        <div class="side-group" style="flex:1">
+          <div class="side-kicker">Módulos</div>
+          <button type="button" style="{{ tabOrgStyle }}" onClick="{{ irTabOrganizaciones }}">Organizaciones</button>
+          <button type="button" style="{{ tabUsuariosStyle }}" onClick="{{ irTabUsuarios }}">Usuarios</button>
+          <button type="button" style="{{ tabEventosStyle }}" onClick="{{ irTabEventos }}" disabled="{{ sinOrgActual }}">Eventos</button>
+        </div>
+      </div>
+
+      <div class="admin-main">
+        <sc-if value="{{ mostrarOrgActiva }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:16px;position:relative">
+            <div style="width:min(100%,280px)">
+              <div class="side-kicker" style="padding:0 2px 6px;text-align:right">Organización activa</div>
+              <sc-if value="{{ hayOrgs }}" hint-placeholder-val="{{ true }}">
+                <button type="button" onClick="{{ toggleOrgSwitcher }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;font-size:13px;font-weight:700;padding:8px 10px;border:2px solid var(--ink);background:#fff;cursor:pointer;text-align:left">
+                  <span>{{ orgActualNombre }}</span>
+                  <span>▾</span>
+                </button>
+                <sc-if value="{{ orgSwitcherAbierto }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;border:2px solid var(--ink);margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column">
+                    <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
+                    <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column">
+                      <sc-for list="{{ orgsSidebar }}" as="o" hint-placeholder-count="2">
+                        <button type="button" style="{{ o.style }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
+                      </sc-for>
+                      <p style="{{ orgSwitcherVacioStyle }}">Sin resultados.</p>
+                    </div>
+                  </div>
+                </sc-if>
+              </sc-if>
+              <p style="{{ sinOrgsStyle }}">Todavía no tienes organizaciones asignadas.</p>
+            </div>
+          </div>
+        </sc-if>
+
+        <p style="{{ mensajeStyle }}">{{ mensaje }}</p>
+
+        <sc-if value="{{ tabOrganizaciones }}" hint-placeholder-val="{{ true }}">
+          <section>
+            <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0 0 16px">Organizaciones</h2>
+
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:16px;background:var(--bg);margin-bottom:20px">
+              <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:200px">
+                <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nueva organización</span>
+                <input value="{{ nuevoOrgNombre }}" onChange="{{ onNuevoOrgNombre }}" placeholder="Nombre de la organización" style="font-size:15px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
+              </label>
+              <span style="font-size:12px;color:#7d7979;padding-bottom:10px">/{{ slugPreview }}</span>
+              <button type="button" onClick="{{ crearOrganizacion }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 16px;cursor:pointer">+ Crear</button>
+            </div>
+
+            <sc-for list="{{ orgsLista }}" as="o" hint-placeholder-count="2">
+              <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px">
+                <sc-if value="{{ o.editando }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <label style="display:flex;flex-direction:column;gap:4px">
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nombre</span>
+                      <input value="{{ orgEditNombre }}" onChange="{{ onOrgEditNombre }}" style="font-size:15px;padding:8px 10px;border:2px solid var(--ink)">
+                    </label>
+                    <label style="display:flex;flex-direction:column;gap:4px">
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Encabezado (kicker)</span>
+                      <input value="{{ orgEditKicker }}" onChange="{{ onOrgEditKicker }}" style="font-size:14px;padding:8px 10px;border:2px solid var(--ink)">
+                    </label>
+                    <label style="display:flex;flex-direction:column;gap:4px">
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nota / versículo</span>
+                      <textarea value="{{ orgEditNota }}" onChange="{{ onOrgEditNota }}" rows="2" style="font-size:13px;padding:8px 10px;border:2px solid var(--ink);resize:vertical"></textarea>
+                    </label>
+                    <div style="display:flex;gap:8px">
+                      <button type="button" onClick="{{ guardarEdicionOrg }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Guardar</button>
+                      <button type="button" onClick="{{ cancelarEdicionOrg }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cancelar</button>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ o.noEditando }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                    <div>
+                      <div style="font-size:16px;font-weight:800">{{ o.nombre }}</div>
+                      <div style="font-size:12px;color:#7d7979">/{{ o.slug }} · creada {{ o.fecha }}</div>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                      <button type="button" onClick="{{ o.editar }}" style="font-size:12px;font-weight:600;letter-spacing:.04em;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:7px 12px;cursor:pointer">Editar</button>
+                      <button type="button" onClick="{{ o.borrar }}" aria-label="Eliminar organización" title="Eliminar organización" style="font-size:14px;border:2px solid #b00020;background:transparent;color:#b00020;padding:7px 10px;cursor:pointer">🗑</button>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ tabUsuarios }}" hint-placeholder-val="{{ false }}">
+          <section>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+              <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0">Usuarios</h2>
+              <button type="button" onClick="{{ toggleInvitarAbierto }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 16px;cursor:pointer">+ Invitar usuario</button>
+            </div>
+
+            <sc-if value="{{ invitarAbierto }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:16px;background:var(--bg);margin-bottom:20px;display:flex;flex-direction:column;gap:12px">
+                <label style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Correo</span>
+                  <input value="{{ inviteEmail }}" onChange="{{ onInviteEmail }}" placeholder="correo@ejemplo.com" style="font-size:15px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
+                </label>
+                <label style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Rol</span>
+                  <select value="{{ inviteRole }}" onChange="{{ onInviteRole }}" style="font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:9px 10px;border:2px solid var(--ink);background:#fff;appearance:none">
+                    <option value="normal">Normal</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+                <div style="display:flex;flex-direction:column;gap:6px;position:relative">
+                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Organizaciones</span>
+                  <button type="button" onClick="{{ toggleInviteOrgsDropdown }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff;cursor:pointer;text-align:left">
+                    <span>{{ inviteOrgsResumen }}</span>
+                    <span>▾</span>
+                  </button>
+                  <sc-if value="{{ inviteOrgsAbierto }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;border:2px solid var(--ink);margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column">
+                      <input value="{{ inviteOrgsBusqueda }}" onChange="{{ onInviteOrgsBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
+                      <div style="max-height:220px;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:8px">
+                        <sc-for list="{{ inviteOrgsChips }}" as="c" hint-placeholder-count="2">
+                          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                            <input type="checkbox" checked="{{ c.marcada }}" onChange="{{ c.onChange }}" style="width:15px;height:15px;cursor:pointer">
+                            {{ c.nombre }}
+                          </label>
+                        </sc-for>
+                        <p style="{{ inviteOrgsVacioStyle }}">Sin resultados.</p>
+                      </div>
+                      <button type="button" onClick="{{ toggleInviteOrgsDropdown }}" style="border:0;border-top:2px solid var(--ink);padding:9px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:var(--ink);color:#fff">Listo</button>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <button type="button" onClick="{{ invitarUsuario }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Enviar invitación</button>
+                  <button type="button" onClick="{{ toggleInvitarAbierto }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cancelar</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ hayInvitaciones }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-bottom:20px">
+                <div class="side-kicker" style="padding:0 0 8px">Invitaciones pendientes</div>
+                <sc-for list="{{ invitacionesLista }}" as="inv" hint-placeholder-count="2">
+                  <div style="border:2px dashed var(--ink);padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                    <div>
+                      <div style="font-size:14px;font-weight:800">{{ inv.email }}</div>
+                      <div style="font-size:12px;color:#7d7979">{{ inv.role }} · {{ inv.orgsTexto }}</div>
+                    </div>
+                    <button type="button" onClick="{{ inv.cancelar }}" style="font-size:12px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:7px 12px;cursor:pointer">Cancelar</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-for list="{{ usuariosLista }}" as="u" hint-placeholder-count="2">
+              <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                  <div>
+                    <div style="font-size:15px;font-weight:800">{{ u.nombre }}</div>
+                    <div style="font-size:12px;color:#7d7979">{{ u.email }}</div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <select value="{{ u.role }}" onChange="{{ u.onRole }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 10px;border:2px solid var(--ink);background:#fff;appearance:none">
+                      <option value="normal">Normal</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <button type="button" onClick="{{ u.borrar }}" style="{{ u.borrarStyle }};font-size:14px;border:2px solid #b00020;background:transparent;color:#b00020;padding:8px 10px;cursor:pointer" aria-label="Eliminar usuario" title="Eliminar usuario">🗑</button>
+                  </div>
+                </div>
+                <div style="position:relative;margin-top:12px;padding-top:12px;border-top:1px solid #eae9e9">
+                  <button type="button" onClick="{{ u.toggleOrgsDropdown }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:8px 10px;border:2px solid var(--ink);background:#fff;cursor:pointer;text-align:left;width:100%;max-width:360px">
+                    <span>{{ u.orgsResumen }}</span>
+                    <span>▾</span>
+                  </button>
+                  <sc-if value="{{ u.orgsAbierto }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:100%;left:0;width:100%;max-width:360px;z-index:30;background:#fff;border:2px solid var(--ink);margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column">
+                      <input value="{{ u.orgsBusqueda }}" onChange="{{ u.onOrgsBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
+                      <div style="max-height:220px;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:8px">
+                        <sc-for list="{{ u.orgsChips }}" as="c" hint-placeholder-count="2">
+                          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                            <input type="checkbox" checked="{{ c.marcada }}" onChange="{{ c.onChange }}" style="width:15px;height:15px;cursor:pointer">
+                            {{ c.nombre }}
+                          </label>
+                        </sc-for>
+                        <p style="{{ u.orgsVacioStyle }}">Sin resultados.</p>
+                      </div>
+                      <button type="button" onClick="{{ u.toggleOrgsDropdown }}" style="border:0;border-top:2px solid var(--ink);padding:9px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:var(--ink);color:#fff">Listo</button>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-for>
+            <p style="{{ sinUsuariosStyle }}">No existen usuarios registrados para la organización seleccionada.</p>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{ eventosMontado }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ eventosWrapStyle }}">
+            <iframe id="admin-eventos-frame" style="width:100%;min-height:74vh;border:0;display:block"></iframe>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+</div>
+<script>
+/* La pantalla sólo oculta el panel mientras no hay sesión; quien de verdad
+   decide qué se puede leer/escribir son las reglas de la base de datos en
+   Firebase, no este script. */
+(() => {
+  function unlock() {
+    const checking = document.getElementById('repertorio-checking');
+    const gate = document.getElementById('repertorio-gate');
+    const content = document.getElementById('repertorio-content');
+    if (checking) checking.style.display = 'none';
+    if (gate) gate.style.display = 'none';
+    if (content) content.style.display = 'block';
+  }
+
+  function lock() {
+    const checking = document.getElementById('repertorio-checking');
+    const gate = document.getElementById('repertorio-gate');
+    const content = document.getElementById('repertorio-content');
+    if (checking) checking.style.display = 'none';
+    if (gate) gate.style.display = 'flex';
+    if (content) content.style.display = 'none';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const gate = document.getElementById('repertorio-gate');
+    const content = document.getElementById('repertorio-content');
+    const signInBtn = document.getElementById('repertorio-gate-signin');
+    const error = document.getElementById('repertorio-gate-error');
+    const R = window.RepertorioData;
+
+    if (!gate || !content || !signInBtn || !error || !R) return;
+
+    /* Nada de lock() aquí: la pantalla de "Cargando…" ya está visible por
+       defecto en el HTML (ver #repertorio-checking) mientras Firebase
+       restaura la sesión — así nunca se ve el gate de login de pasada en
+       una cuenta que sí tiene sesión activa. */
+    R.onAuthChange((user) => {
+      if (user) { error.textContent = ''; unlock(); } else { lock(); }
+    });
+
+    signInBtn.addEventListener('click', () => {
+      error.textContent = '';
+      R.signInWithGoogle().catch((e) => {
+        console.error('Fallo el inicio de sesión con Google:', e);
+        error.textContent = 'No se pudo iniciar sesión (' + (e && e.code ? e.code : 'error desconocido') + ').';
+      });
+    });
+  });
+})();
+</script>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const D = () => window.RepertorioData;
+
+class Component extends DCLogic {
+  state = {
+    estadoAuth: 'cargando', usuarioNombre: null, userDoc: null,
+    todasOrgs: [], currentOrgId: null, activeTab: 'organizaciones',
+    nuevoOrgNombre: '', editandoOrgId: null,
+    orgEditNombre: '', orgEditKicker: '', orgEditNota: '',
+    usuarios: [], invitaciones: [], mensaje: '',
+    invitarAbierto: false, inviteEmail: '', inviteRole: 'normal', inviteOrgIds: {},
+    inviteOrgsAbierto: false, inviteOrgsBusqueda: '',
+    usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {},
+    orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
+    sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
+    eventosMontado: false
+  };
+
+  componentDidMount() {
+    const R = D();
+    this._unauth = R.onAuthChange((user) => {
+      if (this._unorgs) { this._unorgs(); this._unorgs = null; }
+      if (this._unusers) { this._unusers(); this._unusers = null; }
+      if (!user) { this.setState({ estadoAuth: 'anon', usuarioNombre: null, userDoc: null, todasOrgs: [] }); return; }
+      this.setState({ estadoAuth: 'cargando', usuarioNombre: user.displayName || user.email });
+      R.ensureUserRegistered(user, (doc) => {
+        if (!doc || doc.role !== 'admin') {
+          this.setState({ estadoAuth: 'denegado', userDoc: doc });
+          setTimeout(() => R.redirectToUserLanding(doc || {}), 1800);
+          return;
+        }
+        const orgIds = R.userOrgIds(doc);
+        this.setState({ estadoAuth: 'admin', userDoc: doc, currentOrgId: orgIds[0] || null });
+        /* Sin filtrar aquí: el filtro por "mis organizaciones" se calcula en
+           renderVals a partir de s.userDoc, que sí se actualiza cuando se
+           crea una organización nueva. Filtrar aquí con el orgIds de este
+           momento del login dejaba el listado congelado para siempre. */
+        this._unorgs = R.watchAllOrganizations((todas) => {
+          this.setState((s) => {
+            const misOrgIds = R.userOrgIds(s.userDoc);
+            const mias = todas.filter((o) => misOrgIds.indexOf(o.id) >= 0);
+            /* Se compara contra "mias" (lo que de verdad existe ahora), no
+               contra misOrgIds (la copia local de organizationIds, que
+               puede quedar desactualizada si la organización activa se
+               acaba de borrar) — así el selector siempre cae a una
+               organización real en vez de quedarse apuntando a una ya
+               eliminada. */
+            return {
+              todasOrgs: todas,
+              currentOrgId: s.currentOrgId && mias.some((o) => o.id === s.currentOrgId) ? s.currentOrgId : (mias[0] ? mias[0].id : null)
+            };
+          });
+        });
+        /* Se resuelve aquí (ya confirmado admin) y no antes: cambiarTab es
+           quien de verdad arranca la suscripción watchAllUsers, y esa
+           lectura solo tiene permiso una vez que el rol admin ya quedó
+           confirmado del lado del servidor. */
+        const tabInicial = new URLSearchParams(location.search).get('tab');
+        if (tabInicial === 'usuarios' || tabInicial === 'organizaciones') {
+          this.cambiarTab(tabInicial);
+        }
+      });
+    });
+  }
+
+  componentWillUnmount() {
+    if (this._unauth) this._unauth();
+    if (this._unorgs) this._unorgs();
+    if (this._unusers) this._unusers();
+    if (this._uninvites) this._uninvites();
+  }
+
+  /* El iframe de Eventos vive fuera del template reactivo: este framework no
+     interpola `src="{{ }}"` en <iframe> (el navegador termina pidiendo el
+     placeholder literal), así que su URL se actualiza a mano, igual que el
+     reproductor de audio hace con su propio elemento por id. */
+  componentDidUpdate() {
+    const s = this.state;
+    if (!s.eventosMontado || !s.currentOrgId) return;
+    const src = 'Repertorio Formulario.dc.html?org=' + encodeURIComponent(s.currentOrgId) + '&embed=1';
+    if (this._eventosSrcActual === src) return;
+    const el = document.getElementById('admin-eventos-frame');
+    if (!el) return;
+    el.src = src;
+    this._eventosSrcActual = src;
+  }
+
+  cambiarTab(tab) {
+    this.setState((s) => ({ activeTab: tab, eventosMontado: s.eventosMontado || tab === 'eventos' }));
+    this.cerrarSidebarSiMovil();
+    if (tab === 'usuarios' && !this._unusers) {
+      this._unusers = D().watchAllUsers((lista) => this.setState({ usuarios: lista }));
+      this._uninvites = D().watchInvitations((lista) => this.setState({ invitaciones: lista }));
+    }
+  }
+
+  seleccionarOrg(id) {
+    this.setState({ currentOrgId: id, editandoOrgId: null, orgSwitcherAbierto: false, orgSwitcherBusqueda: '' });
+    this.cerrarSidebarSiMovil();
+  }
+
+  toggleOrgSwitcher() {
+    this.setState((s) => ({ orgSwitcherAbierto: !s.orgSwitcherAbierto, orgSwitcherBusqueda: '' }));
+  }
+
+  toggleSidebar() { this.setState((s) => ({ sidebarAbierto: !s.sidebarAbierto })); }
+
+  /* En escritorio el sidebar es parte fija del layout y debe quedarse tal
+     como el usuario lo dejó; en móvil es un cajón que tapa el contenido, así
+     que conviene cerrarlo solo después de elegir algo ahí dentro. */
+  cerrarSidebarSiMovil() {
+    if (typeof window !== 'undefined' && window.innerWidth <= 860) this.setState({ sidebarAbierto: false });
+  }
+
+  crearOrganizacion() {
+    const nombre = (this.state.nuevoOrgNombre || '').trim();
+    if (!nombre) return;
+    const R = D();
+    R.createOrganization(nombre, (org) => {
+      if (!org) { this.setState({ mensaje: 'No se pudo crear la organización.' }); return; }
+      /* Quien crea la organización queda vinculado a ella de una vez —
+         de lo contrario nunca la vería en su propio listado (el CRUD de
+         Usuarios queda acotado a las organizaciones del admin). */
+      const nuevosIds = R.userOrgIds(this.state.userDoc).concat([org.id]);
+      R.setUserOrgs(this.state.userDoc.uid, nuevosIds, () => {});
+      this.setState((s) => ({
+        nuevoOrgNombre: '',
+        mensaje: 'Organización "' + org.name + '" creada.',
+        currentOrgId: org.id,
+        userDoc: Object.assign({}, s.userDoc, { organizationIds: nuevosIds.reduce((m, id) => (m[id] = true, m), {}) })
+      }));
+    });
+  }
+
+  iniciarEdicionOrg(org) {
+    this.setState({ editandoOrgId: org.id, orgEditNombre: org.name, orgEditKicker: org.kicker || '', orgEditNota: org.nota || '' });
+  }
+
+  cancelarEdicionOrg() { this.setState({ editandoOrgId: null }); }
+
+  guardarEdicionOrg() {
+    const s = this.state;
+    D().updateOrganization(s.editandoOrgId, { name: s.orgEditNombre, kicker: s.orgEditKicker, nota: s.orgEditNota }, (ok) => {
+      this.setState({ editandoOrgId: null, mensaje: ok ? 'Organización actualizada.' : 'No se pudo guardar el cambio.' });
+    });
+  }
+
+  cambiarRolUsuario(uid, role) { D().setUserRole(uid, role, () => {}); }
+
+  toggleOrgUsuario(userDoc, orgId) {
+    const actuales = D().userOrgIds(userDoc);
+    const i = actuales.indexOf(orgId);
+    const nuevos = i >= 0 ? actuales.filter((x) => x !== orgId) : actuales.concat([orgId]);
+    D().setUserOrgs(userDoc.uid, nuevos, () => {});
+  }
+
+  toggleInvitarAbierto() {
+    this.setState((s) => ({
+      invitarAbierto: !s.invitarAbierto, inviteEmail: '', inviteRole: 'normal', inviteOrgIds: {},
+      inviteOrgsAbierto: false, inviteOrgsBusqueda: ''
+    }));
+  }
+
+  toggleInviteOrg(orgId) {
+    this.setState((s) => {
+      const map = Object.assign({}, s.inviteOrgIds);
+      if (map[orgId]) delete map[orgId]; else map[orgId] = true;
+      return { inviteOrgIds: map };
+    });
+  }
+
+  toggleInviteOrgsDropdown() {
+    this.setState((s) => ({ inviteOrgsAbierto: !s.inviteOrgsAbierto, inviteOrgsBusqueda: '' }));
+  }
+
+  toggleUsuarioOrgsDropdown(uid) {
+    this.setState((s) => {
+      const abierto = Object.assign({}, s.usuarioOrgsAbierto);
+      const busqueda = Object.assign({}, s.usuarioOrgsBusqueda);
+      abierto[uid] = !abierto[uid];
+      busqueda[uid] = '';
+      return { usuarioOrgsAbierto: abierto, usuarioOrgsBusqueda: busqueda };
+    });
+  }
+
+  invitarUsuario() {
+    const s = this.state;
+    const email = (s.inviteEmail || '').trim();
+    if (!email) return;
+    const orgIds = Object.keys(s.inviteOrgIds || {});
+    D().createInvitation(email, s.inviteRole, orgIds, (ok) => {
+      this.setState({
+        mensaje: ok ? ('Invitación enviada a ' + email + '.') : 'No se pudo crear la invitación.',
+        invitarAbierto: false, inviteEmail: '', inviteRole: 'normal', inviteOrgIds: {},
+        inviteOrgsAbierto: false, inviteOrgsBusqueda: ''
+      });
+    });
+  }
+
+  cancelarInvitacion(key) {
+    D().deleteInvitation(key, (ok) => {
+      this.setState({ mensaje: ok ? 'Invitación cancelada.' : 'No se pudo cancelar la invitación.' });
+    });
+  }
+
+  confirmarBorrarUsuario(u) {
+    const ok = confirm('¿Eliminar a "' + (u.displayName || u.email) + '"? Perderá acceso al sistema de inmediato. Esta acción no se puede deshacer.');
+    if (!ok) return;
+    D().deleteUser(u.uid, (exito) => {
+      this.setState({ mensaje: exito ? 'Usuario eliminado.' : 'No se pudo eliminar el usuario.' });
+    });
+  }
+
+  confirmarBorrarOrg(org) {
+    const R = D();
+    R.countEventsForOrg(org.id, (numEventos) => {
+      R.countUsersForOrg(org.id, (numUsuarios) => {
+        const partes = [];
+        if (numEventos > 0) partes.push(numEventos + (numEventos === 1 ? ' evento se eliminará' : ' eventos se eliminarán') + ' permanentemente');
+        if (numUsuarios > 0) partes.push(numUsuarios + (numUsuarios === 1 ? ' usuario perderá' : ' usuarios perderán') + ' acceso a esta organización');
+        const detalle = partes.length ? ('\n\n' + partes.join('. ') + '.') : '';
+        const ok = confirm('¿Eliminar la organización "' + org.name + '"? Esta acción no se puede deshacer.' + detalle);
+        if (!ok) return;
+        R.deleteOrganization(org.id, (exito) => {
+          this.setState({ mensaje: exito ? 'Organización eliminada.' : 'No se pudo eliminar la organización.' });
+        });
+      });
+    });
+  }
+
+  renderVals() {
+    const R = D();
+    const s = this.state;
+
+    const misOrgIds = R.userOrgIds(s.userDoc);
+    const orgs = (s.todasOrgs || []).filter((o) => misOrgIds.indexOf(o.id) >= 0);
+
+    const orgActual = orgs.find((o) => o.id === s.currentOrgId) || null;
+
+    const tabStyle = (activo) => 'display:block;width:100%;text-align:left;padding:10px 12px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border:0;cursor:pointer;margin-bottom:2px;background:' +
+      (activo ? 'var(--ink)' : 'transparent') + ';color:' + (activo ? '#fff' : 'var(--ink)');
+
+    const orgsLista = orgs.map((o) => ({
+      id: o.id, nombre: o.name, slug: o.slug,
+      fecha: o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-SV') : '',
+      editando: s.editandoOrgId === o.id,
+      noEditando: s.editandoOrgId !== o.id,
+      editar: () => this.iniciarEdicionOrg(o),
+      borrar: () => this.confirmarBorrarOrg(o)
+    }));
+
+    /* Resumen legible de una selección de organizaciones para el botón del
+       combobox (antes de abrirlo): nombres si son pocas, cantidad si son
+       muchas — así no se rompe el layout con una lista larga de nombres. */
+    const resumenOrgs = (idsMap) => {
+      const ids = Object.keys(idsMap || {});
+      if (!ids.length) return 'Seleccionar organizaciones';
+      const nombres = orgs.filter((o) => ids.indexOf(o.id) >= 0).map((o) => o.name);
+      return nombres.length <= 2 ? nombres.join(', ') : (nombres.length + ' organizaciones seleccionadas');
+    };
+    const filtrarOrgs = (busqueda) => {
+      const q = (busqueda || '').trim().toLowerCase();
+      return q ? orgs.filter((o) => o.name.toLowerCase().indexOf(q) >= 0) : orgs;
+    };
+
+    const orgsSidebarFiltradas = filtrarOrgs(s.orgSwitcherBusqueda);
+    const orgsSidebar = orgsSidebarFiltradas.map((o) => ({
+      id: o.id, nombre: o.name,
+      style: 'display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;cursor:pointer;background:' +
+        (o.id === s.currentOrgId ? 'var(--ac)' : 'transparent') + ';color:' + (o.id === s.currentOrgId ? '#fff' : 'var(--ink)'),
+      onClick: () => this.seleccionarOrg(o.id)
+    }));
+    const orgSwitcherVacioStyle = orgsSidebarFiltradas.length === 0 ? 'font-size:13px;color:#9a9694;padding:10px' : 'display:none';
+
+    /* Acotado a la organización activa — salvo los que todavía no tienen
+       ninguna asignada (recién auto-registrados como 'normal' pendientes),
+       que deben seguir viéndose sin importar cuál organización esté activa,
+       o de lo contrario nunca aparecerían en ningún listado para poder
+       asignarlos por primera vez. */
+    const usuariosDeLaOrg = (s.usuarios || []).filter((u) => {
+      const ids = R.userOrgIds(u);
+      return ids.length === 0 || ids.indexOf(s.currentOrgId) >= 0;
+    });
+
+    const usuariosLista = usuariosDeLaOrg.map((u) => {
+      const busqueda = (s.usuarioOrgsBusqueda || {})[u.uid] || '';
+      const misIds = R.userOrgIds(u);
+      const idsMap = {};
+      misIds.forEach((id) => (idsMap[id] = true));
+      const esUnoMismo = !!s.userDoc && u.uid === s.userDoc.uid;
+      return {
+        uid: u.uid, email: u.email, nombre: u.displayName || u.email,
+        role: u.role || 'normal',
+        onRole: (e) => this.cambiarRolUsuario(u.uid, e.target.value),
+        puedeBorrar: !esUnoMismo,
+        borrarStyle: esUnoMismo ? 'display:none' : '',
+        borrar: () => this.confirmarBorrarUsuario(u),
+        orgsAbierto: !!(s.usuarioOrgsAbierto || {})[u.uid],
+        orgsResumen: resumenOrgs(idsMap),
+        orgsBusqueda: busqueda,
+        onOrgsBusqueda: (e) => this.setState((st) => ({ usuarioOrgsBusqueda: Object.assign({}, st.usuarioOrgsBusqueda, { [u.uid]: e.target.value }) })),
+        toggleOrgsDropdown: () => this.toggleUsuarioOrgsDropdown(u.uid),
+        orgsChips: filtrarOrgs(busqueda).map((o) => ({
+          id: o.id, nombre: o.name,
+          marcada: misIds.indexOf(o.id) >= 0,
+          onChange: () => this.toggleOrgUsuario(u, o.id)
+        })),
+        orgsVacioStyle: filtrarOrgs(busqueda).length === 0 ? 'font-size:13px;color:#9a9694;padding:4px 2px' : 'display:none'
+      };
+    });
+
+    const invitacionesLista = (s.invitaciones || [])
+      .filter((inv) => { const ids = R.userOrgIds(inv); return ids.length === 0 || ids.indexOf(s.currentOrgId) >= 0; })
+      .map((inv) => ({
+        key: inv.id, email: inv.email, role: inv.role === 'admin' ? 'Admin' : 'Normal',
+        orgsTexto: orgs.filter((o) => R.userOrgIds(inv).indexOf(o.id) >= 0).map((o) => o.name).join(', ') || 'Sin organización',
+        cancelar: () => this.cancelarInvitacion(inv.id)
+      }));
+
+    const inviteOrgsChips = filtrarOrgs(s.inviteOrgsBusqueda).map((o) => ({
+      id: o.id, nombre: o.name,
+      marcada: !!(s.inviteOrgIds || {})[o.id],
+      onChange: () => this.toggleInviteOrg(o.id)
+    }));
+    const inviteOrgsResumen = resumenOrgs(s.inviteOrgIds);
+    const inviteOrgsSinResultados = inviteOrgsChips.length === 0;
+
+    return {
+      cargando: s.estadoAuth === 'cargando',
+      denegado: s.estadoAuth === 'denegado',
+      esAdmin: s.estadoAuth === 'admin',
+      usuarioNombre: s.usuarioNombre || '',
+      cerrarSesion: () => D().signOutUser(),
+      verPublicadoHref: orgActual ? ('index.html?group=' + orgActual.slug) : 'index.html',
+      mensaje: s.mensaje || '',
+      mensajeStyle: s.mensaje ? 'font-size:13px;color:var(--ac-dk);margin:0 0 16px' : 'display:none',
+
+      orgsSidebar: orgsSidebar,
+      orgActualNombre: orgActual ? orgActual.name : 'Seleccionar organización',
+      orgSwitcherAbierto: s.orgSwitcherAbierto,
+      orgSwitcherBusqueda: s.orgSwitcherBusqueda,
+      onOrgSwitcherBusqueda: (e) => this.setState({ orgSwitcherBusqueda: e.target.value }),
+      toggleOrgSwitcher: () => this.toggleOrgSwitcher(),
+      orgSwitcherVacioStyle: orgSwitcherVacioStyle,
+      sinOrgsStyle: orgs.length === 0 ? 'font-size:12px;color:#9a9694;margin-top:8px' : 'display:none',
+      hayOrgs: orgs.length > 0,
+      mostrarOrgActiva: s.activeTab !== 'organizaciones',
+      tabOrganizaciones: s.activeTab === 'organizaciones',
+      tabUsuarios: s.activeTab === 'usuarios',
+      tabOrgStyle: tabStyle(s.activeTab === 'organizaciones'),
+      tabUsuariosStyle: tabStyle(s.activeTab === 'usuarios'),
+      tabEventosStyle: tabStyle(s.activeTab === 'eventos') + (orgActual ? '' : ';opacity:.4;cursor:default'),
+      sinOrgActual: !orgActual,
+      irTabOrganizaciones: () => this.cambiarTab('organizaciones'),
+      irTabUsuarios: () => this.cambiarTab('usuarios'),
+      irTabEventos: () => this.cambiarTab('eventos'),
+      eventosMontado: s.eventosMontado,
+      eventosWrapStyle: s.activeTab === 'eventos' ? 'display:block' : 'display:none',
+      sidebarClase: 'admin-side' + (s.sidebarAbierto ? ' abierto' : ''),
+      backdropClase: 'admin-backdrop' + (s.sidebarAbierto ? ' abierto' : ''),
+      toggleSidebar: () => this.toggleSidebar(),
+      cerrarSidebarMovil: () => this.setState({ sidebarAbierto: false }),
+
+      nuevoOrgNombre: s.nuevoOrgNombre,
+      onNuevoOrgNombre: (e) => this.setState({ nuevoOrgNombre: e.target.value }),
+      slugPreview: R.slugify(s.nuevoOrgNombre) || '(se genera del nombre)',
+      crearOrganizacion: () => this.crearOrganizacion(),
+
+      orgsLista: orgsLista,
+      orgEditNombre: s.orgEditNombre, onOrgEditNombre: (e) => this.setState({ orgEditNombre: e.target.value }),
+      orgEditKicker: s.orgEditKicker, onOrgEditKicker: (e) => this.setState({ orgEditKicker: e.target.value }),
+      orgEditNota: s.orgEditNota, onOrgEditNota: (e) => this.setState({ orgEditNota: e.target.value }),
+      guardarEdicionOrg: () => this.guardarEdicionOrg(),
+      cancelarEdicionOrg: () => this.cancelarEdicionOrg(),
+
+      usuariosLista: usuariosLista,
+      sinUsuariosStyle: usuariosLista.length === 0 ? 'font-size:13px;color:#9a9694;padding:8px 2px' : 'display:none',
+
+      invitarAbierto: s.invitarAbierto,
+      toggleInvitarAbierto: () => this.toggleInvitarAbierto(),
+      inviteEmail: s.inviteEmail,
+      onInviteEmail: (e) => this.setState({ inviteEmail: e.target.value }),
+      inviteRole: s.inviteRole,
+      onInviteRole: (e) => this.setState({ inviteRole: e.target.value }),
+      inviteOrgsAbierto: s.inviteOrgsAbierto,
+      inviteOrgsBusqueda: s.inviteOrgsBusqueda,
+      onInviteOrgsBusqueda: (e) => this.setState({ inviteOrgsBusqueda: e.target.value }),
+      toggleInviteOrgsDropdown: () => this.toggleInviteOrgsDropdown(),
+      inviteOrgsResumen: inviteOrgsResumen,
+      inviteOrgsVacioStyle: inviteOrgsSinResultados ? 'font-size:13px;color:#9a9694;padding:4px 2px' : 'display:none',
+      inviteOrgsChips: inviteOrgsChips,
+      invitarUsuario: () => this.invitarUsuario(),
+      invitacionesLista: invitacionesLista,
+      hayInvitaciones: invitacionesLista.length > 0
+    };
+  }
+}
+</script>
+</body>
+</html>

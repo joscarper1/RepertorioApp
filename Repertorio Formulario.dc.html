@@ -6,7 +6,10 @@
 <script src="./support.js"></script>
 </head>
 <body>
-<div id="repertorio-gate" style="position:fixed;inset:0;background:rgba(243,242,242,.97);display:flex;align-items:center;justify-content:center;z-index:2147483647;padding:20px">
+<div id="repertorio-checking" style="position:fixed;inset:0;background:var(--bg,#f3f2f2);display:flex;align-items:center;justify-content:center;z-index:2147483647">
+  <p style="font-size:14px;color:#7d7979;font-family:Archivo,sans-serif">Cargando…</p>
+</div>
+<div id="repertorio-gate" style="position:fixed;inset:0;background:rgba(243,242,242,.97);display:none;align-items:center;justify-content:center;z-index:2147483647;padding:20px">
   <div style="width:min(100%,420px);background:#fff;border:2px solid var(--ink,#201e1d);padding:24px 24px 20px;box-shadow:0 16px 40px rgba(0,0,0,.12)">
     <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk,#08512c)">Acceso restringido</div>
     <h2 style="font-size:28px;font-weight:800;margin:10px 0 0;text-transform:uppercase">Inicia sesión</h2>
@@ -38,19 +41,40 @@ input,textarea,button{font-family:inherit;color:inherit;border-radius:0}
 input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
 input::placeholder,textarea::placeholder{color:#bab6b6}
 ::selection{background:var(--ac-lt)}
+.admin-shell{display:flex;align-items:stretch;margin-top:24px;min-height:60vh;border:2px solid var(--ink);position:relative}
+.admin-side{width:240px;flex:0 0 240px;border-right:2px solid var(--ink);background:#fff;display:flex;flex-direction:column;transition:transform .25s ease}
+.admin-main{flex:1;min-width:0;padding:28px 32px;background:#fff}
+.side-group{padding:16px 14px;border-bottom:1px solid #eae9e9}
+.side-kicker{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#9a9694;padding:0 2px 8px}
+.admin-burger{display:none;width:38px;height:38px;align-items:center;justify-content:center;border:2px solid var(--ink);background:transparent;cursor:pointer;font-size:16px;flex:0 0 auto}
+.admin-backdrop{display:none}
+@media (max-width:860px){
+  .admin-burger{display:inline-flex}
+  .admin-shell{border:0;display:block}
+  .admin-side{position:fixed;top:0;left:0;bottom:0;width:270px;z-index:1000;transform:translateX(-100%);box-shadow:6px 0 28px rgba(0,0,0,.2)}
+  .admin-side.abierto{transform:translateX(0)}
+  .admin-main{border:2px solid var(--ink);padding:20px}
+  .admin-backdrop.abierto{display:block;position:fixed;inset:0;background:rgba(20,18,17,.45);z-index:999}
+}
 </style>
 </helmet>
-<div style="max-width:820px;margin:0 auto;padding:0 20px 96px">
+<div style="{{ containerStyle }}">
 
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink);flex-wrap:wrap">
-    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px">
-      <div style="display:flex;align-items:baseline;gap:12px">
-        <span style="width:14px;height:14px;background:var(--ac);display:inline-block"></span>
-        <span style="font-weight: 800; font-size: 15px; letter-spacing: .14em; text-transform: uppercase; position: relative">ADMINISTRACIÓN DE EVENTOS</span>
+  <sc-if value="{{ noEmbebido }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
+    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 auto">
+      <sc-if value="{{ permitido }}" hint-placeholder-val="{{ true }}">
+        <button type="button" class="admin-burger" onClick="{{ toggleSidebar }}" aria-label="Abrir menú">☰</button>
+      </sc-if>
+      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto">
+        <div style="display:flex;align-items:baseline;gap:12px;min-width:0">
+          <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
+          <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Administración de Eventos</span>
+        </div>
+        <a href="{{ verPublicadoHref }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink);border-bottom-width:2px">Ver publicado</a>
       </div>
-      <a href="index.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink);border-bottom-width:2px">Ver publicado</a>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
       <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
@@ -58,8 +82,54 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
       </div>
     </div>
   </div>
+  </sc-if>
 
-  <div style="display:flex;gap:2px;margin-top:24px;background:var(--ink);padding:2px">
+  <sc-if value="{{ cargando }}" hint-placeholder-val="{{ false }}">
+    <p style="padding:40px 0;font-size:14px;color:#7d7979">Cargando…</p>
+  </sc-if>
+
+  <sc-if value="{{ denegado }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:480px;margin:60px auto;text-align:center;border:2px solid var(--ink);padding:32px 24px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Acceso denegado</div>
+      <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:10px">{{ denegadoMotivo }}</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ permitido }}" hint-placeholder-val="{{ true }}">
+  <sc-if value="{{ noEmbebido }}" hint-placeholder-val="{{ true }}">
+  <div class="{{ backdropClase }}" onClick="{{ cerrarSidebarMovil }}"></div>
+  </sc-if>
+  <div class="admin-shell" style="{{ shellExtraStyle }}">
+    <sc-if value="{{ noEmbebido }}" hint-placeholder-val="{{ true }}">
+    <div class="{{ sidebarClase }}">
+      <div class="side-group" style="position:relative">
+        <div class="side-kicker">Organización activa</div>
+        <button type="button" onClick="{{ toggleOrgSwitcher }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;font-size:13px;font-weight:700;padding:8px 10px;border:2px solid var(--ink);background:#fff;cursor:pointer;text-align:left">
+          <span>{{ orgActualNombre }}</span>
+          <span>▾</span>
+        </button>
+        <sc-if value="{{ orgSwitcherAbierto }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:100%;left:14px;right:14px;z-index:30;background:#fff;border:2px solid var(--ink);margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column">
+            <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
+            <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column">
+              <sc-for list="{{ orgsSidebar }}" as="o" hint-placeholder-count="2">
+                <button type="button" style="{{ o.style }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
+              </sc-for>
+              <p style="{{ orgSwitcherVacioStyle }}">Sin resultados.</p>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+      <div class="side-group" style="flex:1">
+        <div class="side-kicker">Módulos</div>
+        <button type="button" style="{{ tabOrgStyle }}" onClick="{{ irOrganizaciones }}">Organizaciones</button>
+        <button type="button" style="{{ tabUsuariosStyle }}" onClick="{{ irUsuarios }}">Usuarios</button>
+        <button type="button" style="{{ tabEventosStyle }}">Eventos</button>
+      </div>
+    </div>
+    </sc-if>
+    <div class="admin-main" style="{{ mainExtraStyle }}">
+  <div style="display:flex;gap:2px;margin-top:0;background:var(--ink);padding:2px">
     <sc-for list="{{ pasos }}" as="p" hint-placeholder-count="4">
       <div style="{{ p.style }}">{{ p.label }}</div>
     </sc-for>
@@ -332,8 +402,11 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
   </sc-if>
 
   <footer style="padding:32px 0 0;font-size:12px;letter-spacing:.06em;color:#6b6866">
-    Los cambios se publican de inmediato para todos. "Copiar enlace" genera una dirección con una foto fija del repertorio incrustada, útil para compartir sin depender de la conexión.
+    Los cambios se publican de inmediato para todos.
   </footer>
+    </div>
+  </div>
+  </sc-if>
 </div>
 
 </x-dc>
@@ -347,15 +420,19 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
    no hace falta un TTL propio como antes. */
 (() => {
   function unlock() {
+    const checking = document.getElementById('repertorio-checking');
     const gate = document.getElementById('repertorio-gate');
     const content = document.getElementById('repertorio-content');
+    if (checking) checking.style.display = 'none';
     if (gate) gate.style.display = 'none';
     if (content) content.style.display = 'block';
   }
 
   function lock() {
+    const checking = document.getElementById('repertorio-checking');
     const gate = document.getElementById('repertorio-gate');
     const content = document.getElementById('repertorio-content');
+    if (checking) checking.style.display = 'none';
     if (gate) gate.style.display = 'flex';
     if (content) content.style.display = 'none';
   }
@@ -369,7 +446,10 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 
     if (!gate || !content || !signInBtn || !error || !R) return;
 
-    lock();
+    /* Nada de lock() aquí: la pantalla de "Cargando…" ya está visible por
+       defecto en el HTML (ver #repertorio-checking) mientras Firebase
+       restaura la sesión — así nunca se ve el gate de login de pasada en
+       una cuenta que sí tiene sesión activa. */
     R.onAuthChange((user) => {
       if (user) { error.textContent = ''; unlock(); } else { lock(); }
     });
@@ -388,23 +468,59 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 const D = () => window.RepertorioData;
 
 class Component extends DCLogic {
-  state = { data: null, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '', autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {}, reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null };
+  state = {
+    estadoAcceso: 'cargando', denegadoMotivo: '', organizationId: null, organizacion: null, orgs: [],
+    data: { eventos: [] }, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '',
+    autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {},
+    reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null,
+    sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
+    orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false
+  };
 
   componentDidMount() {
     const R = D();
     const hoy = R.hoyKey();
-    this.setState({ data: R.load(), mes: hoy, fecha: '' });
-    /* Sólo se refresca desde la nube cuando no hay un borrador abierto, para
-       no pisar una participación que el usuario está editando. */
-    this._unwatch = R.watchCloud((d) => {
-      this.setState((s) => (s.draft ? null : { data: d }));
-    });
+    this.setState({ mes: hoy, fecha: '' });
     this._yt = R.youtubeController('yt-audio-player', (key, paused) => this.setState({ reproduciendoKey: key, reproduciendoPausado: paused }));
-    this._unauth = R.onAuthChange((user) => this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null }));
+
+    const params = new URLSearchParams(location.search);
+    this.setState({ embed: params.get('embed') === '1' });
+
+    const orgId = params.get('org');
+    if (!orgId) { window.location.href = 'admin.html'; return; }
+
+    this._unauth = R.onAuthChange((user) => {
+      this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null });
+      if (!user) return; // el overlay de acceso restringido ya cubre este caso
+      R.ensureUserRegistered(user, (doc) => {
+        if (!doc || doc.role !== 'admin') {
+          this.setState({ estadoAcceso: 'denegado', denegadoMotivo: 'Tu cuenta no tiene permisos de administrador. Te llevaremos a tu página correspondiente…' });
+          setTimeout(() => R.redirectToUserLanding(doc || {}), 1800);
+          return;
+        }
+        if (R.userOrgIds(doc).indexOf(orgId) < 0) {
+          this.setState({ estadoAcceso: 'denegado', denegadoMotivo: 'No administras esta organización. Te llevaremos a tu panel…' });
+          setTimeout(() => { window.location.href = 'admin.html'; }, 1800);
+          return;
+        }
+        this.setState({ estadoAcceso: 'permitido', organizationId: orgId });
+        R.getOrganization(orgId, (org) => this.setState({ organizacion: org }));
+        const orgIds = R.userOrgIds(doc);
+        this._unorgs = R.watchAllOrganizations((todas) => {
+          this.setState({ orgs: todas.filter((o) => orgIds.indexOf(o.id) >= 0) });
+        });
+        /* Sólo se refresca desde la nube cuando no hay un borrador abierto,
+           para no pisar una participación que el usuario está editando. */
+        this._unwatch = R.watchEventsForOrg(orgId, (evs) => {
+          this.setState((s) => (s.draft ? null : { data: { eventos: evs } }));
+        });
+      });
+    });
   }
 
   componentWillUnmount() {
     if (this._unwatch) this._unwatch();
+    if (this._unorgs) this._unorgs();
     if (this._yt) this._yt.destroy();
     if (this._unauth) this._unauth();
   }
@@ -413,18 +529,32 @@ class Component extends DCLogic {
     if (this._yt) this._yt.toggle(key, videoId);
   }
 
-  persist(data, msg) {
-    this.setState({ data: data, estado: msg || 'Guardado' });
-    /* El caché local ya se actualizó arriba; si la nube rechaza el guardado
-       (por ejemplo, sesión sin permiso en las reglas de Firebase) hay que
-       avisar, porque de lo contrario el resto del equipo nunca ve el cambio
-       aunque en este navegador parezca "Guardado". */
-    D().save(data, (ok) => {
-      if (ok) return;
-      clearTimeout(this._t);
-      this.setState({ estado: 'No se guardó en la nube: revisa tu sesión o conexión' });
-    });
+  toggleSidebar() { this.setState((s) => ({ sidebarAbierto: !s.sidebarAbierto })); }
+
+  irOrg(id) {
+    this.setState({ orgSwitcherAbierto: false, orgSwitcherBusqueda: '' });
+    if (id === this.state.organizationId) { this.cerrarSidebarSiMovil(); return; }
+    window.location.href = 'Repertorio Formulario.dc.html?org=' + encodeURIComponent(id);
+  }
+
+  toggleOrgSwitcher() {
+    this.setState((s) => ({ orgSwitcherAbierto: !s.orgSwitcherAbierto, orgSwitcherBusqueda: '' }));
+  }
+
+  irOrganizaciones() { window.location.href = 'admin.html?tab=organizaciones'; }
+  irUsuarios() { window.location.href = 'admin.html?tab=usuarios'; }
+
+  cerrarSidebarSiMovil() {
+    if (typeof window !== 'undefined' && window.innerWidth <= 860) this.setState({ sidebarAbierto: false });
+  }
+
+  /* Muestra el mensaje de estado y lo limpia solo tras un momento; ok=false
+     indica que Firebase rechazó la escritura (revisar sesión/reglas), en
+     cuyo caso el resto del equipo no verá el cambio aunque en este
+     navegador ya se haya cerrado el asistente. */
+  avisar(ok, msgOk, msgError) {
     clearTimeout(this._t);
+    this.setState({ estado: ok ? msgOk : msgError });
     this._t = setTimeout(() => this.setState({ estado: '' }), 1800);
   }
 
@@ -494,20 +624,60 @@ class Component extends DCLogic {
   }
 
   guardar() {
-    const R = D();
     const dr = this.state.draft;
-    const data = JSON.parse(JSON.stringify(this.state.data));
-    const i = data.eventos.findIndex((e) => e.id === dr.id);
-    if (i >= 0) data.eventos[i] = dr; else data.eventos.push(dr);
-    data.eventos.sort((a, b) => this.ordenFechaHora(a, b));
+    const orgId = this.state.organizationId;
     this.setState({ draft: null, editId: null, paso: 1 });
-    this.persist(data, 'Participación guardada');
+    D().saveEvent(dr, orgId, (ok) => this.avisar(ok, 'Participación guardada', 'No se guardó en la nube: revisa tu sesión o conexión'));
   }
 
   renderVals() {
     const R = D();
     const s = this.state;
-    if (!s.data || !R) return { estado: 'Cargando…' };
+
+    const tabStyle = (activo) => 'display:block;width:100%;text-align:left;padding:10px 12px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border:0;cursor:pointer;margin-bottom:2px;background:' +
+      (activo ? 'var(--ink)' : 'transparent') + ';color:' + (activo ? '#fff' : 'var(--ink)');
+    const q = (s.orgSwitcherBusqueda || '').trim().toLowerCase();
+    const orgsFiltradas = q ? (s.orgs || []).filter((o) => o.name.toLowerCase().indexOf(q) >= 0) : (s.orgs || []);
+    const orgsSidebar = orgsFiltradas.map((o) => ({
+      id: o.id, nombre: o.name,
+      style: 'display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;cursor:pointer;background:' +
+        (o.id === s.organizationId ? 'var(--ac)' : 'transparent') + ';color:' + (o.id === s.organizationId ? '#fff' : 'var(--ink)'),
+      onClick: () => this.irOrg(o.id)
+    }));
+    const orgSwitcherVacioStyle = orgsFiltradas.length === 0 ? 'font-size:13px;color:#9a9694;padding:10px' : 'display:none';
+    const orgActualEncontrada = (s.orgs || []).find((o) => o.id === s.organizationId);
+    const orgActualNombre = orgActualEncontrada ? orgActualEncontrada.name : (s.organizacion ? s.organizacion.name : 'Seleccionar organización');
+
+    const base = {
+      cargando: s.estadoAcceso === 'cargando',
+      denegado: s.estadoAcceso === 'denegado',
+      denegadoMotivo: s.denegadoMotivo,
+      permitido: s.estadoAcceso === 'permitido',
+      noEmbebido: !s.embed,
+      containerStyle: s.embed ? 'max-width:none;margin:0;padding:0' : 'max-width:1100px;margin:0 auto;padding:0 20px 96px',
+      shellExtraStyle: s.embed ? 'border:0;margin-top:0;min-height:0' : '',
+      mainExtraStyle: s.embed ? 'padding:0' : '',
+      usuarioNombre: s.usuarioNombre || '',
+      cerrarSesion: () => D().signOutUser(),
+      verPublicadoHref: s.organizacion ? ('index.html?group=' + s.organizacion.slug) : 'index.html',
+      sidebarClase: 'admin-side' + (s.sidebarAbierto ? ' abierto' : ''),
+      backdropClase: 'admin-backdrop' + (s.sidebarAbierto ? ' abierto' : ''),
+      toggleSidebar: () => this.toggleSidebar(),
+      cerrarSidebarMovil: () => this.setState({ sidebarAbierto: false }),
+      orgsSidebar: orgsSidebar,
+      orgActualNombre: orgActualNombre,
+      orgSwitcherAbierto: s.orgSwitcherAbierto,
+      orgSwitcherBusqueda: s.orgSwitcherBusqueda,
+      onOrgSwitcherBusqueda: (e) => this.setState({ orgSwitcherBusqueda: e.target.value }),
+      toggleOrgSwitcher: () => this.toggleOrgSwitcher(),
+      orgSwitcherVacioStyle: orgSwitcherVacioStyle,
+      tabOrgStyle: tabStyle(false),
+      tabUsuariosStyle: tabStyle(false),
+      tabEventosStyle: tabStyle(true),
+      irOrganizaciones: () => this.irOrganizaciones(),
+      irUsuarios: () => this.irUsuarios()
+    };
+    if (s.estadoAcceso !== 'permitido') return Object.assign(base, { estado: 'Cargando…' });
 
     const [year, month] = s.mes.split('-').map(Number);
     const enWizard = !!s.draft;
@@ -566,9 +736,7 @@ class Component extends DCLogic {
       editar: () => this.setState({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: 2 }),
       borrar: () => {
         if (!confirm('¿Borrar esta participación?')) return;
-        const data = JSON.parse(JSON.stringify(s.data));
-        data.eventos = data.eventos.filter((x) => x.id !== ev.id);
-        this.persist(data, 'Participación borrada');
+        D().deleteEvent(ev.id, (ok) => this.avisar(ok, 'Participación borrada', 'No se pudo borrar: revisa tu sesión o conexión'));
       }
     }));
 
@@ -817,10 +985,8 @@ class Component extends DCLogic {
       return true;
     };
 
-    return {
+    return Object.assign(base, {
       estado: s.estado,
-      usuarioNombre: s.usuarioNombre || '',
-      cerrarSesion: () => D().signOutUser(),
       pasos: pasos,
       esPaso1: !enWizard,
       esPaso2: enWizard && paso === 2,
@@ -885,7 +1051,7 @@ class Component extends DCLogic {
         this.setState({ paso: prev });
       },
       cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '' })
-    };
+    });
   }
 }
 
