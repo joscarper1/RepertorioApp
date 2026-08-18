@@ -40,6 +40,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   .sub{font-size:13px !important;margin-top:2px !important;padding-bottom:4px !important}
   .banda{margin-top:6px !important;padding:6px !important}
   .banda-lista{display:flex !important}
+  .evtcontent{display:block !important}
   .tema{font-size:17px !important;margin-top:2px !important;line-height:1.2 !important}
   .cita{font-size:13px !important;margin-top:2px !important;padding-left:8px !important;line-height:1.3 !important}
   .nota{font-size:13px !important;margin-top:2px !important;line-height:1.3 !important}
@@ -119,10 +120,23 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
         <span style="{{ sem.estadoStyle }}">{{ sem.estadoLabel }}</span>
         <span class="noprint" style="color:#fff;font-size:14px;line-height:1">{{ sem.icono }}</span>
       </div>
+      <sc-if value="{{ sem.tieneAvisos }}" hint-placeholder-val="{{ true }}">
+        <div style="background:var(--gold-lt);border:2px solid var(--gold-dk);border-top:0;padding:12px 16px;display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dk)">Importante</span>
+          <sc-for list="{{ sem.avisos }}" as="aviso" hint-placeholder-count="1">
+            <div style="font-size:16px;font-weight:700;line-height:1.4;color:var(--gold-dk)">{{ aviso }}</div>
+          </sc-for>
+        </div>
+      </sc-if>
       <div class="grid" style="display:{{ sem.gridDisplay }};grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px;background:var(--sf);border:2px solid var(--ink);border-top:0">
         <sc-for list="{{ sem.dias }}" as="dia" hint-placeholder-count="3">
           <article class="evt" style="background:var(--sf);padding:24px;outline:2px solid var(--ink)">
-            <div class="dia" style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1;text-transform:uppercase">{{ dia.diaNombre }}</div>
+            <div onClick="{{ dia.toggleColapso }}" style="display:flex;align-items:center;gap:12px;cursor:pointer">
+              <div class="dia" style="{{ dia.diaStyle }}">{{ dia.diaNombre }}</div>
+              <span style="flex:1"></span>
+              <span class="noprint" style="color:var(--ink);font-size:16px;line-height:1">{{ dia.iconoColapso }}</span>
+            </div>
+            <div class="evtcontent" style="{{ dia.contentStyle }}">
             <sc-for list="{{ dia.eventos }}" as="ev" hint-placeholder-count="2">
               <sc-if value="{{ ev.separador }}" hint-placeholder-val="{{ true }}">
                 <div style="height:2px;background:var(--ink);opacity:.25;margin:20px 0"></div>
@@ -137,8 +151,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                       <img src="assets/icons/google-calendar.svg" alt="Google Calendar" width="22" height="22" style="display:block">
                     </a>
                     <!--a href="{{ ev.icsHref }}" download="{{ ev.icsFilename }}" title="Agregar al calendario" aria-label="Agregar al calendario" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;font-size:20px;text-decoration:none;line-height:1">📅</a-->
+                  </div>
                   </span>
-                </div>
                 </div>
                 <div style="height:2px;background:var(--ink);margin-top:8px"></div>
                 <sc-if value="{{ ev.tieneBanda }}" hint-placeholder-val="{{ true }}">
@@ -225,6 +239,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                 </div>
               </div>
             </sc-for>
+            </div>
           </article>
         </sc-for>
       </div>
@@ -255,7 +270,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 <div id="yt-audio-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
 <script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
-  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false };
+  state = { data: null, mes: '', estado: '', filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, diaColapsado: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false };
 
   componentDidMount() {
     const R = window.RepertorioData;
@@ -305,6 +320,13 @@ class Component extends DCLogic {
     this.setState({ estado: msg });
     clearTimeout(this._t);
     this._t = setTimeout(() => this.setState({ estado: '' }), 2000);
+  }
+
+  /* Fecha local de hoy en formato ISO (YYYY-MM-DD), usada tanto para el
+     estado de cada semana como para el auto-colapso de eventos ya pasados. */
+  hoyISO() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   }
 
   /* Orden cronológico real por fecha y hora: comparar "hora" como texto
@@ -428,9 +450,25 @@ class Component extends DCLogic {
      propio bloque, con un separador visual entre ellos cuando hay más de uno. */
   renderDia(fecha, evs) {
     const R = window.RepertorioData;
+    /* Un día ya caducado se colapsa automáticamente aunque su semana siga
+       "En curso" (la semana no colapsa mientras tenga algún día vigente,
+       pero los días individuales que ya pasaron sí deben plegarse solos).
+       El usuario puede expandir/colapsar cualquier día manualmente sin
+       importar su fecha. */
+    const yaPasoDia = fecha < this.hoyISO();
+    const colapsado = Object.prototype.hasOwnProperty.call(this.state.diaColapsado, fecha)
+      ? this.state.diaColapsado[fecha] : yaPasoDia;
     return {
       diaNombre: R.diaNombre(fecha),
+      diaStyle: 'font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1;text-transform:uppercase' +
+        (yaPasoDia ? ';text-decoration:line-through' : ''),
       fechaLarga: R.fechaLarga(fecha),
+      iconoColapso: colapsado ? '▲' : '▼',
+      /* display (no sc-if): igual que con la banda, así el CSS de impresión
+         puede forzar el contenido a visible aunque el usuario lo haya
+         dejado colapsado. */
+      contentStyle: 'display:' + (colapsado ? 'none' : 'block'),
+      toggleColapso: () => this.setState((s) => ({ diaColapsado: Object.assign({}, s.diaColapsado, { [fecha]: !colapsado }) })),
       eventos: evs.map((ev, i) => Object.assign(this.renderEvento(ev), {
         separador: i > 0,
         wrapStyle: i === 0 ? 'margin-top:16px' : 'margin-top:20px'
@@ -491,8 +529,7 @@ class Component extends DCLogic {
       onClick: () => this.setState({ filtroId: ev.id, filtroAbierto: false, filtroTexto: '' })
     }));
 
-    const hoyLocal = new Date();
-    const hoyISO = hoyLocal.getFullYear() + '-' + String(hoyLocal.getMonth() + 1).padStart(2, '0') + '-' + String(hoyLocal.getDate()).padStart(2, '0');
+    const hoyISO = this.hoyISO();
 
     let semanas;
     if (filtroActivo) {
@@ -501,6 +538,8 @@ class Component extends DCLogic {
         rango: R.diaNombre(eventoActivo.fecha) + ' ' + R.fechaLarga(eventoActivo.fecha),
         tituloStyle: 'font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px',
         rangoStyle: 'font-size:14px;font-weight:600;letter-spacing:.06em;color:#d7d3d3',
+        avisos: eventoActivo.avisoImportante && eventoActivo.avisoImportante.trim() ? [eventoActivo.avisoImportante.trim()] : [],
+        tieneAvisos: !!(eventoActivo.avisoImportante && eventoActivo.avisoImportante.trim()),
         estadoLabel: '',
         estadoStyle: 'display:none',
         dias: this.agruparDias([eventoActivo]),
@@ -542,9 +581,14 @@ class Component extends DCLogic {
             ? { label: 'Próximamente', bg: '#c7cad0', color: '#3a3f47' }
             : { label: 'En curso', bg: 'var(--gold)', color: '#fff' };
         const colapsada = Object.prototype.hasOwnProperty.call(s.colapsadas, key) ? s.colapsadas[key] : yaPaso;
+        const avisos = evs
+          .filter((ev) => ev.avisoImportante && ev.avisoImportante.trim())
+          .map((ev) => ev.avisoImportante.trim());
         return {
           titulo: 'Semana ' + w,
           rango: rango(evs),
+          avisos: avisos,
+          tieneAvisos: avisos.length > 0,
           /* Tachado solo cuando la semana ya finalizó, para señalar de un
              vistazo que ya pasó sin tener que abrirla. */
           tituloStyle: 'font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px' +

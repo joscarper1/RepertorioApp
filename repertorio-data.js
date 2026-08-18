@@ -298,6 +298,7 @@
       servicio: o.servicio || SERVICIOS[0],
       tema: o.tema || '',
       cita: o.cita || '',
+      avisoImportante: o.avisoImportante || '',
       notas: o.notas || '',
       bloques: o.bloques || defaultBlocks(),
       banda: o.banda || defaultBanda(),
@@ -476,7 +477,10 @@
   function saveCloud(data, cb) {
     var ref = dbRef();
     if (!ref) { cb && cb(false); return; }
-    ref.set(data).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+    ref.set(data).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase saveCloud rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
   }
 
   function loadCloudOnce() {

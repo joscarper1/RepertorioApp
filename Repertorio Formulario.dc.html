@@ -139,6 +139,10 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Objetivo/Cita bíblica</span>
           <textarea value="{{ dCita }}" onChange="{{ onCita }}" rows="2" placeholder="Colocar objetivo del evento o cita bíblica" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
         </label>
+        <label style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Aviso importante</span>
+          <textarea value="{{ dAviso }}" onChange="{{ onAviso }}" rows="2" placeholder="Agregar cualquier aviso importante que necesites anunciar. Aparecerá como encabezado de la semana correspondiente, junto con cualquier otro aviso de eventos de la misma semana." style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid #b00020;background:#fff;color:#b00020;resize:vertical"></textarea>
+        </label>
       </div>
     </section>
   </sc-if>
@@ -851,11 +855,12 @@ class Component extends DCLogic {
       dServicio: dr ? dr.servicio : '',
       dTema: dr ? dr.tema : '',
       dCita: dr ? dr.cita : '',
+      dAviso: dr ? dr.avisoImportante : '',
       dNotas: dr ? dr.notas : '',
       dDetalles: dr ? dr.detalles : '',
       dPersonas: dr ? dr.personas : '',
       onHora: field('hora'), onServicio: field('servicio'), onTema: field('tema'),
-      onCita: field('cita'), onNotas: field('notas'),
+      onCita: field('cita'), onAviso: field('avisoImportante'), onNotas: field('notas'),
       onDetalles: field('detalles'), onPersonas: field('personas'),
       servicios: (dr && dr.servicio && R.SERVICIOS.indexOf(dr.servicio) < 0
         ? [dr.servicio].concat(R.SERVICIOS) : R.SERVICIOS).map((label) => ({ label: label })),
