@@ -312,6 +312,7 @@
       servicio: o.servicio || SERVICIOS[0],
       tema: o.tema || '',
       cita: o.cita || '',
+      avisoImportante: o.avisoImportante || '',
       notas: o.notas || '',
       bloques: o.bloques || defaultBlocks(),
       banda: o.banda || defaultBanda(),
@@ -754,13 +755,19 @@
     if (!root) { cb && cb(false); return; }
     var ev = clone(evento);
     ev.organizationId = orgId || ev.organizationId;
-    root.child(EVENTS_PATH).child(ev.id).set(ev).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+    root.child(EVENTS_PATH).child(ev.id).set(ev).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase saveEvent rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
   }
 
   function deleteEvent(id, cb) {
     var root = dbRoot();
     if (!root) { cb && cb(false); return; }
-    root.child(EVENTS_PATH).child(id).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
+    root.child(EVENTS_PATH).child(id).remove().then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase deleteEvent rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
   }
 
   w.RepertorioData = {
