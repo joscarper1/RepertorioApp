@@ -101,6 +101,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           <div class="side-kicker">Módulos</div>
           <button type="button" style="{{ tabOrgStyle }}" onClick="{{ irTabOrganizaciones }}">Organizaciones</button>
           <button type="button" style="{{ tabUsuariosStyle }}" onClick="{{ irTabUsuarios }}">Usuarios</button>
+          <button type="button" style="{{ tabRepertorioStyle }}" onClick="{{ irTabRepertorio }}" disabled="{{ sinOrgActual }}">Repertorio</button>
           <button type="button" style="{{ tabEventosStyle }}" onClick="{{ irTabEventos }}" disabled="{{ sinOrgActual }}">Eventos</button>
         </div>
       </div>
@@ -163,6 +164,14 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                       <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nota / versículo</span>
                       <textarea value="{{ orgEditNota }}" onChange="{{ onOrgEditNota }}" rows="2" style="font-size:13px;padding:8px 10px;border:2px solid var(--ink);resize:vertical"></textarea>
                     </label>
+                    <label style="display:flex;flex-direction:column;gap:4px">
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">URL de imagen banner</span>
+                      <input value="{{ orgEditBannerUrl }}" onChange="{{ onOrgEditBannerUrl }}" placeholder="https://…jpg" style="font-size:13px;font-family:ui-monospace,Menlo,monospace;padding:8px 10px;border:2px solid var(--ink)">
+                    </label>
+                    <sc-if value="{{ orgEditBannerMostrarPreview }}" hint-placeholder-val="{{ false }}">
+                      <img src="{{ orgEditBannerUrl }}" alt="" style="display:block;width:100%;max-height:140px;object-fit:cover;border:2px solid var(--ink)">
+                    </sc-if>
+                    <span style="{{ orgEditBannerEstadoStyle }}">{{ orgEditBannerEstado }}</span>
                     <div style="display:flex;gap:8px">
                       <button type="button" onClick="{{ guardarEdicionOrg }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Guardar</button>
                       <button type="button" onClick="{{ cancelarEdicionOrg }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cancelar</button>
@@ -292,6 +301,85 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           </section>
         </sc-if>
 
+        <sc-if value="{{ tabRepertorio }}" hint-placeholder-val="{{ false }}">
+          <section>
+            <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0 0 16px">Repertorio</h2>
+
+            <div style="display:flex;gap:10px;margin-bottom:16px">
+              <div style="position:relative;flex:1">
+                <input value="{{ repertorioBusqueda }}" onChange="{{ onRepertorioBusqueda }}" placeholder="Buscar por título o artista…" autoComplete="off" style="width:100%;font-size:15px;padding:10px 36px 10px 12px;border:2px solid var(--ink);background:#fff">
+                <button type="button" onClick="{{ limpiarRepertorioBusqueda }}" aria-label="Limpiar búsqueda" title="Limpiar búsqueda" style="{{ repertorioBusquedaLimpiarStyle }}">×</button>
+              </div>
+              <button type="button" onClick="{{ toggleAgregarCancion }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:0 16px;cursor:pointer;white-space:nowrap">+ Agregar</button>
+            </div>
+
+            <sc-if value="{{ agregarCancionAbierto }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:16px;background:var(--bg);margin-bottom:20px;display:flex;flex-direction:column;gap:12px">
+                <label style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Título</span>
+                  <input value="{{ nuevaCancionTitulo }}" onChange="{{ onNuevaCancionTitulo }}" placeholder="Nombre de la canción" style="font-size:15px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
+                </label>
+                <label style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Artista</span>
+                  <input value="{{ nuevaCancionArtista }}" onChange="{{ onNuevaCancionArtista }}" placeholder="Sin especificar" style="font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
+                </label>
+                <label style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Link (YouTube)</span>
+                  <input value="{{ nuevaCancionUrl }}" onChange="{{ onNuevaCancionUrl }}" placeholder="https://…" style="font-size:13px;font-family:ui-monospace,Menlo,monospace;padding:9px 10px;border:2px solid var(--ink);background:#fff">
+                </label>
+                <div style="display:flex;gap:8px">
+                  <button type="button" onClick="{{ guardarCancionNueva }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Guardar</button>
+                  <button type="button" onClick="{{ toggleAgregarCancion }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cancelar</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-for list="{{ cancionesLista }}" as="c" hint-placeholder-count="3">
+              <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px">
+                <sc-if value="{{ c.editando }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <label style="display:flex;flex-direction:column;gap:4px">
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Título</span>
+                      <input value="{{ songEditTitulo }}" onChange="{{ onSongEditTitulo }}" style="font-size:15px;padding:8px 10px;border:2px solid var(--ink)">
+                    </label>
+                    <label style="display:flex;flex-direction:column;gap:4px">
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Artista</span>
+                      <input value="{{ songEditArtista }}" onChange="{{ onSongEditArtista }}" placeholder="Sin especificar" style="font-size:14px;padding:8px 10px;border:2px solid var(--ink)">
+                    </label>
+                    <label style="display:flex;flex-direction:column;gap:4px">
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Link (YouTube)</span>
+                      <input value="{{ songEditUrl }}" onChange="{{ onSongEditUrl }}" placeholder="https://…" style="font-size:13px;font-family:ui-monospace,Menlo,monospace;padding:8px 10px;border:2px solid var(--ink)">
+                    </label>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                      <button type="button" onClick="{{ guardarEdicionSong }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Guardar</button>
+                      <button type="button" onClick="{{ cancelarEdicionSong }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cancelar</button>
+                      <button type="button" onClick="{{ c.eliminar }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;border:2px solid #b00020;background:transparent;color:#b00020;padding:8px 14px;cursor:pointer;margin-left:auto">Eliminar</button>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ c.noEditando }}" hint-placeholder-val="{{ true }}">
+                  <div onClick="{{ c.onClick }}" style="display:grid;grid-template-columns:1fr 22px;gap:10px;align-items:center;cursor:pointer">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0">
+                      <span style="font-size:16px;font-weight:800">{{ c.nombre }}</span>
+                      <span style="font-size:13px;color:#7d7979;white-space:nowrap">{{ c.artista }}</span>
+                    </div>
+                    <button type="button" onClick="{{ c.onPlay }}" aria-label="{{ c.playLabel }}" title="{{ c.playLabel }}" style="{{ c.playBtnStyle }}">{{ c.playIcon }}</button>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <p style="{{ sinCancionesStyle }}">{{ sinCancionesTexto }}</p>
+
+            <sc-if value="{{ hayCanciones }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px">
+                <button type="button" onClick="{{ paginaAnterior }}" disabled="{{ enPrimeraPagina }}" style="font-size:13px;font-weight:700;border:2px solid var(--ink);background:transparent;padding:8px 14px;cursor:pointer">‹ Anterior</button>
+                <span style="font-size:12px;color:#7d7979">Página {{ paginaActual }} de {{ totalPaginas }}</span>
+                <button type="button" onClick="{{ paginaSiguiente }}" disabled="{{ enUltimaPagina }}" style="font-size:13px;font-weight:700;border:2px solid var(--ink);background:transparent;padding:8px 14px;cursor:pointer">Siguiente ›</button>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+
         <sc-if value="{{ eventosMontado }}" hint-placeholder-val="{{ false }}">
           <div style="{{ eventosWrapStyle }}">
             <iframe id="admin-eventos-frame" style="width:100%;min-height:74vh;border:0;display:block"></iframe>
@@ -303,6 +391,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 
 </div>
 </x-dc>
+<div id="admin-yt-audio-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
 </div>
 <script>
 /* La pantalla sólo oculta el panel mientras no hay sesión; quien de verdad
@@ -363,17 +452,26 @@ class Component extends DCLogic {
     todasOrgs: [], currentOrgId: null, activeTab: 'organizaciones',
     nuevoOrgNombre: '', editandoOrgId: null,
     orgEditNombre: '', orgEditKicker: '', orgEditNota: '',
+    /* orgEditBannerValido: null mientras no se ha validado (o el campo está
+       vacío), true/false según el resultado de intentar cargar la URL como
+       imagen (ver validarOrgEditBanner). */
+    orgEditBannerUrl: '', orgEditBannerValido: null, orgEditBannerValidando: false,
     usuarios: [], invitaciones: [], mensaje: '',
     invitarAbierto: false, inviteEmail: '', inviteRole: 'normal', inviteOrgIds: {},
     inviteOrgsAbierto: false, inviteOrgsBusqueda: '',
     usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {},
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
-    eventosMontado: false
+    eventosMontado: false,
+    repertorioEventos: [], songOverrides: {}, repertorioPagina: 1, repertorioBusqueda: '',
+    editandoSongKey: null, songEditTitulo: '', songEditArtista: '', songEditUrl: '',
+    reproduciendoKey: null, reproduciendoPausado: false,
+    agregarCancionAbierto: false, nuevaCancionTitulo: '', nuevaCancionArtista: '', nuevaCancionUrl: ''
   };
 
   componentDidMount() {
     const R = D();
+    this._yt = R.youtubeController('admin-yt-audio-player', (key, paused) => this.setState({ reproduciendoKey: key, reproduciendoPausado: paused }));
     this._unauth = R.onAuthChange((user) => {
       if (this._unorgs) { this._unorgs(); this._unorgs = null; }
       if (this._unusers) { this._unusers(); this._unusers = null; }
@@ -424,6 +522,9 @@ class Component extends DCLogic {
     if (this._unorgs) this._unorgs();
     if (this._unusers) this._unusers();
     if (this._uninvites) this._uninvites();
+    if (this._unRepEventos) this._unRepEventos();
+    if (this._unRepOverrides) this._unRepOverrides();
+    if (this._yt) this._yt.destroy();
   }
 
   /* El iframe de Eventos vive fuera del template reactivo: este framework no
@@ -442,17 +543,101 @@ class Component extends DCLogic {
   }
 
   cambiarTab(tab) {
-    this.setState((s) => ({ activeTab: tab, eventosMontado: s.eventosMontado || tab === 'eventos' }));
+    this.setState((s) => ({ activeTab: tab, eventosMontado: s.eventosMontado || tab === 'eventos', repertorioPagina: tab === 'repertorio' ? 1 : s.repertorioPagina }));
     this.cerrarSidebarSiMovil();
     if (tab === 'usuarios' && !this._unusers) {
       this._unusers = D().watchAllUsers((lista) => this.setState({ usuarios: lista }));
       this._uninvites = D().watchInvitations((lista) => this.setState({ invitaciones: lista }));
     }
+    if (tab === 'repertorio') this.montarRepertorio(this.state.currentOrgId);
   }
 
   seleccionarOrg(id) {
-    this.setState({ currentOrgId: id, editandoOrgId: null, orgSwitcherAbierto: false, orgSwitcherBusqueda: '' });
+    this.setState({ currentOrgId: id, editandoOrgId: null, orgSwitcherAbierto: false, orgSwitcherBusqueda: '', repertorioPagina: 1, editandoSongKey: null });
     this.cerrarSidebarSiMovil();
+    if (this.state.activeTab === 'repertorio') this.montarRepertorio(id);
+  }
+
+  /* Las canciones no viven en un solo nodo propio: se derivan del historial
+     completo de eventos de la organización activa (ver R.buildSongCatalog),
+     así que el CRUD de Repertorio necesita suscribirse a esos eventos igual
+     que lo hace el Formulario — solo se (re)suscribe cuando cambia la
+     organización activa, para no duplicar listeners de Firebase. */
+  montarRepertorio(orgId) {
+    if (!orgId || this._repOrgId === orgId) return;
+    if (this._unRepEventos) this._unRepEventos();
+    if (this._unRepOverrides) this._unRepOverrides();
+    this._repOrgId = orgId;
+    this._unRepEventos = D().watchEventsForOrg(orgId, (evs) => this.setState({ repertorioEventos: evs }));
+    this._unRepOverrides = D().watchSongCatalog(orgId, (map) => this.setState({ songOverrides: map }));
+  }
+
+  abrirEdicionSong(entry) {
+    this.setState({ editandoSongKey: entry.key, songEditTitulo: entry.nombre, songEditArtista: entry.salmista, songEditUrl: entry.u || '' });
+  }
+
+  cancelarEdicionSong() { this.setState({ editandoSongKey: null }); }
+
+  guardarEdicionSong() {
+    const s = this.state;
+    const titulo = (s.songEditTitulo || '').trim();
+    if (!titulo) { this.setState({ mensaje: 'El título no puede quedar vacío.' }); return; }
+    D().saveSongOverride(s.currentOrgId, s.editandoSongKey, {
+      titulo: titulo, artista: (s.songEditArtista || '').trim(), url: (s.songEditUrl || '').trim()
+    }, (ok) => {
+      this.setState({ editandoSongKey: null, mensaje: ok ? 'Canción actualizada.' : 'No se pudo guardar el cambio.' });
+    });
+  }
+
+  /* "Eliminar" es en realidad archivar (ver R.archiveSong): la canción deja
+     de listarse aquí y de sugerirse en el Formulario, pero los eventos que ya
+     la usan conservan su texto tal cual, sin verse afectados. */
+  confirmarArchivarSong(entry) {
+    const ok = confirm('¿Eliminar "' + entry.nombre + '" del repertorio?\n\nLos eventos que ya la usan no se verán afectados; solo dejará de sugerirse en el autocompletado del Formulario.');
+    if (!ok) return;
+    D().archiveSong(this.state.currentOrgId, entry.key, (exito) => {
+      this.setState({ editandoSongKey: null, mensaje: exito ? 'Canción eliminada del repertorio.' : 'No se pudo eliminar la canción.' });
+    });
+  }
+
+  paginaAnterior() { this.setState((s) => ({ repertorioPagina: Math.max(1, (s.repertorioPagina || 1) - 1) })); }
+  paginaSiguiente() { this.setState((s) => ({ repertorioPagina: (s.repertorioPagina || 1) + 1 })); }
+
+  onRepertorioBusqueda(e) { this.setState({ repertorioBusqueda: e.target.value, repertorioPagina: 1 }); }
+
+  limpiarRepertorioBusqueda() { this.setState({ repertorioBusqueda: '', repertorioPagina: 1 }); }
+
+  toggleAgregarCancion() {
+    this.setState((s) => ({
+      agregarCancionAbierto: !s.agregarCancionAbierto,
+      nuevaCancionTitulo: '', nuevaCancionArtista: '', nuevaCancionUrl: ''
+    }));
+  }
+
+  /* Crea una canción directamente en el catálogo (sin pasar por ningún
+     evento): se guarda como override "huérfano" en /songCatalog/{orgId} (ver
+     R.buildSongCatalog) y así queda disponible de inmediato tanto en este
+     listado como en el autocompletado del Formulario. Se fuerza
+     `archivado: false` para el caso borde de que el título+artista+link ya
+     coincidiera con una canción archivada anteriormente — "agregar" siempre
+     debe dejarla visible, sin importar ese historial. */
+  guardarCancionNueva() {
+    const s = this.state;
+    const titulo = (s.nuevaCancionTitulo || '').trim();
+    if (!titulo) { this.setState({ mensaje: 'El título no puede quedar vacío.' }); return; }
+    const artista = (s.nuevaCancionArtista || '').trim();
+    const url = (s.nuevaCancionUrl || '').trim();
+    const key = D().songKey(titulo, artista, url);
+    D().saveSongOverride(s.currentOrgId, key, { titulo: titulo, artista: artista, url: url, archivado: false }, (ok) => {
+      this.setState({
+        agregarCancionAbierto: !ok, mensaje: ok ? 'Canción agregada al repertorio.' : 'No se pudo agregar la canción.',
+        nuevaCancionTitulo: ok ? '' : s.nuevaCancionTitulo, nuevaCancionArtista: ok ? '' : s.nuevaCancionArtista, nuevaCancionUrl: ok ? '' : s.nuevaCancionUrl
+      });
+    });
+  }
+
+  togglePlayRepertorio(key, videoId) {
+    if (this._yt) this._yt.toggle(key, videoId);
   }
 
   toggleOrgSwitcher() {
@@ -489,14 +674,49 @@ class Component extends DCLogic {
   }
 
   iniciarEdicionOrg(org) {
-    this.setState({ editandoOrgId: org.id, orgEditNombre: org.name, orgEditKicker: org.kicker || '', orgEditNota: org.nota || '' });
+    const url = org.bannerUrl || '';
+    this.setState({
+      editandoOrgId: org.id, orgEditNombre: org.name, orgEditKicker: org.kicker || '', orgEditNota: org.nota || '',
+      orgEditBannerUrl: url, orgEditBannerValido: null, orgEditBannerValidando: false
+    });
+    if (url) this.validarOrgEditBanner(url);
   }
 
   cancelarEdicionOrg() { this.setState({ editandoOrgId: null }); }
 
+  /* La URL es de una imagen alojada externamente (no se sube ningún archivo,
+     para no depender de Firebase Storage, que tiene costo); se valida
+     intentando cargarla como <img> antes de permitir guardar. */
+  onOrgEditBannerUrl(e) {
+    const v = e.target.value;
+    this.setState({ orgEditBannerUrl: v });
+    clearTimeout(this._bannerCheckTimer);
+    this._bannerCheckTimer = setTimeout(() => this.validarOrgEditBanner(v), 450);
+  }
+
+  validarOrgEditBanner(url) {
+    const trimmed = (url || '').trim();
+    this._bannerCheckToken = (this._bannerCheckToken || 0) + 1;
+    const miToken = this._bannerCheckToken;
+    if (!trimmed) { this.setState({ orgEditBannerValidando: false, orgEditBannerValido: null }); return; }
+    if (!/^https?:\/\//i.test(trimmed)) {
+      this.setState({ orgEditBannerValidando: false, orgEditBannerValido: false });
+      return;
+    }
+    this.setState({ orgEditBannerValidando: true, orgEditBannerValido: null });
+    const img = new Image();
+    img.onload = () => { if (this._bannerCheckToken !== miToken) return; this.setState({ orgEditBannerValidando: false, orgEditBannerValido: true }); };
+    img.onerror = () => { if (this._bannerCheckToken !== miToken) return; this.setState({ orgEditBannerValidando: false, orgEditBannerValido: false }); };
+    img.src = trimmed;
+  }
+
   guardarEdicionOrg() {
     const s = this.state;
-    D().updateOrganization(s.editandoOrgId, { name: s.orgEditNombre, kicker: s.orgEditKicker, nota: s.orgEditNota }, (ok) => {
+    if ((s.orgEditBannerUrl || '').trim() && s.orgEditBannerValido === false) {
+      this.setState({ mensaje: 'La URL de la imagen banner no es válida: revisa que apunte directo a una imagen.' });
+      return;
+    }
+    D().updateOrganization(s.editandoOrgId, { name: s.orgEditNombre, kicker: s.orgEditKicker, nota: s.orgEditNota, bannerUrl: (s.orgEditBannerUrl || '').trim() }, (ok) => {
       this.setState({ editandoOrgId: null, mensaje: ok ? 'Organización actualizada.' : 'No se pudo guardar el cambio.' });
     });
   }
@@ -681,6 +901,43 @@ class Component extends DCLogic {
     const inviteOrgsResumen = resumenOrgs(s.inviteOrgIds);
     const inviteOrgsSinResultados = inviteOrgsChips.length === 0;
 
+    const REPERTORIO_PAGE_SIZE = 10;
+    const catalogoVigente = R.buildSongCatalog(s.repertorioEventos, s.songOverrides).filter((e) => !e.archivado);
+    const busquedaSong = (s.repertorioBusqueda || '').trim().toLowerCase();
+    const catalogoFiltrado = busquedaSong
+      ? catalogoVigente.filter((e) => e.nombre.toLowerCase().indexOf(busquedaSong) >= 0 || (e.salmista || '').toLowerCase().indexOf(busquedaSong) >= 0)
+      : catalogoVigente;
+    const totalPaginas = Math.max(1, Math.ceil(catalogoFiltrado.length / REPERTORIO_PAGE_SIZE));
+    const paginaActual = Math.min(Math.max(1, s.repertorioPagina || 1), totalPaginas);
+    const inicioPagina = (paginaActual - 1) * REPERTORIO_PAGE_SIZE;
+    const cancionesLista = catalogoFiltrado.slice(inicioPagina, inicioPagina + REPERTORIO_PAGE_SIZE).map((e) => {
+      const videoId = R.youtubeId(e.u);
+      const activa = s.reproduciendoKey === e.key;
+      const enPausa = activa && s.reproduciendoPausado;
+      return {
+        key: e.key,
+        nombre: e.nombre,
+        artista: e.salmista || '—',
+        editando: s.editandoSongKey === e.key,
+        noEditando: s.editandoSongKey !== e.key,
+        onClick: () => this.abrirEdicionSong(e),
+        eliminar: () => this.confirmarArchivarSong(e),
+        playIcon: activa && !enPausa ? '❚❚' : '▶',
+        playLabel: activa && !enPausa ? 'Pausar audio' : (enPausa ? 'Reanudar audio' : 'Reproducir audio'),
+        /* El botón siempre se renderiza (nunca sc-if) para no romper la
+           columna del grid; sin video válido se oculta con visibility:hidden
+           en vez de display:none — mismo criterio que index.html/Formulario. */
+        playBtnStyle: 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
+          'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+          (activa ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
+                  : 'border:1.5px solid var(--ac);background:#fff;color:var(--ac)') +
+          (videoId ? '' : ';visibility:hidden;pointer-events:none'),
+        /* stopPropagation para que tocar el botón de play no abra también la
+           edición de la fila (comparten la misma fila clicable). */
+        onPlay: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.togglePlayRepertorio(e.key, videoId); }
+      };
+    });
+
     return {
       cargando: s.estadoAuth === 'cargando',
       denegado: s.estadoAuth === 'denegado',
@@ -703,12 +960,15 @@ class Component extends DCLogic {
       mostrarOrgActiva: s.activeTab !== 'organizaciones',
       tabOrganizaciones: s.activeTab === 'organizaciones',
       tabUsuarios: s.activeTab === 'usuarios',
+      tabRepertorio: s.activeTab === 'repertorio',
       tabOrgStyle: tabStyle(s.activeTab === 'organizaciones'),
       tabUsuariosStyle: tabStyle(s.activeTab === 'usuarios'),
+      tabRepertorioStyle: tabStyle(s.activeTab === 'repertorio') + (orgActual ? '' : ';opacity:.4;cursor:default'),
       tabEventosStyle: tabStyle(s.activeTab === 'eventos') + (orgActual ? '' : ';opacity:.4;cursor:default'),
       sinOrgActual: !orgActual,
       irTabOrganizaciones: () => this.cambiarTab('organizaciones'),
       irTabUsuarios: () => this.cambiarTab('usuarios'),
+      irTabRepertorio: () => this.cambiarTab('repertorio'),
       irTabEventos: () => this.cambiarTab('eventos'),
       eventosMontado: s.eventosMontado,
       eventosWrapStyle: s.activeTab === 'eventos' ? 'display:block' : 'display:none',
@@ -726,6 +986,13 @@ class Component extends DCLogic {
       orgEditNombre: s.orgEditNombre, onOrgEditNombre: (e) => this.setState({ orgEditNombre: e.target.value }),
       orgEditKicker: s.orgEditKicker, onOrgEditKicker: (e) => this.setState({ orgEditKicker: e.target.value }),
       orgEditNota: s.orgEditNota, onOrgEditNota: (e) => this.setState({ orgEditNota: e.target.value }),
+      orgEditBannerUrl: s.orgEditBannerUrl,
+      onOrgEditBannerUrl: (e) => this.onOrgEditBannerUrl(e),
+      orgEditBannerMostrarPreview: s.orgEditBannerValido === true && !!(s.orgEditBannerUrl || '').trim(),
+      orgEditBannerEstado: s.orgEditBannerValidando ? 'Verificando imagen…'
+        : (s.orgEditBannerValido === false ? 'La URL no carga como imagen: revisa que apunte directo al archivo (jpg/png/webp…).' : ''),
+      orgEditBannerEstadoStyle: (s.orgEditBannerValidando || s.orgEditBannerValido === false)
+        ? ('font-size:12px;color:' + (s.orgEditBannerValidando ? '#7d7979' : '#b00020')) : 'display:none',
       guardarEdicionOrg: () => this.guardarEdicionOrg(),
       cancelarEdicionOrg: () => this.cancelarEdicionOrg(),
 
@@ -747,7 +1014,40 @@ class Component extends DCLogic {
       inviteOrgsChips: inviteOrgsChips,
       invitarUsuario: () => this.invitarUsuario(),
       invitacionesLista: invitacionesLista,
-      hayInvitaciones: invitacionesLista.length > 0
+      hayInvitaciones: invitacionesLista.length > 0,
+
+      repertorioBusqueda: s.repertorioBusqueda,
+      onRepertorioBusqueda: (e) => this.onRepertorioBusqueda(e),
+      limpiarRepertorioBusqueda: () => this.limpiarRepertorioBusqueda(),
+      repertorioBusquedaLimpiarStyle: 'position:absolute;right:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;border:0;background:transparent;color:#7d7979;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center' +
+        ((s.repertorioBusqueda || '').trim() ? '' : ';visibility:hidden;pointer-events:none'),
+      toggleAgregarCancion: () => this.toggleAgregarCancion(),
+      agregarCancionAbierto: s.agregarCancionAbierto,
+      nuevaCancionTitulo: s.nuevaCancionTitulo,
+      onNuevaCancionTitulo: (e) => this.setState({ nuevaCancionTitulo: e.target.value }),
+      nuevaCancionArtista: s.nuevaCancionArtista,
+      onNuevaCancionArtista: (e) => this.setState({ nuevaCancionArtista: e.target.value }),
+      nuevaCancionUrl: s.nuevaCancionUrl,
+      onNuevaCancionUrl: (e) => this.setState({ nuevaCancionUrl: e.target.value }),
+      guardarCancionNueva: () => this.guardarCancionNueva(),
+      cancionesLista: cancionesLista,
+      sinCancionesStyle: cancionesLista.length === 0 ? 'font-size:13px;color:#9a9694;padding:8px 2px' : 'display:none',
+      sinCancionesTexto: busquedaSong ? 'Sin resultados para "' + s.repertorioBusqueda.trim() + '".' : 'No hay canciones registradas para esta organización.',
+      hayCanciones: catalogoFiltrado.length > 0,
+      paginaActual: paginaActual,
+      totalPaginas: totalPaginas,
+      enPrimeraPagina: paginaActual <= 1,
+      enUltimaPagina: paginaActual >= totalPaginas,
+      paginaAnterior: () => this.paginaAnterior(),
+      paginaSiguiente: () => this.paginaSiguiente(),
+      songEditTitulo: s.songEditTitulo,
+      onSongEditTitulo: (e) => this.setState({ songEditTitulo: e.target.value }),
+      songEditArtista: s.songEditArtista,
+      onSongEditArtista: (e) => this.setState({ songEditArtista: e.target.value }),
+      songEditUrl: s.songEditUrl,
+      onSongEditUrl: (e) => this.setState({ songEditUrl: e.target.value }),
+      guardarEdicionSong: () => this.guardarEdicionSong(),
+      cancelarEdicionSong: () => this.cancelarEdicionSong()
     };
   }
 }

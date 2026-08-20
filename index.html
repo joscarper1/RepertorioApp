@@ -34,6 +34,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   .rowlink{display:block !important}
   section{break-inside:auto;padding-top:6px !important}
   .grid{display:block !important;columns:2;column-gap:2px;border:0 !important;padding:0 !important}
+  .avisos{display:flex !important}
   .evt{break-inside:avoid;display:inline-block;width:100%;margin:0 0 2px !important;padding:8px 10px !important;vertical-align:top}
   .body{gap:5px !important;margin-top:6px !important}
   .temawrap{padding:5px 0 0 !important}
@@ -52,6 +53,8 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   .cd{font-size:13px !important;margin-top:0 !important}
   .ck{font-size:13px !important;padding:1px 4px !important}
   h1{font-size:34px !important}
+  .bannerwrap{margin-top:6px !important}
+  .bannerwrap img{max-height:70px !important}
 }
 </style>
 </helmet>
@@ -96,9 +99,27 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 <div style="max-width:1320px;margin:0 auto;padding:0 24px 96px">
 
   <div class="noprint" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
-    <div style="display:flex;align-items:baseline;gap:12px;min-width:0;flex:1 1 auto">
+    <div style="display:flex;align-items:baseline;gap:12px;min-width:0;flex:1 1 auto;position:relative">
       <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
-      <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Ministerio de Alabanza</span>
+      <sc-if value="{{ noHayOtrasOrgs }}" hint-placeholder-val="{{ true }}">
+        <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">{{ nombreOrg }}</span>
+      </sc-if>
+      <sc-if value="{{ hayOtrasOrgs }}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{ toggleOrgSwitcher }}" style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0;background:transparent;border:0;padding:0;cursor:pointer;color:inherit">
+          <span>{{ nombreOrg }}</span>
+          <span style="font-size:11px">▾</span>
+        </button>
+        <sc-if value="{{ orgSwitcherAbierto }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:100%;left:0;z-index:30;min-width:240px;background:#fff;border:2px solid var(--ink);margin-top:6px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column;color:var(--ink)">
+            <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
+            <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column">
+              <sc-for list="{{ misOrgsLista }}" as="o" hint-placeholder-count="2">
+                <button type="button" style="{{ o.style }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
     </div>
     <sc-if value="{{ sesionActiva }}" hint-placeholder-val="{{ false }}">
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto">
@@ -110,6 +131,12 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
       <button onClick="{{ irABienvenida }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;flex:0 0 auto">Iniciar sesión</button>
     </sc-if>
   </div>
+
+  <sc-if value="{{ tieneBanner }}" hint-placeholder-val="{{ false }}">
+    <div class="bannerwrap" style="margin-top:16px">
+      <img src="{{ bannerUrl }}" alt="{{ nombreOrg }}" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;border:2px solid var(--ink)">
+    </div>
+  </sc-if>
 
   <header style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:32px 0 24px;border-bottom:2px solid var(--ink)">
     <div>
@@ -169,7 +196,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
         <span class="noprint" style="color:#fff;font-size:14px;line-height:1">{{ sem.icono }}</span>
       </div>
       <sc-if value="{{ sem.tieneAvisos }}" hint-placeholder-val="{{ true }}">
-        <div style="background:var(--gold-lt);border:2px solid var(--gold-dk);border-top:0;padding:12px 16px;display:flex;flex-direction:column;gap:6px">
+        <div class="avisos" style="{{ sem.avisosStyle }}">
           <span style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dk)">Importante</span>
           <sc-for list="{{ sem.avisos }}" as="aviso" hint-placeholder-count="1">
             <div style="font-size:16px;font-weight:700;line-height:1.4;color:var(--gold-dk)">{{ aviso }}</div>
@@ -192,6 +219,9 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
               <div style="{{ ev.wrapStyle }}">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
                   <span class="sub" style="{{ ev.subStyle }}">{{ ev.sub }}</span>
+                  <sc-if value="{{ ev.mostrarCancelado }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;background:#b00020;color:#fff;padding:4px 8px;white-space:nowrap">Cancelado</span>
+                  </sc-if>
                   <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
                   <span class="noprint">
                   <div style="display:flex;gap:6px">
@@ -278,7 +308,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                   <sc-if value="{{ ev.tieneNotas }}" hint-placeholder-val="{{ true }}">
                     <div>
                       <div style="display:flex;align-items:center;gap:8px">
-                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Notas del ensayo</span>
+                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Indicaciones para el ensayo</span>
                         <span style="flex:1;height:2px;background:var(--ink)"></span>
                       </div>
                       <div class="nota" style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.notas }}</div>
@@ -322,7 +352,8 @@ class Component extends DCLogic {
   state = {
     modo: 'cargando', org: null, eventos: [], mes: '', estado: '', errorLogin: '', usuarioNombre: null,
     filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, diaColapsado: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false,
-    reproduciendoKey: null, reproduciendoPausado: false
+    reproduciendoKey: null, reproduciendoPausado: false,
+    misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: ''
   };
 
   componentDidMount() {
@@ -334,27 +365,49 @@ class Component extends DCLogic {
     if (slug) {
       /* En el calendario de una organización la sesión solo controla el
          bloque de usuario del encabezado (nombre + cerrar sesión, o botón
-         de iniciar sesión) — no redirige a nadie, la vista es pública. */
+         de iniciar sesión) — no redirige a nadie, la vista es pública. Si el
+         usuario tiene más de una organización asignada, además habilita el
+         selector para saltar entre sus calendarios. */
       this._unauth = R.onAuthChange((user) => {
         this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null });
+        this._detenerSeguimientoMisOrgs();
+        if (!user) { this.setState({ misOrgs: [] }); return; }
+        this._unwatchUser = R.watchUser(user.uid, (doc) => {
+          const ids = R.userOrgIds(doc);
+          if (this._unmyorgs) { this._unmyorgs(); this._unmyorgs = null; }
+          if (!ids.length) { this.setState({ misOrgs: [] }); return; }
+          this._unmyorgs = R.watchAllOrganizations((todas) => {
+            this.setState({ misOrgs: todas.filter((o) => ids.indexOf(o.id) >= 0) });
+          });
+        });
       });
       R.getOrganizationBySlug(slug.trim(), (org) => {
         if (!org) { this.setState({ modo: 'error' }); return; }
         this.setState({ modo: 'calendario', org: org });
         this._unwatch = R.watchEventsForOrg(org.id, (evs) => {
+          /* Solo se muestran eventos Publicado/Cancelado; Borrador y
+             Archivado son de uso exclusivo del panel de administración. */
+          const visibles = evs.filter((e) => R.esVisiblePublico(e));
           this.setState((s) => {
             let mes = s.mes;
-            const keys = Array.from(new Set(evs.map((e) => R.monthKey(e.fecha)))).sort();
+            const keys = Array.from(new Set(visibles.map((e) => R.monthKey(e.fecha)))).sort();
             if (!mes) {
               const hoy = R.hoyKey();
               mes = keys.indexOf(hoy) >= 0 ? hoy : (keys[keys.length - 1] || hoy);
             }
-            return { eventos: evs, mes: mes };
+            return { eventos: visibles, mes: mes };
           });
         });
       });
       return;
     }
+
+    /* ?bienvenida=1: el botón "Iniciar sesión" del calendario usa este
+       parámetro para forzar la pantalla de bienvenida, saltándose el
+       auto-redirect de más abajo (si no, con una sola organización
+       registrada ese auto-redirect manda de vuelta al mismo calendario sin
+       darle nunca la oportunidad de iniciar sesión). */
+    const forzarBienvenida = new URLSearchParams(location.search).get('bienvenida') === '1';
 
     /* Sin parámetro: depende de la sesión. Un usuario ya vinculado a una
        organización se manda directo a su calendario; sin sesión (o sin
@@ -363,6 +416,7 @@ class Component extends DCLogic {
     this._unauth = R.onAuthChange((user) => {
       this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null });
       if (!user) {
+        if (forzarBienvenida) { this.setState({ modo: 'bienvenida' }); return; }
         /* Mientras solo exista una organización registrada, no tiene
            sentido pedirle a un visitante anónimo que se registre: se manda
            directo a su calendario público. En cuanto haya más de una, no
@@ -388,7 +442,13 @@ class Component extends DCLogic {
     if (this._unwatch) this._unwatch();
     if (this._unauth) this._unauth();
     if (this._unwatchOrgsCheck) this._unwatchOrgsCheck();
+    this._detenerSeguimientoMisOrgs();
     if (this._yt) this._yt.destroy();
+  }
+
+  _detenerSeguimientoMisOrgs() {
+    if (this._unwatchUser) { this._unwatchUser(); this._unwatchUser = null; }
+    if (this._unmyorgs) { this._unmyorgs(); this._unmyorgs = null; }
   }
 
   iniciarSesion() {
@@ -402,6 +462,16 @@ class Component extends DCLogic {
 
   togglePlay(key, videoId) {
     if (this._yt) this._yt.toggle(key, videoId);
+  }
+
+  toggleOrgSwitcher() {
+    this.setState((s) => ({ orgSwitcherAbierto: !s.orgSwitcherAbierto, orgSwitcherBusqueda: '' }));
+  }
+
+  irAOrg(org) {
+    this.setState({ orgSwitcherAbierto: false, orgSwitcherBusqueda: '' });
+    if (this.state.org && org.id === this.state.org.id) return;
+    window.location.href = 'index.html?group=' + encodeURIComponent(org.slug);
   }
 
   flash(msg) {
@@ -473,16 +543,19 @@ class Component extends DCLogic {
     const bandaAbiertaDefault = !tieneRepertorio;
     const bandaAbierta = Object.prototype.hasOwnProperty.call(this.state.bandaAbierta, ev.id)
       ? this.state.bandaAbierta[ev.id] : bandaAbiertaDefault;
+    const cancelado = R.estadoEvento(ev) === 'CANCELADO';
     return {
       dia: R.diaNombre(ev.fecha),
       hora: ev.hora,
       sub: [R.fechaLarga(ev.fecha), ev.servicio].filter(Boolean).join(' · '),
+      mostrarCancelado: cancelado,
       /* Cuando el tipo de servicio no usa repertorio musical (ver
          SERVICIOS_CON_REPERTORIO), se resalta en dorado para que salte a
-         la vista frente a los que sí lo llevan. */
+         la vista frente a los que sí lo llevan; un evento cancelado además
+         se tacha para señalarlo de un vistazo. */
       subStyle: 'font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;' + (R.usaRepertorio(ev.servicio)
         ? 'color:var(--ac-dk)'
-        : 'color:var(--gold-dk);background:var(--gold-lt);padding:4px 8px;margin:-4px 0 0 -8px'),
+        : 'color:var(--gold-dk);background:var(--gold-lt);padding:4px 8px;margin:-4px 0 0 -8px') + (cancelado ? ';text-decoration:line-through' : ''),
       tema: ev.tema || 'Por confirmar',
       cita: ev.cita,
       notas: ev.notas,
@@ -590,7 +663,7 @@ class Component extends DCLogic {
       usuarioNombre: s.usuarioNombre || '',
       sesionActiva: !!s.usuarioNombre,
       sesionInactiva: !s.usuarioNombre,
-      irABienvenida: () => { window.location.href = 'index.html'; }
+      irABienvenida: () => { window.location.href = 'index.html?bienvenida=1'; }
     };
     if (s.modo !== 'calendario' || !s.org) return Object.assign(base, { estado: 'Cargando…' });
 
@@ -669,15 +742,25 @@ class Component extends DCLogic {
       semanas = Object.keys(grupos).sort((a, b) => a - b).map((w) => {
         const evs = grupos[w];
         const key = s.mes + '-S' + w;
-        const fechas = evs.map((ev) => ev.fecha);
-        const primeraFecha = fechas.reduce((a, b) => (a < b ? a : b));
-        const ultimaFecha = fechas.reduce((a, b) => (a > b ? a : b));
-        /* El estado depende de los eventos agendados en la semana, no del
-           rango completo domingo—sábado: si el único evento de la semana ya
-           pasó, la semana está Finalizada aunque hoy aún caiga dentro de esos
-           mismos siete días calendario. */
-        const yaPaso = ultimaFecha < hoyISO;
-        const esFutura = primeraFecha > hoyISO;
+        /* El estado depende de los eventos PUBLICADO agendados en la semana,
+           no del rango completo domingo—sábado ni de eventos cancelados: si
+           el único evento de la semana ya pasó, la semana está Finalizada
+           aunque hoy aún caiga dentro de esos mismos siete días calendario;
+           y si lo único que queda por venir está cancelado (sin ningún otro
+           evento publicado), ya no hay nada pendiente y también se marca
+           Finalizada en vez de "En curso"/"Próximamente". */
+        const publicados = evs.filter((ev) => R.estadoEvento(ev) === 'PUBLICADO');
+        let yaPaso, esFutura;
+        if (!publicados.length) {
+          yaPaso = true;
+          esFutura = false;
+        } else {
+          const fechasPub = publicados.map((ev) => ev.fecha);
+          const primeraFecha = fechasPub.reduce((a, b) => (a < b ? a : b));
+          const ultimaFecha = fechasPub.reduce((a, b) => (a > b ? a : b));
+          yaPaso = ultimaFecha < hoyISO;
+          esFutura = primeraFecha > hoyISO;
+        }
         const badge = yaPaso
           ? { label: 'Finalizada', bg: 'var(--ac)', color: '#fff' }
           : esFutura
@@ -692,6 +775,10 @@ class Component extends DCLogic {
           rango: rango(evs),
           avisos: avisos,
           tieneAvisos: avisos.length > 0,
+          /* display (no sc-if), igual que el grid de días: así el CSS de
+             impresión puede forzarlo a visible aunque el usuario haya
+             colapsado la semana. */
+          avisosStyle: 'background:var(--gold-lt);border:2px solid var(--gold-dk);border-top:0;padding:12px 16px;flex-direction:column;gap:6px;display:' + (colapsada ? 'none' : 'flex'),
           /* Tachado solo cuando la semana ya finalizó, para señalar de un
              vistazo que ya pasó sin tener que abrirla. */
           tituloStyle: 'font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px' +
@@ -712,11 +799,30 @@ class Component extends DCLogic {
       });
     }
 
+    const q2 = (s.orgSwitcherBusqueda || '').trim().toLowerCase();
+    const misOrgsFiltradas = q2 ? s.misOrgs.filter((o) => o.name.toLowerCase().indexOf(q2) >= 0) : s.misOrgs;
+    const misOrgsLista = misOrgsFiltradas.map((o) => ({
+      id: o.id, nombre: o.name,
+      style: 'display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;cursor:pointer;background:' +
+        (o.id === s.org.id ? 'var(--ac)' : 'transparent') + ';color:' + (o.id === s.org.id ? '#fff' : 'var(--ink)'),
+      onClick: () => this.irAOrg(o)
+    }));
+
     return Object.assign(base, {
       estado: s.estado,
       kicker: filtroActivo ? 'Filtrado por fecha' : 'Calendario Mensual',
       mesLabel: filtroActivo ? 'Resultado del filtro' : R.monthLabel(s.mes),
       nota: s.org.nota || '',
+      nombreOrg: s.org.name,
+      tieneBanner: !!(s.org.bannerUrl && s.org.bannerUrl.trim()),
+      bannerUrl: s.org.bannerUrl || '',
+      hayOtrasOrgs: s.misOrgs.length > 1,
+      noHayOtrasOrgs: s.misOrgs.length <= 1,
+      orgSwitcherAbierto: s.orgSwitcherAbierto,
+      orgSwitcherBusqueda: s.orgSwitcherBusqueda,
+      onOrgSwitcherBusqueda: (e) => this.setState({ orgSwitcherBusqueda: e.target.value }),
+      toggleOrgSwitcher: () => this.toggleOrgSwitcher(),
+      misOrgsLista: misOrgsLista,
       meses: meses,
       mesesVisibles: !filtroActivo,
       hayMesesAnteriores: mesesAnterioresKeys.length > 0,

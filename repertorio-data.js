@@ -9,6 +9,7 @@
   var USERS_PATH = 'users';
   var EVENTS_PATH = 'events';
   var INVITES_PATH = 'invitaciones';
+  var SONG_CATALOG_PATH = 'songCatalog';
   /* Correos que ya editaban el repertorio antes de que existiera el rol de
      admin (ver reglas de seguridad previas). La primera vez que inicien
      sesión después de la migración multi-organización, se auto-registran
@@ -38,6 +39,78 @@
 
   function song(t, d, k, u, sm) { return { t: t || '', d: d || '', k: k || '', u: u || '', sm: sm || '' }; }
 
+  /* Parte de la llave que representa "el mismo link": dos URLs de YouTube
+     distintas en su forma (youtu.be vs watch?v= vs con &t=30 de más) pero que
+     apuntan al mismo video deben contar como el mismo link, así que se
+     compara por el ID de video ya extraído (ver youtubeId más abajo) y sólo
+     se cae al texto crudo cuando el link no es de YouTube. */
+  function songLinkIdentity(url) {
+    var id = youtubeId(url);
+    return id ? ('yt:' + id) : (url || '').trim().toLowerCase();
+  }
+
+  /* Llave estable para identificar una canción del catálogo: título + artista
+     + link (el link es la parte más importante — dos participaciones con el
+     mismo título/artista pero un link distinto son en la práctica versiones
+     distintas, así que deben quedar como entradas separadas del catálogo en
+     vez de fusionarse y perder una de las dos). Normalizada a
+     minúsculas/recortada y saneada para servir de llave de Realtime Database
+     (que prohíbe '.', '#', '$', '[', ']', '/' en las llaves). */
+  function songKey(nombre, salmista, url) {
+    var raw = (nombre || '').trim().toLowerCase() + '|' + (salmista || '').trim().toLowerCase() + '|' + songLinkIdentity(url);
+    return encodeURIComponent(raw).replace(/\./g, '%2E');
+  }
+
+  /* Catálogo de canciones ya alimentadas en toda la base (no sólo un borrador
+     puntual), deduplicado por título + artista + link (ver songKey): el tono
+     queda fuera a propósito — es un dato de cada participación, no una llave
+     de la canción.
+     `overrides` (opcional) es el mapa crudo de /songCatalog/{orgId}: permite
+     corregir título/artista/link de cara al autocompletado y al CRUD del
+     panel de administración, o marcar la entrada como archivada, sin tocar el
+     texto ya guardado en los eventos históricos que la usan. */
+  function buildSongCatalog(eventos, overrides) {
+    overrides = overrides || {};
+    var porClave = new Map();
+    (eventos || []).forEach(function (ev) {
+      (ev.bloques || []).forEach(function (bl) {
+        (bl.canciones || []).forEach(function (c) {
+          var nombre = (c.t || '').trim();
+          if (!nombre) return;
+          var salmista = (c.sm || '').trim();
+          var url = (c.u || '').trim();
+          var key = songKey(nombre, salmista, url);
+          if (!porClave.has(key)) porClave.set(key, { key: key, nombre: nombre, salmista: salmista, u: url });
+        });
+      });
+    });
+    var out = [];
+    porClave.forEach(function (entry) {
+      var ov = overrides[entry.key];
+      out.push({
+        key: entry.key,
+        nombre: ov && ov.titulo ? ov.titulo : entry.nombre,
+        salmista: ov && ov.artista !== undefined ? ov.artista : entry.salmista,
+        u: ov && ov.url !== undefined ? ov.url : entry.u,
+        archivado: !!(ov && ov.archivado)
+      });
+    });
+    /* Canciones creadas directamente desde el CRUD de Repertorio (ver
+       R.addSong), que todavía no han sido usadas en ningún evento: viven
+       únicamente como override, sin entrada correspondiente en `porClave`. Se
+       agregan aquí para que también aparezcan en el catálogo — y por lo
+       tanto en el autocompletado del Formulario — igual que cualquier otra
+       canción. */
+    Object.keys(overrides).forEach(function (key) {
+      if (porClave.has(key)) return;
+      var ov = overrides[key];
+      if (!ov || !ov.titulo) return;
+      out.push({ key: key, nombre: ov.titulo, salmista: ov.artista || '', u: ov.url || '', archivado: !!ov.archivado });
+    });
+    out.sort(function (a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
+    return out;
+  }
+
   /* Etiqueta con la que se muestra una canción donde sea que aparezca su
      nombre: si tiene salmista (artista/versión de origen), se concatena
      entre paréntesis para distinguir covers del mismo título. */
@@ -61,7 +134,7 @@
      quedó cargada (o null cuando se termina) y si está en pausa, para que el
      componente sólo tenga que reflejar esos valores en su estado. */
   function youtubeController(elementId, onChange) {
-    var player = null, ready = false, pending = null, current = null, paused = false;
+    var player = null, ready = false, pending = null, current = null, currentVideoId = null, paused = false;
 
     function start() {
       if (player || !w.YT || !w.YT.Player) return;
@@ -74,7 +147,7 @@
             if (pending) { var p = pending; pending = null; toggle(p.key, p.videoId); }
           },
           onStateChange: function (e) {
-            if (e.data === w.YT.PlayerState.ENDED) { current = null; paused = false; if (onChange) onChange(null, false); }
+            if (e.data === w.YT.PlayerState.ENDED) { current = null; currentVideoId = null; paused = false; if (onChange) onChange(null, false); }
           }
         }
       });
@@ -92,18 +165,22 @@
       }
     }
 
-    /* Misma canción ya cargada: alterna pausa/reanudar sin perder la
-       posición. Canción distinta: carga y reproduce desde el inicio. */
+    /* Misma canción ya cargada Y mismo video: alterna pausa/reanudar sin
+       perder la posición. Canción distinta, o misma fila pero con un link
+       editado a otro video (ver el CRUD de Repertorio del panel), carga y
+       reproduce desde el inicio — comparar solo por `key` no bastaba, porque
+       la llave de una canción no cambia cuando se le corrige el link. */
     function toggle(key, videoId) {
       if (!videoId) return;
       if (!ready) { pending = { key: key, videoId: videoId }; return; }
-      if (current === key) {
+      if (current === key && currentVideoId === videoId) {
         if (paused) { player.playVideo(); paused = false; } else { player.pauseVideo(); paused = true; }
         if (onChange) onChange(key, paused);
       } else {
         player.loadVideoById(videoId);
         player.playVideo();
         current = key;
+        currentVideoId = videoId;
         paused = false;
         if (onChange) onChange(key, false);
       }
@@ -303,6 +380,29 @@
     return 'https://calendar.google.com/calendar/render?' + params.toString();
   }
 
+  /* Estados del ciclo de vida de un evento. BORRADOR/PUBLICADO se controlan
+     desde el paso final del asistente; CANCELADO/ARCHIVADO se marcan con
+     acciones rápidas desde el listado del día, sin pasar por el asistente. */
+  var ESTADOS_EVENTO = ['BORRADOR', 'PUBLICADO', 'CANCELADO', 'ARCHIVADO'];
+  var ESTADOS_VISIBLES_PUBLICO = ['PUBLICADO', 'CANCELADO'];
+
+  /* Los eventos guardados antes de que existiera este campo no tienen
+     `estado`: se tratan como PUBLICADO, ya que antes todo lo guardado se
+     publicaba de inmediato. */
+  function estadoEvento(ev) { return (ev && ev.estado) || 'PUBLICADO'; }
+
+  function esVisiblePublico(ev) { return ESTADOS_VISIBLES_PUBLICO.indexOf(estadoEvento(ev)) >= 0; }
+
+  function estadoInfo(ev) {
+    var map = {
+      BORRADOR: { label: 'Borrador', bg: '#c7cad0', color: '#3a3f47' },
+      PUBLICADO: { label: 'Publicado', bg: 'var(--ac)', color: '#fff' },
+      CANCELADO: { label: 'Cancelado', bg: '#b00020', color: '#fff' },
+      ARCHIVADO: { label: 'Archivado', bg: '#6b6866', color: '#fff' }
+    };
+    return map[estadoEvento(ev)] || map.PUBLICADO;
+  }
+
   function newEvento(o) {
     o = o || {};
     return {
@@ -318,7 +418,8 @@
       banda: o.banda || defaultBanda(),
       detalles: o.detalles || '',
       personas: o.personas || '',
-      organizationId: o.organizationId || ''
+      organizationId: o.organizationId || '',
+      estado: o.estado || 'BORRADOR'
     };
   }
 
@@ -491,11 +592,14 @@
   }
 
   /* patch no puede tocar id/slug (el slug es inmutable una vez creado para
-     no romper enlaces ?group=slug ya compartidos). */
+     no romper enlaces ?group=slug ya compartidos). bannerUrl es una URL de
+     imagen alojada externamente (no se sube ningún archivo, para mantener
+     el sitio sin costo de Firebase Storage). */
   function updateOrganization(orgId, patch, cb) {
     var root = dbRoot();
     if (!root) { cb && cb(false); return; }
     var safe = { name: patch.name, kicker: patch.kicker, nota: patch.nota };
+    if (patch.bannerUrl !== undefined) safe.bannerUrl = patch.bannerUrl;
     root.child(ORGS_PATH).child(orgId).update(safe).then(function () { cb && cb(true); }, function () { cb && cb(false); });
   }
 
@@ -761,11 +865,62 @@
     });
   }
 
-  function deleteEvent(id, cb) {
+  /* Cambia solo el estado de un evento ya existente, sin pasar por el
+     asistente completo (usado por las acciones rápidas "Cancelado" y
+     "Archivar" del listado del día). */
+  function setEventEstado(id, estado, cb) {
     var root = dbRoot();
     if (!root) { cb && cb(false); return; }
-    root.child(EVENTS_PATH).child(id).remove().then(function () { cb && cb(true); }, function (err) {
-      console.error('Firebase deleteEvent rechazado:', err && err.code, err && err.message, err);
+    root.child(EVENTS_PATH).child(id).update({ estado: estado }).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase setEventEstado rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
+  /* --- Catálogo de canciones (overrides de renombre/archivado) --- */
+
+  /* cb(map) con el contenido crudo de /songCatalog/{orgId} ({} si aún no
+     tiene ninguna entrada) — pensado para combinarse con buildSongCatalog. */
+  function watchSongCatalog(orgId, cb) {
+    var root = dbRoot();
+    if (!root || !orgId) return function () {};
+    var ref = root.child(SONG_CATALOG_PATH).child(orgId);
+    var handler = function (snap) { cb(snap.val() || {}); };
+    ref.on('value', handler);
+    return function () { ref.off('value', handler); };
+  }
+
+  /* patch: { titulo, artista, url, archivado }, cualquier subconjunto. No
+     toca los eventos históricos que ya usan esta canción — solo afecta el
+     catálogo que alimenta el autocompletado y el CRUD de Repertorio del
+     panel. */
+  function saveSongOverride(orgId, key, patch, cb) {
+    var root = dbRoot();
+    if (!root || !orgId || !key) { cb && cb(false); return; }
+    var safe = { updatedAt: Date.now() };
+    if (patch.titulo !== undefined) safe.titulo = patch.titulo;
+    if (patch.artista !== undefined) safe.artista = patch.artista;
+    if (patch.url !== undefined) safe.url = patch.url;
+    if (patch.archivado !== undefined) safe.archivado = !!patch.archivado;
+    root.child(SONG_CATALOG_PATH).child(orgId).child(key).update(safe).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase saveSongOverride rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
+  /* "Eliminar" una canción del repertorio es en realidad archivarla: deja de
+     sugerirse en el autocompletado y de listarse en el panel, sin borrar
+     nada de los eventos que ya la usan (para no romper su historial). */
+  function archiveSong(orgId, key, cb) {
+    saveSongOverride(orgId, key, { archivado: true }, cb);
+  }
+
+  /* Cambia la fecha de un evento ya existente (usado por el modal "Mover"). */
+  function moveEvent(id, nuevaFecha, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    root.child(EVENTS_PATH).child(id).update({ fecha: nuevaFecha }).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase moveEvent rechazado:', err && err.code, err && err.message, err);
       cb && cb(false);
     });
   }
@@ -773,7 +928,8 @@
   w.RepertorioData = {
     MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
-    song: song, songLabel: songLabel, youtubeId: youtubeId, youtubeController: youtubeController, defaultBlocks: defaultBlocks, newEvento: newEvento, uid: uid,
+    song: song, songLabel: songLabel, songKey: songKey, buildSongCatalog: buildSongCatalog,
+    youtubeId: youtubeId, youtubeController: youtubeController, defaultBlocks: defaultBlocks, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,
@@ -784,12 +940,14 @@
     icsDataHref: icsDataHref, icsFilename: icsFilename, googleCalendarUrl: googleCalendarUrl,
     horaMinutos: horaMinutos,
     slugify: slugify,
+    ESTADOS_EVENTO: ESTADOS_EVENTO, estadoEvento: estadoEvento, esVisiblePublico: esVisiblePublico, estadoInfo: estadoInfo,
     watchAllOrganizations: watchAllOrganizations, getOrganizationBySlug: getOrganizationBySlug, getOrganization: getOrganization,
     createOrganization: createOrganization, updateOrganization: updateOrganization, deleteOrganization: deleteOrganization,
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
     setUserRole: setUserRole, setUserOrgs: setUserOrgs, deleteUser: deleteUser, userOrgIds: userOrgIds, redirectToUserLanding: redirectToUserLanding,
     createInvitation: createInvitation, watchInvitations: watchInvitations, deleteInvitation: deleteInvitation,
-    watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, deleteEvent: deleteEvent
+    watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, setEventEstado: setEventEstado, moveEvent: moveEvent,
+    watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong
   };
 })(window);

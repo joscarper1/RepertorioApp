@@ -167,13 +167,30 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;margin-top:12px">
         <sc-for list="{{ eventosDelDia }}" as="ev" hint-placeholder-count="2">
-          <div style="display:flex;align-items:center;gap:12px;background:var(--sf);outline:2px solid var(--ink);padding:12px 14px;flex-wrap:wrap">
-            <span style="font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;border:2px solid var(--ink);padding:3px 8px">{{ ev.hora }}</span>
-            <span style="font-size:15px;font-weight:600">{{ ev.servicio }}</span>
-            <span style="font-size:13px;color:#6b6866">{{ ev.resumen }}</span>
-            <span style="flex:1"></span>
-            <button onClick="{{ ev.editar }}" style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;padding:6px 10px;cursor:pointer">Editar</button>
-            <button onClick="{{ ev.borrar }}" style="font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:6px 10px;cursor:pointer">Borrar</button>
+          <div style="display:flex;flex-direction:column;gap:10px;background:var(--sf);outline:2px solid var(--ink);padding:12px 14px">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <span style="font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;border:2px solid var(--ink);padding:3px 8px">{{ ev.hora }}</span>
+              <span style="font-size:15px;font-weight:600">{{ ev.servicio }}</span>
+              <span style="font-size:13px;color:#6b6866">{{ ev.resumen }}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="{{ ev.estadoStyle }}">{{ ev.estadoLabel }}</span>
+              <span style="flex:1"></span>
+              <div style="display:flex;align-items:center;gap:0">
+                <button onClick="{{ ev.editar }}" title="Editar" aria-label="Editar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+                <button onClick="{{ ev.mover }}" title="Mover" aria-label="Mover" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                </button>
+                <button onClick="{{ ev.cancelar }}" title="Cancelado" aria-label="Cancelado" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg>
+                </button>
+                <button onClick="{{ ev.borrar }}" title="Archivar" aria-label="Archivar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                </button>
+              </div>
+            </div>
           </div>
         </sc-for>
         <div style="font-size:13px;color:#7d7979;padding:4px 0">{{ vacioDia }}</div>
@@ -401,7 +418,13 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
       <button onClick="{{ cancelar }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;border:2px solid transparent;background:transparent;color:#7d7979;padding:10px 12px;cursor:pointer">Cancelar</button>
       <span style="flex:1"></span>
       <button onClick="{{ atras }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;padding:10px 18px;cursor:pointer">Atrás</button>
-      <button onClick="{{ siguiente }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 18px;cursor:pointer">{{ siguienteLabel }}</button>
+      <sc-if value="{{ esPaso5 }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ guardarBorrador }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid #9a9694;background:#c7cad0;color:#3a3f47;padding:10px 18px;cursor:pointer">Borrador</button>
+        <button onClick="{{ guardarPublicar }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 18px;cursor:pointer">Publicar</button>
+      </sc-if>
+      <sc-if value="{{ noEsPaso5 }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ siguiente }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 18px;cursor:pointer">{{ siguienteLabel }}</button>
+      </sc-if>
     </div>
   </sc-if>
 
@@ -410,6 +433,37 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
   </footer>
     </div>
   </div>
+  </sc-if>
+
+  <sc-if value="{{ moverAbierto }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ cerrarMover }}">
+      <div style="width:min(100%,360px);background:#fff;border:2px solid var(--ink);padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.28)" onClick="{{ detenerPropagacion }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">Mover evento</span>
+          <button type="button" onClick="{{ cerrarMover }}" aria-label="Cerrar" style="font-size:14px;border:0;background:transparent;color:#7d7979;cursor:pointer;padding:2px">✕</button>
+        </div>
+        <p style="font-size:13px;color:#54514f;margin:8px 0 0">{{ moverResumen }}</p>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:16px">
+          <button type="button" onClick="{{ moverMesAnterior }}" style="font-size:14px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:5px 10px;cursor:pointer">←</button>
+          <span style="font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase">{{ moverMesLabel }}</span>
+          <button type="button" onClick="{{ moverMesSiguiente }}" style="font-size:14px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:5px 10px;cursor:pointer">→</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:14px">
+          <sc-for list="{{ moverCabeceras }}" as="h" hint-placeholder-count="7">
+            <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7d7979;text-align:center">{{ h }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px;margin-top:2px">
+          <sc-for list="{{ moverFilas }}" as="fila" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
+              <sc-for list="{{ fila.celdas }}" as="c" hint-placeholder-count="7">
+                <button type="button" onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.dia }}</button>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
   </sc-if>
 </div>
 
@@ -475,10 +529,11 @@ class Component extends DCLogic {
   state = {
     estadoAcceso: 'cargando', denegadoMotivo: '', organizationId: null, organizacion: null, orgs: [],
     data: { eventos: [] }, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '',
-    autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {},
+    autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {}, songOverrides: {},
     reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null,
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
-    orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false
+    orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false,
+    moverEventoId: null, moverMes: ''
   };
 
   componentDidMount() {
@@ -518,6 +573,7 @@ class Component extends DCLogic {
         this._unwatch = R.watchEventsForOrg(orgId, (evs) => {
           this.setState((s) => (s.draft ? null : { data: { eventos: evs } }));
         });
+        this._unSongOverrides = R.watchSongCatalog(orgId, (map) => this.setState({ songOverrides: map }));
       });
     });
   }
@@ -525,6 +581,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     if (this._unwatch) this._unwatch();
     if (this._unorgs) this._unorgs();
+    if (this._unSongOverrides) this._unSongOverrides();
     if (this._yt) this._yt.destroy();
     if (this._unauth) this._unauth();
   }
@@ -627,11 +684,54 @@ class Component extends DCLogic {
     this.setState({ mes: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), fecha: '' });
   }
 
-  guardar() {
+  /* Guarda el borrador actual con el estado elegido en el paso final:
+     'BORRADOR' lo deja invisible en el calendario público, 'PUBLICADO' lo
+     muestra de inmediato. */
+  guardarConEstado(estado) {
     const dr = this.state.draft;
+    dr.estado = estado;
     const orgId = this.state.organizationId;
     this.setState({ draft: null, editId: null, paso: 1 });
-    D().saveEvent(dr, orgId, (ok) => this.avisar(ok, 'Participación guardada', 'No se guardó en la nube: revisa tu sesión o conexión'));
+    D().saveEvent(dr, orgId, (ok) => this.avisar(ok,
+      estado === 'PUBLICADO' ? 'Evento publicado' : 'Guardado como borrador',
+      'No se guardó en la nube: revisa tu sesión o conexión'));
+  }
+
+  /* Acciones rápidas del listado del día: no abren el asistente, solo
+     cambian el estado del evento ya guardado. */
+  cancelarEvento(ev) {
+    if (!confirm('¿Marcar este evento como cancelado? Seguirá visible en el calendario público, tachado y con la etiqueta "Cancelado".')) return;
+    D().setEventEstado(ev.id, 'CANCELADO', (ok) => this.avisar(ok, 'Evento cancelado', 'No se pudo cancelar: revisa tu sesión o conexión'));
+  }
+
+  archivarEvento(ev) {
+    if (!confirm('¿Archivar esta participación? Dejará de mostrarse en el calendario público; sigue disponible aquí para editarla o publicarla de nuevo.')) return;
+    D().setEventEstado(ev.id, 'ARCHIVADO', (ok) => this.avisar(ok, 'Participación archivada', 'No se pudo archivar: revisa tu sesión o conexión'));
+  }
+
+  /* --- Modal "Mover evento" --- */
+
+  abrirMover(ev) {
+    const R = D();
+    const hoy = R.hoyKey();
+    this.setState({ moverEventoId: ev.id, moverMes: R.monthKey(ev.fecha) < hoy ? hoy : R.monthKey(ev.fecha) });
+  }
+
+  cerrarMover() { this.setState({ moverEventoId: null }); }
+
+  detenerPropagacion(e) { if (e && e.stopPropagation) e.stopPropagation(); }
+
+  moverShiftMonth(delta) {
+    const [y, m] = this.state.moverMes.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    this.setState({ moverMes: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') });
+  }
+
+  confirmarMover(iso) {
+    const id = this.state.moverEventoId;
+    if (!id) return;
+    this.setState({ moverEventoId: null });
+    D().moveEvent(id, iso, (ok) => this.avisar(ok, 'Evento movido de fecha', 'No se pudo mover: revisa tu sesión o conexión'));
   }
 
   renderVals() {
@@ -731,18 +831,22 @@ class Component extends DCLogic {
       })
     }));
 
-    const eventosDelDia = (s.fecha ? delDia(s.fecha) : []).map((ev) => ({
-      hora: ev.hora,
-      servicio: ev.servicio,
-      resumen: ev.tema || 'Sin tema aún',
-      /* R.newEvento normaliza el registro y completa con valores por defecto
-         los campos que no existían cuando se creó (banda, detalles, etc.). */
-      editar: () => this.setState({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: 2 }),
-      borrar: () => {
-        if (!confirm('¿Borrar esta participación?')) return;
-        D().deleteEvent(ev.id, (ok) => this.avisar(ok, 'Participación borrada', 'No se pudo borrar: revisa tu sesión o conexión'));
-      }
-    }));
+    const eventosDelDia = (s.fecha ? delDia(s.fecha) : []).map((ev) => {
+      const info = R.estadoInfo(ev);
+      return {
+        hora: ev.hora,
+        servicio: ev.servicio,
+        resumen: ev.tema || 'Sin tema aún',
+        estadoLabel: info.label,
+        estadoStyle: 'font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;white-space:nowrap;background:' + info.bg + ';color:' + info.color,
+        /* R.newEvento normaliza el registro y completa con valores por defecto
+           los campos que no existían cuando se creó (banda, detalles, etc.). */
+        editar: () => this.setState({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: 2 }),
+        mover: () => this.abrirMover(ev),
+        cancelar: () => this.cancelarEvento(ev),
+        borrar: () => this.archivarEvento(ev)
+      };
+    });
 
     // ---- borrador
     const field = (campo) => (e) => { const v = e.target.value; this.setDraft((x) => { x[campo] = v; }); };
@@ -841,27 +945,13 @@ class Component extends DCLogic {
       return nombres.length ? { tipo: r.tipo, nombres: nombres.join(', ') } : null;
     }).filter(Boolean) : [];
 
-    /* Catálogo de canciones ya alimentadas en toda la base (no sólo el
-       borrador actual), deduplicado por nombre + salmista: dos versiones del
-       mismo título pero de distinto salmista son entradas distintas (cada
-       una con su propio link), mientras que el tono queda fuera a propósito
-       — es un dato de cada participación, no una llave de la canción. */
-    const catalogo = (() => {
-      const porClave = new Map();
-      (s.data.eventos || []).forEach((ev) => {
-        (ev.bloques || []).forEach((bl) => {
-          (bl.canciones || []).forEach((c) => {
-            const nombre = (c.t || '').trim();
-            if (!nombre) return;
-            const salmista = (c.sm || '').trim();
-            const clave = nombre.toLowerCase() + '|' + salmista.toLowerCase();
-            const actual = porClave.get(clave);
-            if (!actual || (!actual.u && c.u)) porClave.set(clave, { nombre: nombre, salmista: salmista, u: c.u || '' });
-          });
-        });
-      });
-      return Array.from(porClave.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
-    })();
+    /* Catálogo de canciones ya alimentadas en toda la base (compartido con el
+       CRUD de Repertorio del panel de administración, ver R.buildSongCatalog):
+       deduplicado por nombre + salmista, aplica los renombres guardados en
+       songOverrides y excluye las que el panel marcó como archivadas (para
+       que dejen de sugerirse aquí sin tocar el texto ya guardado en los
+       eventos históricos que las usan). */
+    const catalogo = R.buildSongCatalog(s.data.eventos, s.songOverrides).filter((so) => !so.archivado);
 
     /* Catálogo de salmistas: también es una llave (identifica versiones), así
        que necesita su propio autocomplete para no fragmentarse en variantes
@@ -989,6 +1079,29 @@ class Component extends DCLogic {
       return true;
     };
 
+    // ---- modal "Mover evento": mini-calendario acotado a hoy en adelante
+    const moverEvento = s.moverEventoId ? s.data.eventos.find((e) => e.id === s.moverEventoId) : null;
+    const moverAbierto = !!moverEvento;
+    let moverMesLabel = '', moverFilas = [];
+    if (moverAbierto) {
+      const [my, mm] = s.moverMes.split('-').map(Number);
+      moverMesLabel = R.monthLabel(s.moverMes);
+      moverFilas = R.calendario(my, mm - 1).map((fila) => ({
+        celdas: fila.map((c) => {
+          if (!c) return { dia: '', style: 'visibility:hidden;border:0;background:transparent;padding:8px 4px', onClick: () => {} };
+          const pasado = c.iso < hoyIso;
+          const esFechaActual = c.iso === moverEvento.fecha;
+          return {
+            dia: String(c.dia),
+            style: 'padding:8px 4px;border:0;font-size:13px;font-weight:600;background:' +
+              (esFechaActual ? 'var(--ac-lt)' : '#fff') + ';color:' + (pasado ? '#bab6b6' : 'var(--ink)') +
+              ';cursor:' + (pasado ? 'default' : 'pointer'),
+            onClick: pasado ? () => {} : () => this.confirmarMover(c.iso)
+          };
+        })
+      }));
+    }
+
     return Object.assign(base, {
       estado: s.estado,
       pasos: pasos,
@@ -1043,10 +1156,10 @@ class Component extends DCLogic {
       resumenDetalles: dr && dr.detalles ? dr.detalles : 'Sin detalles aún',
       resumenPersonas: dr && dr.personas ? dr.personas : 'Sin personas asignadas aún',
 
-      siguienteLabel: paso === 5 ? 'Guardar participación' : 'Siguiente',
+      noEsPaso5: enWizard && paso !== 5,
+      siguienteLabel: 'Siguiente',
       siguiente: () => {
         if (!validar()) return;
-        if (paso === 5) { this.guardar(); return; }
         const next = (paso === 2 && !usaBanda) ? 4 : paso + 1;
         this.setState({ paso: next, estado: '' });
       },
@@ -1055,7 +1168,19 @@ class Component extends DCLogic {
         const prev = (paso === 4 && !usaBanda) ? 2 : paso - 1;
         this.setState({ paso: prev });
       },
-      cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '' })
+      cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '' }),
+      guardarBorrador: () => this.guardarConEstado('BORRADOR'),
+      guardarPublicar: () => this.guardarConEstado('PUBLICADO'),
+
+      moverAbierto: moverAbierto,
+      moverResumen: moverEvento ? (R.diaNombre(moverEvento.fecha) + ' ' + R.fechaLarga(moverEvento.fecha) + ' · ' + moverEvento.hora + ' · ' + moverEvento.servicio) : '',
+      moverMesLabel: moverMesLabel,
+      moverCabeceras: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+      moverFilas: moverFilas,
+      moverMesAnterior: () => this.moverShiftMonth(-1),
+      moverMesSiguiente: () => this.moverShiftMonth(1),
+      cerrarMover: () => this.cerrarMover(),
+      detenerPropagacion: (e) => this.detenerPropagacion(e)
     });
   }
 }
