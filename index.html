@@ -218,19 +218,23 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
               </sc-if>
               <div style="{{ ev.wrapStyle }}">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
-                  <span class="sub" style="{{ ev.subStyle }}">{{ ev.sub }}</span>
-                  <sc-if value="{{ ev.mostrarCancelado }}" hint-placeholder-val="{{ false }}">
-                    <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;background:#b00020;color:#fff;padding:4px 8px;white-space:nowrap">Cancelado</span>
-                  </sc-if>
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
-                  <span class="noprint">
-                  <div style="display:flex;gap:6px">
-                    <a href="{{ ev.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar" aria-label="Guardar en Google Calendar" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;text-decoration:none">
-                      <img src="assets/icons/google-calendar.svg" alt="Google Calendar" width="22" height="22" style="display:block">
-                    </a>
-                    <!--a href="{{ ev.icsHref }}" download="{{ ev.icsFilename }}" title="Agregar al calendario" aria-label="Agregar al calendario" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;font-size:20px;text-decoration:none;line-height:1">📅</a-->
+                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+                    <span class="sub" style="{{ ev.subStyle }}">{{ ev.sub }}</span>
                   </div>
-                  </span>
+                  <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+                    <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
+                    <span class="noprint">
+                    <div style="display:flex;gap:6px">
+                      <a href="{{ ev.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar" aria-label="Guardar en Google Calendar" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;text-decoration:none">
+                        <img src="assets/icons/google-calendar.svg" alt="Google Calendar" width="22" height="22" style="display:block">
+                      </a>
+                      <!--a href="{{ ev.icsHref }}" download="{{ ev.icsFilename }}" title="Agregar al calendario" aria-label="Agregar al calendario" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;font-size:20px;text-decoration:none;line-height:1">📅</a-->
+                    </div>
+                    </span>
+                    <sc-if value="{{ ev.mostrarCancelado }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;background:#b00020;color:#fff;padding:4px 8px;white-space:nowrap">Cancelado</span>
+                    </sc-if>
+                  </div>
                 </div>
                 <div style="height:2px;background:var(--ink);margin-top:8px"></div>
                 <sc-if value="{{ ev.tieneBanda }}" hint-placeholder-val="{{ true }}">
