@@ -10,6 +10,8 @@
   var EVENTS_PATH = 'events';
   var INVITES_PATH = 'invitaciones';
   var SONG_CATALOG_PATH = 'songCatalog';
+  var MUSICIANS_PATH = 'musicians';
+  var META_PATH = 'meta';
   /* Correos que ya editaban el repertorio antes de que existiera el rol de
      admin (ver reglas de seguridad previas). La primera vez que inicien
      sesión después de la migración multi-organización, se auto-registran
@@ -686,13 +688,35 @@
           role: 'normal',
           createdAt: Date.now()
         };
-        if (inviteSnap.exists()) {
-          var invite = inviteSnap.val();
+        var invite = inviteSnap.exists() ? inviteSnap.val() : null;
+        if (invite) {
           doc.role = invite.role === 'admin' ? 'admin' : 'normal';
           if (invite.organizationIds) doc.organizationIds = invite.organizationIds;
+          /* Si la invitación venía pre-vinculada a un perfil de músico (ver
+             módulo de Usuarios de admin.html), la cuenta recién creada queda
+             vinculada a ese músico en las mismas organizaciones de la
+             invitación, sin que el admin tenga que repetir el paso luego. */
+          if (invite.musicianId) {
+            doc.musicianLinks = {};
+            Object.keys(invite.organizationIds || {}).forEach(function (orgId) { doc.musicianLinks[orgId] = invite.musicianId; });
+          }
         }
         ref.set(doc).then(function () {
-          if (inviteSnap.exists()) root.child(INVITES_PATH).child(key).remove();
+          if (!invite) { onDone(doc); return; }
+          /* El vínculo con el músico se escribe ANTES de borrar la
+             invitación (y a propósito solo toca `userId`, ningún otro
+             campo): las reglas de seguridad autorizan este auto-vínculo
+             comparando contra la invitación viva de este correo, así que
+             borrarla primero dejaría el vínculo sin forma de validarse. Si
+             esta escritura es rechazada (invitación ya no vigente, etc.), la
+             invitación se conserva en vez de perderse en silencio. */
+          if (invite.musicianId) {
+            root.child(MUSICIANS_PATH).child(invite.musicianId).child('userId').set(firebaseUser.uid).then(function () {
+              root.child(INVITES_PATH).child(key).remove();
+            });
+          } else {
+            root.child(INVITES_PATH).child(key).remove();
+          }
           onDone(doc);
         }, function () { onDone(doc); });
       }, function () {
@@ -792,24 +816,35 @@
     return userDoc && userDoc.organizationIds ? Object.keys(userDoc.organizationIds) : [];
   }
 
+  /* {organizationId: musicianId} — a qué perfil de músico está vinculada
+     esta cuenta en cada organización (puede no tener ninguno todavía). */
+  function userMusicianLinks(userDoc) {
+    return (userDoc && userDoc.musicianLinks) || {};
+  }
+
   /* Usada por admin.html y el Formulario cuando a un usuario no le toca
-     estar ahí (rol 'normal', o sin organización asignada todavía): lo manda
-     al calendario público de su primera organización, o a index.html a
-     secas si aún no tiene ninguna (ahí verá el mensaje de "esperando
+     estar ahí (rol 'normal', o sin organización asignada todavía), y por
+     index.html tras cada login: lo manda a su Dashboard (eventos propios +,
+     si es admin, acceso al panel), o a index.html a secas si aún no tiene
+     ninguna organización asignada (ahí verá el mensaje de "esperando
      asignación"). */
   function redirectToUserLanding(userDoc) {
     var ids = userOrgIds(userDoc);
     if (!ids.length) { w.location.href = 'index.html'; return; }
     getOrganization(ids[0], function (org) {
-      w.location.href = org ? ('index.html?group=' + org.slug) : 'index.html';
+      w.location.href = org ? ('dashboard.html?org=' + org.slug) : 'index.html';
     });
   }
 
   /* --- Invitaciones (alta de usuarios antes de su primer login) --- */
 
-  /* orgIds: arreglo de organizationId, igual que setUserOrgs. Sobrescribe
-     cualquier invitación previa para ese mismo correo. */
-  function createInvitation(email, role, orgIds, cb) {
+  /* orgIds: arreglo de organizationId, igual que setUserOrgs. musicianId
+     (opcional) pre-vincula la cuenta que se cree al primer login con un
+     perfil de músico ya existente (ver módulo de Usuarios de admin.html),
+     para que un músico migrado sin correo quede con acceso a su Dashboard
+     en cuanto inicie sesión. Sobrescribe cualquier invitación previa para
+     ese mismo correo. */
+  function createInvitation(email, role, orgIds, musicianId, cb) {
     var root = dbRoot();
     if (!root) { cb && cb(false); return; }
     var map = {};
@@ -820,6 +855,7 @@
       organizationIds: map,
       createdAt: Date.now()
     };
+    if (musicianId) doc.musicianId = musicianId;
     root.child(INVITES_PATH).child(emailKey(email)).set(doc).then(function () { cb && cb(true); }, function () { cb && cb(false); });
   }
 
@@ -925,6 +961,307 @@
     });
   }
 
+  /* --- Músicos (identidad detrás de los puestos de `banda`) ---
+     Un músico es una persona identificada dentro de una organización,
+     independiente de si ya tiene cuenta (userId null hasta que un admin la
+     vincula). rolesBanda es una lista de tags persistentes (ej. ['Corista',
+     'Piano']) que identifican a la persona, separada de en qué puesto haya
+     quedado asignado en un evento puntual. */
+
+  var ESTADOS_CONFIRMACION = ['pendiente', 'aceptado', 'rechazado'];
+
+  /* Los slots guardados antes de que existiera este campo no tienen
+     estadoConfirmacion: se tratan como 'pendiente'. */
+  function estadoConfirmacionSlot(slot) { return (slot && slot.estadoConfirmacion) || 'pendiente'; }
+
+  function newMusician(o) {
+    o = o || {};
+    var nombre = o.nombre || '';
+    return {
+      id: o.id || uid(),
+      organizationId: o.organizationId || '',
+      nombre: nombre,
+      nombreNormalizado: slugify(nombre),
+      aliases: o.aliases || (nombre ? [nombre] : []),
+      rolesBanda: o.rolesBanda || [],
+      userId: o.userId || null,
+      createdAt: o.createdAt || Date.now(),
+      updatedAt: o.updatedAt || Date.now()
+    };
+  }
+
+  function watchMusiciansForOrg(orgId, cb) {
+    var root = dbRoot();
+    if (!root) return function () {};
+    var ref = root.child(MUSICIANS_PATH).orderByChild('organizationId').equalTo(orgId);
+    var handler = function (snap) { cb(snapshotToArray(snap)); };
+    ref.on('value', handler);
+    return function () { ref.off('value', handler); };
+  }
+
+  function getMusician(id, cb) {
+    var root = dbRoot();
+    if (!root || !id) { cb(null); return; }
+    root.child(MUSICIANS_PATH).child(id).once('value').then(function (snap) {
+      var v = snap.val();
+      if (v) v.id = id;
+      cb(v);
+    }, function () { cb(null); });
+  }
+
+  function createMusician(orgId, nombre, rolesBanda, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(null); return; }
+    var m = newMusician({ organizationId: orgId, nombre: nombre, rolesBanda: rolesBanda || [] });
+    root.child(MUSICIANS_PATH).child(m.id).set(m).then(function () { cb && cb(m); }, function () { cb && cb(null); });
+  }
+
+  /* patch puede incluir nombre, rolesBanda (arreglo), aliases, userId —
+     cualquier subconjunto. Si cambia el nombre, se recalcula
+     nombreNormalizado para que siga participando en matchMusicianByNombre. */
+  function updateMusician(id, patch, cb) {
+    var root = dbRoot();
+    if (!root || !id) { cb && cb(false); return; }
+    var safe = { updatedAt: Date.now() };
+    if (patch.nombre !== undefined) { safe.nombre = patch.nombre; safe.nombreNormalizado = slugify(patch.nombre); }
+    if (patch.rolesBanda !== undefined) safe.rolesBanda = patch.rolesBanda;
+    if (patch.aliases !== undefined) safe.aliases = patch.aliases;
+    if (patch.userId !== undefined) safe.userId = patch.userId;
+    root.child(MUSICIANS_PATH).child(id).update(safe).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  /* Vincula un músico ya existente a una cuenta ya autenticada (uid): guarda
+     el vínculo en ambos sentidos —musicians/{id}.userId y
+     users/{uid}.musicianLinks/{orgId}— en una sola escritura multi-ruta,
+     para que nunca queden desincronizados entre sí. */
+  function linkMusicianToUser(musicianId, targetUid, orgId, cb) {
+    var root = dbRoot();
+    if (!root || !musicianId || !targetUid || !orgId) { cb && cb(false); return; }
+    var updates = {};
+    updates[MUSICIANS_PATH + '/' + musicianId + '/userId'] = targetUid;
+    updates[MUSICIANS_PATH + '/' + musicianId + '/updatedAt'] = Date.now();
+    updates[USERS_PATH + '/' + targetUid + '/musicianLinks/' + orgId] = musicianId;
+    root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  /* Borra el perfil de músico (no la cuenta vinculada, si tenía una — esa
+     queda intacta, solo pierde el vínculo). No repunta los `musicianId` que
+     hayan quedado apuntando a este perfil en eventos históricos; queda como
+     una referencia huérfana inofensiva, igual que un usuario borrado deja de
+     figurar en /users sin que sus eventos pasados se toquen. */
+  function deleteMusician(musicianId, cb) {
+    var root = dbRoot();
+    if (!root || !musicianId) { cb && cb(false); return; }
+    root.child(MUSICIANS_PATH).child(musicianId).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  function unlinkMusician(musicianId, orgId, targetUid, cb) {
+    var root = dbRoot();
+    if (!root || !musicianId || !orgId) { cb && cb(false); return; }
+    var updates = {};
+    updates[MUSICIANS_PATH + '/' + musicianId + '/userId'] = null;
+    if (targetUid) updates[USERS_PATH + '/' + targetUid + '/musicianLinks/' + orgId] = null;
+    root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  /* Funde mergeIds dentro de keepId: une aliases y rolesBanda, repunta
+     musicianId en cualquier slot de banda de la misma organización que
+     apuntara a alguno de los mergeIds, y borra los perfiles fundidos — todo
+     en una sola escritura multi-ruta. */
+  function mergeMusicians(keepId, mergeIds, cb) {
+    var root = dbRoot();
+    if (!root || !keepId || !mergeIds || !mergeIds.length) { cb && cb(false); return; }
+    root.child(MUSICIANS_PATH).child(keepId).once('value').then(function (keepSnap) {
+      var keep = keepSnap.val();
+      if (!keep) { cb && cb(false); return; }
+      Promise.all(mergeIds.map(function (id) { return root.child(MUSICIANS_PATH).child(id).once('value'); })).then(function (snaps) {
+        var aliases = (keep.aliases || []).slice();
+        var roles = (keep.rolesBanda || []).slice();
+        snaps.forEach(function (s) {
+          var v = s.val();
+          if (!v) return;
+          (v.aliases || []).forEach(function (a) { if (aliases.indexOf(a) < 0) aliases.push(a); });
+          (v.rolesBanda || []).forEach(function (r) { if (roles.indexOf(r) < 0) roles.push(r); });
+        });
+        root.child(EVENTS_PATH).orderByChild('organizationId').equalTo(keep.organizationId).once('value').then(function (eventsSnap) {
+          var updates = {};
+          eventsSnap.forEach(function (evChild) {
+            var ev = evChild.val();
+            (ev.banda || []).forEach(function (slot, idx) {
+              if (slot && mergeIds.indexOf(slot.musicianId) >= 0) {
+                updates[EVENTS_PATH + '/' + evChild.key + '/banda/' + idx + '/musicianId'] = keepId;
+              }
+            });
+          });
+          updates[MUSICIANS_PATH + '/' + keepId + '/aliases'] = aliases;
+          updates[MUSICIANS_PATH + '/' + keepId + '/rolesBanda'] = roles;
+          updates[MUSICIANS_PATH + '/' + keepId + '/updatedAt'] = Date.now();
+          mergeIds.forEach(function (id) { updates[MUSICIANS_PATH + '/' + id] = null; });
+          root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+        }, function () { cb && cb(false); });
+      }, function () { cb && cb(false); });
+    }, function () { cb && cb(false); });
+  }
+
+  /* Encuentra, dentro de una lista de músicos ya cargada, cuál corresponde a
+     un nombre libre (el texto tal cual se tipeó en un slot de banda),
+     comparando por la misma normalización que usa la migración. No crea
+     nada — solo empareja; si no hay match devuelve null. */
+  function matchMusicianByNombre(lista, nombreLibre) {
+    var key = slugify(nombreLibre);
+    if (!key) return null;
+    var found = null;
+    (lista || []).some(function (m) {
+      if (m.nombreNormalizado === key) { found = m; return true; }
+      if ((m.aliases || []).some(function (a) { return slugify(a) === key; })) { found = m; return true; }
+      return false;
+    });
+    return found;
+  }
+
+  /* --- Migración de nombres de banda a perfiles de músico ---
+     previewMusicianMigration es de solo lectura: agrupa los `banda[].nombre`
+     de todos los eventos de todas las organizaciones por su forma
+     normalizada, para que el panel de administración los revise/ajuste
+     (fusionar o separar grupos) antes de escribir nada. Cada grupo trae los
+     slots exactos (eventId + slotId) que habría que parchear si se
+     confirma. */
+  function previewMusicianMigration(cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb([]); return; }
+    root.child(EVENTS_PATH).once('value').then(function (snap) {
+      var eventos = snapshotToArray(snap);
+      var grupos = {};
+      eventos.forEach(function (ev) {
+        (ev.banda || []).forEach(function (slot) {
+          var nombre = (slot.nombre || '').trim();
+          if (!nombre) return;
+          var normKey = slugify(nombre);
+          if (!normKey) return;
+          var llave = (ev.organizationId || '') + '|' + normKey;
+          if (!grupos[llave]) {
+            grupos[llave] = { normKey: normKey, organizationId: ev.organizationId || '', nombreCanonico: nombre, aliases: [], rolesBanda: [], slots: [] };
+          }
+          var g = grupos[llave];
+          if (g.aliases.indexOf(nombre) < 0) g.aliases.push(nombre);
+          g.slots.push({ eventId: ev.id, slotId: slot.id, tipo: slot.tipo });
+        });
+      });
+      var out = Object.keys(grupos).map(function (k) { return grupos[k]; });
+      out.forEach(function (g) { g.count = g.slots.length; });
+      out.sort(function (a, b) { return a.nombreCanonico.localeCompare(b.nombreCanonico, 'es'); });
+      cb && cb(out);
+    }, function () { cb && cb([]); });
+  }
+
+  /* Escribe los grupos ya revisados/ajustados por un admin (posiblemente
+     fusionados/separados respecto a la vista previa): crea un
+     `musicians/{id}` por grupo y parchea `musicianId` en cada slot referido,
+     todo en un único root.update() multi-ruta (todo o nada). Vuelve a leer
+     el `banda` de cada evento involucrado justo antes de escribir, para
+     ubicar el slot por su `id` en vez de confiar en el índice capturado en
+     la vista previa (el índice puede haber cambiado si alguien editó el
+     evento mientras tanto). Se niega a correr si la migración ya se marcó
+     como hecha. cb(ok, error|null, slotsOmitidos) */
+  function commitMusicianMigration(grupos, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false); return; }
+    root.child(META_PATH).child('migrations').child('musiciansV1').once('value').then(function (flagSnap) {
+      if (flagSnap.val() === true) { cb && cb(false, new Error('La migración ya se ejecutó antes.')); return; }
+      var eventIds = [];
+      (grupos || []).forEach(function (g) { (g.slots || []).forEach(function (s) { if (eventIds.indexOf(s.eventId) < 0) eventIds.push(s.eventId); }); });
+      Promise.all(eventIds.map(function (id) {
+        return root.child(EVENTS_PATH).child(id).child('banda').once('value').then(function (snap) { return { id: id, banda: snap.val() || [] }; });
+      })).then(function (bandas) {
+        var bandaPorEvento = {};
+        bandas.forEach(function (b) { bandaPorEvento[b.id] = b.banda; });
+        var updates = {};
+        var omitidos = 0;
+        (grupos || []).forEach(function (g) {
+          if (!g.slots || !g.slots.length) return;
+          var m = newMusician({ organizationId: g.organizationId, nombre: g.nombreCanonico, aliases: g.aliases, rolesBanda: g.rolesBanda || [] });
+          updates[MUSICIANS_PATH + '/' + m.id] = m;
+          g.slots.forEach(function (s) {
+            var banda = bandaPorEvento[s.eventId] || [];
+            var idx = -1;
+            for (var i = 0; i < banda.length; i++) { if (banda[i] && banda[i].id === s.slotId) { idx = i; break; } }
+            if (idx < 0) { omitidos++; return; }
+            updates[EVENTS_PATH + '/' + s.eventId + '/banda/' + idx + '/musicianId'] = m.id;
+          });
+        });
+        updates[META_PATH + '/migrations/musiciansV1'] = true;
+        root.update(updates).then(function () { cb && cb(true, null, omitidos); }, function (err) { cb && cb(false, err); });
+      }, function (err) { cb && cb(false, err); });
+    }, function (err) { cb && cb(false, err); });
+  }
+
+  function migracionMusicosYaCorrio(cb) {
+    var root = dbRoot();
+    if (!root) { cb(false); return; }
+    root.child(META_PATH).child('migrations').child('musiciansV1').once('value').then(function (snap) {
+      cb(snap.val() === true);
+    }, function () { cb(false); });
+  }
+
+  /* --- Confirmación de asistencia (Aceptar/Declinar) --- */
+
+  /* No escribe por índice fijo de arreglo: banda puede reordenarse (el
+     Formulario hace splice() al eliminar puestos), así que se vuelve a leer
+     el banda actual y se ubica el slot por su `id` propio justo antes de
+     escribir, para no repuntar accidentalmente el estado de otro puesto. */
+  function setBandaConfirmacion(eventId, slotId, estado, cb) {
+    var root = dbRoot();
+    if (!root || !eventId || !slotId) { cb && cb(false); return; }
+    root.child(EVENTS_PATH).child(eventId).child('banda').once('value').then(function (snap) {
+      var banda = snap.val() || [];
+      var idx = -1;
+      for (var i = 0; i < banda.length; i++) { if (banda[i] && banda[i].id === slotId) { idx = i; break; } }
+      if (idx < 0) { cb && cb(false); return; }
+      var patch = {};
+      patch['banda/' + idx + '/estadoConfirmacion'] = estado;
+      root.child(EVENTS_PATH).child(eventId).update(patch).then(function () { cb && cb(true); }, function (err) {
+        console.error('Firebase setBandaConfirmacion rechazado:', err && err.code, err && err.message, err);
+        cb && cb(false);
+      });
+    }, function () { cb && cb(false); });
+  }
+
+  /* --- Fechas no disponibles --- */
+
+  function watchUnavailableDates(musicianId, cb) {
+    var root = dbRoot();
+    if (!root || !musicianId) return function () {};
+    var ref = root.child(MUSICIANS_PATH).child(musicianId).child('unavailableDates');
+    var handler = function (snap) { cb(snapshotToArray(snap)); };
+    ref.on('value', handler);
+    return function () { ref.off('value', handler); };
+  }
+
+  function addUnavailableDate(musicianId, range, cb) {
+    var root = dbRoot();
+    if (!root || !musicianId) { cb && cb(null); return; }
+    var id = uid();
+    var doc = { id: id, startDate: (range && range.startDate) || '', endDate: (range && (range.endDate || range.startDate)) || '', reason: (range && range.reason) || '', createdAt: Date.now() };
+    root.child(MUSICIANS_PATH).child(musicianId).child('unavailableDates').child(id).set(doc).then(function () { cb && cb(doc); }, function () { cb && cb(null); });
+  }
+
+  function deleteUnavailableDate(musicianId, rangeId, cb) {
+    var root = dbRoot();
+    if (!root || !musicianId || !rangeId) { cb && cb(false); return; }
+    root.child(MUSICIANS_PATH).child(musicianId).child('unavailableDates').child(rangeId).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  /* true si `fechaIso` (YYYY-MM-DD) cae dentro de algún rango marcado como
+     no disponible — comparación de texto porque el formato ISO ya ordena
+     igual que el string. Usada por el Formulario para advertir (no bloquea
+     el guardado). */
+  function fechaNoDisponible(unavailableDates, fechaIso) {
+    if (!fechaIso) return false;
+    return (unavailableDates || []).some(function (r) {
+      return fechaIso >= (r.startDate || '') && fechaIso <= (r.endDate || r.startDate || '');
+    });
+  }
+
   w.RepertorioData = {
     MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
@@ -945,9 +1282,21 @@
     createOrganization: createOrganization, updateOrganization: updateOrganization, deleteOrganization: deleteOrganization,
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
-    setUserRole: setUserRole, setUserOrgs: setUserOrgs, deleteUser: deleteUser, userOrgIds: userOrgIds, redirectToUserLanding: redirectToUserLanding,
+    setUserRole: setUserRole, setUserOrgs: setUserOrgs, deleteUser: deleteUser, userOrgIds: userOrgIds,
+    userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding,
     createInvitation: createInvitation, watchInvitations: watchInvitations, deleteInvitation: deleteInvitation,
     watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, setEventEstado: setEventEstado, moveEvent: moveEvent,
-    watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong
+    watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong,
+    ESTADOS_CONFIRMACION: ESTADOS_CONFIRMACION, estadoConfirmacionSlot: estadoConfirmacionSlot,
+    newMusician: newMusician, watchMusiciansForOrg: watchMusiciansForOrg, getMusician: getMusician,
+    createMusician: createMusician, updateMusician: updateMusician,
+    linkMusicianToUser: linkMusicianToUser, unlinkMusician: unlinkMusician, mergeMusicians: mergeMusicians,
+    deleteMusician: deleteMusician,
+    matchMusicianByNombre: matchMusicianByNombre,
+    previewMusicianMigration: previewMusicianMigration, commitMusicianMigration: commitMusicianMigration,
+    migracionMusicosYaCorrio: migracionMusicosYaCorrio,
+    setBandaConfirmacion: setBandaConfirmacion,
+    watchUnavailableDates: watchUnavailableDates, addUnavailableDate: addUnavailableDate, deleteUnavailableDate: deleteUnavailableDate,
+    fechaNoDisponible: fechaNoDisponible
   };
 })(window);

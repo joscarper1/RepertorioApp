@@ -53,8 +53,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   .cd{font-size:13px !important;margin-top:0 !important}
   .ck{font-size:13px !important;padding:1px 4px !important}
   h1{font-size:34px !important}
-  .bannerwrap{margin-top:6px !important}
-  .bannerwrap img{max-height:70px !important}
 }
 </style>
 </helmet>
@@ -131,12 +129,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
       <button onClick="{{ irABienvenida }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;flex:0 0 auto">Iniciar sesión</button>
     </sc-if>
   </div>
-
-  <sc-if value="{{ tieneBanner }}" hint-placeholder-val="{{ false }}">
-    <div class="bannerwrap" style="margin-top:16px">
-      <img src="{{ bannerUrl }}" alt="{{ nombreOrg }}" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;border:2px solid var(--ink)">
-    </div>
-  </sc-if>
 
   <header style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:32px 0 24px;border-bottom:2px solid var(--ink)">
     <div>
@@ -818,8 +810,6 @@ class Component extends DCLogic {
       mesLabel: filtroActivo ? 'Resultado del filtro' : R.monthLabel(s.mes),
       nota: s.org.nota || '',
       nombreOrg: s.org.name,
-      tieneBanner: !!(s.org.bannerUrl && s.org.bannerUrl.trim()),
-      bannerUrl: s.org.bannerUrl || '',
       hayOtrasOrgs: s.misOrgs.length > 1,
       noHayOtrasOrgs: s.misOrgs.length <= 1,
       orgSwitcherAbierto: s.orgSwitcherAbierto,

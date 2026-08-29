@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "repertorio-static",
-      "runtimeExecutable": "python",
+      "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8934"],
       "port": 8934
     }

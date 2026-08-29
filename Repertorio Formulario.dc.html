@@ -270,6 +270,9 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                     </label>
                     <button onClick="{{ sl.remove }}" title="Quitar" style="font-size:13px;border:0;background:transparent;color:#bab6b6;cursor:pointer;padding:0">−</button>
                   </div>
+                  <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:11px;font-weight:700;letter-spacing:.02em;color:#fff;background:#b00020;padding:4px 8px;display:inline-block;align-self:flex-start">⚠ Marcado como no disponible esta fecha</span>
+                  </sc-if>
                   <sc-if value="{{ sl.resaltado }}" hint-placeholder-val="{{ true }}">
                     <input value="{{ sl.tarea }}" onChange="{{ sl.onTarea }}" placeholder="Encomienda: preparar reflexión, orar…" style="font-size:13px;padding:8px 10px;border:0;background:var(--ac-lt);color:var(--ac-dk)">
                   </sc-if>
@@ -530,7 +533,7 @@ class Component extends DCLogic {
     estadoAcceso: 'cargando', denegadoMotivo: '', organizationId: null, organizacion: null, orgs: [],
     data: { eventos: [] }, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '',
     autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, bandaNombreAbierto: {}, songOverrides: {},
-    reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null,
+    reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null, musicos: [],
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false,
     moverEventoId: null, moverMes: ''
@@ -574,6 +577,7 @@ class Component extends DCLogic {
           this.setState((s) => (s.draft ? null : { data: { eventos: evs } }));
         });
         this._unSongOverrides = R.watchSongCatalog(orgId, (map) => this.setState({ songOverrides: map }));
+        this._unmusicos = R.watchMusiciansForOrg(orgId, (lista) => this.setState({ musicos: lista }));
       });
     });
   }
@@ -582,6 +586,7 @@ class Component extends DCLogic {
     if (this._unwatch) this._unwatch();
     if (this._unorgs) this._unorgs();
     if (this._unSongOverrides) this._unSongOverrides();
+    if (this._unmusicos) this._unmusicos();
     if (this._yt) this._yt.destroy();
     if (this._unauth) this._unauth();
   }
@@ -688,8 +693,20 @@ class Component extends DCLogic {
      'BORRADOR' lo deja invisible en el calendario público, 'PUBLICADO' lo
      muestra de inmediato. */
   guardarConEstado(estado) {
+    const R = D();
     const dr = this.state.draft;
     dr.estado = estado;
+    /* Enriquecimiento silencioso: si el nombre tipeado en un puesto ya
+       corresponde a un músico existente (mismo criterio de normalización
+       que la migración), se estampa su musicianId — así el Dashboard puede
+       encontrar este evento sin depender de comparar texto en cada lectura.
+       No crea músicos nuevos aquí; eso solo pasa por la migración o el alta
+       manual en el módulo de Usuarios. */
+    (dr.banda || []).forEach((slot) => {
+      const nombre = (slot.nombre || '').trim();
+      const m = nombre ? R.matchMusicianByNombre(this.state.musicos, nombre) : null;
+      slot.musicianId = m ? m.id : null;
+    });
     const orgId = this.state.organizationId;
     this.setState({ draft: null, editId: null, paso: 1 });
     D().saveEvent(dr, orgId, (ok) => this.avisar(ok,
@@ -888,6 +905,12 @@ class Component extends DCLogic {
         const coincidencias = query
           ? catalogoTipo.filter((nm) => nm.toLowerCase().indexOf(query) >= 0).slice(0, 6)
           : [];
+        /* Advertencia no bloqueante: si el nombre tipeado ya corresponde a un
+           músico con esa fecha marcada como no disponible, se avisa aquí
+           mismo — el admin puede igual guardar, es una señal, no un bloqueo. */
+        const musicoSlot = (b.nombre || '').trim() ? R.matchMusicianByNombre(s.musicos, b.nombre) : null;
+        const noDisponible = !!(musicoSlot && dr && dr.fecha &&
+          R.fechaNoDisponible(Object.values(musicoSlot.unavailableDates || {}), dr.fecha));
         return {
         id: b.id,
         label: R.bandaLabel(b),
@@ -935,7 +958,8 @@ class Component extends DCLogic {
           if (idx < 0) return;
           if (mismos.length > 1) x.banda.splice(idx, 1);
           else { x.banda[idx].nombre = ''; x.banda[idx].resaltado = false; x.banda[idx].tarea = ''; }
-        })
+        }),
+        noDisponible: noDisponible
         };
       })
     })) : [];
