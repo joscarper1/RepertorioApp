@@ -1203,6 +1203,49 @@
     }, function () { cb(false); });
   }
 
+  /* Corrige, en un solo lote, el texto de `nombre` (y `musicianId`) de los
+     puestos de banda indicados — usada por el panel de administración para
+     sincronizar de una vez los nombres ya guardados en eventos pasados y
+     futuros con el nombre canónico vigente en el catálogo de Personas
+     (la migración original solo vinculó `musicianId`, nunca reescribió el
+     texto ya guardado en cada evento). `fixes` es un arreglo de
+     { eventId, slotId, nombreNuevo, musicianId }. Igual que
+     commitMusicianMigration, vuelve a leer el `banda` de cada evento
+     involucrado justo antes de escribir y ubica cada puesto por su `id`
+     propio (no por índice) para no pisar un cambio concurrente; los puestos
+     que ya no existan en ese momento se omiten en vez de fallar todo el
+     lote. cb(ok, omitidos) */
+  function updateEventBandaSlots(fixes, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false, 0); return; }
+    if (!fixes || !fixes.length) { cb && cb(true, 0); return; }
+    var eventIds = [];
+    fixes.forEach(function (f) { if (eventIds.indexOf(f.eventId) < 0) eventIds.push(f.eventId); });
+    Promise.all(eventIds.map(function (id) {
+      return root.child(EVENTS_PATH).child(id).child('banda').once('value').then(function (snap) { return { id: id, banda: snap.val() || [] }; });
+    })).then(function (bandas) {
+      var bandaPorEvento = {};
+      bandas.forEach(function (b) { bandaPorEvento[b.id] = b.banda; });
+      var updates = {};
+      var omitidos = 0;
+      fixes.forEach(function (f) {
+        var banda = bandaPorEvento[f.eventId] || [];
+        var idx = -1;
+        for (var i = 0; i < banda.length; i++) { if (banda[i] && banda[i].id === f.slotId) { idx = i; break; } }
+        if (idx < 0) { omitidos++; return; }
+        updates[EVENTS_PATH + '/' + f.eventId + '/banda/' + idx + '/nombre'] = f.nombreNuevo;
+        updates[EVENTS_PATH + '/' + f.eventId + '/banda/' + idx + '/musicianId'] = f.musicianId;
+      });
+      root.update(updates).then(function () { cb && cb(true, omitidos); }, function (err) {
+        console.error('Firebase updateEventBandaSlots rechazado:', err && err.code, err && err.message, err);
+        cb && cb(false, 0);
+      });
+    }, function (err) {
+      console.error('Firebase updateEventBandaSlots lectura rechazada:', err);
+      cb && cb(false, 0);
+    });
+  }
+
   /* --- Confirmación de asistencia (Aceptar/Declinar) --- */
 
   /* No escribe por índice fijo de arreglo: banda puede reordenarse (el
@@ -1295,6 +1338,7 @@
     matchMusicianByNombre: matchMusicianByNombre,
     previewMusicianMigration: previewMusicianMigration, commitMusicianMigration: commitMusicianMigration,
     migracionMusicosYaCorrio: migracionMusicosYaCorrio,
+    updateEventBandaSlots: updateEventBandaSlots,
     setBandaConfirmacion: setBandaConfirmacion,
     watchUnavailableDates: watchUnavailableDates, addUnavailableDate: addUnavailableDate, deleteUnavailableDate: deleteUnavailableDate,
     fechaNoDisponible: fechaNoDisponible

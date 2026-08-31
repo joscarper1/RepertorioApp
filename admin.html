@@ -331,6 +331,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                   <sc-if value="{{ migracionDisponible }}" hint-placeholder-val="{{ false }}">
                     <button type="button" onClick="{{ abrirMigracion }}" style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:10px 14px;cursor:pointer">Revisar migración de músicos</button>
                   </sc-if>
+                  <button type="button" onClick="{{ abrirSync }}" style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:10px 14px;cursor:pointer">Sincronizar nombres en eventos</button>
                   <button type="button" onClick="{{ toggleNuevoMusico }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 16px;cursor:pointer">+ Nueva persona</button>
                 </div>
               </div>
@@ -357,6 +358,66 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                     <button type="button" onClick="{{ fusionarSeleccionMigracion }}" disabled="{{ migracionFusionarDisabled }}" style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:8px 14px;cursor:pointer">Fusionar seleccionados ({{ migracionSeleccionCount }})</button>
                     <button type="button" onClick="{{ confirmarMigracion }}" disabled="{{ migracionCargando }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 16px;cursor:pointer">Confirmar migración</button>
                     <button type="button" onClick="{{ cerrarMigracion }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cerrar</button>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ syncAbierto }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:16px;background:var(--bg);margin-bottom:20px;display:flex;flex-direction:column;gap:16px">
+                  <p style="font-size:13px;line-height:1.5;color:#54514f;margin:0">Revisa y corrige de una vez los nombres que hoy aparecen distintos en los eventos (pasados y futuros) de esta organización, según el catálogo de Personas — la migración original solo vinculó el identificador de cada puesto, sin corregir el texto ya guardado en cada evento.</p>
+                  <sc-if value="{{ syncCargando }}" hint-placeholder-val="{{ false }}">
+                    <p style="font-size:13px;color:#7d7979;margin:0">Cargando eventos…</p>
+                  </sc-if>
+
+                  <sc-if value="{{ haySyncDuplicados }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <div style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac-dk);margin-bottom:8px">Posibles duplicados ({{ syncDuplicadosCount }})</div>
+                      <sc-for list="{{ syncDuplicadosLista }}" as="dg" hint-placeholder-count="1">
+                        <div style="border:2px solid var(--ink);background:#fff;padding:12px 14px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px">
+                          <sc-for list="{{ dg.personas }}" as="p" hint-placeholder-count="2">
+                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
+                              <input type="checkbox" checked="{{ p.seleccionado }}" onChange="{{ p.onToggle }}" style="width:15px;height:15px;cursor:pointer">
+                              {{ p.nombre }}
+                            </label>
+                          </sc-for>
+                          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                            <input value="{{ dg.nombreCanonico }}" onChange="{{ dg.onNombreCanonico }}" style="font-size:14px;font-weight:700;padding:7px 9px;border:2px solid var(--ink);flex:1;min-width:180px">
+                            <button type="button" onClick="{{ dg.fusionar }}" disabled="{{ dg.fusionarDisabled }}" style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Fusionar en este nombre</button>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <div>
+                    <div style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac-dk);margin-bottom:8px">Cambios a aplicar en eventos ({{ syncFixesCount }})</div>
+                    <div style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+                      <sc-for list="{{ syncFixesLista }}" as="f" hint-placeholder-count="2">
+                        <div style="border:1px solid #eae9e9;background:#fff;padding:8px 10px;font-size:13px;display:flex;flex-direction:column;gap:2px">
+                          <span style="color:#7d7979">{{ f.fechaLabel }} · {{ f.servicio }} · {{ f.tipo }}</span>
+                          <span><strong>{{ f.nombreActual }}</strong> → <strong style="color:var(--ac-dk)">{{ f.nombreNuevo }}</strong></span>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <p style="{{ sinSyncFixesStyle }}">No hay cambios pendientes de nombre en eventos.</p>
+                  </div>
+
+                  <sc-if value="{{ haySyncSinCoincidencia }}" hint-placeholder-val="{{ false }}">
+                    <div>
+                      <div style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9a9694;margin-bottom:6px">Sin coincidencia en Personas ({{ syncSinCoincidenciaCount }})</div>
+                      <p style="font-size:12px;color:#7d7979;line-height:1.5;margin:0">Estos nombres aparecen en eventos pero no corresponden a nadie en el catálogo — créalos como persona nueva arriba, o corrígelos a mano si son un error de tipeo puntual.</p>
+                      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+                        <sc-for list="{{ syncSinCoincidenciaLista }}" as="nc" hint-placeholder-count="2">
+                          <span style="font-size:12px;font-weight:700;border:2px solid #bab6b6;color:#7d7979;padding:5px 9px">{{ nc.nombre }} · {{ nc.count }}</span>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <p style="{{ syncResultadoStyle }}">{{ syncResultado }}</p>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" onClick="{{ aplicarCambiosEventos }}" disabled="{{ aplicarSyncDisabled }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 16px;cursor:pointer">{{ aplicarSyncLabel }}</button>
+                    <button type="button" onClick="{{ cerrarSync }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cerrar</button>
                   </div>
                 </div>
               </sc-if>
@@ -579,6 +640,8 @@ class Component extends DCLogic {
     musicosBusquedaNombre: '', musicosPagina: 1,
     migracionAbierta: false, migracionYaCorrio: null, migracionCargando: false,
     migracionGrupos: null, migracionSeleccion: {}, migracionResultado: '',
+    syncAbierto: false, syncCargando: false, syncEventos: [], syncAplicando: false, syncResultado: '',
+    syncSeleccionDup: {}, syncCanonicoDup: {},
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
     eventosMontado: false,
@@ -1045,6 +1108,193 @@ class Component extends DCLogic {
     });
   }
 
+  /* --- Sincronizar nombres de banda en eventos (herramienta permanente,
+     no es una migración de una sola vez): la migración original y las
+     fusiones de "Personas" solo vinculan/actualizan `musicianId`, nunca
+     reescriben el texto `nombre` ya guardado en cada puesto de banda de
+     cada evento — así que el calendario y el Formulario podían seguir
+     mostrando variantes viejas del nombre aunque el catálogo de Personas ya
+     estuviera correcto. Esta herramienta lee todos los eventos (pasados y
+     futuros) de la organización activa una sola vez (snapshot, no queda
+     suscrita) y recalcula en cada render qué puestos deben corregirse,
+     comparando el texto actual contra R.matchMusicianByNombre sobre el
+     catálogo de Personas EN VIVO — así que si el admin fusiona duplicados
+     mientras el panel está abierto, la lista de cambios pendientes se
+     actualiza sola sin recargar los eventos. */
+
+  abrirSync() {
+    if (!this.state.currentOrgId) return;
+    this.setState({ syncAbierto: true, syncCargando: true, syncResultado: '', syncSeleccionDup: {}, syncCanonicoDup: {} });
+    this.recargarSyncEventos(() => this.setState({ syncCargando: false }));
+  }
+
+  cerrarSync() {
+    this.setState({ syncAbierto: false });
+  }
+
+  recargarSyncEventos(cb) {
+    const orgId = this.state.currentOrgId;
+    if (!orgId) { cb && cb(); return; }
+    let unsub;
+    unsub = D().watchEventsForOrg(orgId, (evs) => {
+      if (unsub) unsub();
+      this.setState({ syncEventos: evs });
+      cb && cb();
+    });
+  }
+
+  /* Distancia de edición simple (sin acentos ya se resuelve vía R.slugify
+     antes de comparar) — solo para nombres cortos, así que la variante O(n·m)
+     sin optimizar es más que suficiente. */
+  levenshtein(a, b) {
+    a = a || ''; b = b || '';
+    const m = a.length, n = b.length;
+    if (!m) return n;
+    if (!n) return m;
+    const dp = new Array(n + 1);
+    for (let j = 0; j <= n; j++) dp[j] = j;
+    for (let i = 1; i <= m; i++) {
+      let prev = dp[0];
+      dp[0] = i;
+      for (let j = 1; j <= n; j++) {
+        const tmp = dp[j];
+        dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+        prev = tmp;
+      }
+    }
+    return dp[n];
+  }
+
+  /* Agrupa (sin fusionar nada todavía) a los músicos del catálogo actual que
+     podrían ser la misma persona escrita de forma distinta: mismo primer
+     nombre + misma inicial de apellido (o uno de los dos sin apellido
+     registrado), un primer nombre que es apodo/prefijo del otro con la misma
+     inicial de apellido (ej. "Ale M" / "Alejandra M"), o nombres normalizados
+     a un solo caracter de diferencia (ej. "Jonatan" / "Jonathan" — solo si
+     ninguno de los dos trae apellido, o ambos traen el mismo, para no
+     confundir personas distintas con nombre parecido). Deliberadamente NO
+     junta "Gerson G" con "Gerson V" (mismo nombre, inicial de apellido
+     distinta): eso son casi con certeza dos personas diferentes, y fusionar
+     por error es mucho peor que dejarlo fuera de la lista — esto es solo una
+     lista de candidatos para que un humano decida, nunca fusiona solo. */
+  calcularDuplicados() {
+    const R = D();
+    const lista = (this.state.musicos || []).slice().sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+    const n = lista.length;
+    const parent = lista.map((_, i) => i);
+    const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
+    const union = (i, j) => { const ri = find(i), rj = find(j); if (ri !== rj) parent[ri] = rj; };
+
+    const tokens = lista.map((m) => (m.nombre || '').trim().split(/\s+/).filter(Boolean));
+    const primero = tokens.map((t) => (t[0] || '').toLowerCase());
+    const inicialApellido = tokens.map((t) => (t.length > 1 ? t[t.length - 1][0].toLowerCase() : null));
+    const slug = lista.map((m) => R.slugify(m.nombre));
+
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const mismaInicial = inicialApellido[i] === null || inicialApellido[j] === null || inicialApellido[i] === inicialApellido[j];
+        let sospechoso = false;
+        if (primero[i] && primero[i] === primero[j] && mismaInicial) {
+          sospechoso = true;
+        } else if (primero[i] && primero[j] && Math.min(primero[i].length, primero[j].length) >= 2 &&
+                   (primero[i].indexOf(primero[j]) === 0 || primero[j].indexOf(primero[i]) === 0) && mismaInicial) {
+          sospechoso = true;
+        } else if (slug[i] && slug[j] && mismaInicial && this.levenshtein(slug[i], slug[j]) <= 1) {
+          sospechoso = true;
+        }
+        if (sospechoso) union(i, j);
+      }
+    }
+
+    const grupos = {};
+    for (let i = 0; i < n; i++) {
+      const r = find(i);
+      (grupos[r] = grupos[r] || []).push(lista[i]);
+    }
+    return Object.keys(grupos).map((k) => grupos[k]).filter((g) => g.length > 1);
+  }
+
+  fusionarGrupoDup(groupKey, group, nombreCanonico) {
+    const s = this.state;
+    const seleccionados = group.filter((m) => s.syncSeleccionDup[m.id] !== false);
+    if (seleccionados.length < 2) return;
+    const canonico = (nombreCanonico || '').trim() ||
+      group.slice().sort((a, b) => (b.nombre || '').length - (a.nombre || '').length)[0].nombre;
+    const keep = seleccionados.find((m) => (m.nombre || '').trim() === canonico) || seleccionados[0];
+    const mergeIds = seleccionados.filter((m) => m.id !== keep.id).map((m) => m.id);
+    const aplicar = () => {
+      D().mergeMusicians(keep.id, mergeIds, (ok) => {
+        this.setState((st) => ({
+          mensaje: ok ? ('Se fusionaron ' + (mergeIds.length + 1) + ' personas en "' + canonico + '".') : 'No se pudo fusionar.',
+          syncSeleccionDup: {}, syncCanonicoDup: Object.assign({}, st.syncCanonicoDup, { [groupKey]: undefined })
+        }));
+      });
+    };
+    if ((keep.nombre || '').trim() !== canonico) {
+      D().updateMusician(keep.id, { nombre: canonico }, (ok) => {
+        if (ok) aplicar();
+        else this.setState({ mensaje: 'No se pudo renombrar antes de fusionar.' });
+      });
+    } else {
+      aplicar();
+    }
+  }
+
+  /* Recorre los eventos ya cargados (snapshot de recargarSyncEventos) y, para
+     cada puesto de banda con nombre, busca a quién corresponde en el
+     catálogo VIGENTE de Personas por nombre/alias (R.matchMusicianByNombre —
+     el mismo criterio que usa el Formulario al guardar). Si el texto actual
+     no coincide con el nombre canónico de esa persona (o el musicianId
+     guardado quedó desactualizado), lo agrega a la lista de cambios; si no
+     hay ninguna coincidencia en el catálogo, lo reporta aparte (informativo,
+     no se toca solo — puede ser una persona que aún no está en Personas, o
+     un error de tipeo puntual que conviene revisar a mano). */
+  calcularFixesYSinCoincidencia() {
+    const R = D();
+    const musicos = this.state.musicos || [];
+    const fixes = [];
+    const sinCoincidenciaMap = new Map();
+    (this.state.syncEventos || []).forEach((ev) => {
+      (ev.banda || []).forEach((slot) => {
+        const nombreActual = (slot.nombre || '').trim();
+        if (!nombreActual) return;
+        const musico = R.matchMusicianByNombre(musicos, nombreActual);
+        if (!musico) {
+          const k = nombreActual.toLowerCase();
+          sinCoincidenciaMap.set(k, { nombre: nombreActual, count: (sinCoincidenciaMap.get(k) ? sinCoincidenciaMap.get(k).count : 0) + 1 });
+          return;
+        }
+        const nombreCanonico = (musico.nombre || '').trim();
+        if (nombreActual === nombreCanonico && slot.musicianId === musico.id) return;
+        fixes.push({
+          eventId: ev.id, slotId: slot.id, fecha: ev.fecha, servicio: ev.servicio,
+          tipo: R.bandaLabel(slot), nombreActual: nombreActual, nombreNuevo: nombreCanonico, musicianId: musico.id
+        });
+      });
+    });
+    fixes.sort((a, b) => (a.fecha < b.fecha ? -1 : (a.fecha > b.fecha ? 1 : 0)));
+    const sinCoincidencia = Array.from(sinCoincidenciaMap.values()).sort((a, b) => b.count - a.count);
+    return { fixes, sinCoincidencia };
+  }
+
+  aplicarCambiosEventos() {
+    const { fixes } = this.calcularFixesYSinCoincidencia();
+    if (!fixes.length) return;
+    const ok = confirm('Se actualizará el nombre en ' + fixes.length + ' puesto(s) de banda en eventos pasados y futuros de esta organización, según el catálogo de Personas vigente. ¿Continuar?');
+    if (!ok) return;
+    this.setState({ syncAplicando: true, syncResultado: '' });
+    D().updateEventBandaSlots(fixes, (exito, omitidos) => {
+      this.setState({
+        syncAplicando: false,
+        syncResultado: exito
+          ? ('Listo: ' + fixes.length + ' puesto(s) actualizados' + (omitidos ? (', ' + omitidos + ' omitidos por cambios concurrentes.') : '.'))
+          : 'No se pudo aplicar los cambios: revisa tu sesión o conexión.',
+        mensaje: exito ? 'Nombres sincronizados en eventos.' : 'No se pudo sincronizar los nombres.'
+      });
+      if (exito) this.recargarSyncEventos();
+    });
+  }
+
   confirmarBorrarUsuario(u) {
     const ok = confirm('¿Eliminar a "' + (u.displayName || u.email) + '"? Perderá acceso al sistema de inmediato. Esta acción no se puede deshacer.');
     if (!ok) return;
@@ -1228,6 +1478,38 @@ class Component extends DCLogic {
     }));
     const migracionSeleccionCount = Object.keys(s.migracionSeleccion || {}).filter((k) => s.migracionSeleccion[k]).length;
 
+    /* --- Sincronizar nombres de banda en eventos --- */
+    const syncDuplicadosGrupos = s.syncAbierto ? this.calcularDuplicados() : [];
+    const syncDuplicadosLista = syncDuplicadosGrupos.map((grupo) => {
+      const groupKey = grupo.map((m) => m.id).slice().sort().join(',');
+      const seleccionados = grupo.filter((m) => s.syncSeleccionDup[m.id] !== false);
+      const nombreCanonico = s.syncCanonicoDup[groupKey] !== undefined
+        ? s.syncCanonicoDup[groupKey]
+        : grupo.slice().sort((a, b) => (b.nombre || '').length - (a.nombre || '').length)[0].nombre;
+      return {
+        key: groupKey,
+        personas: grupo.map((m) => ({
+          id: m.id, nombre: m.nombre,
+          seleccionado: s.syncSeleccionDup[m.id] !== false,
+          onToggle: (e) => {
+            const marcado = e.target.checked;
+            this.setState((st) => ({ syncSeleccionDup: Object.assign({}, st.syncSeleccionDup, { [m.id]: marcado }) }));
+          }
+        })),
+        nombreCanonico: nombreCanonico,
+        onNombreCanonico: (e) => {
+          const v = e.target.value;
+          this.setState((st) => ({ syncCanonicoDup: Object.assign({}, st.syncCanonicoDup, { [groupKey]: v }) }));
+        },
+        fusionarDisabled: seleccionados.length < 2,
+        fusionar: () => this.fusionarGrupoDup(groupKey, grupo, nombreCanonico)
+      };
+    });
+
+    const { fixes: syncFixesLista, sinCoincidencia: syncSinCoincidenciaLista } = s.syncAbierto
+      ? this.calcularFixesYSinCoincidencia() : { fixes: [], sinCoincidencia: [] };
+    const syncFixesListaConLabel = syncFixesLista.map((f) => Object.assign({}, f, { fechaLabel: R.diaNombre(f.fecha) + ' ' + R.fechaLarga(f.fecha) }));
+
     const REPERTORIO_PAGE_SIZE = 10;
     const catalogoVigente = R.buildSongCatalog(s.repertorioEventos, s.songOverrides).filter((e) => !e.archivado);
     const busquedaSong = (s.repertorioBusqueda || '').trim().toLowerCase();
@@ -1388,6 +1670,25 @@ class Component extends DCLogic {
       confirmarMigracion: () => this.confirmarMigracion(),
       migracionResultado: s.migracionResultado,
       migracionResultadoStyle: s.migracionResultado ? 'font-size:13px;color:var(--ac-dk);margin:12px 0 0' : 'display:none',
+
+      syncAbierto: s.syncAbierto,
+      abrirSync: () => this.abrirSync(),
+      cerrarSync: () => this.cerrarSync(),
+      syncCargando: s.syncCargando,
+      syncDuplicadosLista: syncDuplicadosLista,
+      haySyncDuplicados: syncDuplicadosLista.length > 0,
+      syncDuplicadosCount: syncDuplicadosLista.length,
+      syncFixesLista: syncFixesListaConLabel,
+      syncFixesCount: syncFixesListaConLabel.length,
+      sinSyncFixesStyle: syncFixesListaConLabel.length === 0 ? 'font-size:13px;color:#9a9694;padding:8px 2px' : 'display:none',
+      syncSinCoincidenciaLista: syncSinCoincidenciaLista,
+      haySyncSinCoincidencia: syncSinCoincidenciaLista.length > 0,
+      syncSinCoincidenciaCount: syncSinCoincidenciaLista.length,
+      aplicarSyncDisabled: s.syncAplicando || syncFixesListaConLabel.length === 0,
+      aplicarSyncLabel: s.syncAplicando ? 'Aplicando…' : ('Aplicar cambios en eventos (' + syncFixesListaConLabel.length + ')'),
+      aplicarCambiosEventos: () => this.aplicarCambiosEventos(),
+      syncResultado: s.syncResultado,
+      syncResultadoStyle: s.syncResultado ? 'font-size:13px;color:var(--ac-dk);margin:0' : 'display:none',
 
       repertorioBusqueda: s.repertorioBusqueda,
       onRepertorioBusqueda: (e) => this.onRepertorioBusqueda(e),
