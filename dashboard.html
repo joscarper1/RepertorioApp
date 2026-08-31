@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi Dashboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<div id="repertorio-checking" style="position:fixed;inset:0;background:var(--bg,#f3f2f2);display:flex;align-items:center;justify-content:center;z-index:2147483647">
+  <p style="font-size:14px;color:#7d7979;font-family:Archivo,sans-serif">Cargando…</p>
+</div>
+<div id="repertorio-gate" style="position:fixed;inset:0;background:rgba(243,242,242,.97);display:none;align-items:center;justify-content:center;z-index:2147483647;padding:20px">
+  <div style="width:min(100%,420px);background:#fff;border:2px solid var(--ink,#201e1d);padding:24px 24px 20px;box-shadow:0 16px 40px rgba(0,0,0,.12)">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk,#08512c)">Acceso restringido</div>
+    <h2 style="font-size:28px;font-weight:800;margin:10px 0 0;text-transform:uppercase">Inicia sesión</h2>
+    <p style="font-size:14px;line-height:1.5;color:#54514f;margin:10px 0 0">Tu Dashboard muestra tus próximos eventos. Entra con tu cuenta de Google.</p>
+    <button id="repertorio-gate-signin" type="button" style="width:100%;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac,#0f7d45);background:var(--ac,#0f7d45);color:#fff;padding:10px 14px;cursor:pointer;margin-top:18px">Iniciar sesión con Google</button>
+    <div id="repertorio-gate-error" style="min-height:18px;font-size:13px;color:#b00020;margin-top:8px"></div>
+  </div>
+</div>
+<div id="repertorio-content" style="display:none">
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/styles.css">
+<script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="repertorio-data.js"></script>
+<style>
+:root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body,Archivo),Archivo,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--ac-dk);text-decoration:none;border-bottom:1px solid var(--ac)}
+a:hover{color:#fff;background:var(--ac)}
+input,textarea,button,select{font-family:inherit;color:inherit;border-radius:0}
+input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+::selection{background:var(--ac-lt)}
+.dash-grid{display:grid;grid-template-columns:280px 1fr;gap:0;border:2px solid var(--ink);margin-top:24px;background:#fff}
+.dash-side{border-right:2px solid var(--ink);padding:24px 20px}
+.dash-main{padding:24px 28px;min-width:0}
+@media (max-width:760px){
+  .dash-grid{grid-template-columns:1fr}
+  .dash-side{border-right:0;border-bottom:2px solid var(--ink)}
+}
+</style>
+</helmet>
+<div style="max-width:980px;margin:0 auto;padding:0 20px 96px">
+
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
+    <div style="display:flex;align-items:baseline;gap:12px;min-width:0">
+      <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
+      <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Dashboard{{ orgTituloSufijo }}</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
+        <button onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
+    <a href="{{ calendarioHref }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Calendario público</a>
+    <sc-if value="{{ mostrarLinkAdmin }}" hint-placeholder-val="{{ false }}">
+      <a href="admin.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Panel de administración</a>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ cargando }}" hint-placeholder-val="{{ false }}">
+    <p style="padding:40px 0;font-size:14px;color:#7d7979">Cargando…</p>
+  </sc-if>
+
+  <sc-if value="{{ sinOrg }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:480px;margin:60px auto;text-align:center;border:2px solid var(--ink);padding:32px 24px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">Sin organización asignada</div>
+      <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:10px">Todavía no perteneces a ninguna organización. Pide a un administrador que te asigne una.</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ listo }}" hint-placeholder-val="{{ false }}">
+
+    <sc-if value="{{ viewOnlyActivo }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:16px;padding:12px 16px;border:2px solid var(--ac-dk);background:var(--ac-lt);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:700;color:var(--ac-dk)">Viendo el dashboard de {{ musicoNombreVisto }} — solo lectura, no puedes decidir por otra persona.</span>
+        <a href="{{ miDashboardHref }}" style="font-size:12px;font-weight:700;letter-spacing:.04em;padding:6px 10px;border:2px solid var(--ac-dk);color:var(--ac-dk);background:#fff">Volver a mi dashboard</a>
+      </div>
+    </sc-if>
+
+    <div class="dash-grid">
+      <div class="dash-side">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--sf);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#9a9694">{{ inicial }}</div>
+        <div style="font-size:18px;font-weight:800;margin-top:14px">{{ musicoNombre }}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+          <sc-for list="{{ rolesBanda }}" as="rb" hint-placeholder-count="2">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.02em;border:2px solid var(--ac);background:var(--ac-lt);color:var(--ac-dk);padding:4px 8px">{{ rb.tipo }}</span>
+          </sc-for>
+        </div>
+        <p style="{{ sinRolesStyle }}">Sin roles de banda asignados todavía.</p>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:20px;padding-top:16px;border-top:1px solid #eae9e9">
+          <a href="#disponibilidad" style="font-size:13px;font-weight:600">Fechas no disponibles</a>
+          <a href="{{ calendarioHref }}" style="font-size:13px;font-weight:600">Calendario</a>
+        </div>
+      </div>
+
+      <div class="dash-main">
+        <h2 style="font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:0 0 4px">Próximos eventos</h2>
+        <p style="font-size:12px;color:#7d7979;margin:0 0 16px">{{ orgNombre }}</p>
+
+        <sc-if value="{{ sinPerfil }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:13px;color:#7d7979;padding:12px 0">Todavía no tienes un perfil de músico vinculado a una cuenta. Contacta a un administrador para que te vincule a tus eventos.</p>
+        </sc-if>
+
+        <sc-for list="{{ eventosLista }}" as="ev" hint-placeholder-count="2">
+          <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:12px;color:#7d7979">{{ ev.orgNombre }}</div>
+              <div style="font-size:16px;font-weight:800">{{ ev.fechaLarga }} · {{ ev.hora }}</div>
+              <div style="font-size:13px;color:#54514f">{{ ev.servicio }}</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button type="button" onClick="{{ ev.aceptar }}" disabled="{{ ev.botonesDeshabilitados }}" style="{{ ev.aceptarStyle }}">Aceptar</button>
+              <button type="button" onClick="{{ ev.declinar }}" disabled="{{ ev.botonesDeshabilitados }}" style="{{ ev.declinarStyle }}">Declinar</button>
+            </div>
+          </div>
+        </sc-for>
+        <p style="{{ sinEventosStyle }}">No tienes próximos eventos asignados.</p>
+
+        <div id="disponibilidad" style="margin-top:32px;padding-top:20px;border-top:2px solid var(--ink)">
+          <h2 style="font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:0 0 12px">Fechas no disponibles</h2>
+
+          <sc-for list="{{ unavailableLista }}" as="u" hint-placeholder-count="2">
+            <div style="border:1px solid #eae9e9;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <div>
+                <div style="font-size:14px;font-weight:700">{{ u.rango }}</div>
+                <div style="{{ u.motivoStyle }}">{{ u.motivo }}</div>
+              </div>
+              <button type="button" onClick="{{ u.eliminar }}" style="font-size:12px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:6px 10px;cursor:pointer">Quitar</button>
+            </div>
+          </sc-for>
+          <p style="{{ sinUnavailableStyle }}">No hay fechas marcadas como no disponibles.</p>
+
+          <sc-if value="{{ tienePerfil }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:14px;padding:14px;background:var(--bg)">
+              <label style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Desde</span>
+                <input type="date" value="{{ nuevaDisponibilidadInicio }}" onChange="{{ onNuevaDisponibilidadInicio }}" style="font-size:14px;padding:8px 10px;border:2px solid var(--ink);background:#fff">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Hasta</span>
+                <input type="date" value="{{ nuevaDisponibilidadFin }}" onChange="{{ onNuevaDisponibilidadFin }}" style="font-size:14px;padding:8px 10px;border:2px solid var(--ink);background:#fff">
+              </label>
+              <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:160px">
+                <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Motivo (opcional)</span>
+                <input value="{{ nuevaDisponibilidadMotivo }}" onChange="{{ onNuevaDisponibilidadMotivo }}" placeholder="Viaje, salud, etc." style="font-size:14px;padding:8px 10px;border:2px solid var(--ink);background:#fff">
+              </label>
+              <button type="button" onClick="{{ agregarDisponibilidad }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:9px 16px;cursor:pointer">Agregar</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+</div>
+<script>
+(() => {
+  function unlock() {
+    const checking = document.getElementById('repertorio-checking');
+    const gate = document.getElementById('repertorio-gate');
+    const content = document.getElementById('repertorio-content');
+    if (checking) checking.style.display = 'none';
+    if (gate) gate.style.display = 'none';
+    if (content) content.style.display = 'block';
+  }
+
+  function lock() {
+    const checking = document.getElementById('repertorio-checking');
+    const gate = document.getElementById('repertorio-gate');
+    const content = document.getElementById('repertorio-content');
+    if (checking) checking.style.display = 'none';
+    if (gate) gate.style.display = 'flex';
+    if (content) content.style.display = 'none';
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const gate = document.getElementById('repertorio-gate');
+    const content = document.getElementById('repertorio-content');
+    const signInBtn = document.getElementById('repertorio-gate-signin');
+    const error = document.getElementById('repertorio-gate-error');
+    const R = window.RepertorioData;
+
+    if (!gate || !content || !signInBtn || !error || !R) return;
+
+    R.onAuthChange((user) => {
+      if (user) { error.textContent = ''; unlock(); } else { lock(); }
+    });
+
+    signInBtn.addEventListener('click', () => {
+      error.textContent = '';
+      R.signInWithGoogle().catch((e) => {
+        console.error('Fallo el inicio de sesión con Google:', e);
+        error.textContent = 'No se pudo iniciar sesión (' + (e && e.code ? e.code : 'error desconocido') + ').';
+      });
+    });
+  });
+})();
+</script>
+<script type="text/x-dc" data-dc-script data-props="{}">
+const D = () => window.RepertorioData;
+
+function todayIso() {
+  const n = new Date();
+  return D().iso(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+class Component extends DCLogic {
+  state = {
+    estadoAuth: 'cargando', usuarioNombre: null, userDoc: null,
+    org: null, currentOrgId: null,
+    miMusicianId: null, effectiveMusicianId: null, viewOnlyActivo: false,
+    musico: null, eventos: [], unavailableDates: [],
+    nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: ''
+  };
+
+  componentDidMount() {
+    const R = D();
+    this._unauth = R.onAuthChange((user) => {
+      if (this._unevents) { this._unevents(); this._unevents = null; }
+      if (this._ununavail) { this._ununavail(); this._ununavail = null; }
+      if (!user) { this.setState({ estadoAuth: 'anon' }); return; }
+      this.setState({ estadoAuth: 'cargando', usuarioNombre: user.displayName || user.email });
+      R.ensureUserRegistered(user, (doc) => {
+        if (!doc) { this.setState({ estadoAuth: 'anon' }); return; }
+        const orgIds = R.userOrgIds(doc);
+        if (!orgIds.length) { this.setState({ estadoAuth: 'sinOrg', userDoc: doc }); return; }
+
+        const params = new URLSearchParams(location.search);
+        const musicianIdParam = params.get('musicianId');
+        const viewOnlyParam = params.get('viewOnly') === '1' && doc.role === 'admin';
+        const orgSlugParam = params.get('org');
+
+        const continuar = (orgId, viewOnlyMusico, viewOnlyActivo) => {
+          const miId = (R.userMusicianLinks(doc) || {})[orgId] || null;
+          const effectiveId = viewOnlyActivo ? (viewOnlyMusico ? viewOnlyMusico.id : miId) : miId;
+          this.setState({
+            estadoAuth: 'listo', userDoc: doc, currentOrgId: orgId,
+            miMusicianId: miId, effectiveMusicianId: effectiveId,
+            viewOnlyActivo: viewOnlyActivo && !!viewOnlyMusico,
+            musico: viewOnlyActivo && viewOnlyMusico ? viewOnlyMusico : null
+          });
+          R.getOrganization(orgId, (org) => this.setState({ org: org }));
+          this._unevents = R.watchEventsForOrg(orgId, (evs) => this.setState({ eventos: evs }));
+          if (effectiveId) {
+            this._ununavail = R.watchUnavailableDates(effectiveId, (lista) => this.setState({ unavailableDates: lista }));
+            if (!(viewOnlyActivo && viewOnlyMusico)) R.getMusician(effectiveId, (m) => this.setState({ musico: m }));
+          }
+        };
+
+        if (musicianIdParam && viewOnlyParam) {
+          R.getMusician(musicianIdParam, (musico) => {
+            if (musico) continuar(musico.organizationId, musico, true);
+            else continuar(orgIds[0], null, false);
+          });
+        } else if (orgSlugParam) {
+          R.getOrganizationBySlug(orgSlugParam, (org) => {
+            const orgId = org && orgIds.indexOf(org.id) >= 0 ? org.id : orgIds[0];
+            continuar(orgId, null, false);
+          });
+        } else {
+          continuar(orgIds[0], null, false);
+        }
+      });
+    });
+  }
+
+  componentWillUnmount() {
+    if (this._unauth) this._unauth();
+    if (this._unevents) this._unevents();
+    if (this._ununavail) this._ununavail();
+  }
+
+  responder(eventId, slotId, estado) {
+    D().setBandaConfirmacion(eventId, slotId, estado, () => {});
+  }
+
+  agregarDisponibilidad() {
+    const s = this.state;
+    const inicio = (s.nuevaDisponibilidadInicio || '').trim();
+    if (!inicio || !s.effectiveMusicianId) return;
+    D().addUnavailableDate(s.effectiveMusicianId, {
+      startDate: inicio, endDate: (s.nuevaDisponibilidadFin || '').trim() || inicio,
+      reason: (s.nuevaDisponibilidadMotivo || '').trim()
+    }, () => {
+      this.setState({ nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: '' });
+    });
+  }
+
+  eliminarDisponibilidad(rangeId) {
+    D().deleteUnavailableDate(this.state.effectiveMusicianId, rangeId, () => {});
+  }
+
+  renderVals() {
+    const R = D();
+    const s = this.state;
+
+    const puedeResponder = s.effectiveMusicianId && s.effectiveMusicianId === s.miMusicianId;
+    const botonesDeshabilitados = !puedeResponder;
+
+    const hoy = todayIso();
+    const propios = [];
+    (s.eventos || []).forEach((ev) => {
+      if (R.estadoEvento(ev) !== 'PUBLICADO') return;
+      if ((ev.fecha || '') < hoy) return;
+      const slot = (ev.banda || []).find((b) => b.musicianId === s.effectiveMusicianId);
+      if (!slot) return;
+      propios.push({ ev: ev, slot: slot });
+    });
+    propios.sort((a, b) => {
+      if (a.ev.fecha !== b.ev.fecha) return a.ev.fecha < b.ev.fecha ? -1 : 1;
+      return R.horaMinutos(a.ev.hora) - R.horaMinutos(b.ev.hora);
+    });
+
+    const btnBase = 'font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:8px 14px;cursor:pointer;border:2px solid';
+    const eventosLista = propios.map(({ ev, slot }) => {
+      const estado = R.estadoConfirmacionSlot(slot);
+      return {
+        id: ev.id,
+        orgNombre: s.org ? s.org.name : '',
+        fechaLarga: R.fechaLarga(ev.fecha) + ' (' + R.diaNombre(ev.fecha) + ')',
+        hora: ev.hora,
+        servicio: ev.servicio,
+        botonesDeshabilitados: botonesDeshabilitados,
+        aceptar: () => this.responder(ev.id, slot.id, 'aceptado'),
+        declinar: () => this.responder(ev.id, slot.id, 'rechazado'),
+        aceptarStyle: btnBase + ' var(--ac);background:' + (estado === 'aceptado' ? 'var(--ac)' : '#fff') + ';color:' + (estado === 'aceptado' ? '#fff' : 'var(--ac-dk)'),
+        declinarStyle: btnBase + ' #b00020;background:' + (estado === 'rechazado' ? '#b00020' : '#fff') + ';color:' + (estado === 'rechazado' ? '#fff' : '#b00020')
+      };
+    });
+
+    const unavailableLista = (s.unavailableDates || []).slice().sort((a, b) => (a.startDate || '').localeCompare(b.startDate || '')).map((u) => ({
+      id: u.id,
+      rango: u.startDate === u.endDate ? R.fechaLarga(u.startDate) : (R.fechaLarga(u.startDate) + ' – ' + R.fechaLarga(u.endDate)),
+      motivo: u.reason || '',
+      motivoStyle: u.reason ? 'font-size:12px;color:#7d7979' : 'display:none',
+      eliminar: () => this.eliminarDisponibilidad(u.id)
+    }));
+
+    const rolesBanda = ((s.musico && s.musico.rolesBanda) || []).map((tipo) => ({ tipo: tipo }));
+    const nombre = (s.musico && s.musico.nombre) || s.usuarioNombre || '';
+
+    return {
+      cargando: s.estadoAuth === 'cargando',
+      sinOrg: s.estadoAuth === 'sinOrg',
+      listo: s.estadoAuth === 'listo',
+      usuarioNombre: s.usuarioNombre || '',
+      cerrarSesion: () => D().signOutUser(),
+      orgNombre: s.org ? s.org.name : '',
+      orgTituloSufijo: s.org ? (' · ' + s.org.name) : '',
+      calendarioHref: s.org ? ('index.html?group=' + s.org.slug) : 'index.html',
+      mostrarLinkAdmin: !!(s.userDoc && s.userDoc.role === 'admin'),
+
+      viewOnlyActivo: s.viewOnlyActivo,
+      musicoNombreVisto: nombre,
+      miDashboardHref: s.org ? ('dashboard.html?org=' + s.org.slug) : 'dashboard.html',
+
+      inicial: (nombre.trim().charAt(0) || '?').toUpperCase(),
+      musicoNombre: nombre || 'Sin nombre',
+      rolesBanda: rolesBanda,
+      sinRolesStyle: rolesBanda.length === 0 ? 'font-size:12px;color:#9a9694;margin-top:8px' : 'display:none',
+
+      sinPerfil: !s.effectiveMusicianId,
+      tienePerfil: !!s.effectiveMusicianId,
+      eventosLista: eventosLista,
+      sinEventosStyle: (eventosLista.length === 0 && s.effectiveMusicianId) ? 'font-size:13px;color:#9a9694;padding:8px 2px' : 'display:none',
+
+      unavailableLista: unavailableLista,
+      sinUnavailableStyle: unavailableLista.length === 0 ? 'font-size:13px;color:#9a9694;padding:4px 2px' : 'display:none',
+      nuevaDisponibilidadInicio: s.nuevaDisponibilidadInicio,
+      onNuevaDisponibilidadInicio: (e) => this.setState({ nuevaDisponibilidadInicio: e.target.value }),
+      nuevaDisponibilidadFin: s.nuevaDisponibilidadFin,
+      onNuevaDisponibilidadFin: (e) => this.setState({ nuevaDisponibilidadFin: e.target.value }),
+      nuevaDisponibilidadMotivo: s.nuevaDisponibilidadMotivo,
+      onNuevaDisponibilidadMotivo: (e) => this.setState({ nuevaDisponibilidadMotivo: e.target.value }),
+      agregarDisponibilidad: () => this.agregarDisponibilidad()
+    };
+  }
+}
+</script>
+</body>
+</html>

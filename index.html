@@ -53,8 +53,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   .cd{font-size:13px !important;margin-top:0 !important}
   .ck{font-size:13px !important;padding:1px 4px !important}
   h1{font-size:34px !important}
-  .bannerwrap{margin-top:6px !important}
-  .bannerwrap img{max-height:70px !important}
 }
 </style>
 </helmet>
@@ -132,12 +130,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
     </sc-if>
   </div>
 
-  <sc-if value="{{ tieneBanner }}" hint-placeholder-val="{{ false }}">
-    <div class="bannerwrap" style="margin-top:16px">
-      <img src="{{ bannerUrl }}" alt="{{ nombreOrg }}" style="display:block;width:100%;height:auto;max-height:280px;object-fit:cover;border:2px solid var(--ink)">
-    </div>
-  </sc-if>
-
   <header style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:32px 0 24px;border-bottom:2px solid var(--ink)">
     <div>
       <div style="font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ kicker }}</div>
@@ -165,6 +157,21 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 
   <div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0 0">
     <button onClick="{{ toggleFiltro }}" style="{{ filtroBtnStyle }}">{{ filtroBtnLabel }}</button>
+    <span style="font-size:13px;font-weight:700;color:#54514f;white-space:nowrap;margin-left:8px">Ver Participaciones:</span>
+    <div style="position:relative">
+      <button onClick="{{ toggleParticipaciones }}" style="{{ participacionesBtnStyle }}">{{ participacionesBtnLabel }}</button>
+      <sc-if value="{{ participacionesAbierto }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;top:100%;left:0;z-index:30;min-width:240px;background:#fff;border:2px solid var(--ink);margin-top:6px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column;color:var(--ink)">
+          <input value="{{ participacionesBusqueda }}" onChange="{{ onParticipacionesBusqueda }}" placeholder="Buscar por nombre…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
+          <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column">
+            <sc-for list="{{ personasMesLista }}" as="p" hint-placeholder-count="2">
+              <button type="button" style="display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;cursor:pointer;background:transparent;color:var(--ink)" onClick="{{ p.onClick }}">{{ p.nombre }}</button>
+            </sc-for>
+            <p style="{{ personasMesVaciaStyle }}">Sin participantes este mes.</p>
+          </div>
+        </div>
+      </sc-if>
+    </div>
     <sc-if value="{{ filtroActivo }}" hint-placeholder-val="{{ true }}">
       <span style="font-size:13px;color:#54514f;flex:1;min-width:0">{{ filtroResumen }}</span>
       <button onClick="{{ quitarFiltro }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer">Quitar filtro ✕</button>
@@ -346,6 +353,29 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
       <button onClick="{{ imprimir }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ac);background:var(--ac);color:#fff;cursor:pointer">Imprimir / PDF</button>
     </div>
   </footer>
+
+  <sc-if value="{{ participacionesModalAbierto }}" hint-placeholder-val="{{ false }}">
+    <div class="noprint" style="position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ cerrarParticipaciones }}">
+      <div style="width:min(100%,480px);max-height:min(80vh,640px);overflow-y:auto;background:#fff;border:2px solid var(--ink);padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.28)" onClick="{{ detenerPropagacion }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">Participaciones de {{ participacionesNombre }}</span>
+          <button type="button" onClick="{{ cerrarParticipaciones }}" aria-label="Cerrar" style="font-size:14px;border:0;background:transparent;color:#7d7979;cursor:pointer;padding:2px">✕</button>
+        </div>
+        <p style="font-size:13px;color:#54514f;margin:8px 0 0">Eventos de {{ participacionesMesLabel }} donde participa.</p>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+          <sc-for list="{{ participacionesLista }}" as="pe" hint-placeholder-count="2">
+            <div style="border:2px solid var(--ink);padding:12px 14px">
+              <div style="font-size:12px;color:#7d7979">{{ pe.diaLabel }}</div>
+              <div style="font-size:15px;font-weight:800">{{ pe.fechaLarga }} · {{ pe.hora }}</div>
+              <div style="font-size:13px;color:#54514f;margin-top:2px">{{ pe.servicio }}</div>
+              <div style="font-size:12px;font-weight:700;color:var(--ac-dk);margin-top:6px">{{ pe.tipo }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <p style="{{ participacionesVaciaStyle }}">No tiene participaciones este mes.</p>
+      </div>
+    </div>
+  </sc-if>
 </div>
 </sc-if>
 
@@ -357,7 +387,8 @@ class Component extends DCLogic {
     modo: 'cargando', org: null, eventos: [], mes: '', estado: '', errorLogin: '', usuarioNombre: null,
     filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, diaColapsado: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false,
     reproduciendoKey: null, reproduciendoPausado: false,
-    misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: ''
+    misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
+    participacionesAbierto: false, participacionesBusqueda: '', personaSeleccionada: null
   };
 
   componentDidMount() {
@@ -476,6 +507,22 @@ class Component extends DCLogic {
     this.setState({ orgSwitcherAbierto: false, orgSwitcherBusqueda: '' });
     if (this.state.org && org.id === this.state.org.id) return;
     window.location.href = 'index.html?group=' + encodeURIComponent(org.slug);
+  }
+
+  toggleParticipaciones() {
+    this.setState((s) => ({ participacionesAbierto: !s.participacionesAbierto, participacionesBusqueda: '' }));
+  }
+
+  abrirParticipaciones(nombre) {
+    this.setState({ personaSeleccionada: nombre, participacionesAbierto: false, participacionesBusqueda: '' });
+  }
+
+  cerrarParticipaciones() {
+    this.setState({ personaSeleccionada: null });
+  }
+
+  detenerPropagacion(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
   }
 
   flash(msg) {
@@ -711,6 +758,52 @@ class Component extends DCLogic {
 
     const hoyISO = this.hoyISO();
 
+    // ---- Ver Participaciones: nombres de banda del mes calendario mostrado
+    const nombresMesMap = new Map();
+    s.eventos.filter((ev) => R.monthKey(ev.fecha) === s.mes).forEach((ev) => {
+      (ev.banda || []).forEach((b) => {
+        const nombre = (b.nombre || '').trim();
+        if (!nombre) return;
+        const k = nombre.toLowerCase();
+        if (!nombresMesMap.has(k)) nombresMesMap.set(k, nombre);
+      });
+    });
+    const qP = (s.participacionesBusqueda || '').trim().toLowerCase();
+    const personasMesTodas = Array.from(nombresMesMap.values()).sort((a, b) => a.localeCompare(b, 'es'));
+    const personasMesFiltradas = qP ? personasMesTodas.filter((n) => n.toLowerCase().indexOf(qP) >= 0) : personasMesTodas;
+    const personasMesLista = personasMesFiltradas.map((nombre) => ({
+      nombre: nombre,
+      onClick: () => this.abrirParticipaciones(nombre)
+    }));
+
+    /* Modal "Ver Participaciones": participaciones (PUBLICADO) de la persona
+       elegida en el dropdown, acotadas al mes calendario que se está viendo
+       (s.mes) — no solo las futuras, y no todo el historial: si el usuario
+       navega a otro mes, el modal debe reflejar ese mismo mes. El estilo del
+       listado sigue el de "Próximos eventos" del dashboard, pero de solo
+       lectura (sin botones de Aceptar/Declinar), ya que esta vista es
+       pública y no depende de una sesión iniciada. */
+    const personaSel = s.personaSeleccionada;
+    let participacionesLista = [];
+    if (personaSel) {
+      const keySel = personaSel.toLowerCase();
+      participacionesLista = s.eventos
+        .filter((ev) => R.estadoEvento(ev) === 'PUBLICADO' && R.monthKey(ev.fecha) === s.mes)
+        .map((ev) => {
+          const slot = (ev.banda || []).find((b) => (b.nombre || '').trim().toLowerCase() === keySel);
+          return slot ? { ev: ev, slot: slot } : null;
+        })
+        .filter(Boolean)
+        .sort((a, b) => this.ordenFechaHora(a.ev, b.ev))
+        .map(({ ev, slot }) => ({
+          diaLabel: R.diaNombre(ev.fecha),
+          fechaLarga: R.fechaLarga(ev.fecha),
+          hora: ev.hora,
+          servicio: ev.servicio,
+          tipo: R.bandaLabel(slot)
+        }));
+    }
+
     let semanas;
     if (filtroActivo) {
       semanas = [{
@@ -818,8 +911,6 @@ class Component extends DCLogic {
       mesLabel: filtroActivo ? 'Resultado del filtro' : R.monthLabel(s.mes),
       nota: s.org.nota || '',
       nombreOrg: s.org.name,
-      tieneBanner: !!(s.org.bannerUrl && s.org.bannerUrl.trim()),
-      bannerUrl: s.org.bannerUrl || '',
       hayOtrasOrgs: s.misOrgs.length > 1,
       noHayOtrasOrgs: s.misOrgs.length <= 1,
       orgSwitcherAbierto: s.orgSwitcherAbierto,
@@ -851,6 +942,24 @@ class Component extends DCLogic {
       toggleFiltro: () => this.setState((st) => ({ filtroAbierto: !st.filtroAbierto })),
       quitarFiltro: () => this.setState({ filtroId: null, filtroAbierto: false, filtroTexto: '' }),
       onFiltroTexto: (e) => { const v = e.target.value; this.setState({ filtroTexto: v }); },
+
+      participacionesAbierto: s.participacionesAbierto,
+      participacionesBtnLabel: s.participacionesAbierto ? 'Cerrar' : (s.personaSeleccionada || 'Seleccionar persona'),
+      participacionesBtnStyle: 'font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);cursor:pointer;background:' +
+        (s.participacionesAbierto ? 'var(--ink)' : 'transparent') + ';color:' + (s.participacionesAbierto ? 'var(--bg)' : 'var(--ink)'),
+      toggleParticipaciones: () => this.toggleParticipaciones(),
+      participacionesBusqueda: s.participacionesBusqueda,
+      onParticipacionesBusqueda: (e) => this.setState({ participacionesBusqueda: e.target.value }),
+      personasMesLista: personasMesLista,
+      personasMesVaciaStyle: personasMesLista.length ? 'display:none' : 'font-size:13px;color:#9a9694;padding:10px',
+
+      participacionesModalAbierto: !!personaSel,
+      participacionesNombre: personaSel || '',
+      participacionesMesLabel: R.monthLabel(s.mes),
+      participacionesLista: participacionesLista,
+      participacionesVaciaStyle: participacionesLista.length ? 'display:none' : 'font-size:13px;color:#7d7979;padding:12px 2px',
+      cerrarParticipaciones: () => this.cerrarParticipaciones(),
+      detenerPropagacion: (e) => this.detenerPropagacion(e),
 
       imprimir: () => window.print(),
       volverArriba: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
