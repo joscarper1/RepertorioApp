@@ -157,7 +157,6 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 
   <div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0 0">
     <button onClick="{{ toggleFiltro }}" style="{{ filtroBtnStyle }}">{{ filtroBtnLabel }}</button>
-    <span style="font-size:13px;font-weight:700;color:#54514f;white-space:nowrap;margin-left:8px">Ver Participaciones:</span>
     <div style="position:relative">
       <button onClick="{{ toggleParticipaciones }}" style="{{ participacionesBtnStyle }}">{{ participacionesBtnLabel }}</button>
       <sc-if value="{{ participacionesAbierto }}" hint-placeholder-val="{{ false }}">
@@ -384,7 +383,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 <script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
   state = {
-    modo: 'cargando', org: null, eventos: [], mes: '', estado: '', errorLogin: '', usuarioNombre: null,
+    modo: 'cargando', org: null, eventos: [], mes: new URLSearchParams(location.search).get('month') || '', estado: '', errorLogin: '', usuarioNombre: null,
     filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, diaColapsado: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false,
     reproduciendoKey: null, reproduciendoPausado: false,
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
@@ -727,7 +726,12 @@ class Component extends DCLogic {
       label: R.monthLabel(k) + (k === hoy ? ' · mes en curso' : ''),
       style: 'font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;cursor:pointer;border:2px solid var(--ink);background:' +
         (k === s.mes ? 'var(--ink)' : 'transparent') + ';color:' + (k === s.mes ? 'var(--bg)' : 'var(--ink)'),
-      pick: () => this.setState({ mes: k, mesesAbierto: false })
+      pick: () => {
+        this.setState({ mes: k, mesesAbierto: false });
+        const params = new URLSearchParams(location.search);
+        params.set('month', k);
+        history.replaceState(null, '', location.pathname + '?' + params.toString());
+      }
     });
     /* El mes en curso y cualquier mes futuro ya programado quedan siempre a
        la vista; los meses pasados se guardan en un panel aparte para que la
