@@ -288,16 +288,16 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                             </sc-if>
                             <div>
                               <sc-if value="{{ cn.tieneLineas }}" hint-placeholder-val="{{ false }}">
-                                <div style="font-weight:600">
-                                  <span class="cn" style="font-size:16px">{{ cn.lineaPrimera }}</span>
-                                  <sc-for list="{{ cn.lineasResto }}" as="linea" hint-placeholder-count="1">
-                                    <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ linea }}</span>
-                                  </sc-for>
-                                </div>
-                              </sc-if>
-                              <sc-if value="{{ cn.tieneLineas }}" hint-placeholder-val="{{ true }}">
-                                <span class="cn" style="font-size:16px;font-weight:600">{{ cn.t }}</span>
-                              </sc-if>
+                              <div style="font-weight:600">
+                                <span class="cn" style="font-size:16px">{{ cn.lineaPrimera }}</span>
+                                <sc-for list="{{ cn.lineasResto }}" as="linea" hint-placeholder-count="1">
+                                  <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ linea }}</span>
+                                </sc-for>
+                              </div>
+                            </sc-if>
+                            <sc-if value="{{ cn.tieneLineas }}" hint-placeholder-val="{{ false }}">
+                            </sc-if>
+                            <span style="display:{{ cn.tieneLineas ? 'none' : 'inline' }};font-size:16px;font-weight:600" class="cn">{{ cn.t }}</span>
                               <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
                             </div>
                             <span class="ck" style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
