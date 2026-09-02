@@ -287,7 +287,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                               <a class="rowlink" href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
                             </sc-if>
                             <div>
-                              <sc-if value="{{ cn.tieneLineas }}" hint-placeholder-val="{{ false }}">
+                              <sc-if value="{{ cn.tieneLineas }}" hint-placeholder-val="{{ true }}">
                                 <div style="font-weight:600">
                                   <span class="cn" style="font-size:16px">{{ cn.lineaPrimera }}</span>
                                   <sc-for list="{{ cn.lineasResto }}" as="linea" hint-placeholder-count="1">
@@ -295,11 +295,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                                   </sc-for>
                                 </div>
                               </sc-if>
-                              <sc-if value="{{ cn.tieneLineas }}" hint-placeholder-val="{{ true }}">
+                              <sc-if value="{{ cn.tieneLineas }}" hint-placeholder-val="{{ false }}">
                                 <span class="cn" style="font-size:16px;font-weight:600">{{ cn.t }}</span>
                               </sc-if>
                               <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
-                             </div>
+                            </div>
                             <span class="ck" style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
                             <button class="noprint" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
                           </div>
