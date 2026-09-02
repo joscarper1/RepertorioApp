@@ -304,7 +304,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                 <div style="display:flex;flex-direction:column;gap:8px;background:#fff;outline:2px solid #eae9e9;padding:10px">
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                     <div style="position:relative">
-                      <input value="{{ cn.t }}" onChange="{{ cn.onT }}" onFocus="{{ cn.onFocusT }}" onBlur="{{ cn.onBlurT }}" placeholder="Nombre de la canción" autoComplete="off" style="width:100%;font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
+                      <textarea value="{{ cn.t }}" onChange="{{ cn.onT }}" onFocus="{{ cn.onFocusT }}" onBlur="{{ cn.onBlurT }}" placeholder="Nombre de la canción" autoComplete="off" rows="3" style="width:100%;font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:8px 0;resize:vertical;font-family:inherit"></textarea>
                       <sc-if value="{{ cn.autocompleteAbierto }}" hint-placeholder-val="{{ true }}">
                         <div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--ink);z-index:20;max-height:180px;overflow-y:auto;box-shadow:0 8px 16px rgba(0,0,0,.14)">
                           <sc-for list="{{ cn.sugerencias }}" as="sug" hint-placeholder-count="3">
