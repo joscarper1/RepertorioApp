@@ -117,9 +117,18 @@
      nombre: si tiene salmista (artista/versión de origen), se concatena
      entre paréntesis para distinguir covers del mismo título. */
   function songLabel(c) {
-    var t = ((c && c.t) || '').trim();
-    var sm = ((c && c.sm) || '').trim();
-    return sm ? (t + ' (' + sm + ')') : t;
+   var t = ((c && c.t) || '').trim();
+   var sm = ((c && c.sm) || '').trim();
+   var fullText = sm ? (t + ' (' + sm + ')') : t;
+  
+   // Dividir por saltos de línea
+   var lines = fullText.split('\n');
+  
+   return {
+    fullText: fullText,
+    lines: lines,
+    hasLineBreaks: lines.length > 1
+   };
   }
 
   /* Extrae el ID de video de un link de YouTube en cualquiera de sus formas
