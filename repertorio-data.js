@@ -115,20 +115,25 @@
 
   /* Etiqueta con la que se muestra una canción donde sea que aparezca su
      nombre: si tiene salmista (artista/versión de origen), se concatena
-     entre paréntesis para distinguir covers del mismo título. */
+     entre paréntesis para distinguir covers del mismo título. Devuelve
+     siempre texto plano (compatible con concatenación de strings). */
   function songLabel(c) {
-   var t = ((c && c.t) || '').trim();
-   var sm = ((c && c.sm) || '').trim();
-   var fullText = sm ? (t + ' (' + sm + ')') : t;
-  
-   // Dividir por saltos de línea
-   var lines = fullText.split('\n');
-  
-   return {
-    fullText: fullText,
-    lines: lines,
-    hasLineBreaks: lines.length > 1
-   };
+    var t = ((c && c.t) || '').trim();
+    var sm = ((c && c.sm) || '').trim();
+    return sm ? (t + ' (' + sm + ')') : t;
+  }
+
+  /* Igual que songLabel pero además separa el resultado por saltos de línea,
+     para pintar la primera línea en tamaño normal y el resto en letra más
+     chica (título de canción con salto = subtítulo/línea aclaratoria). */
+  function songLabelParts(c) {
+    var fullText = songLabel(c);
+    var lines = fullText.split('\n');
+    return {
+      fullText: fullText,
+      lines: lines,
+      hasLineBreaks: lines.length > 1
+    };
   }
 
   /* Extrae el ID de video de un link de YouTube en cualquiera de sus formas
@@ -1317,7 +1322,7 @@
   w.RepertorioData = {
     MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
-    song: song, songLabel: songLabel, songKey: songKey, buildSongCatalog: buildSongCatalog,
+    song: song, songLabel: songLabel, songLabelParts: songLabelParts, songKey: songKey, buildSongCatalog: buildSongCatalog,
     youtubeId: youtubeId, youtubeController: youtubeController, defaultBlocks: defaultBlocks, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,

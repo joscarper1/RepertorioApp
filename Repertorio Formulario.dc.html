@@ -388,7 +388,17 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
             <sc-for list="{{ resumen }}" as="r" hint-placeholder-count="4">
               <div style="display:flex;gap:12px;background:#fff;padding:8px 12px;align-items:baseline">
                 <span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979;width:120px;flex:none">{{ r.bloque }}</span>
-                <span style="font-size:15px;font-weight:600;flex:1">{{ r.titulo }}</span>
+                <div style="flex:1">
+                  <sc-if value="{{ r.tieneLineas }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:15px;font-weight:600">{{ r.lineaPrimera }}</span>
+                    <sc-for list="{{ r.lineasResto }}" as="linea" hint-placeholder-count="1">
+                      <span style="display:block;font-size:12px;color:#6b6866;margin-top:2px">{{ linea }}</span>
+                    </sc-for>
+                  </sc-if>
+                  <sc-if value="{{ r.sinLineas }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size:15px;font-weight:600">{{ r.lineaPrimera }}</span>
+                  </sc-if>
+                </div>
                 <span style="font-size:12px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);padding:2px 6px">{{ r.tono }}</span>
               </div>
             </sc-for>
@@ -1073,7 +1083,18 @@ class Component extends DCLogic {
 
     const resumen = [];
     if (dr) dr.bloques.forEach((bl) => bl.canciones.forEach((c) => {
-      if (c.t && c.t.trim()) resumen.push({ bloque: bl.titulo, titulo: R.songLabel(c) + (c.d ? ' · ' + c.d : ''), tono: c.k || '—' });
+      if (!c.t || !c.t.trim()) return;
+      const label = R.songLabelParts(c);
+      const lineasResto = label.lines.slice(1);
+      if (c.d) lineasResto.push('dirige ' + c.d);
+      resumen.push({
+        bloque: bl.titulo,
+        lineaPrimera: label.lines[0] || '',
+        lineasResto: lineasResto,
+        tieneLineas: lineasResto.length > 0,
+        sinLineas: lineasResto.length === 0,
+        tono: c.k || '—'
+      });
     }));
 
     const validar = () => {
