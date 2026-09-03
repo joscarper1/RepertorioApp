@@ -394,7 +394,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 class Component extends DCLogic {
   state = {
     modo: 'cargando', org: null, eventos: [], mes: new URLSearchParams(location.search).get('month') || '', estado: '', errorLogin: '', usuarioNombre: null,
-    filtroAbierto: false, filtroTexto: '', filtroId: null, colapsadas: {}, diaColapsado: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false,
+    filtroAbierto: false, filtroTexto: '', filtroId: new URLSearchParams(location.search).get('eventid') || null, colapsadas: {}, diaColapsado: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false,
     reproduciendoKey: null, reproduciendoPausado: false,
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
     participacionesAbierto: false, participacionesBusqueda: '', personaSeleccionada: null
@@ -493,6 +493,14 @@ class Component extends DCLogic {
   _detenerSeguimientoMisOrgs() {
     if (this._unwatchUser) { this._unwatchUser(); this._unwatchUser = null; }
     if (this._unmyorgs) { this._unmyorgs(); this._unmyorgs = null; }
+  }
+
+  /* Mantiene el parámetro eventid en la URL en sincronía con el filtro
+     activo, para poder compartir un enlace directo a un evento puntual. */
+  _actualizarUrlEventId(id) {
+    const params = new URLSearchParams(location.search);
+    if (id) params.set('eventid', id); else params.delete('eventid');
+    history.replaceState(null, '', location.pathname + '?' + params.toString());
   }
 
   iniciarSesion() {
@@ -772,7 +780,7 @@ class Component extends DCLogic {
     }).map((ev) => ({
       fechaLabel: R.diaNombre(ev.fecha) + ' · ' + R.fechaLarga(ev.fecha) + ' · ' + ev.hora + (ev.servicio ? ' · ' + ev.servicio : ''),
       tema: ev.tema || 'Sin tema',
-      onClick: () => this.setState({ filtroId: ev.id, filtroAbierto: false, filtroTexto: '' })
+      onClick: () => { this.setState({ filtroId: ev.id, filtroAbierto: false, filtroTexto: '' }); this._actualizarUrlEventId(ev.id); }
     }));
 
     const hoyISO = this.hoyISO();
@@ -820,10 +828,13 @@ class Component extends DCLogic {
           hora: ev.hora,
           servicio: ev.servicio,
           tipo: R.bandaLabel(slot),
-          onClick: () => this.setState({
-            filtroId: ev.id, filtroAbierto: false, filtroTexto: '',
-            personaSeleccionada: null, participacionesBusqueda: ''
-          })
+          onClick: () => {
+            this.setState({
+              filtroId: ev.id, filtroAbierto: false, filtroTexto: '',
+              personaSeleccionada: null, participacionesBusqueda: ''
+            });
+            this._actualizarUrlEventId(ev.id);
+          }
         }));
     }
 
@@ -963,7 +974,7 @@ class Component extends DCLogic {
       filtroBtnStyle: 'font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);cursor:pointer;background:' +
         (s.filtroAbierto ? 'var(--ink)' : 'transparent') + ';color:' + (s.filtroAbierto ? 'var(--bg)' : 'var(--ink)'),
       toggleFiltro: () => this.setState((st) => ({ filtroAbierto: !st.filtroAbierto })),
-      quitarFiltro: () => this.setState({ filtroId: null, filtroAbierto: false, filtroTexto: '' }),
+      quitarFiltro: () => { this.setState({ filtroId: null, filtroAbierto: false, filtroTexto: '' }); this._actualizarUrlEventId(null); },
       onFiltroTexto: (e) => { const v = e.target.value; this.setState({ filtroTexto: v }); },
 
       participacionesAbierto: s.participacionesAbierto,
