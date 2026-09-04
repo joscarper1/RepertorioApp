@@ -48,6 +48,10 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 .side-kicker{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#9a9694;padding:0 2px 8px}
 .admin-burger{display:none;width:38px;height:38px;align-items:center;justify-content:center;border:2px solid var(--ink);background:transparent;cursor:pointer;font-size:16px;flex:0 0 auto}
 .admin-backdrop{display:none}
+.field-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.slot-grid{display:grid;grid-template-columns:170px 1fr auto 20px;gap:8px;align-items:center}
+.cancion-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cancion-grid-4{display:grid;grid-template-columns:1fr 64px 22px 20px;gap:8px;align-items:center}
 @media (max-width:860px){
   .admin-burger{display:inline-flex}
   .admin-shell{border:0;display:block}
@@ -55,6 +59,9 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
   .admin-side.abierto{transform:translateX(0)}
   .admin-main{border:2px solid var(--ink);padding:20px}
   .admin-backdrop.abierto{display:block;position:fixed;inset:0;background:rgba(20,18,17,.45);z-index:999}
+}
+@media (max-width:640px){
+  .field-grid-2,.slot-grid,.cancion-grid-2,.cancion-grid-4{grid-template-columns:1fr}
 }
 </style>
 </helmet>
@@ -203,7 +210,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
       <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ draftFecha }}</div>
       <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">DATOS DEL EVENTO</h2>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px">
+      <div class="field-grid-2" style="margin-top:24px">
         <label style="display:flex;flex-direction:column;gap:6px">
           <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Hora</span>
           <input value="{{ dHora }}" onChange="{{ onHora }}" placeholder="8:00 am" style="font-size:16px;padding:10px 12px;border:2px solid var(--ink);background:#fff">
@@ -252,7 +259,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
             <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
               <sc-for list="{{ bg.slots }}" as="sl" hint-placeholder-count="2">
                 <div style="display:flex;flex-direction:column;gap:8px;background:#fff;outline:2px solid #eae9e9;padding:10px">
-                  <div style="display:grid;grid-template-columns:170px 1fr auto 20px;gap:8px;align-items:center">
+                  <div class="slot-grid">
                     <span style="font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--ac-dk);background:var(--ac-lt);padding:6px 8px;text-align:center">{{ sl.label }}</span>
                     <select value="{{ sl.nombre }}" onChange="{{ sl.onNombre }}" style="width:100%;font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px;appearance:none">
                       <sc-for list="{{ sl.opciones }}" as="op" hint-placeholder-count="4">
@@ -302,7 +309,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
             <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
               <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
                 <div style="display:flex;flex-direction:column;gap:8px;background:#fff;outline:2px solid #eae9e9;padding:10px">
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div class="cancion-grid-2">
                     <div style="position:relative">
                       <textarea value="{{ cn.t }}" onChange="{{ cn.onT }}" onFocus="{{ cn.onFocusT }}" onBlur="{{ cn.onBlurT }}" placeholder="Nombre de la canción" autoComplete="off" rows="3" style="width:100%;font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:8px 0;resize:vertical;font-family:inherit"></textarea>
                       <sc-if value="{{ cn.autocompleteAbierto }}" hint-placeholder-val="{{ true }}">
@@ -324,7 +331,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                       </sc-if>
                     </div>
                   </div>
-                  <div style="display:grid;grid-template-columns:1fr 64px 22px 20px;gap:8px;align-items:center">
+                  <div class="cancion-grid-4">
                     <input value="{{ cn.u }}" onChange="{{ cn.onU }}" onBlur="{{ cn.onBlurU }}" placeholder="https://… enlace de la pista" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#7d7979;border:0;border-bottom:1px solid #eae9e9;background:transparent;padding:5px 2px">
                     <input value="{{ cn.k }}" onChange="{{ cn.onK }}" placeholder="Tono" style="font-size:13px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);border:0;padding:5px;text-align:center">
                     <button onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
@@ -386,7 +393,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
         <sc-if value="{{ resumenEsRepertorio }}" hint-placeholder-val="{{ true }}">
           <div style="display:flex;flex-direction:column;gap:2px;margin-top:16px">
             <sc-for list="{{ resumen }}" as="r" hint-placeholder-count="4">
-              <div style="display:flex;gap:12px;background:#fff;padding:8px 12px;align-items:baseline">
+              <div style="display:flex;gap:12px;background:#fff;padding:8px 12px;align-items:center">
                 <span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979;width:120px;flex:none">{{ r.bloque }}</span>
                 <div style="flex:1">
                   <sc-if value="{{ r.tieneLineas }}" hint-placeholder-val="{{ false }}">
@@ -399,7 +406,11 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                     <span style="font-size:15px;font-weight:600">{{ r.lineaPrimera }}</span>
                   </sc-if>
                 </div>
-                <span style="font-size:12px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);padding:2px 6px">{{ r.tono }}</span>
+                <span style="font-size:12px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);padding:2px 6px;flex:none">{{ r.tono }}</span>
+                <div style="display:flex;flex-direction:column;gap:3px;flex:none">
+                  <button type="button" onClick="{{ r.onSubir }}" aria-label="Subir canción" title="Subir" style="{{ r.subirStyle }}">▲</button>
+                  <button type="button" onClick="{{ r.onBajar }}" aria-label="Bajar canción" title="Bajar" style="{{ r.bajarStyle }}">▼</button>
+                </div>
               </div>
             </sc-for>
           </div>
@@ -642,6 +653,18 @@ class Component extends DCLogic {
       const dr = JSON.parse(JSON.stringify(s.draft));
       fn(dr);
       return { draft: dr };
+    });
+  }
+
+  /* Intercambia dos canciones del mismo bloque por su índice real (no el de
+     la lista filtrada del resumen) para reordenar la lista sin desplazar
+     ningún espacio en blanco intermedio. */
+  moverCancionResumen(bi, ciA, ciB) {
+    this.setDraft((x) => {
+      const arr = x.bloques[bi].canciones;
+      const tmp = arr[ciA];
+      arr[ciA] = arr[ciB];
+      arr[ciB] = tmp;
     });
   }
 
@@ -1081,21 +1104,43 @@ class Component extends DCLogic {
       })
     })) : [];
 
+    /* El orden de esta lista (índice dentro de bl.canciones) es el mismo que
+       pinta index.html, así que reordenar aquí reordena el evento publicado.
+       El movimiento se restringe a canciones dentro del mismo bloque (no
+       cruza de "Júbilo" a "Adoración", por ejemplo): cada fila recuerda su
+       (bi, ci) real para escribir con setDraft, pero sube/baja contra la
+       siguiente/anterior canción CON NOMBRE del mismo bloque, saltando
+       espacios en blanco intermedios sin tocar su posición. */
     const resumen = [];
-    if (dr) dr.bloques.forEach((bl) => bl.canciones.forEach((c) => {
-      if (!c.t || !c.t.trim()) return;
-      const label = R.songLabelParts(c);
-      const lineasResto = label.lines.slice(1);
-      if (c.d) lineasResto.push('dirige ' + c.d);
-      resumen.push({
-        bloque: bl.titulo,
-        lineaPrimera: label.lines[0] || '',
-        lineasResto: lineasResto,
-        tieneLineas: lineasResto.length > 0,
-        sinLineas: lineasResto.length === 0,
-        tono: c.k || '—'
+    if (dr) dr.bloques.forEach((bl, bi) => {
+      const conNombre = bl.canciones
+        .map((c, ci) => ({ c: c, ci: ci }))
+        .filter((x) => x.c.t && x.c.t.trim());
+      conNombre.forEach((item, pos) => {
+        const c = item.c, ci = item.ci;
+        const label = R.songLabelParts(c);
+        const lineasResto = label.lines.slice(1);
+        if (c.d) lineasResto.push('dirige ' + c.d);
+        const puedeSubir = pos > 0;
+        const puedeBajar = pos < conNombre.length - 1;
+        const arrowStyle = (activo) => 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
+          'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+          'border:1.5px solid var(--ac);background:#fff;color:var(--ac)' +
+          (activo ? '' : ';visibility:hidden;pointer-events:none');
+        resumen.push({
+          bloque: bl.titulo,
+          lineaPrimera: label.lines[0] || '',
+          lineasResto: lineasResto,
+          tieneLineas: lineasResto.length > 0,
+          sinLineas: lineasResto.length === 0,
+          tono: c.k || '—',
+          subirStyle: arrowStyle(puedeSubir),
+          bajarStyle: arrowStyle(puedeBajar),
+          onSubir: puedeSubir ? () => this.moverCancionResumen(bi, ci, conNombre[pos - 1].ci) : () => {},
+          onBajar: puedeBajar ? () => this.moverCancionResumen(bi, ci, conNombre[pos + 1].ci) : () => {}
+        });
       });
-    }));
+    });
 
     const validar = () => {
       if (paso === 2 && !(dr.hora || '').trim()) { this.setState({ estado: 'Falta la hora' }); return false; }

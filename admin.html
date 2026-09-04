@@ -554,12 +554,6 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
             </sc-if>
           </section>
         </sc-if>
-
-        <sc-if value="{{ eventosMontado }}" hint-placeholder-val="{{ false }}">
-          <div style="{{ eventosWrapStyle }}">
-            <iframe id="admin-eventos-frame" style="width:100%;min-height:74vh;border:0;display:block"></iframe>
-          </div>
-        </sc-if>
       </div>
     </div>
   </sc-if>
@@ -644,7 +638,6 @@ class Component extends DCLogic {
     syncSeleccionDup: {}, syncCanonicoDup: {},
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
-    eventosMontado: false,
     repertorioEventos: [], songOverrides: {}, repertorioPagina: 1, repertorioBusqueda: '',
     editandoSongKey: null, songEditTitulo: '', songEditArtista: '', songEditUrl: '',
     reproduciendoKey: null, reproduciendoPausado: false,
@@ -710,23 +703,8 @@ class Component extends DCLogic {
     if (this._yt) this._yt.destroy();
   }
 
-  /* El iframe de Eventos vive fuera del template reactivo: este framework no
-     interpola `src="{{ }}"` en <iframe> (el navegador termina pidiendo el
-     placeholder literal), así que su URL se actualiza a mano, igual que el
-     reproductor de audio hace con su propio elemento por id. */
-  componentDidUpdate() {
-    const s = this.state;
-    if (!s.eventosMontado || !s.currentOrgId) return;
-    const src = 'Repertorio Formulario.dc.html?org=' + encodeURIComponent(s.currentOrgId) + '&embed=1';
-    if (this._eventosSrcActual === src) return;
-    const el = document.getElementById('admin-eventos-frame');
-    if (!el) return;
-    el.src = src;
-    this._eventosSrcActual = src;
-  }
-
   cambiarTab(tab) {
-    this.setState((s) => ({ activeTab: tab, eventosMontado: s.eventosMontado || tab === 'eventos', repertorioPagina: tab === 'repertorio' ? 1 : s.repertorioPagina }));
+    this.setState((s) => ({ activeTab: tab, repertorioPagina: tab === 'repertorio' ? 1 : s.repertorioPagina }));
     this.cerrarSidebarSiMovil();
     if (tab === 'usuarios' && !this._unusers) {
       this._unusers = D().watchAllUsers((lista) => this.setState({ usuarios: lista }));
@@ -1579,9 +1557,7 @@ class Component extends DCLogic {
       irTabOrganizaciones: () => this.cambiarTab('organizaciones'),
       irTabUsuarios: () => this.cambiarTab('usuarios'),
       irTabRepertorio: () => this.cambiarTab('repertorio'),
-      irTabEventos: () => this.cambiarTab('eventos'),
-      eventosMontado: s.eventosMontado,
-      eventosWrapStyle: s.activeTab === 'eventos' ? 'display:block' : 'display:none',
+      irTabEventos: () => { if (orgActual) location.href = 'Repertorio Formulario.dc.html?org=' + encodeURIComponent(orgActual.id); },
       sidebarClase: 'admin-side' + (s.sidebarAbierto ? ' abierto' : ''),
       backdropClase: 'admin-backdrop' + (s.sidebarAbierto ? ' abierto' : ''),
       toggleSidebar: () => this.toggleSidebar(),
