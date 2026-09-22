@@ -8,7 +8,11 @@
   var ORGS_PATH = 'organizations';
   var USERS_PATH = 'users';
   var EVENTS_PATH = 'events';
-  var INVITES_PATH = 'invitaciones';
+  /* Índice {emailKey: {musicianId: organizationId}} que mantiene el panel al
+     definir el correo de una Persona. Es lo único que la persona puede leer
+     de sí misma al iniciar sesión (sin exponer el resto de /musicians), y lo
+     que las reglas usan para autorizar que ella misma quede vinculada. */
+  var PERSONAS_EMAIL_PATH = 'personasPorCorreo';
   var SONG_CATALOG_PATH = 'songCatalog';
   var MUSICIANS_PATH = 'musicians';
   var META_PATH = 'meta';
@@ -584,10 +588,12 @@
   }
 
   /* Las llaves de Realtime Database no admiten '.', así que un correo no
-     puede usarse tal cual como llave de /invitaciones. Solo se sustituye el
-     punto (el único carácter prohibido que aparece en la práctica en un
+     puede usarse tal cual como llave de /personasPorCorreo. Solo se sustituye
+     el punto (el único carácter prohibido que aparece en la práctica en un
      correo real); esta misma sustitución se replica del lado de las reglas
-     de seguridad para poder validar el auto-consumo de la invitación. */
+     de seguridad para poder validar el auto-vínculo al iniciar sesión. */
+  function normalizarEmail(email) { return String(email || '').trim().toLowerCase(); }
+
   function emailKey(email) {
     return String(email || '').trim().toLowerCase().replace(/\./g, ',');
   }
@@ -720,55 +726,45 @@
       });
     }
 
-    /* Si un admin ya invitó este correo (rol + organizaciones definidos de
-       antemano desde el panel), se usa eso en vez del valor por defecto
-       'normal' sin organización; la invitación se borra una vez consumida
-       para no volver a aplicarse en un futuro cambio de rol manual. */
-    function crearConInvitacionSiAplica(onDone) {
+    function crearDoc(onDone) {
+      var doc = { uid: firebaseUser.uid, email: email, displayName: firebaseUser.displayName || email, role: 'normal', createdAt: Date.now() };
+      ref.set(doc).then(function () { onDone(doc); }, function () { onDone(doc); });
+    }
+
+    /* Si un admin ya le definió este correo a una o más Personas (ver módulo
+       de Personas de admin.html), la cuenta queda vinculada a cada una y con
+       acceso a su organización — tanto la primera vez como en cualquier
+       login posterior (así también se normaliza el caso de una cuenta que ya
+       existía, admin incluido, sin tocar nunca su rol). */
+    function vincularPorCorreo(doc, onDone) {
       var key = emailKey(email);
-      root.child(INVITES_PATH).child(key).once('value').then(function (inviteSnap) {
-        var doc = {
-          uid: firebaseUser.uid,
-          email: email,
-          displayName: firebaseUser.displayName || email,
-          role: 'normal',
-          createdAt: Date.now()
-        };
-        var invite = inviteSnap.exists() ? inviteSnap.val() : null;
-        if (invite) {
-          doc.role = invite.role === 'admin' ? 'admin' : 'normal';
-          if (invite.organizationIds) doc.organizationIds = invite.organizationIds;
-          /* Si la invitación venía pre-vinculada a un perfil de músico (ver
-             módulo de Usuarios de admin.html), la cuenta recién creada queda
-             vinculada a ese músico en las mismas organizaciones de la
-             invitación, sin que el admin tenga que repetir el paso luego. */
-          if (invite.musicianId) {
-            doc.musicianLinks = {};
-            Object.keys(invite.organizationIds || {}).forEach(function (orgId) { doc.musicianLinks[orgId] = invite.musicianId; });
-          }
-        }
-        ref.set(doc).then(function () {
-          if (!invite) { onDone(doc); return; }
-          /* El vínculo con el músico se escribe ANTES de borrar la
-             invitación (y a propósito solo toca `userId`, ningún otro
-             campo): las reglas de seguridad autorizan este auto-vínculo
-             comparando contra la invitación viva de este correo, así que
-             borrarla primero dejaría el vínculo sin forma de validarse. Si
-             esta escritura es rechazada (invitación ya no vigente, etc.), la
-             invitación se conserva en vez de perderse en silencio. */
-          if (invite.musicianId) {
-            root.child(MUSICIANS_PATH).child(invite.musicianId).child('userId').set(firebaseUser.uid).then(function () {
-              root.child(INVITES_PATH).child(key).remove();
-            });
-          } else {
-            root.child(INVITES_PATH).child(key).remove();
-          }
+      if (!key) { onDone(doc); return; }
+      root.child(PERSONAS_EMAIL_PATH).child(key).once('value').then(function (snap) {
+        var personas = snap.val() || {};
+        var links = doc.musicianLinks || {};
+        var orgs = doc.organizationIds || {};
+        var updates = {};
+        Object.keys(personas).forEach(function (musicianId) {
+          var orgId = personas[musicianId];
+          if (!orgId || (links[orgId] === musicianId && orgs[orgId])) return;
+          updates[MUSICIANS_PATH + '/' + musicianId + '/userId'] = firebaseUser.uid;
+          updates[USERS_PATH + '/' + firebaseUser.uid + '/musicianLinks/' + orgId] = musicianId;
+          updates[USERS_PATH + '/' + firebaseUser.uid + '/organizationIds/' + orgId] = true;
+        });
+        if (!Object.keys(updates).length) { onDone(doc); return; }
+        root.update(updates).then(function () {
+          doc.musicianLinks = Object.assign({}, links);
+          doc.organizationIds = Object.assign({}, orgs);
+          Object.keys(personas).forEach(function (musicianId) {
+            doc.musicianLinks[personas[musicianId]] = musicianId;
+            doc.organizationIds[personas[musicianId]] = true;
+          });
           onDone(doc);
-        }, function () { onDone(doc); });
-      }, function () {
-        var doc = { uid: firebaseUser.uid, email: email, displayName: firebaseUser.displayName || email, role: 'normal', createdAt: Date.now() };
-        ref.set(doc).then(function () { onDone(doc); }, function () { onDone(doc); });
-      });
+        }, function (err) {
+          console.error('Firebase vincularPorCorreo rechazado:', err && err.code, err && err.message, err);
+          onDone(doc);
+        });
+      }, function () { onDone(doc); });
     }
 
     function intentar(reintentosRestantes) {
@@ -776,11 +772,11 @@
         if (snap.exists()) {
           var v = snap.val();
           v.uid = firebaseUser.uid;
-          promoverSiAplica(v, function (doc) { cb && cb(doc); });
+          promoverSiAplica(v, function (doc) { vincularPorCorreo(doc, function (d) { cb && cb(d); }); });
           return;
         }
-        crearConInvitacionSiAplica(function (doc) {
-          promoverSiAplica(doc, function (d) { cb && cb(d); });
+        crearDoc(function (doc) {
+          promoverSiAplica(doc, function (d) { vincularPorCorreo(d, function (d2) { cb && cb(d2); }); });
         });
       }, function (err) {
         /* Justo después de recargar la página, el evento de sesión de
@@ -868,6 +864,15 @@
     return (userDoc && userDoc.musicianLinks) || {};
   }
 
+  /* La primera organización donde la cuenta ya tiene una Persona vinculada
+     (para que un admin que también es integrante aterrice en su propio
+     Dashboard de persona), o la primera a secas si no tiene ninguna. */
+  function orgInicialDeUsuario(userDoc) {
+    var ids = userOrgIds(userDoc);
+    var links = userMusicianLinks(userDoc);
+    return ids.filter(function (id) { return !!links[id]; })[0] || ids[0] || null;
+  }
+
   /* Usada por admin.html y el Formulario cuando a un usuario no le toca
      estar ahí (rol 'normal', o sin organización asignada todavía), y por
      index.html tras cada login: lo manda a su Dashboard (eventos propios +,
@@ -877,49 +882,9 @@
   function redirectToUserLanding(userDoc) {
     var ids = userOrgIds(userDoc);
     if (!ids.length) { w.location.href = 'index.html'; return; }
-    getOrganization(ids[0], function (org) {
+    getOrganization(orgInicialDeUsuario(userDoc), function (org) {
       w.location.href = org ? ('dashboard.html?org=' + org.slug) : 'index.html';
     });
-  }
-
-  /* --- Invitaciones (alta de usuarios antes de su primer login) --- */
-
-  /* orgIds: arreglo de organizationId, igual que setUserOrgs. musicianId
-     (opcional) pre-vincula la cuenta que se cree al primer login con un
-     perfil de músico ya existente (ver módulo de Usuarios de admin.html),
-     para que un músico migrado sin correo quede con acceso a su Dashboard
-     en cuanto inicie sesión. Sobrescribe cualquier invitación previa para
-     ese mismo correo. */
-  function createInvitation(email, role, orgIds, musicianId, cb) {
-    var root = dbRoot();
-    if (!root) { cb && cb(false); return; }
-    var map = {};
-    (orgIds || []).forEach(function (id) { map[id] = true; });
-    var doc = {
-      email: String(email || '').trim().toLowerCase(),
-      role: role === 'admin' ? 'admin' : 'normal',
-      organizationIds: map,
-      createdAt: Date.now()
-    };
-    if (musicianId) doc.musicianId = musicianId;
-    root.child(INVITES_PATH).child(emailKey(email)).set(doc).then(function () { cb && cb(true); }, function () { cb && cb(false); });
-  }
-
-  /* Solo debe llamarse si el usuario actual ya es 'admin' (las reglas del
-     servidor lo exigen igualmente). */
-  function watchInvitations(cb) {
-    var root = dbRoot();
-    if (!root) return function () {};
-    var ref = root.child(INVITES_PATH);
-    var handler = function (snap) { cb(snapshotToArray(snap)); };
-    ref.on('value', handler);
-    return function () { ref.off('value', handler); };
-  }
-
-  function deleteInvitation(key, cb) {
-    var root = dbRoot();
-    if (!root) { cb && cb(false); return; }
-    root.child(INVITES_PATH).child(key).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
   }
 
   /* --- Eventos --- */
@@ -1020,6 +985,18 @@
      estadoConfirmacion: se tratan como 'pendiente'. */
   function estadoConfirmacionSlot(slot) { return (slot && slot.estadoConfirmacion) || 'pendiente'; }
 
+  /* Un "conflicto" es un puesto que sigue asignado a alguien que declinó.
+     Desaparece solo si la persona cambia a "Sí" o si el admin la quita /
+     reemplaza en el puesto (el Formulario reinicia la confirmación al
+     cambiar el nombre). Los eventos cancelados o archivados no cuentan. */
+  function declinadosEvento(ev) {
+    var est = estadoEvento(ev);
+    if (est === 'CANCELADO' || est === 'ARCHIVADO') return [];
+    return ((ev && ev.banda) || []).filter(function (slot) {
+      return slot && (slot.nombre || '').trim() && estadoConfirmacionSlot(slot) === 'rechazado';
+    });
+  }
+
   function newMusician(o) {
     o = o || {};
     var nombre = o.nombre || '';
@@ -1031,6 +1008,7 @@
       aliases: o.aliases || (nombre ? [nombre] : []),
       rolesBanda: o.rolesBanda || [],
       userId: o.userId || null,
+      email: o.email ? normalizarEmail(o.email) : null,
       createdAt: o.createdAt || Date.now(),
       updatedAt: o.updatedAt || Date.now()
     };
@@ -1098,7 +1076,14 @@
   function deleteMusician(musicianId, cb) {
     var root = dbRoot();
     if (!root || !musicianId) { cb && cb(false); return; }
-    root.child(MUSICIANS_PATH).child(musicianId).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
+    root.child(MUSICIANS_PATH).child(musicianId).once('value').then(function (snap) {
+      var m = snap.val() || {};
+      var updates = {};
+      updates[MUSICIANS_PATH + '/' + musicianId] = null;
+      if (m.email) updates[PERSONAS_EMAIL_PATH + '/' + emailKey(m.email) + '/' + musicianId] = null;
+      if (m.userId && m.organizationId) updates[USERS_PATH + '/' + m.userId + '/musicianLinks/' + m.organizationId] = null;
+      root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+    }, function () { cb && cb(false); });
   }
 
   function unlinkMusician(musicianId, orgId, targetUid, cb) {
@@ -1108,6 +1093,39 @@
     updates[MUSICIANS_PATH + '/' + musicianId + '/userId'] = null;
     if (targetUid) updates[USERS_PATH + '/' + targetUid + '/musicianLinks/' + orgId] = null;
     root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
+  /* Define (o borra, con email vacío) el correo de una Persona y mantiene el
+     índice /personasPorCorreo en la misma escritura. Si ya existe una cuenta
+     con ese correo (usuarios: la lista de /users que el panel ya tiene
+     cargada), se vincula de una vez y se le da acceso a la organización; si
+     no, queda pendiente y se vincula sola la próxima vez que esa persona
+     inicie sesión (ver vincularPorCorreo en ensureUserRegistered). Cualquier
+     cuenta que estuviera vinculada antes y no coincida pierde el vínculo. */
+  function setMusicianEmail(musico, email, usuarios, cb) {
+    var root = dbRoot();
+    if (!root || !musico || !musico.id || !musico.organizationId) { cb && cb(false); return; }
+    var nuevo = normalizarEmail(email);
+    var anterior = normalizarEmail(musico.email);
+    var orgId = musico.organizationId;
+    var cuenta = nuevo ? (usuarios || []).filter(function (u) { return normalizarEmail(u.email) === nuevo; })[0] : null;
+    var updates = {};
+    updates[MUSICIANS_PATH + '/' + musico.id + '/email'] = nuevo || null;
+    updates[MUSICIANS_PATH + '/' + musico.id + '/updatedAt'] = Date.now();
+    if (anterior && anterior !== nuevo) updates[PERSONAS_EMAIL_PATH + '/' + emailKey(anterior) + '/' + musico.id] = null;
+    if (nuevo) updates[PERSONAS_EMAIL_PATH + '/' + emailKey(nuevo) + '/' + musico.id] = orgId;
+    if (musico.userId && (!cuenta || cuenta.uid !== musico.userId)) {
+      updates[USERS_PATH + '/' + musico.userId + '/musicianLinks/' + orgId] = null;
+    }
+    updates[MUSICIANS_PATH + '/' + musico.id + '/userId'] = cuenta ? cuenta.uid : null;
+    if (cuenta) {
+      updates[USERS_PATH + '/' + cuenta.uid + '/musicianLinks/' + orgId] = musico.id;
+      updates[USERS_PATH + '/' + cuenta.uid + '/organizationIds/' + orgId] = true;
+    }
+    root.update(updates).then(function () { cb && cb(true, cuenta || null); }, function (err) {
+      console.error('Firebase setMusicianEmail rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false, null);
+    });
   }
 
   /* Funde mergeIds dentro de keepId: une aliases y rolesBanda, repunta
@@ -1143,6 +1161,25 @@
           updates[MUSICIANS_PATH + '/' + keepId + '/rolesBanda'] = roles;
           updates[MUSICIANS_PATH + '/' + keepId + '/updatedAt'] = Date.now();
           mergeIds.forEach(function (id) { updates[MUSICIANS_PATH + '/' + id] = null; });
+          /* El correo (y la cuenta vinculada) de un perfil fundido pasa al que
+             se conserva si este no tenía uno propio; los demás se sueltan del
+             índice /personasPorCorreo para no revincular un perfil borrado. */
+          var heredado = null;
+          snaps.forEach(function (sn) {
+            var v = sn.val();
+            if (!v) return;
+            if (v.email) updates[PERSONAS_EMAIL_PATH + '/' + emailKey(v.email) + '/' + sn.key] = null;
+            if (v.userId) updates[USERS_PATH + '/' + v.userId + '/musicianLinks/' + keep.organizationId] = null;
+            if (v.email && !keep.email && !heredado) heredado = v;
+          });
+          if (heredado) {
+            updates[MUSICIANS_PATH + '/' + keepId + '/email'] = heredado.email;
+            updates[PERSONAS_EMAIL_PATH + '/' + emailKey(heredado.email) + '/' + keepId] = keep.organizationId;
+            if (heredado.userId && !keep.userId) {
+              updates[MUSICIANS_PATH + '/' + keepId + '/userId'] = heredado.userId;
+              updates[USERS_PATH + '/' + heredado.userId + '/musicianLinks/' + keep.organizationId] = keepId;
+            }
+          }
           root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
         }, function () { cb && cb(false); });
       }, function () { cb && cb(false); });
@@ -1298,7 +1335,7 @@
      Formulario hace splice() al eliminar puestos), así que se vuelve a leer
      el banda actual y se ubica el slot por su `id` propio justo antes de
      escribir, para no repuntar accidentalmente el estado de otro puesto. */
-  function setBandaConfirmacion(eventId, slotId, estado, cb) {
+  function setBandaConfirmacion(eventId, slotId, estado, cb, motivo) {
     var root = dbRoot();
     if (!root || !eventId || !slotId) { cb && cb(false); return; }
     root.child(EVENTS_PATH).child(eventId).child('banda').once('value').then(function (snap) {
@@ -1308,11 +1345,39 @@
       if (idx < 0) { cb && cb(false); return; }
       var patch = {};
       patch['banda/' + idx + '/estadoConfirmacion'] = estado;
+      patch['banda/' + idx + '/motivoDeclinacion'] = estado === 'rechazado' ? (motivo || '') : null;
       root.child(EVENTS_PATH).child(eventId).update(patch).then(function () { cb && cb(true); }, function (err) {
         console.error('Firebase setBandaConfirmacion rechazado:', err && err.code, err && err.message, err);
         cb && cb(false);
       });
     }, function () { cb && cb(false); });
+  }
+
+  /* "Confirmo asistencia" del Dashboard: además del estado del puesto,
+     mantiene sincronizada una fecha no disponible ligada al evento
+     (unavailableDates[].eventId). Declinar la crea (o la reemplaza, si ya
+     había declinado antes con otro motivo); volver a "Sí" la elimina. Las
+     fechas no disponibles agregadas a mano no tienen eventId y no se tocan. */
+  function responderAsistencia(ev, slotId, musicianId, estado, motivo, cb) {
+    var root = dbRoot();
+    if (!root || !ev || !ev.id || !musicianId) { cb && cb(false); return; }
+    setBandaConfirmacion(ev.id, slotId, estado, function (ok) {
+      if (!ok) { cb && cb(false); return; }
+      var ref = root.child(MUSICIANS_PATH).child(musicianId).child('unavailableDates');
+      ref.once('value').then(function (snap) {
+        var updates = {};
+        snapshotToArray(snap).forEach(function (r) { if (r.eventId === ev.id) updates[r.id] = null; });
+        if (estado === 'rechazado') {
+          var id = uid();
+          updates[id] = { id: id, startDate: ev.fecha || '', endDate: ev.fecha || '', reason: motivo || '', eventId: ev.id, createdAt: Date.now() };
+        }
+        if (!Object.keys(updates).length) { cb && cb(true); return; }
+        ref.update(updates).then(function () { cb && cb(true); }, function (err) {
+          console.error('Firebase responderAsistencia (fechas no disponibles) rechazado:', err && err.code, err && err.message, err);
+          cb && cb(false);
+        });
+      }, function () { cb && cb(false); });
+    }, motivo);
   }
 
   /* --- Fechas no disponibles --- */
@@ -1372,20 +1437,20 @@
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
     setUserRole: setUserRole, setUserOrgs: setUserOrgs, deleteUser: deleteUser, userOrgIds: userOrgIds,
-    userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding,
-    createInvitation: createInvitation, watchInvitations: watchInvitations, deleteInvitation: deleteInvitation,
+    userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
+    normalizarEmail: normalizarEmail,
     watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, setEventEstado: setEventEstado, moveEvent: moveEvent,
     watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong,
-    ESTADOS_CONFIRMACION: ESTADOS_CONFIRMACION, estadoConfirmacionSlot: estadoConfirmacionSlot,
+    ESTADOS_CONFIRMACION: ESTADOS_CONFIRMACION, estadoConfirmacionSlot: estadoConfirmacionSlot, declinadosEvento: declinadosEvento,
     newMusician: newMusician, watchMusiciansForOrg: watchMusiciansForOrg, getMusician: getMusician,
     createMusician: createMusician, updateMusician: updateMusician,
-    linkMusicianToUser: linkMusicianToUser, unlinkMusician: unlinkMusician, mergeMusicians: mergeMusicians,
+    linkMusicianToUser: linkMusicianToUser, setMusicianEmail: setMusicianEmail, unlinkMusician: unlinkMusician, mergeMusicians: mergeMusicians,
     deleteMusician: deleteMusician,
     matchMusicianByNombre: matchMusicianByNombre,
     previewMusicianMigration: previewMusicianMigration, commitMusicianMigration: commitMusicianMigration,
     migracionMusicosYaCorrio: migracionMusicosYaCorrio,
     updateEventBandaSlots: updateEventBandaSlots,
-    setBandaConfirmacion: setBandaConfirmacion,
+    setBandaConfirmacion: setBandaConfirmacion, responderAsistencia: responderAsistencia,
     watchUnavailableDates: watchUnavailableDates, addUnavailableDate: addUnavailableDate, deleteUnavailableDate: deleteUnavailableDate,
     fechaNoDisponible: fechaNoDisponible
   };

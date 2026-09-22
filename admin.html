@@ -30,6 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="menu-config.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
@@ -72,8 +73,9 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Panel de Administración</span>
         </div>
           <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
-            <a href="{{ verDashboardHref }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Dashboard</a>
-            <a href="{{ verPublicadoHref }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Publicado</a>
+            <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
+              <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
+            </sc-for>
           </div>
         </div>
     </div>
@@ -102,10 +104,9 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
       <div class="{{ sidebarClase }}">
         <div class="side-group" style="flex:1">
           <div class="side-kicker">Módulos</div>
-          <button type="button" style="{{ tabOrgStyle }}" onClick="{{ irTabOrganizaciones }}">Organizaciones</button>
-          <button type="button" style="{{ tabUsuariosStyle }}" onClick="{{ irTabUsuarios }}">Usuarios</button>
-          <button type="button" style="{{ tabRepertorioStyle }}" onClick="{{ irTabRepertorio }}" disabled="{{ sinOrgActual }}">Repertorio</button>
-          <button type="button" style="{{ tabEventosStyle }}" onClick="{{ irTabEventos }}" disabled="{{ sinOrgActual }}">Eventos</button>
+          <sc-for list="{{ menuModulos }}" as="mm" hint-placeholder-count="4">
+            <button type="button" style="{{ mm.style }}" onClick="{{ mm.onClick }}" disabled="{{ mm.deshabilitado }}">{{ mm.label }}</button>
+          </sc-for>
         </div>
       </div>
 
@@ -201,77 +202,13 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
         <sc-if value="{{ tabUsuarios }}" hint-placeholder-val="{{ false }}">
           <section>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
-              <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0">Usuarios</h2>
-              <button type="button" onClick="{{ toggleInvitarAbierto }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 16px;cursor:pointer">+ Invitar usuario</button>
+              <div>
+                <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0">Usuarios</h2>
+                <p style="font-size:12px;color:#7d7979;margin:4px 0 0">Cuentas que ya iniciaron sesión. Para dar acceso a alguien nuevo, define su correo en Personas: se vincula sola en su próximo inicio de sesión.</p>
+              </div>
             </div>
 
             <input value="{{ usuariosBusquedaNombre }}" onChange="{{ onUsuariosBusquedaNombre }}" placeholder="Buscar por nombre…" autoComplete="off" style="width:100%;font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff;margin-bottom:14px">
-
-            <sc-if value="{{ invitarAbierto }}" hint-placeholder-val="{{ false }}">
-              <div style="padding:16px;background:var(--bg);margin-bottom:20px;display:flex;flex-direction:column;gap:12px">
-                <label style="display:flex;flex-direction:column;gap:6px">
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Correo</span>
-                  <input value="{{ inviteEmail }}" onChange="{{ onInviteEmail }}" placeholder="correo@ejemplo.com" style="font-size:15px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
-                </label>
-                <label style="display:flex;flex-direction:column;gap:6px">
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Rol</span>
-                  <select value="{{ inviteRole }}" onChange="{{ onInviteRole }}" style="font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:9px 10px;border:2px solid var(--ink);background:#fff;appearance:none">
-                    <option value="normal">Normal</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </label>
-                <div style="display:flex;flex-direction:column;gap:6px;position:relative">
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Organizaciones</span>
-                  <button type="button" onClick="{{ toggleInviteOrgsDropdown }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff;cursor:pointer;text-align:left">
-                    <span>{{ inviteOrgsResumen }}</span>
-                    <span>▾</span>
-                  </button>
-                  <sc-if value="{{ inviteOrgsAbierto }}" hint-placeholder-val="{{ false }}">
-                    <div style="position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;border:2px solid var(--ink);margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column">
-                      <input value="{{ inviteOrgsBusqueda }}" onChange="{{ onInviteOrgsBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
-                      <div style="max-height:220px;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:8px">
-                        <sc-for list="{{ inviteOrgsChips }}" as="c" hint-placeholder-count="2">
-                          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-                            <input type="checkbox" checked="{{ c.marcada }}" onChange="{{ c.onChange }}" style="width:15px;height:15px;cursor:pointer">
-                            {{ c.nombre }}
-                          </label>
-                        </sc-for>
-                        <p style="{{ inviteOrgsVacioStyle }}">Sin resultados.</p>
-                      </div>
-                      <button type="button" onClick="{{ toggleInviteOrgsDropdown }}" style="border:0;border-top:2px solid var(--ink);padding:9px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:var(--ink);color:#fff">Listo</button>
-                    </div>
-                  </sc-if>
-                </div>
-                <label style="display:flex;flex-direction:column;gap:6px">
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Vincular a persona ya registrada (opcional)</span>
-                  <select value="{{ inviteMusicianId }}" onChange="{{ onInviteMusicianId }}" style="font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff;appearance:none">
-                    <option value="">Sin vincular (cuenta nueva)</option>
-                    <sc-for list="{{ inviteMusicianOpciones }}" as="m" hint-placeholder-count="2">
-                      <option value="{{ m.id }}">{{ m.nombre }}</option>
-                    </sc-for>
-                  </select>
-                </label>
-                <div style="display:flex;gap:8px">
-                  <button type="button" onClick="{{ invitarUsuario }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Enviar invitación</button>
-                  <button type="button" onClick="{{ toggleInvitarAbierto }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cancelar</button>
-                </div>
-              </div>
-            </sc-if>
-
-            <sc-if value="{{ hayInvitaciones }}" hint-placeholder-val="{{ false }}">
-              <div style="margin-bottom:20px">
-                <div class="side-kicker" style="padding:0 0 8px">Invitaciones pendientes</div>
-                <sc-for list="{{ invitacionesLista }}" as="inv" hint-placeholder-count="2">
-                  <div style="border:2px dashed var(--ink);padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-                    <div>
-                      <div style="font-size:14px;font-weight:800">{{ inv.email }}</div>
-                      <div style="font-size:12px;color:#7d7979">{{ inv.role }} · {{ inv.orgsTexto }}</div>
-                    </div>
-                    <button type="button" onClick="{{ inv.cancelar }}" style="font-size:12px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:7px 12px;cursor:pointer">Cancelar</button>
-                  </div>
-                </sc-for>
-              </div>
-            </sc-if>
 
             <sc-for list="{{ usuariosLista }}" as="u" hint-placeholder-count="2">
               <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px">
@@ -288,7 +225,13 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                     <button type="button" onClick="{{ u.borrar }}" style="{{ u.borrarStyle }};font-size:14px;border:2px solid #b00020;background:transparent;color:#b00020;padding:8px 10px;cursor:pointer" aria-label="Eliminar usuario" title="Eliminar usuario">🗑</button>
                   </div>
                 </div>
-                <div style="position:relative;margin-top:12px;padding-top:12px;border-top:1px solid #eae9e9">
+                <div style="position:relative;margin-top:12px;padding-top:12px;border-top:1px solid #eae9e9;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+                  <select value="{{ u.personaId }}" onChange="{{ u.onPersona }}" aria-label="Persona vinculada" style="font-size:13px;padding:8px 10px;border:2px solid var(--ink);background:#fff;appearance:none;width:100%;max-width:360px">
+                    <option value="">Sin persona vinculada</option>
+                    <sc-for list="{{ u.personaOpciones }}" as="po" hint-placeholder-count="2">
+                      <option value="{{ po.id }}">{{ po.nombre }}</option>
+                    </sc-for>
+                  </select>
                   <button type="button" onClick="{{ u.toggleOrgsDropdown }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:8px 10px;border:2px solid var(--ink);background:#fff;cursor:pointer;text-align:left;width:100%;max-width:360px">
                     <span>{{ u.orgsResumen }}</span>
                     <span>▾</span>
@@ -435,14 +378,15 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
               <sc-for list="{{ musicosLista }}" as="m" hint-placeholder-count="2">
                 <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-                    <div>
+                    <div style="flex:1;min-width:220px;max-width:420px">
                       <div style="font-size:15px;font-weight:800">{{ m.nombre }}</div>
+                      <label style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                        <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Correo</span>
+                        <input type="email" value="{{ m.correo }}" onChange="{{ m.onCorreo }}" onBlur="{{ m.guardarCorreo }}" onKeyDown="{{ m.onCorreoKey }}" placeholder="Sin Cuenta" autoComplete="off" style="flex:1;min-width:0;font-size:13px;padding:6px 8px;border:2px solid var(--ink);background:#fff">
+                      </label>
                       <div style="{{ m.vinculoStyle }}">{{ m.vinculoTexto }}</div>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px">
-                      <sc-if value="{{ m.mostrarInvitar }}" hint-placeholder-val="{{ true }}">
-                        <button type="button" onClick="{{ m.invitar }}" style="font-size:12px;font-weight:700;letter-spacing:.04em;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:7px 12px;cursor:pointer">Invitar</button>
-                      </sc-if>
                       <button type="button" onClick="{{ m.verDashboard }}" style="font-size:12px;font-weight:700;letter-spacing:.04em;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:7px 12px;cursor:pointer">Ver dashboard</button>
                       <button type="button" onClick="{{ m.eliminar }}" style="font-size:14px;border:2px solid #b00020;background:transparent;color:#b00020;padding:7px 10px;cursor:pointer" aria-label="Eliminar persona" title="Eliminar persona">🗑</button>
                     </div>
@@ -625,9 +569,10 @@ class Component extends DCLogic {
        vacío), true/false según el resultado de intentar cargar la URL como
        imagen (ver validarOrgEditBanner). */
     orgEditBannerUrl: '', orgEditBannerValido: null, orgEditBannerValidando: false,
-    usuarios: [], invitaciones: [], mensaje: '',
-    invitarAbierto: false, inviteEmail: '', inviteRole: 'normal', inviteOrgIds: {}, inviteMusicianId: '',
-    inviteOrgsAbierto: false, inviteOrgsBusqueda: '',
+    usuarios: [], mensaje: '',
+    /* {musicianId: texto} mientras se edita el correo de una persona; se
+       guarda al salir del campo o con Enter (ver guardarCorreoMusico). */
+    musicoCorreoBorrador: {},
     usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {},
     musicos: [], nuevoMusicoNombre: '', nuevoMusicoAbierto: false, musicoRolAgregar: {},
     usuariosBusquedaNombre: '', usuariosPagina: 1,
@@ -685,18 +630,30 @@ class Component extends DCLogic {
            lectura solo tiene permiso una vez que el rol admin ya quedó
            confirmado del lado del servidor. */
         const tabInicial = new URLSearchParams(location.search).get('tab');
-        if (tabInicial === 'usuarios' || tabInicial === 'organizaciones') {
+        if (tabInicial === 'usuarios' || tabInicial === 'organizaciones' || tabInicial === 'repertorio') {
           this.cambiarTab(tabInicial);
+        } else {
+          /* Eventos es el módulo de entrada: sin ?tab explícito se salta
+             directo al Formulario en cuanto se conoce la organización activa
+             (ver componentDidUpdate). Sin organizaciones se queda aquí, en
+             Organizaciones, para poder crear la primera. */
+          this._abrirEventosAlCargar = true;
         }
       });
     });
+  }
+
+  componentDidUpdate() {
+    const s = this.state;
+    if (!this._abrirEventosAlCargar || s.estadoAuth !== 'admin' || !s.currentOrgId || !(s.todasOrgs || []).length) return;
+    this._abrirEventosAlCargar = false;
+    location.href = 'eventos.html?org=' + encodeURIComponent(s.currentOrgId);
   }
 
   componentWillUnmount() {
     if (this._unauth) this._unauth();
     if (this._unorgs) this._unorgs();
     if (this._unusers) this._unusers();
-    if (this._uninvites) this._uninvites();
     if (this._unRepEventos) this._unRepEventos();
     if (this._unRepOverrides) this._unRepOverrides();
     if (this._unmusicos) this._unmusicos();
@@ -708,7 +665,6 @@ class Component extends DCLogic {
     this.cerrarSidebarSiMovil();
     if (tab === 'usuarios' && !this._unusers) {
       this._unusers = D().watchAllUsers((lista) => this.setState({ usuarios: lista }));
-      this._uninvites = D().watchInvitations((lista) => this.setState({ invitaciones: lista }));
       D().migracionMusicosYaCorrio((yaCorrio) => this.setState({ migracionYaCorrio: yaCorrio }));
     }
     if (tab === 'repertorio') this.montarRepertorio(this.state.currentOrgId);
@@ -912,37 +868,6 @@ class Component extends DCLogic {
     D().setUserOrgs(userDoc.uid, nuevos, () => {});
   }
 
-  toggleInvitarAbierto() {
-    this.setState((s) => ({
-      invitarAbierto: !s.invitarAbierto, inviteEmail: '', inviteRole: 'normal', inviteOrgIds: {}, inviteMusicianId: '',
-      inviteOrgsAbierto: false, inviteOrgsBusqueda: ''
-    }));
-  }
-
-  /* Abre el mismo diálogo de invitación pero pre-vinculado a un músico ya
-     existente (sin cuenta todavía): en cuanto esa persona inicie sesión por
-     primera vez, R.ensureUserRegistered la deja vinculada de una vez, sin
-     que el admin tenga que repetir el paso desde el módulo de Usuarios. */
-  abrirInvitarParaMusico(musico) {
-    this.setState({
-      invitarAbierto: true, inviteEmail: '', inviteRole: 'normal',
-      inviteOrgIds: { [musico.organizationId]: true }, inviteMusicianId: musico.id,
-      inviteOrgsAbierto: false, inviteOrgsBusqueda: ''
-    });
-  }
-
-  toggleInviteOrg(orgId) {
-    this.setState((s) => {
-      const map = Object.assign({}, s.inviteOrgIds);
-      if (map[orgId]) delete map[orgId]; else map[orgId] = true;
-      return { inviteOrgIds: map };
-    });
-  }
-
-  toggleInviteOrgsDropdown() {
-    this.setState((s) => ({ inviteOrgsAbierto: !s.inviteOrgsAbierto, inviteOrgsBusqueda: '' }));
-  }
-
   toggleUsuarioOrgsDropdown(uid) {
     this.setState((s) => {
       const abierto = Object.assign({}, s.usuarioOrgsAbierto);
@@ -953,27 +878,72 @@ class Component extends DCLogic {
     });
   }
 
-  invitarUsuario() {
-    const s = this.state;
-    const email = (s.inviteEmail || '').trim();
-    if (!email) return;
-    const orgIds = Object.keys(s.inviteOrgIds || {});
-    D().createInvitation(email, s.inviteRole, orgIds, s.inviteMusicianId || null, (ok) => {
-      this.setState({
-        mensaje: ok ? ('Invitación enviada a ' + email + '.') : 'No se pudo crear la invitación.',
-        invitarAbierto: false, inviteEmail: '', inviteRole: 'normal', inviteOrgIds: {}, inviteMusicianId: '',
-        inviteOrgsAbierto: false, inviteOrgsBusqueda: ''
-      });
-    });
-  }
-
-  cancelarInvitacion(key) {
-    D().deleteInvitation(key, (ok) => {
-      this.setState({ mensaje: ok ? 'Invitación cancelada.' : 'No se pudo cancelar la invitación.' });
-    });
-  }
-
   /* --- Personas / músicos (identidad detrás de los puestos de banda) --- */
+
+  /* Correo que se muestra en el campo de una persona: el que tenga guardado,
+     o —para vínculos hechos antes de que existiera este campo— el de la
+     cuenta ya vinculada. */
+  correoMusico(musico) {
+    if (musico.email) return musico.email;
+    const u = musico.userId ? (this.state.usuarios || []).find((x) => x.uid === musico.userId) : null;
+    return u ? D().normalizarEmail(u.email) : '';
+  }
+
+  guardarCorreoMusico(musico) {
+    const R = D();
+    const borradores = this.state.musicoCorreoBorrador || {};
+    if (borradores[musico.id] === undefined) return;
+    const nuevo = R.normalizarEmail(borradores[musico.id]);
+    const limpiarBorrador = () => this.setState((st) => {
+      const b = Object.assign({}, st.musicoCorreoBorrador);
+      delete b[musico.id];
+      return { musicoCorreoBorrador: b };
+    });
+    if (nuevo === this.correoMusico(musico)) { limpiarBorrador(); return; }
+    if (nuevo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nuevo)) {
+      this.setState({ mensaje: '"' + nuevo + '" no es un correo válido.' });
+      return;
+    }
+    const repetido = nuevo && (this.state.musicos || []).find((m) => m.id !== musico.id && this.correoMusico(m) === nuevo);
+    if (repetido) {
+      this.setState({ mensaje: 'El correo ' + nuevo + ' ya está asignado a "' + repetido.nombre + '" en esta organización.' });
+      return;
+    }
+    R.setMusicianEmail(musico, nuevo, this.state.usuarios, (ok, cuenta) => {
+      limpiarBorrador();
+      let mensaje;
+      if (!ok) mensaje = 'No se pudo guardar el correo de "' + musico.nombre + '".';
+      else if (!nuevo) mensaje = 'Se quitó el correo de "' + musico.nombre + '".';
+      else if (cuenta) mensaje = '"' + musico.nombre + '" quedó vinculada a la cuenta ' + nuevo + '.';
+      else mensaje = 'Correo guardado. "' + musico.nombre + '" verá su dashboard la próxima vez que inicie sesión con ' + nuevo + '.';
+      this.setState({ mensaje: mensaje });
+    });
+  }
+
+  /* Desde la tarjeta de un usuario: vincularlo a una persona equivale a
+     definirle a esa persona el correo de la cuenta (y "Sin persona" le quita
+     el correo a la que tenía vinculada en esta organización). */
+  vincularUsuarioAPersona(u, musicianId) {
+    const R = D();
+    const musicos = this.state.musicos || [];
+    const correo = R.normalizarEmail(u.email);
+    const actualId = R.userMusicianLinks(u)[this.state.currentOrgId];
+    const actual = musicos.find((m) => m.id === actualId);
+    const nueva = musicos.find((m) => m.id === musicianId);
+    const aplicarNueva = () => {
+      if (!nueva) return;
+      const otra = musicos.find((m) => m.id !== nueva.id && m.id !== actualId && this.correoMusico(m) === correo);
+      const continuar = () => R.setMusicianEmail(nueva, correo, this.state.usuarios, (ok) => {
+        this.setState({ mensaje: ok ? ('"' + (u.displayName || u.email) + '" quedó vinculada a "' + nueva.nombre + '".') : 'No se pudo vincular.' });
+      });
+      if (otra) R.setMusicianEmail(otra, '', this.state.usuarios, continuar); else continuar();
+    };
+    if (actual && actual.id !== musicianId) R.setMusicianEmail(actual, '', this.state.usuarios, (ok) => {
+      if (!nueva) this.setState({ mensaje: ok ? ('Se quitó el vínculo de "' + (u.displayName || u.email) + '".') : 'No se pudo quitar el vínculo.' });
+      aplicarNueva();
+    });
+    else aplicarNueva();
+  }
 
   toggleNuevoMusico() {
     this.setState((s) => ({ nuevoMusicoAbierto: !s.nuevoMusicoAbierto, nuevoMusicoNombre: '' }));
@@ -1362,6 +1332,10 @@ class Component extends DCLogic {
     const usuariosInicioPagina = (usuariosPaginaActual - 1) * USUARIOS_PAGE_SIZE;
     const usuariosPagina = usuariosFiltrados.slice(usuariosInicioPagina, usuariosInicioPagina + USUARIOS_PAGE_SIZE);
 
+    const personaOpciones = (s.musicos || []).slice()
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map((m) => ({ id: m.id, nombre: m.nombre }));
+
     const usuariosLista = usuariosPagina.map((u) => {
       const busqueda = (s.usuarioOrgsBusqueda || {})[u.uid] || '';
       const misIds = R.userOrgIds(u);
@@ -1371,6 +1345,9 @@ class Component extends DCLogic {
       return {
         uid: u.uid, email: u.email, nombre: u.displayName || u.email,
         role: u.role || 'normal',
+        personaId: R.userMusicianLinks(u)[s.currentOrgId] || '',
+        personaOpciones: personaOpciones,
+        onPersona: (e) => this.vincularUsuarioAPersona(u, e.target.value),
         onRole: (e) => this.cambiarRolUsuario(u.uid, e.target.value),
         puedeBorrar: !esUnoMismo,
         borrarStyle: esUnoMismo ? 'display:none' : '',
@@ -1389,25 +1366,7 @@ class Component extends DCLogic {
       };
     });
 
-    const invitacionesLista = (s.invitaciones || [])
-      .filter((inv) => { const ids = R.userOrgIds(inv); return ids.length === 0 || ids.indexOf(s.currentOrgId) >= 0; })
-      .map((inv) => ({
-        key: inv.id, email: inv.email, role: inv.role === 'admin' ? 'Admin' : 'Normal',
-        orgsTexto: orgs.filter((o) => R.userOrgIds(inv).indexOf(o.id) >= 0).map((o) => o.name).join(', ') || 'Sin organización',
-        cancelar: () => this.cancelarInvitacion(inv.id)
-      }));
-
-    const inviteOrgsChips = filtrarOrgs(s.inviteOrgsBusqueda).map((o) => ({
-      id: o.id, nombre: o.name,
-      marcada: !!(s.inviteOrgIds || {})[o.id],
-      onChange: () => this.toggleInviteOrg(o.id)
-    }));
-    const inviteOrgsResumen = resumenOrgs(s.inviteOrgIds);
-    const inviteOrgsSinResultados = inviteOrgsChips.length === 0;
-
     /* --- Personas / músicos --- */
-    const musicoEmailPorUserId = {};
-    (s.usuarios || []).forEach((u) => { musicoEmailPorUserId[u.uid] = u.email; });
 
     const MUSICOS_PAGE_SIZE = 5;
     const musicosOrdenados = (s.musicos || []).slice().sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
@@ -1423,11 +1382,19 @@ class Component extends DCLogic {
     const musicosLista = musicosPagina.map((m) => {
       const rolesActuales = m.rolesBanda || [];
       const rolAgregarValue = (s.musicoRolAgregar || {})[m.id] || '';
+      const borrador = (s.musicoCorreoBorrador || {})[m.id];
+      const correoGuardado = this.correoMusico(m);
       return {
         id: m.id, nombre: m.nombre,
-        vinculado: !!m.userId,
-        vinculoTexto: m.userId ? (musicoEmailPorUserId[m.userId] || 'Cuenta vinculada') : 'Sin cuenta',
-        vinculoStyle: 'font-size:12px;color:' + (m.userId ? '#7d7979' : '#9a9694'),
+        correo: borrador !== undefined ? borrador : correoGuardado,
+        onCorreo: (e) => { const v = e.target.value; this.setState((st) => ({ musicoCorreoBorrador: Object.assign({}, st.musicoCorreoBorrador, { [m.id]: v }) })); },
+        guardarCorreo: () => this.guardarCorreoMusico(m),
+        onCorreoKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.guardarCorreoMusico(m); } },
+        /* Solo informativo: si ya tiene correo pero todavía no hay cuenta que
+           haya iniciado sesión con él, se aclara que el vínculo está
+           pendiente (el placeholder "Sin Cuenta" ya cubre el caso vacío). */
+        vinculoTexto: m.userId ? 'Cuenta vinculada' : (correoGuardado ? 'Se vinculará en su próximo inicio de sesión' : ''),
+        vinculoStyle: correoGuardado || m.userId ? 'font-size:11px;margin-top:4px;color:' + (m.userId ? '#2e7d32' : '#9a9694') : 'display:none',
         roles: rolesActuales.map((tipo) => ({ tipo: tipo, quitar: () => this.quitarRolMusico(m, tipo) })),
         rolAgregarValue: rolAgregarValue,
         rolAgregarOpciones: R.BANDA_ROLES.map((r) => r.tipo).filter((t) => rolesActuales.indexOf(t) < 0),
@@ -1435,14 +1402,11 @@ class Component extends DCLogic {
           const tipo = e.target.value;
           if (tipo) this.agregarRolMusico(m, tipo);
         },
-        mostrarInvitar: !m.userId,
-        invitar: () => this.abrirInvitarParaMusico(m),
         verDashboard: () => this.verDashboardMusico(m, orgActual ? orgActual.slug : null),
         eliminar: () => this.confirmarBorrarMusico(m)
       };
     });
 
-    const inviteMusicianOpciones = (s.musicos || []).filter((m) => !m.userId);
 
     /* --- Migración de nombres de banda a perfiles de músico --- */
     const migracionGruposLista = (s.migracionGrupos || []).map((g, i) => ({
@@ -1531,8 +1495,20 @@ class Component extends DCLogic {
       esAdmin: s.estadoAuth === 'admin',
       usuarioNombre: s.usuarioNombre || '',
       cerrarSesion: () => D().signOutUser(),
-      verDashboardHref: orgActual ? ('dashboard.html?org=' + orgActual.slug) : 'dashboard.html',
-      verPublicadoHref: orgActual ? ('index.html?group=' + orgActual.slug) : 'index.html',
+      /* Orden y contenido del menú: menu-config.js (compartido con el
+         Formulario). Las pestañas de esta página cambian sin recargar;
+         Eventos navega a su propia página. */
+      menuAcciones: window.RepertorioMenu.acciones(orgActual),
+      menuModulos: window.RepertorioMenu.modulos(s.activeTab, orgActual).map((m) => ({
+        label: m.label,
+        deshabilitado: m.deshabilitado,
+        style: tabStyle(m.activo) + (m.deshabilitado ? ';opacity:.4;cursor:default' : ''),
+        onClick: () => {
+          if (m.deshabilitado) return;
+          if (m.id === 'eventos') location.href = m.href;
+          else this.cambiarTab(m.id);
+        }
+      })),
       mensaje: s.mensaje || '',
       mensajeStyle: s.mensaje ? 'font-size:13px;color:var(--ac-dk);margin:0 0 16px' : 'display:none',
 
@@ -1549,15 +1525,6 @@ class Component extends DCLogic {
       tabOrganizaciones: s.activeTab === 'organizaciones',
       tabUsuarios: s.activeTab === 'usuarios',
       tabRepertorio: s.activeTab === 'repertorio',
-      tabOrgStyle: tabStyle(s.activeTab === 'organizaciones'),
-      tabUsuariosStyle: tabStyle(s.activeTab === 'usuarios'),
-      tabRepertorioStyle: tabStyle(s.activeTab === 'repertorio') + (orgActual ? '' : ';opacity:.4;cursor:default'),
-      tabEventosStyle: tabStyle(s.activeTab === 'eventos') + (orgActual ? '' : ';opacity:.4;cursor:default'),
-      sinOrgActual: !orgActual,
-      irTabOrganizaciones: () => this.cambiarTab('organizaciones'),
-      irTabUsuarios: () => this.cambiarTab('usuarios'),
-      irTabRepertorio: () => this.cambiarTab('repertorio'),
-      irTabEventos: () => { if (orgActual) location.href = 'Repertorio Formulario.dc.html?org=' + encodeURIComponent(orgActual.id); },
       sidebarClase: 'admin-side' + (s.sidebarAbierto ? ' abierto' : ''),
       backdropClase: 'admin-backdrop' + (s.sidebarAbierto ? ' abierto' : ''),
       toggleSidebar: () => this.toggleSidebar(),
@@ -1594,26 +1561,6 @@ class Component extends DCLogic {
       usuariosEnUltimaPagina: usuariosPaginaActual >= usuariosTotalPaginas,
       usuariosPaginaAnterior: () => this.usuariosPaginaAnterior(),
       usuariosPaginaSiguiente: () => this.usuariosPaginaSiguiente(),
-
-      invitarAbierto: s.invitarAbierto,
-      toggleInvitarAbierto: () => this.toggleInvitarAbierto(),
-      inviteEmail: s.inviteEmail,
-      onInviteEmail: (e) => this.setState({ inviteEmail: e.target.value }),
-      inviteRole: s.inviteRole,
-      onInviteRole: (e) => this.setState({ inviteRole: e.target.value }),
-      inviteOrgsAbierto: s.inviteOrgsAbierto,
-      inviteOrgsBusqueda: s.inviteOrgsBusqueda,
-      onInviteOrgsBusqueda: (e) => this.setState({ inviteOrgsBusqueda: e.target.value }),
-      toggleInviteOrgsDropdown: () => this.toggleInviteOrgsDropdown(),
-      inviteOrgsResumen: inviteOrgsResumen,
-      inviteOrgsVacioStyle: inviteOrgsSinResultados ? 'font-size:13px;color:#9a9694;padding:4px 2px' : 'display:none',
-      inviteOrgsChips: inviteOrgsChips,
-      inviteMusicianId: s.inviteMusicianId,
-      onInviteMusicianId: (e) => this.setState({ inviteMusicianId: e.target.value }),
-      inviteMusicianOpciones: inviteMusicianOpciones,
-      invitarUsuario: () => this.invitarUsuario(),
-      invitacionesLista: invitacionesLista,
-      hayInvitaciones: invitacionesLista.length > 0,
 
       musicosBusquedaNombre: s.musicosBusquedaNombre,
       onMusicosBusquedaNombre: (e) => this.onMusicosBusquedaNombre(e),

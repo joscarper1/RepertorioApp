@@ -8,7 +8,6 @@
 <body>
 <x-dc>
 <helmet>
-<meta name="omelette-owns-print" content="1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
@@ -17,6 +16,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="menu-config.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--gold:#c9982e;--gold-dk:#7a5610;--gold-lt:#f6ecd3;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
@@ -27,33 +27,6 @@ a{color:var(--ac-dk);text-decoration:none;border-bottom:1px solid var(--ac)}
 a:hover{color:#fff;background:var(--ac)}
 button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 ::selection{background:var(--ac-lt)}
-@media print{
-  @page{size:letter portrait;margin:7mm}
-  body{background:#fff}
-  .noprint{display:none !important}
-  .rowlink{display:block !important}
-  section{break-inside:auto;padding-top:6px !important}
-  .grid{display:block !important;columns:2;column-gap:2px;border:0 !important;padding:0 !important}
-  .avisos{display:flex !important}
-  .evt{break-inside:avoid;display:inline-block;width:100%;margin:0 0 2px !important;padding:8px 10px !important;vertical-align:top}
-  .body{gap:5px !important;margin-top:6px !important}
-  .temawrap{padding:5px 0 0 !important}
-  .dia{font-size:26px !important}
-  .sub{font-size:13px !important;margin-top:2px !important;padding-bottom:4px !important}
-  .banda{margin-top:6px !important;padding:6px !important}
-  .banda-lista{display:flex !important}
-  .evtcontent{display:block !important}
-  .tema{font-size:17px !important;margin-top:2px !important;line-height:1.2 !important}
-  .cita{font-size:13px !important;margin-top:2px !important;padding-left:8px !important;line-height:1.3 !important}
-  .nota{font-size:13px !important;margin-top:2px !important;line-height:1.3 !important}
-  .blabel{font-size:11px !important}
-  .rows{margin-top:3px !important;gap:1px !important}
-  .row{padding:3px 8px !important;line-height:1.15 !important;grid-template-columns:1fr auto !important}
-  .cn{font-size:16px !important}
-  .cd{font-size:13px !important;margin-top:0 !important}
-  .ck{font-size:13px !important;padding:1px 4px !important}
-  h1{font-size:34px !important}
-}
 </style>
 </helmet>
 
@@ -96,7 +69,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 <sc-if value="{{ esCalendario }}" hint-placeholder-val="{{ true }}">
 <div style="max-width:1320px;margin:0 auto;padding:0 24px 96px">
 
-  <div class="noprint" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
     <div style="display:flex;align-items:baseline;gap:12px;min-width:0;flex:1 1 auto;position:relative">
       <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
       <sc-if value="{{ noHayOtrasOrgs }}" hint-placeholder-val="{{ true }}">
@@ -138,7 +111,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   </header>
 
   <sc-if value="{{ mesesVisibles }}" hint-placeholder-val="{{ true }}">
-    <div class="noprint" style="display:flex;gap:2px;flex-wrap:wrap;padding:16px 0 0">
+    <div style="display:flex;gap:2px;flex-wrap:wrap;padding:16px 0 0">
       <sc-for list="{{ meses }}" as="m" hint-placeholder-count="3">
         <button onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button>
       </sc-for>
@@ -147,7 +120,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
       </sc-if>
     </div>
     <sc-if value="{{ mesesAbierto }}" hint-placeholder-val="{{ true }}">
-      <div class="noprint" style="background:var(--sf);border:2px solid var(--ink);margin-top:8px;padding:12px;display:flex;flex-wrap:wrap;gap:2px;max-height:min(50vh,320px);overflow-y:auto">
+      <div style="background:var(--sf);border:2px solid var(--ink);margin-top:8px;padding:12px;display:flex;flex-wrap:wrap;gap:2px;max-height:min(50vh,320px);overflow-y:auto">
         <sc-for list="{{ mesesAnteriores }}" as="m" hint-placeholder-count="3">
           <button onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button>
         </sc-for>
@@ -155,7 +128,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
     </sc-if>
   </sc-if>
 
-  <div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0 0">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0 0">
     <button onClick="{{ toggleFiltro }}" style="{{ filtroBtnStyle }}">{{ filtroBtnLabel }}</button>
     <div style="position:relative">
       <button onClick="{{ toggleParticipaciones }}" style="{{ participacionesBtnStyle }}">{{ participacionesBtnLabel }}</button>
@@ -178,7 +151,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
   </div>
 
   <sc-if value="{{ filtroAbierto }}" hint-placeholder-val="{{ true }}">
-    <div class="noprint" style="background:var(--sf);border:2px solid var(--ink);margin-top:12px;padding:16px;display:flex;flex-direction:column;gap:12px">
+    <div style="background:var(--sf);border:2px solid var(--ink);margin-top:12px;padding:16px;display:flex;flex-direction:column;gap:12px">
       <input value="{{ filtroTexto }}" onChange="{{ onFiltroTexto }}" placeholder="Buscar por fecha, servicio o tema…" style="font-size:16px;padding:14px;border:2px solid var(--ink);background:#fff;width:100%">
       <div style="display:flex;flex-direction:column;gap:6px;max-height:min(60vh,420px);overflow-y:auto">
         <sc-for list="{{ filtroLista }}" as="fe" hint-placeholder-count="3">
@@ -199,25 +172,25 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
         <span style="{{ sem.rangoStyle }}">{{ sem.rango }}</span>
         <span style="flex:1"></span>
         <span style="{{ sem.estadoStyle }}">{{ sem.estadoLabel }}</span>
-        <span class="noprint" style="color:#fff;font-size:14px;line-height:1">{{ sem.icono }}</span>
+        <span style="color:#fff;font-size:14px;line-height:1">{{ sem.icono }}</span>
       </div>
       <sc-if value="{{ sem.tieneAvisos }}" hint-placeholder-val="{{ true }}">
-        <div class="avisos" style="{{ sem.avisosStyle }}">
+        <div style="{{ sem.avisosStyle }}">
           <span style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dk)">Importante</span>
           <sc-for list="{{ sem.avisos }}" as="aviso" hint-placeholder-count="1">
             <div style="font-size:16px;font-weight:700;line-height:1.4;color:var(--gold-dk)">{{ aviso }}</div>
           </sc-for>
         </div>
       </sc-if>
-      <div class="grid" style="display:{{ sem.gridDisplay }};grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px;background:var(--sf);border:2px solid var(--ink);border-top:0">
+      <div style="display:{{ sem.gridDisplay }};grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px;background:var(--sf);border:2px solid var(--ink);border-top:0">
         <sc-for list="{{ sem.dias }}" as="dia" hint-placeholder-count="3">
-          <article class="evt" style="background:var(--sf);padding:24px;outline:2px solid var(--ink)">
+          <article style="background:var(--sf);padding:24px;outline:2px solid var(--ink)">
             <div onClick="{{ dia.toggleColapso }}" style="display:flex;align-items:center;gap:12px;cursor:pointer">
-              <div class="dia" style="{{ dia.diaStyle }}">{{ dia.diaNombre }}</div>
+              <div style="{{ dia.diaStyle }}">{{ dia.diaNombre }}</div>
               <span style="flex:1"></span>
-              <span class="noprint" style="color:var(--ink);font-size:16px;line-height:1">{{ dia.iconoColapso }}</span>
+              <span style="color:var(--ink);font-size:16px;line-height:1">{{ dia.iconoColapso }}</span>
             </div>
-            <div class="evtcontent" style="{{ dia.contentStyle }}">
+            <div style="{{ dia.contentStyle }}">
             <sc-for list="{{ dia.eventos }}" as="ev" hint-placeholder-count="2">
               <sc-if value="{{ ev.separador }}" hint-placeholder-val="{{ true }}">
                 <div style="height:2px;background:var(--ink);opacity:.25;margin:20px 0"></div>
@@ -225,11 +198,11 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
               <div style="{{ ev.wrapStyle }}">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
                   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-                    <span class="sub" style="{{ ev.subStyle }}">{{ ev.sub }}</span>
+                    <span style="{{ ev.subStyle }}">{{ ev.sub }}</span>
                   </div>
                   <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
                     <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
-                    <span class="noprint">
+                    <span>
                     <div style="display:flex;gap:6px">
                       <a href="{{ ev.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar" aria-label="Guardar en Google Calendar" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;text-decoration:none">
                         <img src="assets/icons/google-calendar.svg" alt="Google Calendar" width="22" height="22" style="display:block">
@@ -244,21 +217,21 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                 </div>
                 <div style="height:2px;background:var(--ink);margin-top:8px"></div>
                 <sc-if value="{{ ev.tieneBanda }}" hint-placeholder-val="{{ true }}">
-                  <div class="banda" style="border-bottom:2px solid var(--ink);padding:12px;margin-top:14px">
+                  <div style="border-bottom:2px solid var(--ink);padding:12px;margin-top:14px">
                     <div onClick="{{ ev.toggleBanda }}" style="display:flex;align-items:center;gap:10px;cursor:pointer">
-                      <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Banda</span>
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Banda</span>
                       <span style="flex:1;height:2px;background:#d7d3d3"></span>
-                      <span class="noprint" style="font-size:13px;font-weight:800;letter-spacing:.02em;color:var(--ac-dk);white-space:nowrap">{{ ev.bandaToggleLabel }}</span>
+                      <span style="font-size:13px;font-weight:800;letter-spacing:.02em;color:var(--ac-dk);white-space:nowrap">{{ ev.bandaToggleLabel }}</span>
                     </div>
-                    <div class="banda-lista rows" style="{{ ev.bandaListaStyle }}">
+                    <div style="{{ ev.bandaListaStyle }}">
                       <sc-for list="{{ ev.bandaLista }}" as="p" hint-placeholder-count="4">
-                        <div class="row" onClick="{{ p.onClick }}" title="{{ p.tarea }}" style="{{ p.rowStyle }}">
+                        <div onClick="{{ p.onClick }}" title="{{ p.tarea }}" style="{{ p.rowStyle }}">
                           <div>
-                            <span class="cn" style="font-size:16px;font-weight:700">{{ p.nombre }}</span>
-                            <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ p.tipo }}</span>
+                            <span style="font-size:16px;font-weight:700">{{ p.nombre }}</span>
+                            <span style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ p.tipo }}</span>
                           </div>
                           <sc-if value="{{ p.resaltado }}" hint-placeholder-val="{{ true }}">
-                            <span class="ck" style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#4d6b08;background:#d7ef8e;padding:4px 8px;text-align:center;white-space:nowrap">{{ p.badge }}</span>
+                            <span style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#4d6b08;background:#d7ef8e;padding:4px 8px;text-align:center;white-space:nowrap">{{ p.badge }}</span>
                           </sc-if>
                         </div>
                         <sc-if value="{{ p.mostrarTarea }}" hint-placeholder-val="{{ true }}">
@@ -268,12 +241,12 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                     </div>
                   </div>
                 </sc-if>
-                <div class="temawrap" style="padding:16px 0 4px">
+                <div style="padding:16px 0 4px">
                   <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tema</div>
-                  <div class="tema" style="font-size:19px;font-weight:600;line-height:1.3;margin-top:8px;text-wrap:pretty">{{ ev.tema }}</div>
-                  <div class="cita" style="font-size:14px;line-height:1.55;color:#54514f;margin-top:8px;border-left:2px solid var(--ac);padding-left:12px;text-wrap:pretty">{{ ev.cita }}</div>
+                  <div style="font-size:19px;font-weight:600;line-height:1.3;margin-top:8px;text-wrap:pretty">{{ ev.tema }}</div>
+                  <div style="font-size:14px;line-height:1.55;color:#54514f;margin-top:8px;border-left:2px solid var(--ac);padding-left:12px;text-wrap:pretty">{{ ev.cita }}</div>
                 </div>
-                <div class="body" style="display:flex;flex-direction:column;gap:16px;margin-top:24px">
+                <div style="display:flex;flex-direction:column;gap:16px;margin-top:24px">
                   <sc-for list="{{ ev.bloques }}" as="bl" hint-placeholder-count="5">
                     <div>
                       <sc-if value="{{ bl.mostrarParte }}" hint-placeholder-val="{{ false }}">
@@ -284,31 +257,31 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                         </div>
                       </sc-if>
                       <div style="display:flex;align-items:center;gap:8px">
-                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">{{ bl.titulo }}</span>
+                        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">{{ bl.titulo }}</span>
                         <span style="flex:1;height:2px;background:var(--ink)"></span>
                       </div>
-                      <div class="rows" style="display:flex;flex-direction:column;gap:2px;margin-top:8px">
+                      <div style="display:flex;flex-direction:column;gap:2px;margin-top:8px">
                         <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
-                          <div class="row" onDoubleClick="{{ cn.onOpen }}" title="{{ cn.rowTitle }}" style="display:grid;grid-template-columns:1fr auto 22px;gap:8px;align-items:center;background:#fff;padding:8px 12px;position:relative">
+                          <div onDoubleClick="{{ cn.onOpen }}" title="{{ cn.rowTitle }}" style="display:grid;grid-template-columns:1fr auto 22px;gap:8px;align-items:center;background:#fff;padding:8px 12px;position:relative">
                             <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
-                              <a class="rowlink" href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
+                              <a href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
                             </sc-if>
                             <div>
                               <sc-if value="{{ cn.tieneLineas }}" hint-placeholder-val="{{ true }}">
                                 <div style="font-weight:600">
-                                  <span class="cn" style="font-size:16px">{{ cn.lineaPrimera }}</span>
+                                  <span style="font-size:16px">{{ cn.lineaPrimera }}</span>
                                   <sc-for list="{{ cn.lineasResto }}" as="linea" hint-placeholder-count="1">
-                                    <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ linea }}</span>
+                                    <span style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ linea }}</span>
                                   </sc-for>
                                 </div>
                               </sc-if>
                               <sc-if value="{{ cn.sinLineas }}" hint-placeholder-val="{{ false }}">
-                                <span class="cn" style="font-size:16px;font-weight:600">{{ cn.t }}</span>
+                                <span style="font-size:16px;font-weight:600">{{ cn.t }}</span>
                               </sc-if>
-                              <span class="cd" style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
+                              <span style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
                             </div>
-                            <span class="ck" style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
-                            <button class="noprint" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
+                            <span style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
+                            <button onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
                           </div>
                         </sc-for>
                       </div>
@@ -317,28 +290,28 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                   <sc-if value="{{ ev.tieneDetalles }}" hint-placeholder-val="{{ true }}">
                     <div>
                       <div style="display:flex;align-items:center;gap:8px">
-                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Detalles y responsable</span>
+                        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Detalles y responsable</span>
                         <span style="flex:1;height:2px;background:var(--ink)"></span>
                       </div>
-                      <div class="nota" style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.detalles }}</div>
+                      <div style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.detalles }}</div>
                     </div>
                   </sc-if>
                   <sc-if value="{{ ev.tienePersonas }}" hint-placeholder-val="{{ true }}">
                     <div>
                       <div style="display:flex;align-items:center;gap:8px">
-                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Personas requeridas</span>
+                        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Personas requeridas</span>
                         <span style="flex:1;height:2px;background:var(--ink)"></span>
                       </div>
-                      <div class="nota" style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.personas }}</div>
+                      <div style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.personas }}</div>
                     </div>
                   </sc-if>
                   <sc-if value="{{ ev.tieneNotas }}" hint-placeholder-val="{{ true }}">
                     <div>
                       <div style="display:flex;align-items:center;gap:8px">
-                        <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Indicaciones para el ensayo</span>
+                        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Indicaciones para el ensayo</span>
                         <span style="flex:1;height:2px;background:var(--ink)"></span>
                       </div>
-                      <div class="nota" style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.notas }}</div>
+                      <div style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.notas }}</div>
                     </div>
                   </sc-if>
                 </div>
@@ -353,7 +326,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
 
   <div style="font-size:14px;color:#7d7979;padding:40px 0 0">{{ vacio }}</div>
 
-  <div class="noprint" style="display:flex;justify-content:center;padding:32px 0 0">
+  <div style="display:flex;justify-content:center;padding:32px 0 0">
     <button onClick="{{ volverArriba }}" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.04em;padding:10px 16px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer">
       <span aria-hidden="true" style="font-size:14px;line-height:1">↑</span>
       Volver arriba
@@ -364,14 +337,19 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
     <span>{{ nota }}</span>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
-      <a href="admin.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Gestionar Eventos</a>
-      <button onClick="{{ copiarWa }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;cursor:pointer">Copiar para WhatsApp</button>
-      <button onClick="{{ imprimir }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ac);background:var(--ac);color:#fff;cursor:pointer">Imprimir / PDF</button>
+      <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
+        <sc-if value="{{ ma.esLink }}" hint-placeholder-val="{{ true }}">
+          <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
+        </sc-if>
+        <sc-if value="{{ ma.esAccion }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ ma.onClick }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer">{{ ma.label }}</button>
+        </sc-if>
+      </sc-for>
     </div>
   </footer>
 
   <sc-if value="{{ participacionesModalAbierto }}" hint-placeholder-val="{{ false }}">
-    <div class="noprint" style="position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ cerrarParticipaciones }}">
+    <div style="position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ cerrarParticipaciones }}">
       <div style="width:min(100%,480px);max-height:min(80vh,640px);overflow-y:auto;background:#fff;border:2px solid var(--ink);padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.28)" onClick="{{ detenerPropagacion }}">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
           <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">Participaciones de {{ participacionesNombre }}</span>
@@ -747,6 +725,7 @@ class Component extends DCLogic {
     const s = this.state;
 
     const base = {
+      menuAcciones: [],
       esCargando: s.modo === 'cargando',
       esError: s.modo === 'error',
       esBienvenida: s.modo === 'bienvenida',
@@ -961,7 +940,7 @@ class Component extends DCLogic {
       onClick: () => this.irAOrg(o)
     }));
 
-    return Object.assign(base, {
+    const vals = Object.assign(base, {
       estado: s.estado,
       kicker: filtroActivo ? 'Filtrado por fecha' : 'Calendario Mensual',
       mesLabel: filtroActivo ? 'Resultado del filtro' : R.monthLabel(s.mes),
@@ -1017,7 +996,6 @@ class Component extends DCLogic {
       cerrarParticipaciones: () => this.cerrarParticipaciones(),
       detenerPropagacion: (e) => this.detenerPropagacion(e),
 
-      imprimir: () => window.print(),
       volverArriba: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
       copiarWa: () => {
         const out = [];
@@ -1054,6 +1032,13 @@ class Component extends DCLogic {
         else done();
       }
     });
+    /* Botones del pie: definidos en menu-config.js (ACCIONES_CALENDARIO).
+       Los de tipo 'accion' se resuelven con la función registrada aquí
+       bajo su mismo id. */
+    const accionesPagina = { whatsapp: vals.copiarWa };
+    vals.menuAcciones = window.RepertorioMenu.accionesCalendario(s.org, true).map((a) =>
+      Object.assign(a, { onClick: accionesPagina[a.id] || (() => {}) }));
+    return vals;
   }
 }
 

@@ -29,6 +29,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="menu-config.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
@@ -78,7 +79,11 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
           <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Administración de Eventos</span>
         </div>
-        <a href="{{ verPublicadoHref }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink);border-bottom-width:2px">Ver publicado</a>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
+          <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
+            <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
+          </sc-for>
+        </div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
@@ -129,13 +134,19 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
       </div>
       <div class="side-group" style="flex:1">
         <div class="side-kicker">Módulos</div>
-        <button type="button" style="{{ tabOrgStyle }}" onClick="{{ irOrganizaciones }}">Organizaciones</button>
-        <button type="button" style="{{ tabUsuariosStyle }}" onClick="{{ irUsuarios }}">Usuarios</button>
-        <button type="button" style="{{ tabEventosStyle }}">Eventos</button>
+        <sc-for list="{{ menuModulos }}" as="mm" hint-placeholder-count="4">
+          <button type="button" style="{{ mm.style }}" onClick="{{ mm.onClick }}" disabled="{{ mm.deshabilitado }}">{{ mm.label }}</button>
+        </sc-for>
       </div>
     </div>
     </sc-if>
     <div class="admin-main" style="{{ mainExtraStyle }}">
+  <sc-if value="{{ hayAlertaDeclinados }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:12px 16px;border:2px solid #b00020;background:#fdecee">
+      <span style="font-size:13px;font-weight:700;color:#b00020">⚠️ {{ alertaDeclinadosTexto }}</span>
+      <button type="button" onClick="{{ revisarDeclinados }}" style="font-size:12px;font-weight:700;letter-spacing:.04em;padding:6px 10px;border:2px solid #b00020;color:#b00020;background:#fff;cursor:pointer">Revisar</button>
+    </div>
+  </sc-if>
   <div style="display:flex;gap:2px;margin-top:0;background:var(--ink);padding:2px">
     <sc-for list="{{ pasos }}" as="p" hint-placeholder-count="4">
       <div style="{{ p.style }}">{{ p.label }}</div>
@@ -160,7 +171,10 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
             <sc-for list="{{ fila.celdas }}" as="c" hint-placeholder-count="7">
               <button onClick="{{ c.onClick }}" style="{{ c.style }}">
-                <span style="{{ c.diaStyle }}">{{ c.dia }}</span>
+                <span style="display:flex;align-items:center;justify-content:space-between;width:100%">
+                  <span style="{{ c.diaStyle }}">{{ c.dia }}</span>
+                  <span title="{{ c.alertaTitulo }}" style="{{ c.alertaStyle }}">⚠️</span>
+                </span>
                 <span style="{{ c.marcaStyle }}">{{ c.marca }}</span>
               </button>
             </sc-for>
@@ -180,6 +194,14 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
               <span style="font-size:15px;font-weight:600">{{ ev.servicio }}</span>
               <span style="font-size:13px;color:#6b6866">{{ ev.resumen }}</span>
             </div>
+            <sc-if value="{{ ev.tieneDeclinados }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:4px;border:2px solid #b00020;background:#fdecee;padding:8px 10px">
+                <span style="font-size:12px;font-weight:800;color:#b00020">⚠️ Declinaron y siguen programados:</span>
+                <sc-for list="{{ ev.declinados }}" as="dc" hint-placeholder-count="1">
+                  <span style="font-size:12px;color:#54514f"><b>{{ dc.nombre }}</b> ({{ dc.rol }}){{ dc.motivo }}</span>
+                </sc-for>
+              </div>
+            </sc-if>
             <div style="display:flex;align-items:center;gap:12px">
               <span style="{{ ev.estadoStyle }}">{{ ev.estadoLabel }}</span>
               <span style="flex:1"></span>
@@ -275,6 +297,9 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                     </label>
                     <button onClick="{{ sl.remove }}" title="Quitar" style="font-size:13px;border:0;background:transparent;color:#bab6b6;cursor:pointer;padding:0">−</button>
                   </div>
+                  <sc-if value="{{ sl.declinado }}" hint-placeholder-val="{{ false }}">
+                    <span style="font-size:11px;font-weight:700;letter-spacing:.02em;color:#fff;background:#b00020;padding:4px 8px;display:inline-block;align-self:flex-start">⚠️ Declinó su participación{{ sl.motivoDeclinacion }}</span>
+                  </sc-if>
                   <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
                     <span style="font-size:11px;font-weight:700;letter-spacing:.02em;color:#fff;background:#b00020;padding:4px 8px;display:inline-block;align-self:flex-start">⚠ Marcado como no disponible esta fecha</span>
                   </sc-if>
@@ -650,15 +675,20 @@ class Component extends DCLogic {
   irOrg(id) {
     this.setState({ orgSwitcherAbierto: false, orgSwitcherBusqueda: '' });
     if (id === this.state.organizationId) { this.cerrarSidebarSiMovil(); return; }
-    window.location.href = 'Repertorio Formulario.dc.html?org=' + encodeURIComponent(id);
+    window.location.href = 'eventos.html?org=' + encodeURIComponent(id);
   }
 
   toggleOrgSwitcher() {
     this.setState((s) => ({ orgSwitcherAbierto: !s.orgSwitcherAbierto, orgSwitcherBusqueda: '' }));
   }
 
-  irOrganizaciones() { window.location.href = 'admin.html?tab=organizaciones'; }
-  irUsuarios() { window.location.href = 'admin.html?tab=usuarios'; }
+
+  /* Lleva al calendario del mes en curso con la primera fecha que tiene
+     puestos declinados ya seleccionada (sale del asistente si estaba en él). */
+  revisarDeclinados(fecha) {
+    const R = D();
+    this.setState({ mes: R.hoyKey(), fecha: fecha || '', draft: null, editId: null, paso: 1 });
+  }
 
   /* Abre el calendario público (index.html) ya filtrado a este evento,
      usando el parámetro eventid que index.html lee al cargar. */
@@ -903,6 +933,10 @@ class Component extends DCLogic {
     const orgActualEncontrada = (s.orgs || []).find((o) => o.id === s.organizationId);
     const orgActualNombre = orgActualEncontrada ? orgActualEncontrada.name : (s.organizacion ? s.organizacion.name : 'Seleccionar organización');
 
+    const mesEnCurso = D().hoyKey();
+    const primerDeclinado = ((s.data && s.data.eventos) || [])
+      .filter((ev) => D().monthKey(ev.fecha) === mesEnCurso && D().declinadosEvento(ev).length > 0)
+      .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))[0] || null;
     const base = {
       cargando: s.estadoAcceso === 'cargando',
       denegado: s.estadoAcceso === 'denegado',
@@ -914,7 +948,16 @@ class Component extends DCLogic {
       mainExtraStyle: s.embed ? 'padding:0' : '',
       usuarioNombre: s.usuarioNombre || '',
       cerrarSesion: () => D().signOutUser(),
-      verPublicadoHref: s.organizacion ? ('index.html?group=' + s.organizacion.slug) : 'index.html',
+      /* Orden y contenido del menú: menu-config.js (compartido con
+         admin.html). Aquí todo navega a otra página salvo Eventos, que es
+         esta misma. */
+      menuAcciones: window.RepertorioMenu.acciones(s.organizacion),
+      menuModulos: window.RepertorioMenu.modulos('eventos', s.organizacion).map((m) => ({
+        label: m.label,
+        deshabilitado: m.deshabilitado,
+        style: tabStyle(m.activo) + (m.deshabilitado ? ';opacity:.4;cursor:default' : ''),
+        onClick: () => { if (!m.activo && !m.deshabilitado) window.location.href = m.href; }
+      })),
       sidebarClase: 'admin-side' + (s.sidebarAbierto ? ' abierto' : ''),
       backdropClase: 'admin-backdrop' + (s.sidebarAbierto ? ' abierto' : ''),
       toggleSidebar: () => this.toggleSidebar(),
@@ -926,11 +969,11 @@ class Component extends DCLogic {
       onOrgSwitcherBusqueda: (e) => this.setState({ orgSwitcherBusqueda: e.target.value }),
       toggleOrgSwitcher: () => this.toggleOrgSwitcher(),
       orgSwitcherVacioStyle: orgSwitcherVacioStyle,
-      tabOrgStyle: tabStyle(false),
-      tabUsuariosStyle: tabStyle(false),
-      tabEventosStyle: tabStyle(true),
-      irOrganizaciones: () => this.irOrganizaciones(),
-      irUsuarios: () => this.irUsuarios()
+      /* Solo evalúa el mes en curso; se apaga sola en cuanto no queda
+         ningún puesto declinado sin resolver (ver R.declinadosEvento). */
+      hayAlertaDeclinados: !!primerDeclinado,
+      alertaDeclinadosTexto: 'Existen personas que han declinado su participación que debes revisar para ' + D().monthLabel(D().hoyKey()),
+      revisarDeclinados: () => this.revisarDeclinados(primerDeclinado ? primerDeclinado.fecha : '')
     };
     if (s.estadoAcceso !== 'permitido') return Object.assign(base, { estado: 'Cargando…' });
 
@@ -960,8 +1003,10 @@ class Component extends DCLogic {
     const hoyIso = R.iso(hoyDate.getFullYear(), hoyDate.getMonth(), hoyDate.getDate());
     const filas = R.calendario(year, month - 1).map((fila, fi) => ({
       celdas: fila.map((c, ci) => {
-        if (!c) return { dia: '', marca: '', marcaStyle: 'display:none', diaStyle: '', style: 'border:0;background:var(--bg);min-height:64px;cursor:default', onClick: () => {} };
-        const n = delDia(c.iso).length;
+        if (!c) return { dia: '', marca: '', marcaStyle: 'display:none', diaStyle: '', alertaStyle: 'display:none', alertaTitulo: '', style: 'border:0;background:var(--bg);min-height:64px;cursor:default', onClick: () => {} };
+        const evsDia = delDia(c.iso);
+        const n = evsDia.length;
+        const nDeclinados = evsDia.reduce((acc, ev) => acc + R.declinadosEvento(ev).length, 0);
         const sel = s.fecha === c.iso;
         const esHoy = c.iso === hoyIso;
         return {
@@ -971,6 +1016,8 @@ class Component extends DCLogic {
              marca con un aro blanco en vez de repetir el mismo verde. */
           diaStyle: 'display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:15px;font-weight:600' +
             (esHoy ? (sel ? ';border:2px solid #fff' : ';background:var(--ac);color:#fff') : ''),
+          alertaStyle: nDeclinados ? 'font-size:13px;line-height:1' : 'display:none',
+          alertaTitulo: nDeclinados ? (nDeclinados + (nDeclinados > 1 ? ' personas declinaron' : ' persona declinó') + ' y siguen programadas') : '',
           marca: n ? (n + (n > 1 ? ' eventos' : ' evento')) : '',
           marcaStyle: n
             ? ('display:block;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-top:4px;color:' + (sel ? '#fff' : 'var(--ac-dk)'))
@@ -984,7 +1031,14 @@ class Component extends DCLogic {
 
     const eventosDelDia = (s.fecha ? delDia(s.fecha) : []).map((ev) => {
       const info = R.estadoInfo(ev);
+      const declinados = R.declinadosEvento(ev).map((sl) => ({
+        nombre: (sl.nombre || '').trim(),
+        rol: R.bandaLabel(sl),
+        motivo: sl.motivoDeclinacion ? (' — ' + sl.motivoDeclinacion) : ''
+      }));
       return {
+        tieneDeclinados: declinados.length > 0,
+        declinados: declinados,
         hora: ev.hora,
         servicio: ev.servicio,
         resumen: ev.tema || 'Sin tema aún',
@@ -1052,7 +1106,14 @@ class Component extends DCLogic {
           const v = e.target.value;
           this.setDraft((x) => {
             const idx = (x.banda || []).findIndex((sl) => sl.id === b.id);
-            if (idx >= 0) x.banda[idx].nombre = v;
+            if (idx < 0) return;
+            /* Otra persona en el puesto: la respuesta (y el aviso de
+               declinación) era de la anterior, no de la nueva. */
+            if ((x.banda[idx].nombre || '') !== v) {
+              delete x.banda[idx].estadoConfirmacion;
+              delete x.banda[idx].motivoDeclinacion;
+            }
+            x.banda[idx].nombre = v;
           });
         },
         onResaltado: (e) => {
@@ -1074,8 +1135,13 @@ class Component extends DCLogic {
           const idx = (x.banda || []).findIndex((sl) => sl.id === b.id);
           if (idx < 0) return;
           if (mismos.length > 1) x.banda.splice(idx, 1);
-          else { x.banda[idx].nombre = ''; x.banda[idx].resaltado = false; x.banda[idx].tarea = ''; }
+          else {
+            x.banda[idx].nombre = ''; x.banda[idx].resaltado = false; x.banda[idx].tarea = '';
+            delete x.banda[idx].estadoConfirmacion; delete x.banda[idx].motivoDeclinacion;
+          }
         }),
+        declinado: !!nombreActual && R.estadoConfirmacionSlot(b) === 'rechazado',
+        motivoDeclinacion: b.motivoDeclinacion ? (' — ' + b.motivoDeclinacion) : '',
         noDisponible: noDisponible
         };
       })

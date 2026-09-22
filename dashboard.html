@@ -30,6 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="menu-config.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
@@ -44,9 +45,22 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-vis
 .dash-grid{display:grid;grid-template-columns:280px 1fr;gap:0;border:2px solid var(--ink);margin-top:24px;background:#fff}
 .dash-side{border-right:2px solid var(--ink);padding:24px 20px}
 .dash-main{padding:24px 28px;min-width:0}
+.dash-confirmo{display:flex;flex-direction:column;gap:6px;min-width:170px}
+.dash-confirmo select{width:100%}
 @media (max-width:760px){
   .dash-grid{grid-template-columns:1fr}
-  .dash-side{border-right:0;border-bottom:2px solid var(--ink)}
+  .dash-side{border-right:0;border-bottom:2px solid var(--ink);padding:16px}
+  .dash-main{padding:20px 16px}
+  /* Perfil compacto: avatar y nombre en una fila, enlaces en línea. */
+  .dash-perfil{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center}
+  .dash-perfil > .dash-avatar{grid-row:span 3;width:52px!important;height:52px!important;font-size:18px!important}
+  .dash-perfil > .dash-nombre{margin-top:0!important}
+  .dash-perfil > .dash-roles{margin-top:6px!important}
+  .dash-side-links{flex-direction:row!important;gap:16px!important;margin-top:14px!important;padding-top:12px!important}
+  .dash-confirmo{width:100%}
+  .dash-disp-form{flex-direction:column;align-items:stretch!important}
+  .dash-disp-form label{min-width:0!important}
+  .dash-disp-form input,.dash-disp-form button{width:100%}
 }
 </style>
 </helmet>
@@ -66,10 +80,9 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-vis
   </div>
 
   <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
-    <a href="{{ calendarioHref }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Calendario público</a>
-    <sc-if value="{{ mostrarLinkAdmin }}" hint-placeholder-val="{{ false }}">
-      <a href="admin.html" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">Panel de administración</a>
-    </sc-if>
+    <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
+      <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
+    </sc-for>
   </div>
 
   <sc-if value="{{ cargando }}" hint-placeholder-val="{{ false }}">
@@ -94,15 +107,17 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-vis
 
     <div class="dash-grid">
       <div class="dash-side">
-        <div style="width:64px;height:64px;border-radius:50%;background:var(--sf);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#9a9694">{{ inicial }}</div>
-        <div style="font-size:18px;font-weight:800;margin-top:14px">{{ musicoNombre }}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
-          <sc-for list="{{ rolesBanda }}" as="rb" hint-placeholder-count="2">
-            <span style="font-size:11px;font-weight:700;letter-spacing:.02em;border:2px solid var(--ac);background:var(--ac-lt);color:var(--ac-dk);padding:4px 8px">{{ rb.tipo }}</span>
-          </sc-for>
+        <div class="dash-perfil">
+          <div class="dash-avatar" style="width:64px;height:64px;border-radius:50%;background:var(--sf);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#9a9694">{{ inicial }}</div>
+          <div class="dash-nombre" style="font-size:18px;font-weight:800;margin-top:14px">{{ musicoNombre }}</div>
+          <div class="dash-roles" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+            <sc-for list="{{ rolesBanda }}" as="rb" hint-placeholder-count="2">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.02em;border:2px solid var(--ac);background:var(--ac-lt);color:var(--ac-dk);padding:4px 8px">{{ rb.tipo }}</span>
+            </sc-for>
+          </div>
+          <p style="{{ sinRolesStyle }}">Sin roles de banda asignados todavía.</p>
         </div>
-        <p style="{{ sinRolesStyle }}">Sin roles de banda asignados todavía.</p>
-        <div style="display:flex;flex-direction:column;gap:6px;margin-top:20px;padding-top:16px;border-top:1px solid #eae9e9">
+        <div class="dash-side-links" style="display:flex;flex-direction:column;gap:6px;margin-top:20px;padding-top:16px;border-top:1px solid #eae9e9">
           <a href="#disponibilidad" style="font-size:13px;font-weight:600">Fechas no disponibles</a>
           <a href="{{ calendarioHref }}" style="font-size:13px;font-weight:600">Calendario</a>
         </div>
@@ -123,10 +138,15 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-vis
               <div style="font-size:16px;font-weight:800">{{ ev.fechaLarga }} · {{ ev.hora }}</div>
               <div style="font-size:13px;color:#54514f">{{ ev.servicio }}</div>
             </div>
-            <div style="display:flex;gap:8px">
-              <button type="button" onClick="{{ ev.aceptar }}" disabled="{{ ev.botonesDeshabilitados }}" style="{{ ev.aceptarStyle }}">Aceptar</button>
-              <button type="button" onClick="{{ ev.declinar }}" disabled="{{ ev.botonesDeshabilitados }}" style="{{ ev.declinarStyle }}">Declinar</button>
-            </div>
+            <label class="dash-confirmo">
+              <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Confirmo asistencia</span>
+              <select value="{{ ev.respuesta }}" onChange="{{ ev.onRespuesta }}" disabled="{{ ev.botonesDeshabilitados }}" style="{{ ev.respuestaStyle }}">
+                <sc-for list="{{ ev.opciones }}" as="op" hint-placeholder-count="3">
+                  <option value="{{ op.value }}">{{ op.label }}</option>
+                </sc-for>
+              </select>
+            </label>
+            <div style="{{ ev.motivoStyle }}">Declinaste · Motivo: {{ ev.motivo }}</div>
           </div>
         </sc-for>
         <p style="{{ sinEventosStyle }}">No tienes próximos eventos asignados.</p>
@@ -146,7 +166,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-vis
           <p style="{{ sinUnavailableStyle }}">No hay fechas marcadas como no disponibles.</p>
 
           <sc-if value="{{ tienePerfil }}" hint-placeholder-val="{{ false }}">
-            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:14px;padding:14px;background:var(--bg)">
+            <div class="dash-disp-form" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:14px;padding:14px;background:var(--bg)">
               <label style="display:flex;flex-direction:column;gap:6px">
                 <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Desde</span>
                 <input type="date" value="{{ nuevaDisponibilidadInicio }}" onChange="{{ onNuevaDisponibilidadInicio }}" style="font-size:14px;padding:8px 10px;border:2px solid var(--ink);background:#fff">
@@ -162,6 +182,27 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-vis
               <button type="button" onClick="{{ agregarDisponibilidad }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:9px 16px;cursor:pointer">Agregar</button>
             </div>
           </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ declinarAbierto }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ cerrarDeclinar }}">
+      <div style="width:min(100%,400px);background:#fff;border:2px solid var(--ink);padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.28)" onClick="{{ detenerPropagacion }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Declinar participación</span>
+          <button type="button" onClick="{{ cerrarDeclinar }}" aria-label="Cerrar" style="font-size:14px;border:0;background:transparent;color:#7d7979;cursor:pointer;padding:2px">✕</button>
+        </div>
+        <p style="font-size:13px;color:#54514f;margin:8px 0 0">{{ declinarResumen }}</p>
+        <label style="display:flex;flex-direction:column;gap:6px;margin-top:16px">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Motivo</span>
+          <textarea value="{{ declinarMotivo }}" onChange="{{ onDeclinarMotivo }}" rows="3" maxLength="500" placeholder="Viaje, salud, trabajo…" style="font-size:14px;line-height:1.5;padding:8px 10px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
+        </label>
+        <p style="font-size:12px;color:#7d7979;margin:8px 0 0">Esta fecha se agregará a tus fechas no disponibles.</p>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+          <button type="button" onClick="{{ cerrarDeclinar }}" style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cancelar</button>
+          <button type="button" onClick="{{ confirmarDeclinar }}" disabled="{{ declinarDeshabilitado }}" style="{{ confirmarDeclinarStyle }}">Declinar</button>
         </div>
       </div>
     </div>
@@ -227,7 +268,8 @@ class Component extends DCLogic {
     org: null, currentOrgId: null,
     miMusicianId: null, effectiveMusicianId: null, viewOnlyActivo: false,
     musico: null, eventos: [], unavailableDates: [],
-    nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: ''
+    nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: '',
+    declinar: null, declinarMotivo: ''
   };
 
   componentDidMount() {
@@ -267,15 +309,15 @@ class Component extends DCLogic {
         if (musicianIdParam && viewOnlyParam) {
           R.getMusician(musicianIdParam, (musico) => {
             if (musico) continuar(musico.organizationId, musico, true);
-            else continuar(orgIds[0], null, false);
+            else continuar(R.orgInicialDeUsuario(doc), null, false);
           });
         } else if (orgSlugParam) {
           R.getOrganizationBySlug(orgSlugParam, (org) => {
-            const orgId = org && orgIds.indexOf(org.id) >= 0 ? org.id : orgIds[0];
+            const orgId = org && orgIds.indexOf(org.id) >= 0 ? org.id : R.orgInicialDeUsuario(doc);
             continuar(orgId, null, false);
           });
         } else {
-          continuar(orgIds[0], null, false);
+          continuar(R.orgInicialDeUsuario(doc), null, false);
         }
       });
     });
@@ -287,8 +329,26 @@ class Component extends DCLogic {
     if (this._ununavail) this._ununavail();
   }
 
-  responder(eventId, slotId, estado) {
-    D().setBandaConfirmacion(eventId, slotId, estado, () => {});
+  /* "Sí" responde de inmediato; "No" solo abre el modal del motivo — el
+     select es controlado, así que mientras no se confirme sigue mostrando
+     la respuesta anterior. */
+  onRespuesta(ev, slot, valor) {
+    if (valor === 'si') this.responder(ev, slot.id, 'aceptado', '');
+    else if (valor === 'no') this.setState({ declinar: { ev: ev, slotId: slot.id }, declinarMotivo: '' });
+  }
+
+  responder(ev, slotId, estado, motivo) {
+    D().responderAsistencia(ev, slotId, this.state.effectiveMusicianId, estado, motivo, (ok) => {
+      if (!ok) window.alert('No se pudo guardar tu respuesta: revisa tu sesión o conexión.');
+    });
+  }
+
+  confirmarDeclinar() {
+    const s = this.state;
+    const motivo = (s.declinarMotivo || '').trim();
+    if (!s.declinar || !motivo) return;
+    this.responder(s.declinar.ev, s.declinar.slotId, 'rechazado', motivo);
+    this.setState({ declinar: null, declinarMotivo: '' });
   }
 
   agregarDisponibilidad() {
@@ -328,9 +388,12 @@ class Component extends DCLogic {
       return R.horaMinutos(a.ev.hora) - R.horaMinutos(b.ev.hora);
     });
 
-    const btnBase = 'font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:8px 14px;cursor:pointer;border:2px solid';
     const eventosLista = propios.map(({ ev, slot }) => {
       const estado = R.estadoConfirmacionSlot(slot);
+      const respuesta = estado === 'aceptado' ? 'si' : (estado === 'rechazado' ? 'no' : '');
+      const color = estado === 'aceptado' ? 'var(--ac)' : (estado === 'rechazado' ? '#b00020' : 'var(--ink)');
+      const opciones = (respuesta ? [] : [{ value: '', label: '— Seleccionar —' }])
+        .concat([{ value: 'si', label: 'Sí' }, { value: 'no', label: 'No' }]);
       return {
         id: ev.id,
         orgNombre: s.org ? s.org.name : '',
@@ -338,12 +401,16 @@ class Component extends DCLogic {
         hora: ev.hora,
         servicio: ev.servicio,
         botonesDeshabilitados: botonesDeshabilitados,
-        aceptar: () => this.responder(ev.id, slot.id, 'aceptado'),
-        declinar: () => this.responder(ev.id, slot.id, 'rechazado'),
-        aceptarStyle: btnBase + ' var(--ac);background:' + (estado === 'aceptado' ? 'var(--ac)' : '#fff') + ';color:' + (estado === 'aceptado' ? '#fff' : 'var(--ac-dk)'),
-        declinarStyle: btnBase + ' #b00020;background:' + (estado === 'rechazado' ? '#b00020' : '#fff') + ';color:' + (estado === 'rechazado' ? '#fff' : '#b00020')
+        respuesta: respuesta,
+        opciones: opciones,
+        onRespuesta: (e) => this.onRespuesta(ev, slot, e.target.value),
+        respuestaStyle: 'font-size:14px;font-weight:700;padding:8px 10px;border:2px solid ' + color + ';background:#fff;color:' + color + ';cursor:pointer',
+        motivo: slot.motivoDeclinacion || '',
+        motivoStyle: estado === 'rechazado' && slot.motivoDeclinacion ? 'flex-basis:100%;font-size:12px;color:#b00020' : 'display:none'
       };
     });
+    const declinarEv = s.declinar ? s.declinar.ev : null;
+    const declinarMotivoOk = !!(s.declinarMotivo || '').trim();
 
     const unavailableLista = (s.unavailableDates || []).slice().sort((a, b) => (a.startDate || '').localeCompare(b.startDate || '')).map((u) => ({
       id: u.id,
@@ -365,7 +432,8 @@ class Component extends DCLogic {
       orgNombre: s.org ? s.org.name : '',
       orgTituloSufijo: s.org ? (' · ' + s.org.name) : '',
       calendarioHref: s.org ? ('index.html?group=' + s.org.slug) : 'index.html',
-      mostrarLinkAdmin: !!(s.userDoc && s.userDoc.role === 'admin'),
+      /* Botones bajo el encabezado: definidos en menu-config.js. */
+      menuAcciones: window.RepertorioMenu.accionesDashboard(s.org, !!(s.userDoc && s.userDoc.role === 'admin')),
 
       viewOnlyActivo: s.viewOnlyActivo,
       musicoNombreVisto: nombre,
@@ -389,7 +457,18 @@ class Component extends DCLogic {
       onNuevaDisponibilidadFin: (e) => this.setState({ nuevaDisponibilidadFin: e.target.value }),
       nuevaDisponibilidadMotivo: s.nuevaDisponibilidadMotivo,
       onNuevaDisponibilidadMotivo: (e) => this.setState({ nuevaDisponibilidadMotivo: e.target.value }),
-      agregarDisponibilidad: () => this.agregarDisponibilidad()
+      agregarDisponibilidad: () => this.agregarDisponibilidad(),
+
+      declinarAbierto: !!declinarEv,
+      declinarResumen: declinarEv ? (declinarEv.servicio + ' · ' + R.fechaLarga(declinarEv.fecha) + ' (' + R.diaNombre(declinarEv.fecha) + ') · ' + declinarEv.hora) : '',
+      declinarMotivo: s.declinarMotivo,
+      onDeclinarMotivo: (e) => this.setState({ declinarMotivo: e.target.value }),
+      cerrarDeclinar: () => this.setState({ declinar: null, declinarMotivo: '' }),
+      detenerPropagacion: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      confirmarDeclinar: () => this.confirmarDeclinar(),
+      declinarDeshabilitado: !declinarMotivoOk,
+      confirmarDeclinarStyle: 'font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:8px 14px;border:2px solid #b00020;background:#b00020;color:#fff;cursor:' +
+        (declinarMotivoOk ? 'pointer' : 'not-allowed;opacity:.5')
     };
   }
 }
