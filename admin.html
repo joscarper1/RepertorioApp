@@ -201,12 +201,81 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 
         <sc-if value="{{ tabUsuarios }}" hint-placeholder-val="{{ false }}">
           <section>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">
               <div>
                 <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0">Usuarios</h2>
-                <p style="font-size:12px;color:#7d7979;margin:4px 0 0">Cuentas que ya iniciaron sesión. Para dar acceso a alguien nuevo, define su correo en Personas: se vincula sola en su próximo inicio de sesión.</p>
+                <p style="font-size:12px;color:#7d7979;margin:4px 0 0">Cuentas con acceso al sistema. Un usuario no tiene que ser integrante: la persona vinculada es opcional.</p>
               </div>
+              <button type="button" onClick="{{ toggleAgregarUsuario }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 16px;cursor:pointer">+ Agregar usuario</button>
             </div>
+
+            <sc-if value="{{ agregarUsuarioAbierto }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:14px;padding:16px;background:var(--bg);margin-bottom:20px">
+                <div style="display:flex;gap:12px;flex-wrap:wrap">
+                  <label style="display:flex;flex-direction:column;gap:6px;flex:2;min-width:220px">
+                    <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Correo (cuenta de Google)</span>
+                    <input type="email" value="{{ nuevoUsuarioEmail }}" onChange="{{ onNuevoUsuarioEmail }}" placeholder="correo@gmail.com" autoComplete="off" style="font-size:15px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
+                  </label>
+                  <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px">
+                    <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Rol</span>
+                    <select value="{{ nuevoUsuarioRol }}" onChange="{{ onNuevoUsuarioRol }}" style="font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:9px 10px;border:2px solid var(--ink);background:#fff;appearance:none">
+                      <option value="normal">Normal</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </label>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Organizaciones</span>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px 16px">
+                    <sc-for list="{{ nuevoUsuarioOrgsChips }}" as="c" hint-placeholder-count="2">
+                      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
+                        <input type="checkbox" checked="{{ c.marcada }}" onChange="{{ c.onChange }}" style="width:15px;height:15px;cursor:pointer">
+                        {{ c.nombre }}
+                      </label>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="display:flex;gap:12px;flex-wrap:wrap">
+                  <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:220px">
+                    <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">{{ nuevoUsuarioPersonaLabel }}</span>
+                    <select value="{{ nuevoUsuarioPersona }}" onChange="{{ onNuevoUsuarioPersona }}" style="font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff;appearance:none">
+                      <sc-for list="{{ nuevoUsuarioPersonaOpciones }}" as="po" hint-placeholder-count="3">
+                        <option value="{{ po.value }}">{{ po.label }}</option>
+                      </sc-for>
+                    </select>
+                  </label>
+                  <sc-if value="{{ nuevoUsuarioPersonaNueva }}" hint-placeholder-val="{{ false }}">
+                    <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:220px">
+                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nombre de la persona nueva</span>
+                      <input value="{{ nuevoUsuarioPersonaNombre }}" onChange="{{ onNuevoUsuarioPersonaNombre }}" placeholder="Nombre completo" style="font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
+                    </label>
+                  </sc-if>
+                </div>
+                <p style="font-size:12px;color:#7d7979;margin:0">No se envía ningún correo: el acceso se activa la primera vez que esa persona inicie sesión con Google usando este correo.</p>
+                <div style="display:flex;gap:8px">
+                  <button type="button" onClick="{{ guardarNuevoUsuario }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:9px 16px;cursor:pointer">Guardar</button>
+                  <button type="button" onClick="{{ toggleAgregarUsuario }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:9px 16px;cursor:pointer">Cancelar</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ hayAccesosPendientes }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-bottom:20px">
+                <div class="side-kicker" style="padding:0 0 8px">Pendientes de primer inicio de sesión</div>
+                <sc-for list="{{ accesosPendientesLista }}" as="ap" hint-placeholder-count="1">
+                  <div style="border:2px dashed #9a9694;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                    <div style="min-width:0">
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                        <span style="font-size:15px;font-weight:800;word-break:break-all">{{ ap.email }}</span>
+                        <span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;background:#c7cad0;color:#3a3f47">Pendiente</span>
+                      </div>
+                      <div style="font-size:12px;color:#7d7979;margin-top:4px">{{ ap.detalle }}</div>
+                    </div>
+                    <button type="button" onClick="{{ ap.cancelar }}" style="font-size:12px;font-weight:700;border:2px solid #b00020;background:transparent;color:#b00020;padding:7px 12px;cursor:pointer">Cancelar acceso</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
 
             <input value="{{ usuariosBusquedaNombre }}" onChange="{{ onUsuariosBusquedaNombre }}" placeholder="Buscar por nombre…" autoComplete="off" style="width:100%;font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff;margin-bottom:14px">
 
@@ -380,10 +449,6 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
                     <div style="flex:1;min-width:220px;max-width:420px">
                       <div style="font-size:15px;font-weight:800">{{ m.nombre }}</div>
-                      <label style="display:flex;align-items:center;gap:8px;margin-top:6px">
-                        <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Correo</span>
-                        <input type="email" value="{{ m.correo }}" onChange="{{ m.onCorreo }}" onBlur="{{ m.guardarCorreo }}" onKeyDown="{{ m.onCorreoKey }}" placeholder="Sin Cuenta" autoComplete="off" style="flex:1;min-width:0;font-size:13px;padding:6px 8px;border:2px solid var(--ink);background:#fff">
-                      </label>
                       <div style="{{ m.vinculoStyle }}">{{ m.vinculoTexto }}</div>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px">
@@ -570,9 +635,12 @@ class Component extends DCLogic {
        imagen (ver validarOrgEditBanner). */
     orgEditBannerUrl: '', orgEditBannerValido: null, orgEditBannerValidando: false,
     usuarios: [], mensaje: '',
-    /* {musicianId: texto} mientras se edita el correo de una persona; se
-       guarda al salir del campo o con Enter (ver guardarCorreoMusico). */
-    musicoCorreoBorrador: {},
+    /* "+ Agregar usuario": acceso por correo que se aplica en el primer
+       inicio de sesión (ver R.crearAccesoPendiente). nuevoUsuarioPersona:
+       '' = sin persona, '__nueva__' = crear una, o el id de una existente. */
+    accesosPendientes: [], agregarUsuarioAbierto: false,
+    nuevoUsuarioEmail: '', nuevoUsuarioRol: 'normal', nuevoUsuarioOrgs: {},
+    nuevoUsuarioPersona: '', nuevoUsuarioPersonaNombre: '',
     usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {},
     musicos: [], nuevoMusicoNombre: '', nuevoMusicoAbierto: false, musicoRolAgregar: {},
     usuariosBusquedaNombre: '', usuariosPagina: 1,
@@ -599,6 +667,10 @@ class Component extends DCLogic {
       this.setState({ estadoAuth: 'cargando', usuarioNombre: user.displayName || user.email });
       R.ensureUserRegistered(user, (doc) => {
         if (!doc || doc.role !== 'admin') {
+          if (doc && R.puede(doc, 'eventos.ver') && R.userOrgIds(doc).length) {
+            location.href = 'eventos.html?org=' + encodeURIComponent(R.orgInicialDeUsuario(doc));
+            return;
+          }
           this.setState({ estadoAuth: 'denegado', userDoc: doc });
           setTimeout(() => R.redirectToUserLanding(doc || {}), 1800);
           return;
@@ -654,6 +726,7 @@ class Component extends DCLogic {
     if (this._unauth) this._unauth();
     if (this._unorgs) this._unorgs();
     if (this._unusers) this._unusers();
+    if (this._unaccesos) this._unaccesos();
     if (this._unRepEventos) this._unRepEventos();
     if (this._unRepOverrides) this._unRepOverrides();
     if (this._unmusicos) this._unmusicos();
@@ -665,6 +738,8 @@ class Component extends DCLogic {
     this.cerrarSidebarSiMovil();
     if (tab === 'usuarios' && !this._unusers) {
       this._unusers = D().watchAllUsers((lista) => this.setState({ usuarios: lista }));
+      if (this._unaccesos) this._unaccesos();
+      this._unaccesos = D().watchAccesosPendientes((lista) => this.setState({ accesosPendientes: lista }));
       D().migracionMusicosYaCorrio((yaCorrio) => this.setState({ migracionYaCorrio: yaCorrio }));
     }
     if (tab === 'repertorio') this.montarRepertorio(this.state.currentOrgId);
@@ -880,69 +955,74 @@ class Component extends DCLogic {
 
   /* --- Personas / músicos (identidad detrás de los puestos de banda) --- */
 
-  /* Correo que se muestra en el campo de una persona: el que tenga guardado,
-     o —para vínculos hechos antes de que existiera este campo— el de la
-     cuenta ya vinculada. */
-  correoMusico(musico) {
-    if (musico.email) return musico.email;
-    const u = musico.userId ? (this.state.usuarios || []).find((x) => x.uid === musico.userId) : null;
-    return u ? D().normalizarEmail(u.email) : '';
-  }
-
-  guardarCorreoMusico(musico) {
-    const R = D();
-    const borradores = this.state.musicoCorreoBorrador || {};
-    if (borradores[musico.id] === undefined) return;
-    const nuevo = R.normalizarEmail(borradores[musico.id]);
-    const limpiarBorrador = () => this.setState((st) => {
-      const b = Object.assign({}, st.musicoCorreoBorrador);
-      delete b[musico.id];
-      return { musicoCorreoBorrador: b };
-    });
-    if (nuevo === this.correoMusico(musico)) { limpiarBorrador(); return; }
-    if (nuevo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nuevo)) {
-      this.setState({ mensaje: '"' + nuevo + '" no es un correo válido.' });
-      return;
-    }
-    const repetido = nuevo && (this.state.musicos || []).find((m) => m.id !== musico.id && this.correoMusico(m) === nuevo);
-    if (repetido) {
-      this.setState({ mensaje: 'El correo ' + nuevo + ' ya está asignado a "' + repetido.nombre + '" en esta organización.' });
-      return;
-    }
-    R.setMusicianEmail(musico, nuevo, this.state.usuarios, (ok, cuenta) => {
-      limpiarBorrador();
-      let mensaje;
-      if (!ok) mensaje = 'No se pudo guardar el correo de "' + musico.nombre + '".';
-      else if (!nuevo) mensaje = 'Se quitó el correo de "' + musico.nombre + '".';
-      else if (cuenta) mensaje = '"' + musico.nombre + '" quedó vinculada a la cuenta ' + nuevo + '.';
-      else mensaje = 'Correo guardado. "' + musico.nombre + '" verá su dashboard la próxima vez que inicie sesión con ' + nuevo + '.';
-      this.setState({ mensaje: mensaje });
-    });
-  }
-
-  /* Desde la tarjeta de un usuario: vincularlo a una persona equivale a
-     definirle a esa persona el correo de la cuenta (y "Sin persona" le quita
-     el correo a la que tenía vinculada en esta organización). */
+  /* Desde la tarjeta de un usuario (única vía para vincular cuenta y
+     persona): quita el vínculo anterior de esa cuenta en esta organización
+     y, si la persona elegida estaba ligada a otra cuenta, también se lo
+     quita a esa otra antes de vincularla aquí. */
   vincularUsuarioAPersona(u, musicianId) {
     const R = D();
+    const orgId = this.state.currentOrgId;
     const musicos = this.state.musicos || [];
-    const correo = R.normalizarEmail(u.email);
-    const actualId = R.userMusicianLinks(u)[this.state.currentOrgId];
-    const actual = musicos.find((m) => m.id === actualId);
+    const actualId = R.userMusicianLinks(u)[orgId];
     const nueva = musicos.find((m) => m.id === musicianId);
-    const aplicarNueva = () => {
-      if (!nueva) return;
-      const otra = musicos.find((m) => m.id !== nueva.id && m.id !== actualId && this.correoMusico(m) === correo);
-      const continuar = () => R.setMusicianEmail(nueva, correo, this.state.usuarios, (ok) => {
-        this.setState({ mensaje: ok ? ('"' + (u.displayName || u.email) + '" quedó vinculada a "' + nueva.nombre + '".') : 'No se pudo vincular.' });
-      });
-      if (otra) R.setMusicianEmail(otra, '', this.state.usuarios, continuar); else continuar();
+    const nombre = u.displayName || u.email;
+    const fin = (ok, texto) => this.setState({ mensaje: ok ? texto : 'No se pudo actualizar el vínculo.' });
+    const vincular = () => {
+      if (!nueva) { fin(true, 'Se quitó el vínculo de "' + nombre + '".'); return; }
+      const hacer = () => R.linkMusicianToUser(nueva.id, u.uid, orgId, (ok) => fin(ok, '"' + nombre + '" quedó vinculada a "' + nueva.nombre + '".'));
+      if (nueva.userId && nueva.userId !== u.uid) R.unlinkMusician(nueva.id, orgId, nueva.userId, (ok) => (ok ? hacer() : fin(false)));
+      else hacer();
     };
-    if (actual && actual.id !== musicianId) R.setMusicianEmail(actual, '', this.state.usuarios, (ok) => {
-      if (!nueva) this.setState({ mensaje: ok ? ('Se quitó el vínculo de "' + (u.displayName || u.email) + '".') : 'No se pudo quitar el vínculo.' });
-      aplicarNueva();
-    });
-    else aplicarNueva();
+    if (actualId && actualId !== musicianId) R.unlinkMusician(actualId, orgId, u.uid, (ok) => (ok ? vincular() : fin(false)));
+    else vincular();
+  }
+
+  /* --- "+ Agregar usuario" --- */
+
+  toggleAgregarUsuario() {
+    this.setState((s) => ({
+      agregarUsuarioAbierto: !s.agregarUsuarioAbierto,
+      nuevoUsuarioEmail: '', nuevoUsuarioRol: 'normal',
+      nuevoUsuarioOrgs: s.currentOrgId ? { [s.currentOrgId]: true } : {},
+      nuevoUsuarioPersona: '', nuevoUsuarioPersonaNombre: ''
+    }));
+  }
+
+  toggleNuevoUsuarioOrg(orgId) {
+    this.setState((s) => ({ nuevoUsuarioOrgs: Object.assign({}, s.nuevoUsuarioOrgs, { [orgId]: !(s.nuevoUsuarioOrgs || {})[orgId] }) }));
+  }
+
+  guardarNuevoUsuario() {
+    const R = D();
+    const s = this.state;
+    const email = R.normalizarEmail(s.nuevoUsuarioEmail);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { this.setState({ mensaje: 'Escribe un correo válido.' }); return; }
+    if ((s.usuarios || []).some((u) => R.normalizarEmail(u.email) === email)) {
+      this.setState({ mensaje: 'Ya existe una cuenta con ' + email + ': cambia su rol, organizaciones y persona desde su tarjeta en la lista.' });
+      return;
+    }
+    const orgIds = Object.keys(s.nuevoUsuarioOrgs || {}).filter((id) => s.nuevoUsuarioOrgs[id]);
+    const persona = s.nuevoUsuarioPersona;
+    if (persona && s.currentOrgId && orgIds.indexOf(s.currentOrgId) < 0) orgIds.push(s.currentOrgId);
+    if (!orgIds.length) { this.setState({ mensaje: 'Selecciona al menos una organización.' }); return; }
+    const guardar = (musicianId) => R.crearAccesoPendiente({
+      email: email, role: s.nuevoUsuarioRol, orgIds: orgIds,
+      musicianLinks: musicianId ? { [s.currentOrgId]: musicianId } : {}
+    }, s.userDoc && s.userDoc.uid, (ok) => this.setState(ok
+      ? { agregarUsuarioAbierto: false, mensaje: 'Acceso creado para ' + email + '. Se activa cuando inicie sesión con Google usando ese correo.' }
+      : { mensaje: 'No se pudo crear el acceso: revisa tu sesión o las reglas de Firebase.' }));
+    if (persona === '__nueva__') {
+      const nombre = (s.nuevoUsuarioPersonaNombre || '').trim();
+      if (!nombre) { this.setState({ mensaje: 'Escribe el nombre de la persona nueva.' }); return; }
+      R.createMusician(s.currentOrgId, nombre, [], (m) => (m ? guardar(m.id) : this.setState({ mensaje: 'No se pudo crear la persona.' })));
+    } else {
+      guardar(persona || null);
+    }
+  }
+
+  cancelarAccesoPendiente(acc) {
+    if (!confirm('¿Cancelar el acceso pendiente de ' + acc.email + '? Si luego inicia sesión, entrará sin organización asignada.')) return;
+    D().borrarAccesoPendiente(acc.key, (ok) => this.setState({ mensaje: ok ? ('Se canceló el acceso de ' + acc.email + '.') : 'No se pudo cancelar el acceso.' }));
   }
 
   toggleNuevoMusico() {
@@ -1366,6 +1446,34 @@ class Component extends DCLogic {
       };
     });
 
+    /* --- Agregar usuario / accesos pendientes --- */
+
+    const personasReservadas = {};
+    (s.accesosPendientes || []).forEach((a) => {
+      const id = (a.musicianLinks || {})[s.currentOrgId];
+      if (id) personasReservadas[id] = a.email;
+    });
+    const nuevoUsuarioPersonaOpciones = [
+      { value: '', label: 'Sin persona (no es integrante)' },
+      { value: '__nueva__', label: '+ Crear persona nueva' }
+    ].concat((s.musicos || [])
+      .filter((m) => !m.userId && !personasReservadas[m.id])
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .map((m) => ({ value: m.id, label: m.nombre })));
+    const accesosPendientesLista = (s.accesosPendientes || [])
+      .filter((a) => (a.organizationIds || {})[s.currentOrgId])
+      .sort((a, b) => (a.email || '').localeCompare(b.email || ''))
+      .map((a) => {
+        const personaId = (a.musicianLinks || {})[s.currentOrgId];
+        const persona = personaId ? (s.musicos || []).find((m) => m.id === personaId) : null;
+        return {
+          email: a.email,
+          detalle: (a.role === 'admin' ? 'Admin' : 'Normal') + ' · ' + resumenOrgs(a.organizationIds) + ' · ' +
+            (persona ? ('Persona: ' + persona.nombre) : (personaId ? 'Persona vinculada' : 'Sin persona')),
+          cancelar: () => this.cancelarAccesoPendiente(a)
+        };
+      });
+
     /* --- Personas / músicos --- */
 
     const MUSICOS_PAGE_SIZE = 5;
@@ -1382,19 +1490,13 @@ class Component extends DCLogic {
     const musicosLista = musicosPagina.map((m) => {
       const rolesActuales = m.rolesBanda || [];
       const rolAgregarValue = (s.musicoRolAgregar || {})[m.id] || '';
-      const borrador = (s.musicoCorreoBorrador || {})[m.id];
-      const correoGuardado = this.correoMusico(m);
+      /* Solo informativo: el vínculo con una cuenta se hace desde Usuarios. */
+      const cuenta = m.userId ? (s.usuarios || []).find((u) => u.uid === m.userId) : null;
       return {
         id: m.id, nombre: m.nombre,
-        correo: borrador !== undefined ? borrador : correoGuardado,
-        onCorreo: (e) => { const v = e.target.value; this.setState((st) => ({ musicoCorreoBorrador: Object.assign({}, st.musicoCorreoBorrador, { [m.id]: v }) })); },
-        guardarCorreo: () => this.guardarCorreoMusico(m),
-        onCorreoKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); this.guardarCorreoMusico(m); } },
-        /* Solo informativo: si ya tiene correo pero todavía no hay cuenta que
-           haya iniciado sesión con él, se aclara que el vínculo está
-           pendiente (el placeholder "Sin Cuenta" ya cubre el caso vacío). */
-        vinculoTexto: m.userId ? 'Cuenta vinculada' : (correoGuardado ? 'Se vinculará en su próximo inicio de sesión' : ''),
-        vinculoStyle: correoGuardado || m.userId ? 'font-size:11px;margin-top:4px;color:' + (m.userId ? '#2e7d32' : '#9a9694') : 'display:none',
+        vinculoTexto: m.userId ? ('Usuario: ' + (cuenta ? cuenta.email : 'cuenta vinculada'))
+          : (personasReservadas[m.id] ? ('Acceso pendiente: ' + personasReservadas[m.id]) : 'Sin usuario'),
+        vinculoStyle: 'font-size:11px;margin-top:4px;color:' + (m.userId ? '#2e7d32' : '#9a9694'),
         roles: rolesActuales.map((tipo) => ({ tipo: tipo, quitar: () => this.quitarRolMusico(m, tipo) })),
         rolAgregarValue: rolAgregarValue,
         rolAgregarOpciones: R.BANDA_ROLES.map((r) => r.tipo).filter((t) => rolesActuales.indexOf(t) < 0),
@@ -1498,8 +1600,8 @@ class Component extends DCLogic {
       /* Orden y contenido del menú: menu-config.js (compartido con el
          Formulario). Las pestañas de esta página cambian sin recargar;
          Eventos navega a su propia página. */
-      menuAcciones: window.RepertorioMenu.acciones(orgActual),
-      menuModulos: window.RepertorioMenu.modulos(s.activeTab, orgActual).map((m) => ({
+      menuAcciones: window.RepertorioMenu.acciones(orgActual, s.userDoc),
+      menuModulos: window.RepertorioMenu.modulos(s.activeTab, orgActual, s.userDoc).map((m) => ({
         label: m.label,
         deshabilitado: m.deshabilitado,
         style: tabStyle(m.activo) + (m.deshabilitado ? ';opacity:.4;cursor:default' : ''),
@@ -1548,6 +1650,28 @@ class Component extends DCLogic {
         ? ('font-size:12px;color:' + (s.orgEditBannerValidando ? '#7d7979' : '#b00020')) : 'display:none',
       guardarEdicionOrg: () => this.guardarEdicionOrg(),
       cancelarEdicionOrg: () => this.cancelarEdicionOrg(),
+
+      toggleAgregarUsuario: () => this.toggleAgregarUsuario(),
+      agregarUsuarioAbierto: s.agregarUsuarioAbierto,
+      nuevoUsuarioEmail: s.nuevoUsuarioEmail,
+      onNuevoUsuarioEmail: (e) => this.setState({ nuevoUsuarioEmail: e.target.value }),
+      nuevoUsuarioRol: s.nuevoUsuarioRol,
+      onNuevoUsuarioRol: (e) => this.setState({ nuevoUsuarioRol: e.target.value }),
+      nuevoUsuarioOrgsChips: orgs.map((o) => ({
+        nombre: o.name,
+        marcada: !!(s.nuevoUsuarioOrgs || {})[o.id],
+        onChange: () => this.toggleNuevoUsuarioOrg(o.id)
+      })),
+      nuevoUsuarioPersonaLabel: 'Persona vinculada' + (orgActual ? (' (' + orgActual.name + ')') : ''),
+      nuevoUsuarioPersona: s.nuevoUsuarioPersona,
+      onNuevoUsuarioPersona: (e) => this.setState({ nuevoUsuarioPersona: e.target.value }),
+      nuevoUsuarioPersonaOpciones: nuevoUsuarioPersonaOpciones,
+      nuevoUsuarioPersonaNueva: s.nuevoUsuarioPersona === '__nueva__',
+      nuevoUsuarioPersonaNombre: s.nuevoUsuarioPersonaNombre,
+      onNuevoUsuarioPersonaNombre: (e) => this.setState({ nuevoUsuarioPersonaNombre: e.target.value }),
+      guardarNuevoUsuario: () => this.guardarNuevoUsuario(),
+      hayAccesosPendientes: accesosPendientesLista.length > 0,
+      accesosPendientesLista: accesosPendientesLista,
 
       usuariosBusquedaNombre: s.usuariosBusquedaNombre,
       onUsuariosBusquedaNombre: (e) => this.onUsuariosBusquedaNombre(e),

@@ -184,7 +184,9 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 
       <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-top:32px;border-bottom:2px solid var(--ink);padding-bottom:8px">
         <h3 style="font-size:16px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin:0">{{ fechaTitulo }}</h3>
-        <button onClick="{{ nuevoEvento }}" style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">+ Agregar</button>
+        <sc-if value="{{ puedeCrearEvento }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ nuevoEvento }}" style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">+ Agregar</button>
+        </sc-if>
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;margin-top:12px">
         <sc-for list="{{ eventosDelDia }}" as="ev" hint-placeholder-count="2">
@@ -206,18 +208,26 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
               <span style="{{ ev.estadoStyle }}">{{ ev.estadoLabel }}</span>
               <span style="flex:1"></span>
               <div style="display:flex;align-items:center;gap:0">
-                <button onClick="{{ ev.editar }}" title="Editar" aria-label="Editar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                </button>
-                <button onClick="{{ ev.mover }}" title="Mover" aria-label="Mover" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-                </button>
-                <button onClick="{{ ev.cancelar }}" title="Cancelado" aria-label="Cancelado" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg>
-                </button>
-                <button onClick="{{ ev.borrar }}" title="Archivar" aria-label="Archivar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-                </button>
+                <sc-if value="{{ ev.puedeEditar }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ ev.editar }}" title="Editar" aria-label="Editar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                  </button>
+                </sc-if>
+                <sc-if value="{{ ev.puedeMover }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ ev.mover }}" title="Mover" aria-label="Mover" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                  </button>
+                </sc-if>
+                <sc-if value="{{ ev.puedeEstado }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ ev.cancelar }}" title="Cancelado" aria-label="Cancelado" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg>
+                  </button>
+                </sc-if>
+                <sc-if value="{{ ev.puedeEstado }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ ev.borrar }}" title="Archivar" aria-label="Archivar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                  </button>
+                </sc-if>
                 <button onClick="{{ ev.ver }}" title="Ver en calendario" aria-label="Ver en calendario" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
@@ -496,7 +506,10 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
       <button onClick="{{ cancelar }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;border:2px solid transparent;background:transparent;color:#7d7979;padding:10px 12px;cursor:pointer">Cancelar</button>
       <span style="flex:1"></span>
       <button onClick="{{ atras }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;padding:10px 18px;cursor:pointer">Atrás</button>
-      <sc-if value="{{ esPaso5 }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ esPaso5SinEstado }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ guardarCambios }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 18px;cursor:pointer">Guardar cambios</button>
+      </sc-if>
+      <sc-if value="{{ esPaso5ConEstado }}" hint-placeholder-val="{{ false }}">
         <button onClick="{{ guardarBorrador }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid #9a9694;background:#c7cad0;color:#3a3f47;padding:10px 18px;cursor:pointer">Borrador</button>
         <button onClick="{{ guardarPublicar }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 18px;cursor:pointer">Publicar</button>
       </sc-if>
@@ -611,7 +624,7 @@ class Component extends DCLogic {
     reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null, musicos: [],
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false,
-    moverEventoId: null, moverMes: ''
+    moverEventoId: null, moverMes: '', userDoc: null
   };
 
   componentDidMount() {
@@ -630,17 +643,17 @@ class Component extends DCLogic {
       this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null });
       if (!user) return; // el overlay de acceso restringido ya cubre este caso
       R.ensureUserRegistered(user, (doc) => {
-        if (!doc || doc.role !== 'admin') {
-          this.setState({ estadoAcceso: 'denegado', denegadoMotivo: 'Tu cuenta no tiene permisos de administrador. Te llevaremos a tu página correspondiente…' });
+        if (!doc || !R.puede(doc, 'eventos.ver')) {
+          this.setState({ estadoAcceso: 'denegado', denegadoMotivo: 'Tu cuenta no tiene acceso a la gestión de eventos. Te llevaremos a tu página correspondiente…' });
           setTimeout(() => R.redirectToUserLanding(doc || {}), 1800);
           return;
         }
         if (R.userOrgIds(doc).indexOf(orgId) < 0) {
-          this.setState({ estadoAcceso: 'denegado', denegadoMotivo: 'No administras esta organización. Te llevaremos a tu panel…' });
+          this.setState({ estadoAcceso: 'denegado', denegadoMotivo: 'No tienes acceso a esta organización. Te llevaremos a tu panel…' });
           setTimeout(() => { window.location.href = 'admin.html'; }, 1800);
           return;
         }
-        this.setState({ estadoAcceso: 'permitido', organizationId: orgId });
+        this.setState({ estadoAcceso: 'permitido', organizationId: orgId, userDoc: doc });
         R.getOrganization(orgId, (org) => this.setState({ organizacion: org }));
         const orgIds = R.userOrgIds(doc);
         this._unorgs = R.watchAllOrganizations((todas) => {
@@ -650,6 +663,13 @@ class Component extends DCLogic {
            para no pisar una participación que el usuario está editando. */
         this._unwatch = R.watchEventsForOrg(orgId, (evs) => {
           this.setState((s) => (s.draft ? null : { data: { eventos: evs } }));
+          /* Mantiene al día el índice ev.integrantes (ver R.integrantesEvento)
+             del que dependen los permisos de quien no edita todos los
+             eventos. Solo una vez por carga y solo con 'eventos.todos'. */
+          if (!this._integrantesSincronizados && R.puede(doc, 'eventos.todos')) {
+            this._integrantesSincronizados = true;
+            R.sincronizarIntegrantes(evs);
+          }
         });
         this._unSongOverrides = R.watchSongCatalog(orgId, (map) => this.setState({ songOverrides: map }));
         this._unmusicos = R.watchMusiciansForOrg(orgId, (lista) => this.setState({ musicos: lista }));
@@ -856,10 +876,21 @@ class Component extends DCLogic {
   /* Guarda el borrador actual con el estado elegido en el paso final:
      'BORRADOR' lo deja invisible en el calendario público, 'PUBLICADO' lo
      muestra de inmediato. */
+  /* estado === undefined: "Guardar cambios" de quien no puede publicar ni
+     pasar a borrador — el evento conserva el estado que ya tenía (las reglas
+     de Firebase rechazan que ese rol lo cambie). */
   guardarConEstado(estado) {
     const R = D();
     const dr = this.state.draft;
-    dr.estado = estado;
+    if (estado !== undefined) dr.estado = estado;
+    else {
+      /* R.newEvento completa con 'BORRADOR' a los eventos antiguos sin
+         estado (que en realidad cuentan como publicados): se restaura tal
+         cual el estado guardado para no despublicarlos. */
+      const original = (this.state.data.eventos || []).find((e) => e.id === this.state.editId);
+      if (original && original.estado) dr.estado = original.estado;
+      else delete dr.estado;
+    }
     /* Enriquecimiento silencioso: si el nombre tipeado en un puesto ya
        corresponde a un músico existente (mismo criterio de normalización
        que la migración), se estampa su musicianId — así el Dashboard puede
@@ -874,7 +905,7 @@ class Component extends DCLogic {
     const orgId = this.state.organizationId;
     this.setState({ draft: null, editId: null, paso: 1 });
     D().saveEvent(dr, orgId, (ok) => this.avisar(ok,
-      estado === 'PUBLICADO' ? 'Evento publicado' : 'Guardado como borrador',
+      estado === undefined ? 'Cambios guardados' : (estado === 'PUBLICADO' ? 'Evento publicado' : 'Guardado como borrador'),
       'No se guardó en la nube: revisa tu sesión o conexión'));
   }
 
@@ -951,8 +982,8 @@ class Component extends DCLogic {
       /* Orden y contenido del menú: menu-config.js (compartido con
          admin.html). Aquí todo navega a otra página salvo Eventos, que es
          esta misma. */
-      menuAcciones: window.RepertorioMenu.acciones(s.organizacion),
-      menuModulos: window.RepertorioMenu.modulos('eventos', s.organizacion).map((m) => ({
+      menuAcciones: window.RepertorioMenu.acciones(s.organizacion, s.userDoc),
+      menuModulos: window.RepertorioMenu.modulos('eventos', s.organizacion, s.userDoc).map((m) => ({
         label: m.label,
         deshabilitado: m.deshabilitado,
         style: tabStyle(m.activo) + (m.deshabilitado ? ';opacity:.4;cursor:default' : ''),
@@ -1046,10 +1077,16 @@ class Component extends DCLogic {
         estadoStyle: 'font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;white-space:nowrap;background:' + info.bg + ';color:' + info.color,
         /* R.newEvento normaliza el registro y completa con valores por defecto
            los campos que no existían cuando se creó (banda, detalles, etc.). */
-        editar: () => this.setState({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: 2 }),
-        mover: () => this.abrirMover(ev),
-        cancelar: () => this.cancelarEvento(ev),
-        borrar: () => this.archivarEvento(ev),
+        editar: () => {
+          if (!R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev)) return;
+          this.setState({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: 2 });
+        },
+        puedeEditar: R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev),
+        puedeMover: R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev),
+        puedeEstado: R.puede(s.userDoc, 'eventos.estado'),
+        mover: () => { if (R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev)) this.abrirMover(ev); },
+        cancelar: () => { if (R.puede(s.userDoc, 'eventos.estado')) this.cancelarEvento(ev); },
+        borrar: () => { if (R.puede(s.userDoc, 'eventos.estado')) this.archivarEvento(ev); },
         ver: () => this.verEnCalendario(ev)
       };
     });
@@ -1416,7 +1453,9 @@ class Component extends DCLogic {
       vacioDia: s.fecha
         ? (eventosDelDia.length ? '' : 'Sin participaciones en esta fecha todavía.')
         : 'Toca una fecha para ver o agregar sus participaciones.',
+      puedeCrearEvento: R.puede(s.userDoc, 'eventos.crear'),
       nuevoEvento: () => {
+        if (!R.puede(s.userDoc, 'eventos.crear')) return;
         if (!s.fecha) { this.setState({ estado: 'Primero elige una fecha' }); return; }
         this.setState({ draft: R.newEvento({ fecha: s.fecha }), editId: null, paso: 2, estado: '' });
       },
@@ -1463,6 +1502,9 @@ class Component extends DCLogic {
         this.setState({ paso: prev });
       },
       cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '' }),
+      esPaso5ConEstado: paso === 5 && R.puede(s.userDoc, 'eventos.estado'),
+      esPaso5SinEstado: paso === 5 && !R.puede(s.userDoc, 'eventos.estado'),
+      guardarCambios: () => this.guardarConEstado(undefined),
       guardarBorrador: () => this.guardarConEstado('BORRADOR'),
       guardarPublicar: () => this.guardarConEstado('PUBLICADO'),
 

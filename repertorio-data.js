@@ -8,11 +8,17 @@
   var ORGS_PATH = 'organizations';
   var USERS_PATH = 'users';
   var EVENTS_PATH = 'events';
-  /* Índice {emailKey: {musicianId: organizationId}} que mantiene el panel al
-     definir el correo de una Persona. Es lo único que la persona puede leer
-     de sí misma al iniciar sesión (sin exponer el resto de /musicians), y lo
-     que las reglas usan para autorizar que ella misma quede vinculada. */
+  /* Índice heredado {emailKey: {musicianId: organizationId}}: se llenaba al
+     escribir el correo en una Persona (ese campo ya no existe). Solo se sigue
+     leyendo al iniciar sesión, para no perder vínculos que quedaron
+     pendientes; ya no se escribe. */
   var PERSONAS_EMAIL_PATH = 'personasPorCorreo';
+  /* Accesos creados desde "+ Agregar usuario": {emailKey: {email, role,
+     organizationIds: {orgId: true}, musicianLinks: {orgId: musicianId},
+     createdAt, createdBy}}. Se aplican (y se borran) en el primer inicio de
+     sesión con ese correo; las reglas de seguridad usan este mismo nodo para
+     autorizar que la propia cuenta tome ese rol, organizaciones y persona. */
+  var ACCESOS_PATH = 'accesosPorCorreo';
   var SONG_CATALOG_PATH = 'songCatalog';
   var MUSICIANS_PATH = 'musicians';
   var META_PATH = 'meta';
@@ -700,6 +706,35 @@
     }, function () { cb && cb(false); });
   }
 
+  /* --- Permisos por rol ---
+     Qué puede hacer cada rol. Por ahora es fijo aquí; la futura opción de
+     "Roles" configurables solo tendrá que reemplazar este mapa. '*' = todo.
+     Permisos: eventos.ver, eventos.crear, eventos.editar, eventos.mover,
+     eventos.estado (publicar / borrador / cancelar / archivar),
+     eventos.todos (editar/mover cualquier evento, no solo aquellos donde su
+     persona es integrante), usuarios.gestionar, repertorio.gestionar,
+     organizaciones.gestionar. */
+  var PERMISOS_POR_ROL = {
+    admin: ['*'],
+    normal: ['eventos.ver', 'eventos.editar', 'eventos.mover']
+  };
+
+  function puede(userDoc, permiso) {
+    if (!userDoc) return false;
+    var lista = PERMISOS_POR_ROL[userDoc.role || 'normal'] || [];
+    return lista.indexOf('*') >= 0 || lista.indexOf(permiso) >= 0;
+  }
+
+  /* permiso: 'eventos.editar' o 'eventos.mover'. Sin 'eventos.todos', solo
+     vale para eventos donde la persona vinculada a la cuenta (en la
+     organización del evento) ocupa un puesto de banda. */
+  function puedeSobreEvento(userDoc, permiso, ev) {
+    if (!puede(userDoc, permiso) || !ev) return false;
+    if (puede(userDoc, 'eventos.todos')) return true;
+    var miPersona = userMusicianLinks(userDoc)[ev.organizationId];
+    return !!miPersona && !!integrantesEvento(ev)[miPersona];
+  }
+
   /* --- Usuarios --- */
 
   /* Se llama justo después de cada login. Si el usuario no tiene doc en
@@ -731,11 +766,8 @@
       ref.set(doc).then(function () { onDone(doc); }, function () { onDone(doc); });
     }
 
-    /* Si un admin ya le definió este correo a una o más Personas (ver módulo
-       de Personas de admin.html), la cuenta queda vinculada a cada una y con
-       acceso a su organización — tanto la primera vez como en cualquier
-       login posterior (así también se normaliza el caso de una cuenta que ya
-       existía, admin incluido, sin tocar nunca su rol). */
+    /* Heredado: vínculos que quedaron pendientes cuando el correo se definía
+       en la Persona (ver PERSONAS_EMAIL_PATH). Ya no se crean nuevos. */
     function vincularPorCorreo(doc, onDone) {
       var key = emailKey(email);
       if (!key) { onDone(doc); return; }
@@ -767,16 +799,54 @@
       }, function () { onDone(doc); });
     }
 
+    /* Acceso creado por un admin con "+ Agregar usuario": se aplica una sola
+       vez (rol, organizaciones y persona) y se borra en la misma escritura.
+       Nunca baja de admin a normal a una cuenta que ya era admin. */
+    function aplicarAccesoPendiente(doc, onDone) {
+      var key = emailKey(email);
+      if (!key) { onDone(doc); return; }
+      root.child(ACCESOS_PATH).child(key).once('value').then(function (snap) {
+        var acc = snap.val();
+        if (!acc) { onDone(doc); return; }
+        var base = USERS_PATH + '/' + firebaseUser.uid;
+        var orgs = Object.assign({}, acc.organizationIds || {});
+        var links = acc.musicianLinks || {};
+        Object.keys(links).forEach(function (orgId) { orgs[orgId] = true; });
+        var nuevoRol = acc.role === 'admin' ? 'admin' : (doc.role || 'normal');
+        var updates = {};
+        updates[ACCESOS_PATH + '/' + key] = null;
+        if (nuevoRol !== doc.role) updates[base + '/role'] = nuevoRol;
+        Object.keys(orgs).forEach(function (orgId) { updates[base + '/organizationIds/' + orgId] = true; });
+        Object.keys(links).forEach(function (orgId) {
+          updates[base + '/musicianLinks/' + orgId] = links[orgId];
+          updates[MUSICIANS_PATH + '/' + links[orgId] + '/userId'] = firebaseUser.uid;
+        });
+        root.update(updates).then(function () {
+          doc.role = nuevoRol;
+          doc.organizationIds = Object.assign({}, doc.organizationIds || {}, orgs);
+          doc.musicianLinks = Object.assign({}, doc.musicianLinks || {}, links);
+          onDone(doc);
+        }, function (err) {
+          console.error('Firebase aplicarAccesoPendiente rechazado:', err && err.code, err && err.message, err);
+          onDone(doc);
+        });
+      }, function () { onDone(doc); });
+    }
+
+    function completar(doc) {
+      aplicarAccesoPendiente(doc, function (d) { vincularPorCorreo(d, function (d2) { cb && cb(d2); }); });
+    }
+
     function intentar(reintentosRestantes) {
       ref.once('value').then(function (snap) {
         if (snap.exists()) {
           var v = snap.val();
           v.uid = firebaseUser.uid;
-          promoverSiAplica(v, function (doc) { vincularPorCorreo(doc, function (d) { cb && cb(d); }); });
+          promoverSiAplica(v, completar);
           return;
         }
         crearDoc(function (doc) {
-          promoverSiAplica(doc, function (d) { vincularPorCorreo(d, function (d2) { cb && cb(d2); }); });
+          promoverSiAplica(doc, completar);
         });
       }, function (err) {
         /* Justo después de recargar la página, el evento de sesión de
@@ -887,6 +957,47 @@
     });
   }
 
+  /* --- Accesos pendientes ("+ Agregar usuario") --- */
+
+  function watchAccesosPendientes(cb) {
+    var root = dbRoot();
+    if (!root) return function () {};
+    var ref = root.child(ACCESOS_PATH);
+    var handler = function (snap) {
+      var out = [];
+      snap.forEach(function (child) { var v = child.val() || {}; v.key = child.key; out.push(v); });
+      cb(out);
+    };
+    ref.on('value', handler, function () { cb([]); });
+    return function () { ref.off('value', handler); };
+  }
+
+  /* acc: {email, role, orgIds: [..], musicianLinks: {orgId: musicianId}}.
+     Si ya había un acceso pendiente para ese correo, se reemplaza. */
+  function crearAccesoPendiente(acc, creadoPor, cb) {
+    var root = dbRoot();
+    var email = normalizarEmail(acc && acc.email);
+    if (!root || !email) { cb && cb(false); return; }
+    var orgs = {};
+    (acc.orgIds || []).forEach(function (id) { orgs[id] = true; });
+    var links = {};
+    Object.keys(acc.musicianLinks || {}).forEach(function (orgId) {
+      if (acc.musicianLinks[orgId]) { links[orgId] = acc.musicianLinks[orgId]; orgs[orgId] = true; }
+    });
+    var doc = { email: email, role: acc.role === 'admin' ? 'admin' : 'normal', organizationIds: orgs, createdAt: Date.now(), createdBy: creadoPor || null };
+    if (Object.keys(links).length) doc.musicianLinks = links;
+    root.child(ACCESOS_PATH).child(emailKey(email)).set(doc).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase crearAccesoPendiente rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
+  function borrarAccesoPendiente(key, cb) {
+    var root = dbRoot();
+    if (!root || !key) { cb && cb(false); return; }
+    root.child(ACCESOS_PATH).child(key).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
+  }
+
   /* --- Eventos --- */
 
   function watchEventsForOrg(orgId, cb) {
@@ -901,11 +1012,52 @@
   /* cb(ok) avisa si la escritura fue rechazada (por ejemplo, por las reglas
      de Firebase si la sesión no tiene permiso de admin sobre esa
      organización), para que quien llama no asuma que ya quedó guardado. */
+  /* {musicianId: true} de quienes ocupan un puesto de banda. Se guarda en
+     cada evento (ev.integrantes) porque las reglas de Firebase no pueden
+     recorrer el arreglo banda: con este índice verifican que un usuario
+     sin 'eventos.todos' solo edite eventos donde participa. */
+  function integrantesEvento(ev) {
+    var out = {};
+    ((ev && ev.banda) || []).forEach(function (slot) {
+      if (slot && slot.musicianId && (slot.nombre || '').trim()) out[slot.musicianId] = true;
+    });
+    return out;
+  }
+
+  function mismosIntegrantes(a, b) {
+    var ka = Object.keys(a || {}).sort(), kb = Object.keys(b || {}).sort();
+    return ka.join('|') === kb.join('|');
+  }
+
+  /* Recalcula ev.integrantes en los eventos donde quedó desactualizado
+     (eventos anteriores a este índice, o musicianId repuntados por una
+     fusión/sincronización de Personas). Lo corre eventos.html al cargar
+     cuando quien entra puede editar todos los eventos. */
+  function sincronizarIntegrantes(eventos, cb) {
+    var root = dbRoot();
+    if (!root) { cb && cb(false, 0); return; }
+    var updates = {};
+    (eventos || []).forEach(function (ev) {
+      var calc = integrantesEvento(ev);
+      if (!mismosIntegrantes(calc, ev.integrantes)) {
+        updates[EVENTS_PATH + '/' + ev.id + '/integrantes'] = Object.keys(calc).length ? calc : null;
+      }
+    });
+    var n = Object.keys(updates).length;
+    if (!n) { cb && cb(true, 0); return; }
+    root.update(updates).then(function () { cb && cb(true, n); }, function (err) {
+      console.error('Firebase sincronizarIntegrantes rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false, 0);
+    });
+  }
+
   function saveEvent(evento, orgId, cb) {
     var root = dbRoot();
     if (!root) { cb && cb(false); return; }
     var ev = clone(evento);
     ev.organizationId = orgId || ev.organizationId;
+    var integrantes = integrantesEvento(ev);
+    if (Object.keys(integrantes).length) ev.integrantes = integrantes; else delete ev.integrantes;
     root.child(EVENTS_PATH).child(ev.id).set(ev).then(function () { cb && cb(true); }, function (err) {
       console.error('Firebase saveEvent rechazado:', err && err.code, err && err.message, err);
       cb && cb(false);
@@ -1065,6 +1217,8 @@
     updates[MUSICIANS_PATH + '/' + musicianId + '/userId'] = targetUid;
     updates[MUSICIANS_PATH + '/' + musicianId + '/updatedAt'] = Date.now();
     updates[USERS_PATH + '/' + targetUid + '/musicianLinks/' + orgId] = musicianId;
+    /* Vincular a una persona de la organización implica tener acceso a ella. */
+    updates[USERS_PATH + '/' + targetUid + '/organizationIds/' + orgId] = true;
     root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
   }
 
@@ -1093,39 +1247,6 @@
     updates[MUSICIANS_PATH + '/' + musicianId + '/userId'] = null;
     if (targetUid) updates[USERS_PATH + '/' + targetUid + '/musicianLinks/' + orgId] = null;
     root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
-  }
-
-  /* Define (o borra, con email vacío) el correo de una Persona y mantiene el
-     índice /personasPorCorreo en la misma escritura. Si ya existe una cuenta
-     con ese correo (usuarios: la lista de /users que el panel ya tiene
-     cargada), se vincula de una vez y se le da acceso a la organización; si
-     no, queda pendiente y se vincula sola la próxima vez que esa persona
-     inicie sesión (ver vincularPorCorreo en ensureUserRegistered). Cualquier
-     cuenta que estuviera vinculada antes y no coincida pierde el vínculo. */
-  function setMusicianEmail(musico, email, usuarios, cb) {
-    var root = dbRoot();
-    if (!root || !musico || !musico.id || !musico.organizationId) { cb && cb(false); return; }
-    var nuevo = normalizarEmail(email);
-    var anterior = normalizarEmail(musico.email);
-    var orgId = musico.organizationId;
-    var cuenta = nuevo ? (usuarios || []).filter(function (u) { return normalizarEmail(u.email) === nuevo; })[0] : null;
-    var updates = {};
-    updates[MUSICIANS_PATH + '/' + musico.id + '/email'] = nuevo || null;
-    updates[MUSICIANS_PATH + '/' + musico.id + '/updatedAt'] = Date.now();
-    if (anterior && anterior !== nuevo) updates[PERSONAS_EMAIL_PATH + '/' + emailKey(anterior) + '/' + musico.id] = null;
-    if (nuevo) updates[PERSONAS_EMAIL_PATH + '/' + emailKey(nuevo) + '/' + musico.id] = orgId;
-    if (musico.userId && (!cuenta || cuenta.uid !== musico.userId)) {
-      updates[USERS_PATH + '/' + musico.userId + '/musicianLinks/' + orgId] = null;
-    }
-    updates[MUSICIANS_PATH + '/' + musico.id + '/userId'] = cuenta ? cuenta.uid : null;
-    if (cuenta) {
-      updates[USERS_PATH + '/' + cuenta.uid + '/musicianLinks/' + orgId] = musico.id;
-      updates[USERS_PATH + '/' + cuenta.uid + '/organizationIds/' + orgId] = true;
-    }
-    root.update(updates).then(function () { cb && cb(true, cuenta || null); }, function (err) {
-      console.error('Firebase setMusicianEmail rechazado:', err && err.code, err && err.message, err);
-      cb && cb(false, null);
-    });
   }
 
   /* Funde mergeIds dentro de keepId: une aliases y rolesBanda, repunta
@@ -1438,13 +1559,15 @@
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
     setUserRole: setUserRole, setUserOrgs: setUserOrgs, deleteUser: deleteUser, userOrgIds: userOrgIds,
     userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
-    normalizarEmail: normalizarEmail,
+    normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL,
+    integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,
+    watchAccesosPendientes: watchAccesosPendientes, crearAccesoPendiente: crearAccesoPendiente, borrarAccesoPendiente: borrarAccesoPendiente,
     watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, setEventEstado: setEventEstado, moveEvent: moveEvent,
     watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong,
     ESTADOS_CONFIRMACION: ESTADOS_CONFIRMACION, estadoConfirmacionSlot: estadoConfirmacionSlot, declinadosEvento: declinadosEvento,
     newMusician: newMusician, watchMusiciansForOrg: watchMusiciansForOrg, getMusician: getMusician,
     createMusician: createMusician, updateMusician: updateMusician,
-    linkMusicianToUser: linkMusicianToUser, setMusicianEmail: setMusicianEmail, unlinkMusician: unlinkMusician, mergeMusicians: mergeMusicians,
+    linkMusicianToUser: linkMusicianToUser, unlinkMusician: unlinkMusician, mergeMusicians: mergeMusicians,
     deleteMusician: deleteMusician,
     matchMusicianByNombre: matchMusicianByNombre,
     previewMusicianMigration: previewMusicianMigration, commitMusicianMigration: commitMusicianMigration,

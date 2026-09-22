@@ -51,12 +51,11 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-vis
   .dash-grid{grid-template-columns:1fr}
   .dash-side{border-right:0;border-bottom:2px solid var(--ink);padding:16px}
   .dash-main{padding:20px 16px}
-  /* Perfil compacto: avatar y nombre en una fila, enlaces en línea. */
+  /* Perfil compacto: avatar y nombre en una fila. */
   .dash-perfil{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center}
   .dash-perfil > .dash-avatar{grid-row:span 3;width:52px!important;height:52px!important;font-size:18px!important}
   .dash-perfil > .dash-nombre{margin-top:0!important}
   .dash-perfil > .dash-roles{margin-top:6px!important}
-  .dash-side-links{flex-direction:row!important;gap:16px!important;margin-top:14px!important;padding-top:12px!important}
   .dash-confirmo{width:100%}
   .dash-disp-form{flex-direction:column;align-items:stretch!important}
   .dash-disp-form label{min-width:0!important}
@@ -116,10 +115,6 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-vis
             </sc-for>
           </div>
           <p style="{{ sinRolesStyle }}">Sin roles de banda asignados todavía.</p>
-        </div>
-        <div class="dash-side-links" style="display:flex;flex-direction:column;gap:6px;margin-top:20px;padding-top:16px;border-top:1px solid #eae9e9">
-          <a href="#disponibilidad" style="font-size:13px;font-weight:600">Fechas no disponibles</a>
-          <a href="{{ calendarioHref }}" style="font-size:13px;font-weight:600">Calendario</a>
         </div>
       </div>
 
@@ -431,9 +426,8 @@ class Component extends DCLogic {
       cerrarSesion: () => D().signOutUser(),
       orgNombre: s.org ? s.org.name : '',
       orgTituloSufijo: s.org ? (' · ' + s.org.name) : '',
-      calendarioHref: s.org ? ('index.html?group=' + s.org.slug) : 'index.html',
       /* Botones bajo el encabezado: definidos en menu-config.js. */
-      menuAcciones: window.RepertorioMenu.accionesDashboard(s.org, !!(s.userDoc && s.userDoc.role === 'admin')),
+      menuAcciones: window.RepertorioMenu.accionesDashboard(s.org, s.userDoc),
 
       viewOnlyActivo: s.viewOnlyActivo,
       musicoNombreVisto: nombre,
