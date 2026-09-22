@@ -217,6 +217,24 @@
     ];
   }
 
+  /* Un evento puede tener varias participaciones de la banda ("Bloque 1",
+     "Bloque 2", …). No se anida un nivel nuevo: cada sección de `bloques`
+     (Júbilo, Adoración, …) lleva un número `parte`, y las secciones de una
+     misma parte quedan contiguas en el arreglo. Los eventos guardados antes
+     de que existiera el campo no lo traen y cuentan como Bloque 1. */
+  function bloqueParte(bl) {
+    var n = Number(bl && bl.parte);
+    return n > 0 ? n : 1;
+  }
+
+  /* Secciones con las que arranca cada bloque agregado con "Agregar Bloque". */
+  function nuevaParte(parte) {
+    return [
+      { titulo: 'Júbilo', parte: parte, canciones: [song(), song()] },
+      { titulo: 'Adoración', parte: parte, canciones: [song(), song()] }
+    ];
+  }
+
   /* Roles de banda que se solicitan por defecto. Los que llevan "numerar"
      muestran su número desde el primero (Piano 1); el resto no muestra
      número hasta que se agregue un segundo del mismo tipo (Bajo, Bajo 2). */
@@ -315,12 +333,26 @@
         out.push('');
       }
       var canciones = [];
+      var partes = [];
       (ev.bloques || []).forEach(function (bl) {
-        (bl.canciones || []).forEach(function (c) { if (c.t && c.t.trim()) canciones.push(c); });
+        (bl.canciones || []).forEach(function (c) {
+          if (!(c.t && c.t.trim())) return;
+          var parte = bloqueParte(bl);
+          if (partes.indexOf(parte) < 0) partes.push(parte);
+          canciones.push({ c: c, parte: parte });
+        });
       });
       if (canciones.length) {
         out.push('Canciones:');
-        canciones.forEach(function (c) { out.push('- ' + c.t.trim() + (c.k && c.k.trim() ? ' (' + c.k.trim() + ')' : '')); });
+        var ultimaParte = null;
+        canciones.forEach(function (x) {
+          if (partes.length > 1 && x.parte !== ultimaParte) {
+            out.push('Bloque ' + (partes.indexOf(x.parte) + 1) + ':');
+            ultimaParte = x.parte;
+          }
+          var c = x.c;
+          out.push('- ' + c.t.trim() + (c.k && c.k.trim() ? ' (' + c.k.trim() + ')' : ''));
+        });
         out.push('');
       }
       out.push('Descripción:');
@@ -1323,7 +1355,7 @@
     MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
     song: song, songLabel: songLabel, songLabelParts: songLabelParts, songKey: songKey, buildSongCatalog: buildSongCatalog,
-    youtubeId: youtubeId, youtubeController: youtubeController, defaultBlocks: defaultBlocks, newEvento: newEvento, uid: uid,
+    youtubeId: youtubeId, youtubeController: youtubeController, defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,

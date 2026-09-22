@@ -193,8 +193,11 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                 <button onClick="{{ ev.cancelar }}" title="Cancelado" aria-label="Cancelado" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg>
                 </button>
-                <button onClick="{{ ev.borrar }}" title="Archivar" aria-label="Archivar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                <button onClick="{{ ev.borrar }}" title="Archivar" aria-label="Archivar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                </button>
+                <button onClick="{{ ev.ver }}" title="Ver en calendario" aria-label="Ver en calendario" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
               </div>
             </div>
@@ -301,6 +304,16 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
       <div style="display:flex;flex-direction:column;gap:20px;margin-top:24px">
         <sc-for list="{{ bloques }}" as="bl" hint-placeholder-count="5">
           <div>
+            <sc-if value="{{ bl.mostrarParte }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ bl.parteStyle }}">
+                <span style="flex:1;height:2px;background:var(--ac)"></span>
+                <span style="font-size:14px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk);text-align:center">{{ bl.parteTitulo }}</span>
+                <span style="flex:1;height:2px;background:var(--ac)"></span>
+                <sc-if value="{{ bl.puedeQuitarParte }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ bl.quitarParte }}" title="Quitar este bloque y sus canciones" style="position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:11px;font-weight:800;border:1.5px solid #bab6b6;color:#7d7979;background:var(--bg);padding:2px 8px;cursor:pointer">Quitar</button>
+                </sc-if>
+              </div>
+            </sc-if>
             <div style="display:flex;align-items:center;gap:8px">
               <input value="{{ bl.titulo }}" onChange="{{ bl.onTitulo }}" style="font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;border:0;border-bottom:2px solid var(--ink);background:transparent;padding:3px 0;width:190px">
               <span style="flex:1;height:2px;background:var(--ink)"></span>
@@ -353,6 +366,9 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           </div>
         </sc-for>
       </div>
+      <div style="display:flex;justify-content:center;margin-top:28px">
+        <button type="button" onClick="{{ agregarParte }}" style="font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ac);color:var(--ac-dk);background:var(--ac-lt);padding:10px 18px;cursor:pointer">+ Agregar Bloque</button>
+      </div>
     </section>
   </sc-if>
 
@@ -391,25 +407,43 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
           </div>
         </sc-if>
         <sc-if value="{{ resumenEsRepertorio }}" hint-placeholder-val="{{ true }}">
-          <div style="display:flex;flex-direction:column;gap:2px;margin-top:16px">
-            <sc-for list="{{ resumen }}" as="r" hint-placeholder-count="4">
-              <div style="display:flex;gap:12px;background:#fff;padding:8px 12px;align-items:center">
-                <span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979;width:120px;flex:none">{{ r.bloque }}</span>
-                <div style="flex:1">
-                  <sc-if value="{{ r.tieneLineas }}" hint-placeholder-val="{{ false }}">
-                    <span style="font-size:15px;font-weight:600">{{ r.lineaPrimera }}</span>
-                    <sc-for list="{{ r.lineasResto }}" as="linea" hint-placeholder-count="1">
-                      <span style="display:block;font-size:12px;color:#6b6866;margin-top:2px">{{ linea }}</span>
-                    </sc-for>
-                  </sc-if>
-                  <sc-if value="{{ r.sinLineas }}" hint-placeholder-val="{{ true }}">
-                    <span style="font-size:15px;font-weight:600">{{ r.lineaPrimera }}</span>
-                  </sc-if>
+          <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+            <sc-for list="{{ resumenSecciones }}" as="sec" hint-placeholder-count="3">
+              <div>
+                <sc-if value="{{ sec.mostrarParte }}" hint-placeholder-val="{{ false }}">
+                  <div style="{{ sec.parteStyle }}">
+                    <span style="flex:1;height:2px;background:var(--ac)"></span>
+                    <span style="font-size:13px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk);text-align:center">{{ sec.parteTitulo }}</span>
+                    <span style="flex:1;height:2px;background:var(--ac)"></span>
+                  </div>
+                </sc-if>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#54514f">{{ sec.titulo }}</span>
+                  <span style="flex:1;height:2px;background:var(--ink)"></span>
+                  <button type="button" onClick="{{ sec.onSubir }}" aria-label="Subir sección" title="Subir sección (en el borde pasa al bloque anterior)" style="{{ sec.subirStyle }}">▲</button>
+                  <button type="button" onClick="{{ sec.onBajar }}" aria-label="Bajar sección" title="Bajar sección (en el borde pasa al bloque siguiente)" style="{{ sec.bajarStyle }}">▼</button>
                 </div>
-                <span style="font-size:12px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);padding:2px 6px;flex:none">{{ r.tono }}</span>
-                <div style="display:flex;flex-direction:column;gap:3px;flex:none">
-                  <button type="button" onClick="{{ r.onSubir }}" aria-label="Subir canción" title="Subir" style="{{ r.subirStyle }}">▲</button>
-                  <button type="button" onClick="{{ r.onBajar }}" aria-label="Bajar canción" title="Bajar" style="{{ r.bajarStyle }}">▼</button>
+                <div style="display:flex;flex-direction:column;gap:2px;margin-top:6px">
+                  <sc-for list="{{ sec.canciones }}" as="r" hint-placeholder-count="2">
+                    <div style="display:flex;gap:12px;background:#fff;padding:8px 12px;align-items:center">
+                      <div style="flex:1">
+                        <sc-if value="{{ r.tieneLineas }}" hint-placeholder-val="{{ false }}">
+                          <span style="font-size:15px;font-weight:600">{{ r.lineaPrimera }}</span>
+                          <sc-for list="{{ r.lineasResto }}" as="linea" hint-placeholder-count="1">
+                            <span style="display:block;font-size:12px;color:#6b6866;margin-top:2px">{{ linea }}</span>
+                          </sc-for>
+                        </sc-if>
+                        <sc-if value="{{ r.sinLineas }}" hint-placeholder-val="{{ true }}">
+                          <span style="font-size:15px;font-weight:600">{{ r.lineaPrimera }}</span>
+                        </sc-if>
+                      </div>
+                      <span style="font-size:12px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);padding:2px 6px;flex:none">{{ r.tono }}</span>
+                      <div style="display:flex;flex-direction:column;gap:3px;flex:none">
+                        <button type="button" onClick="{{ r.onSubir }}" aria-label="Subir canción" title="Subir" style="{{ r.subirStyle }}">▲</button>
+                        <button type="button" onClick="{{ r.onBajar }}" aria-label="Bajar canción" title="Bajar" style="{{ r.bajarStyle }}">▼</button>
+                      </div>
+                    </div>
+                  </sc-for>
                 </div>
               </div>
             </sc-for>
@@ -626,6 +660,14 @@ class Component extends DCLogic {
   irOrganizaciones() { window.location.href = 'admin.html?tab=organizaciones'; }
   irUsuarios() { window.location.href = 'admin.html?tab=usuarios'; }
 
+  /* Abre el calendario público (index.html) ya filtrado a este evento,
+     usando el parámetro eventid que index.html lee al cargar. */
+  verEnCalendario(ev) {
+    const org = this.state.organizacion;
+    if (!org || !org.slug) return;
+    window.location.href = 'index.html?group=' + encodeURIComponent(org.slug) + '&eventid=' + encodeURIComponent(ev.id);
+  }
+
   cerrarSidebarSiMovil() {
     if (typeof window !== 'undefined' && window.innerWidth <= 860) this.setState({ sidebarAbierto: false });
   }
@@ -665,6 +707,70 @@ class Component extends DCLogic {
       const tmp = arr[ciA];
       arr[ciA] = arr[ciB];
       arr[ciB] = tmp;
+    });
+  }
+
+  /* Intercambia dos secciones (Júbilo, Adoración, …) del mismo bloque por su
+     índice real en dr.bloques. Ambas pertenecen a la misma parte, así que las
+     secciones de cada bloque siguen quedando contiguas en el arreglo. */
+  moverSeccionResumen(biA, biB) {
+    this.setDraft((x) => {
+      const tmp = x.bloques[biA];
+      x.bloques[biA] = x.bloques[biB];
+      x.bloques[biB] = tmp;
+    });
+  }
+
+  /* Pasa una sección a otro bloque (p. ej. llevar "Ofrenda" al final del
+     último bloque): la saca de su posición, le asigna la parte destino y la
+     inserta al inicio de ese bloque (si baja) o al final (si sube), para que
+     las secciones de cada bloque sigan contiguas. Si el bloque de origen se
+     queda sin secciones, desaparece y se renumeran los demás. */
+  moverSeccionABloque(bi, destParte, alInicio) {
+    const R = window.RepertorioData;
+    this.setDraft((x) => {
+      x.bloques.forEach((bl) => { bl.parte = R.bloqueParte(bl); });
+      const sec = x.bloques.splice(bi, 1)[0];
+      sec.parte = destParte;
+      let idx;
+      if (alInicio) {
+        idx = x.bloques.findIndex((bl) => bl.parte === destParte);
+      } else {
+        idx = -1;
+        x.bloques.forEach((bl, i) => { if (bl.parte === destParte) idx = i; });
+        idx = idx + 1;
+      }
+      if (idx < 0) idx = x.bloques.length;
+      x.bloques.splice(idx, 0, sec);
+      const orden = [];
+      x.bloques.forEach((bl) => { if (orden.indexOf(bl.parte) < 0) orden.push(bl.parte); });
+      x.bloques.forEach((bl) => { bl.parte = orden.indexOf(bl.parte) + 1; });
+    });
+  }
+
+  /* "Agregar Bloque": otra participación de la banda en el mismo evento. Se
+     agrega al final con el siguiente número de parte (las secciones sin
+     `parte` de eventos viejos cuentan como Bloque 1, ver R.bloqueParte). */
+  agregarParte() {
+    const R = window.RepertorioData;
+    this.setDraft((x) => {
+      x.bloques.forEach((bl) => { bl.parte = R.bloqueParte(bl); });
+      const max = x.bloques.reduce((m, bl) => Math.max(m, bl.parte), 0);
+      R.nuevaParte(max + 1).forEach((bl) => x.bloques.push(bl));
+    });
+  }
+
+  /* Quita un bloque completo (con sus canciones) y corre una posición hacia
+     abajo los números de los bloques siguientes para que no queden huecos
+     ("Bloque 1, Bloque 3"). El Bloque 1 no se puede quitar. */
+  quitarParte(parte) {
+    const R = window.RepertorioData;
+    this.setDraft((x) => {
+      x.bloques = x.bloques.filter((bl) => R.bloqueParte(bl) !== parte);
+      x.bloques.forEach((bl) => {
+        const p = R.bloqueParte(bl);
+        bl.parte = p > parte ? p - 1 : p;
+      });
     });
   }
 
@@ -889,7 +995,8 @@ class Component extends DCLogic {
         editar: () => this.setState({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: 2 }),
         mover: () => this.abrirMover(ev),
         cancelar: () => this.cancelarEvento(ev),
-        borrar: () => this.archivarEvento(ev)
+        borrar: () => this.archivarEvento(ev),
+        ver: () => this.verEnCalendario(ev)
       };
     });
 
@@ -1014,7 +1121,19 @@ class Component extends DCLogic {
       return Array.from(porClave.values()).sort((a, b) => a.localeCompare(b, 'es'));
     })();
 
+    /* Cabecera "Bloque N" centrada al inicio de cada bloque, sólo cuando el
+       evento tiene más de uno (con un único bloque no aporta nada). */
+    const totalPartes = dr ? new Set(dr.bloques.map((bl) => R.bloqueParte(bl))).size : 0;
+    const parteHeaderStyle = (primera) => 'position:relative;display:flex;align-items:center;gap:12px;' +
+      'margin:' + (primera ? '0' : '16px') + ' 0 14px';
     const bloques = dr ? dr.bloques.map((bl, bi) => ({
+      mostrarParte: totalPartes > 1 && (bi === 0 || R.bloqueParte(dr.bloques[bi - 1]) !== R.bloqueParte(bl)),
+      parteTitulo: 'Bloque ' + R.bloqueParte(bl),
+      parteStyle: parteHeaderStyle(bi === 0),
+      puedeQuitarParte: R.bloqueParte(bl) > 1,
+      quitarParte: () => {
+        if (window.confirm('¿Quitar el Bloque ' + R.bloqueParte(bl) + ' y todas sus canciones?')) this.quitarParte(R.bloqueParte(bl));
+      },
       titulo: bl.titulo,
       onTitulo: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].titulo = v; }); },
       addCancion: () => this.setDraft((x) => { x.bloques[bi].canciones.push(R.song()); }),
@@ -1106,28 +1225,54 @@ class Component extends DCLogic {
 
     /* El orden de esta lista (índice dentro de bl.canciones) es el mismo que
        pinta index.html, así que reordenar aquí reordena el evento publicado.
-       El movimiento se restringe a canciones dentro del mismo bloque (no
+       El movimiento se restringe a canciones dentro de la misma sección (no
        cruza de "Júbilo" a "Adoración", por ejemplo): cada fila recuerda su
        (bi, ci) real para escribir con setDraft, pero sube/baja contra la
-       siguiente/anterior canción CON NOMBRE del mismo bloque, saltando
+       siguiente/anterior canción CON NOMBRE de la misma sección, saltando
        espacios en blanco intermedios sin tocar su posición. */
-    const resumen = [];
+    const arrowStyle = (activo) => 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
+      'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;' +
+      'border:1.5px solid var(--ac);background:#fff;color:var(--ac)' +
+      (activo ? '' : ';visibility:hidden;pointer-events:none');
+    /* Secciones que tienen al menos una canción con nombre: son las únicas que
+       se muestran en el resumen, y contra ellas sube/baja cada sección. */
+    const seccionesConNombre = [];
     if (dr) dr.bloques.forEach((bl, bi) => {
       const conNombre = bl.canciones
         .map((c, ci) => ({ c: c, ci: ci }))
         .filter((x) => x.c.t && x.c.t.trim());
-      conNombre.forEach((item, pos) => {
+      if (conNombre.length) seccionesConNombre.push({ bl: bl, bi: bi, parte: R.bloqueParte(bl), conNombre: conNombre });
+    });
+    const partesDraft = dr ? Array.from(new Set(dr.bloques.map((bl) => R.bloqueParte(bl)))).sort((a, b) => a - b) : [];
+    const partesResumen = [];
+    seccionesConNombre.forEach((x) => { if (partesResumen.indexOf(x.parte) < 0) partesResumen.push(x.parte); });
+    const resumen = [];
+    const resumenSecciones = seccionesConNombre.map((sec, si) => {
+      const bl = sec.bl, bi = sec.bi, conNombre = sec.conNombre;
+      /* Dentro de su bloque, la sección se intercambia con la anterior/
+         siguiente. En el borde del bloque, ▲/▼ la pasa al bloque anterior
+         (queda al final) o al siguiente (queda al inicio), así una sección
+         como "Ofrenda" puede terminar en el último bloque. */
+      const prev = seccionesConNombre[si - 1];
+      const next = seccionesConNombre[si + 1];
+      const mismoPrev = !!prev && prev.parte === sec.parte;
+      const mismoNext = !!next && next.parte === sec.parte;
+      const parteAnterior = partesDraft.filter((p) => p < sec.parte).pop();
+      const parteSiguiente = partesDraft.filter((p) => p > sec.parte)[0];
+      const puedeSubirSec = mismoPrev || parteAnterior !== undefined;
+      const puedeBajarSec = mismoNext || parteSiguiente !== undefined;
+      const onSubirSec = mismoPrev ? () => this.moverSeccionResumen(bi, prev.bi)
+        : (parteAnterior !== undefined ? () => this.moverSeccionABloque(bi, parteAnterior, false) : () => {});
+      const onBajarSec = mismoNext ? () => this.moverSeccionResumen(bi, next.bi)
+        : (parteSiguiente !== undefined ? () => this.moverSeccionABloque(bi, parteSiguiente, true) : () => {});
+      const canciones = conNombre.map((item, pos) => {
         const c = item.c, ci = item.ci;
         const label = R.songLabelParts(c);
         const lineasResto = label.lines.slice(1);
         if (c.d) lineasResto.push('dirige ' + c.d);
         const puedeSubir = pos > 0;
         const puedeBajar = pos < conNombre.length - 1;
-        const arrowStyle = (activo) => 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
-          'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
-          'border:1.5px solid var(--ac);background:#fff;color:var(--ac)' +
-          (activo ? '' : ';visibility:hidden;pointer-events:none');
-        resumen.push({
+        const row = {
           bloque: bl.titulo,
           lineaPrimera: label.lines[0] || '',
           lineasResto: lineasResto,
@@ -1138,8 +1283,21 @@ class Component extends DCLogic {
           bajarStyle: arrowStyle(puedeBajar),
           onSubir: puedeSubir ? () => this.moverCancionResumen(bi, ci, conNombre[pos - 1].ci) : () => {},
           onBajar: puedeBajar ? () => this.moverCancionResumen(bi, ci, conNombre[pos + 1].ci) : () => {}
-        });
+        };
+        resumen.push(row);
+        return row;
       });
+      return {
+        titulo: bl.titulo,
+        mostrarParte: partesResumen.length > 1 && (!prev || prev.parte !== sec.parte),
+        parteTitulo: 'Bloque ' + (partesResumen.indexOf(sec.parte) + 1),
+        parteStyle: 'display:flex;align-items:center;gap:12px;margin:' + (si === 0 ? '0' : '10px') + ' 0 12px',
+        subirStyle: arrowStyle(puedeSubirSec),
+        bajarStyle: arrowStyle(puedeBajarSec),
+        onSubir: onSubirSec,
+        onBajar: onBajarSec,
+        canciones: canciones
+      };
     });
 
     const validar = () => {
@@ -1213,7 +1371,9 @@ class Component extends DCLogic {
         ? [dr.servicio].concat(R.SERVICIOS) : R.SERVICIOS).map((label) => ({ label: label })),
       bandaGrupos: bandaGrupos,
       bloques: bloques,
+      agregarParte: () => this.agregarParte(),
       resumen: resumen,
+      resumenSecciones: resumenSecciones,
       resumenVacio: resumen.length ? '' : 'Aún no hay canciones con nombre.',
       resumenTitulo: dr ? (R.diaNombre(dr.fecha) + ' ' + dr.hora) : '',
       resumenTema: dr ? (dr.tema || 'Sin tema') : '',

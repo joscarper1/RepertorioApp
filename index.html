@@ -276,6 +276,13 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                 <div class="body" style="display:flex;flex-direction:column;gap:16px;margin-top:24px">
                   <sc-for list="{{ ev.bloques }}" as="bl" hint-placeholder-count="5">
                     <div>
+                      <sc-if value="{{ bl.mostrarParte }}" hint-placeholder-val="{{ false }}">
+                        <div class="parte" style="{{ bl.parteStyle }}">
+                          <span style="flex:1;height:2px;background:var(--ac)"></span>
+                          <span style="font-size:14px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk);text-align:center">{{ bl.parteTitulo }}</span>
+                          <span style="flex:1;height:2px;background:var(--ac)"></span>
+                        </div>
+                      </sc-if>
                       <div style="display:flex;align-items:center;gap:8px">
                         <span class="blabel" style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">{{ bl.titulo }}</span>
                         <span style="flex:1;height:2px;background:var(--ink)"></span>
@@ -643,9 +650,10 @@ class Component extends DCLogic {
       tieneDetalles: !!(ev.detalles && ev.detalles.trim()),
       personas: ev.personas,
       tienePersonas: !!(ev.personas && ev.personas.trim()),
-      bloques: ev.bloques
+      bloques: this.marcarPartes(ev.bloques
         .map((bl, blIdx) => ({
           titulo: bl.titulo,
+          parte: R.bloqueParte(bl),
           canciones: bl.canciones.filter((c) => c.t && c.t.trim()).map((c, i) => {
             const videoId = R.youtubeId(c.u);
             const key = ev.id + '|' + blIdx + '|' + i;
@@ -676,8 +684,22 @@ class Component extends DCLogic {
             };
           })
         }))
-        .filter((bl) => bl.canciones.length)
+        .filter((bl) => bl.canciones.length))
     };
+  }
+
+  /* Cuando la banda participa más de una vez en el evento (varios bloques,
+     ver R.bloqueParte), marca la primera sección de cada bloque para pintar
+     encima un título centrado "Bloque N". Se numera según los bloques que
+     de verdad tienen canciones, así nunca aparece un "Bloque 2" suelto. */
+  marcarPartes(secciones) {
+    const partes = [];
+    secciones.forEach((bl) => { if (partes.indexOf(bl.parte) < 0) partes.push(bl.parte); });
+    return secciones.map((bl, i) => Object.assign(bl, {
+      mostrarParte: partes.length > 1 && (i === 0 || secciones[i - 1].parte !== bl.parte),
+      parteTitulo: 'Bloque ' + (partes.indexOf(bl.parte) + 1),
+      parteStyle: 'display:flex;align-items:center;gap:12px;margin:' + (i === 0 ? '0' : '12px') + ' 0 12px'
+    }));
   }
 
   /* Agrupa eventos de un mismo día en una sola columna: cada uno conserva su
@@ -1011,6 +1033,7 @@ class Component extends DCLogic {
               if (ev.cita) out.push(ev.cita);
               out.push('');
               ev.bloques.forEach((bl) => {
+                if (bl.mostrarParte) out.push('*' + bl.parteTitulo.toUpperCase() + '*');
                 out.push('- ' + bl.titulo + ':');
                 bl.canciones.forEach((c) => {
                   out.push('🎶 ' + c.t + (c.k && c.k !== '—' ? ' (' + c.k + ')' : '') + (c.d ? ' · ' + c.d : '') + (c.u && c.u !== '#' ? '\n' + c.u : ''));
