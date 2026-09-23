@@ -30,7 +30,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="menu-config.js"></script>
-<script src="repertorio-data.js"></script>
+<!-- ?v= obliga al navegador a bajar la versión que corresponde a esta
+     página en vez de una copia vieja en caché: súbelo al cambiar estos
+     archivos junto con funciones nuevas que la página use. -->
+<script src="cifrado.js?v=20260923"></script>
+<script src="repertorio-data.js?v=20260923"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
 *{box-sizing:border-box}
@@ -52,7 +56,15 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 .field-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .slot-grid{display:grid;grid-template-columns:170px 1fr auto 20px;gap:8px;align-items:center}
 .cancion-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.cancion-grid-4{display:grid;grid-template-columns:1fr 64px 22px 20px;gap:8px;align-items:center}
+.cancion-grid-4{display:grid;grid-template-columns:1fr 64px 22px 22px 20px;gap:8px;align-items:center}
+.cifrado-overlay{position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
+.cifrado-modal{width:min(100%,760px);max-height:90vh;display:flex;flex-direction:column;background:#fff;border:2px solid var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.cifrado-head{padding:16px 20px 12px;border-bottom:1px solid #eae9e9;flex:none}
+.cifrado-body{padding:16px 20px 20px;overflow-y:auto;flex:1 1 auto;min-height:0}
+.cifrado-hoja{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;line-height:1.4;overflow-x:auto;border:1px solid #eae9e9;padding:12px;background:#fff}
+.cifrado-linea{white-space:pre;min-height:1.4em}
+.cifrado-btn{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:6px 12px;cursor:pointer;text-decoration:none;display:inline-block}
+a.cifrado-btn:hover{background:var(--ink);color:#fff}
 @media (max-width:860px){
   .admin-burger{display:inline-flex}
   .admin-shell{border:0;display:block}
@@ -63,6 +75,9 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 }
 @media (max-width:640px){
   .field-grid-2,.slot-grid,.cancion-grid-2,.cancion-grid-4{grid-template-columns:1fr}
+  .cifrado-overlay{padding:0}
+  .cifrado-modal{width:100%;height:100%;max-height:none;border:0}
+  .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
 }
 </style>
 </helmet>
@@ -382,6 +397,7 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
                   <div class="cancion-grid-4">
                     <input value="{{ cn.u }}" onChange="{{ cn.onU }}" onBlur="{{ cn.onBlurU }}" placeholder="https://… enlace de la pista" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#7d7979;border:0;border-bottom:1px solid #eae9e9;background:transparent;padding:5px 2px">
                     <input value="{{ cn.k }}" onChange="{{ cn.onK }}" placeholder="Tono" style="font-size:13px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);border:0;padding:5px;text-align:center">
+                    <button type="button" onClick="{{ cn.onCifrado }}" aria-label="{{ cn.cifradoTitle }}" title="{{ cn.cifradoTitle }}" style="{{ cn.cifradoBtnStyle }}">♪</button>
                     <button onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
                     <button onClick="{{ cn.remove }}" title="Quitar" style="font-size:13px;border:0;background:transparent;color:#bab6b6;cursor:pointer;padding:0">−</button>
                   </div>
@@ -556,6 +572,102 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
       </div>
     </div>
   </sc-if>
+
+  <sc-if value="{{ cifAbierto }}" hint-placeholder-val="{{ false }}">
+    <div class="cifrado-overlay" onClick="{{ cerrarCifrado }}">
+      <div class="cifrado-modal" role="dialog" aria-modal="true" aria-label="Cifrado de la canción" onClick="{{ detenerPropagacion }}">
+        <div class="cifrado-head">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+            <div style="min-width:0">
+              <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ cifKicker }}</div>
+              <div style="font-size:20px;font-weight:800;margin-top:4px;line-height:1.2">{{ cifTitulo }}</div>
+              <div style="font-size:13px;color:#6b6866;margin-top:2px">{{ cifArtista }}</div>
+            </div>
+            <button type="button" onClick="{{ cerrarCifrado }}" aria-label="Cerrar" style="font-size:16px;border:0;background:transparent;color:#7d7979;cursor:pointer;padding:2px">✕</button>
+          </div>
+          <sc-if value="{{ cifVer }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px">
+              <span style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px">Tono: {{ cifTonoMostrado }}</span>
+              <span style="font-size:12px;color:#6b6866">{{ cifTonoOrigenTxt }}</span>
+            </div>
+          </sc-if>
+        </div>
+        <div class="cifrado-body">
+          <sc-if value="{{ cifCargando }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:14px;color:#7d7979;margin:0">Cargando cifrado…</p>
+          </sc-if>
+          <sc-if value="{{ cifHayAviso }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:13px;color:var(--ac-dk);background:var(--ac-lt);padding:8px 10px;margin:0 0 12px">{{ cifAviso }}</p>
+          </sc-if>
+          <sc-if value="{{ cifHayError }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:13px;color:#b00020;background:#fdecee;padding:8px 10px;margin:0 0 12px">{{ cifError }}</p>
+          </sc-if>
+
+          <sc-if value="{{ cifVer }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <sc-for list="{{ cifAvisos }}" as="av" hint-placeholder-count="1">
+                <p style="font-size:12px;color:#8a5a00;background:#fff6e0;padding:6px 10px;margin:0 0 8px">{{ av }}</p>
+              </sc-for>
+              <div class="cifrado-hoja">
+                <sc-for list="{{ cifLineas }}" as="ln" hint-placeholder-count="6"><div class="cifrado-linea"><sc-for list="{{ ln.segs }}" as="sg" hint-placeholder-count="2"><span style="{{ sg.style }}">{{ sg.txt }}</span></sc-for></div></sc-for>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+                <a class="cifrado-btn" href="{{ cifFuenteUrl }}" target="_blank" rel="noopener noreferrer">Ver en LaCuerda ↗</a>
+                <sc-if value="{{ cifPuedeEditar }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" class="cifrado-btn" onClick="{{ reemplazarCifrado }}">Reemplazar cifrado</button>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ cifImportar }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:18px">
+              <div>
+                <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">1 · Enlace de LaCuerda</div>
+                <input value="{{ cifUrl }}" onChange="{{ onCifUrl }}" placeholder="https://acordes.lacuerda.net/artista/cancion" autoComplete="off" style="width:100%;margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:0;border-bottom:2px solid var(--ink);background:transparent;padding:6px 2px">
+                <sc-if value="{{ cifUrlInvalida }}" hint-placeholder-val="{{ false }}">
+                  <div style="font-size:12px;color:#b00020;margin-top:4px">Debe ser un enlace de una canción en acordes.lacuerda.net</div>
+                </sc-if>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
+                  <a class="cifrado-btn" href="{{ cifBuscarUrl }}" target="_blank" rel="noopener noreferrer">Buscar en LaCuerda ↗</a>
+                  <sc-if value="{{ cifUrlValida }}" hint-placeholder-val="{{ false }}">
+                    <a class="cifrado-btn" href="{{ cifUrlNormalizada }}" target="_blank" rel="noopener noreferrer">Abrir enlace ↗</a>
+                  </sc-if>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">2 · Copia y pega la letra con acordes</div>
+                <p style="font-size:13px;color:#54514f;margin:6px 0 0;line-height:1.5">En LaCuerda selecciona desde el primer acorde hasta el final de la canción, cópiala (Ctrl+C) y pégala aquí (Ctrl+V). Lo que no sea parte de la canción, como notas del autor, puedes borrarlo aquí.</p>
+                <textarea id="cifrado-pegado" value="{{ cifTexto }}" onChange="{{ onCifTexto }}" rows="6" placeholder="Pega aquí el cifrado…" spellCheck="false" style="width:100%;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.4;padding:10px;border:2px solid var(--ink);background:#fff;resize:vertical;white-space:pre;overflow-x:auto"></textarea>
+              </div>
+              <sc-if value="{{ cifHayPegado }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">3 · Revisa y confirma el tono original</div>
+                  <p style="{{ cifResumenStyle }}">{{ cifResumen }}</p>
+                  <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px">
+                    <span style="font-size:13px;font-weight:600">Tono en que está escrito:</span>
+                    <select value="{{ cifTono }}" onChange="{{ onCifTono }}" style="font-size:14px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);border:0;padding:6px 8px">
+                      <sc-for list="{{ cifTonos }}" as="tn" hint-placeholder-count="3">
+                        <option value="{{ tn.valor }}">{{ tn.label }}</option>
+                      </sc-for>
+                    </select>
+                    <span style="font-size:12px;color:#6b6866">{{ cifDeteccion }}</span>
+                  </div>
+                  <div class="cifrado-hoja" style="margin-top:12px">
+                    <sc-for list="{{ cifPreview }}" as="ln" hint-placeholder-count="6"><div class="cifrado-linea"><sc-for list="{{ ln.segs }}" as="sg" hint-placeholder-count="2"><span style="{{ sg.style }}">{{ sg.txt }}</span></sc-for></div></sc-for>
+                  </div>
+                </div>
+              </sc-if>
+              <div style="display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px">
+                <button type="button" class="cifrado-btn" onClick="{{ cancelarImportacion }}">Cancelar</button>
+                <button type="button" onClick="{{ guardarCifrado }}" style="{{ cifGuardarStyle }}">{{ cifGuardarLabel }}</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
 </div>
 
 </x-dc>
@@ -624,7 +736,9 @@ class Component extends DCLogic {
     reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null, musicos: [],
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false,
-    moverEventoId: null, moverMes: '', userDoc: null
+    moverEventoId: null, moverMes: '', userDoc: null,
+    /* Modal "Cifrado" del paso 4 (null = cerrado), ver abrirCifrado. */
+    cifrado: null
   };
 
   componentDidMount() {
@@ -677,7 +791,32 @@ class Component extends DCLogic {
     });
   }
 
+  /* El motor de plantillas no expone onPaste: el pegado del cifrado se
+     escucha directo en el textarea (se vuelve a enganchar si React lo
+     recrea). Del portapapeles se toma el HTML, donde LaCuerda marca cada
+     acorde con <a>; nunca se inserta en la página, solo se lee. */
+  componentDidUpdate() {
+    const el = document.getElementById('cifrado-pegado');
+    if (el && el !== this._pegadoEl) {
+      this._pegadoEl = el;
+      el.addEventListener('paste', (e) => {
+        const dt = e.clipboardData;
+        if (!dt) return;
+        const html = dt.getData('text/html') || '';
+        const texto = dt.getData('text/plain') || '';
+        if (!html && !texto) return;
+        e.preventDefault();
+        this.procesarPegado(html, texto);
+      });
+    }
+    if (!this._escCifrado) {
+      this._escCifrado = (e) => { if (e.key === 'Escape' && this.state.cifrado) this.cerrarCifrado(); };
+      document.addEventListener('keydown', this._escCifrado);
+    }
+  }
+
   componentWillUnmount() {
+    if (this._escCifrado) document.removeEventListener('keydown', this._escCifrado);
     if (this._unwatch) this._unwatch();
     if (this._unorgs) this._unorgs();
     if (this._unSongOverrides) this._unSongOverrides();
@@ -946,6 +1085,185 @@ class Component extends DCLogic {
     D().moveEvent(id, iso, (ok) => this.avisar(ok, 'Evento movido de fecha', 'No se pudo mover: revisa tu sesión o conexión'));
   }
 
+  /* --- Modal "Cifrado" (paso 4) ---
+     El cifrado se importa una sola vez por canción (cifrados/{org}/{id},
+     ver R.saveCifrado) y la canción del borrador lo referencia con `cid`.
+     `cid` llega resuelto: el de la canción o, si no tiene, el del catálogo. */
+
+  abrirCifrado(bi, ci, cid) {
+    this._pegadoEl = null;
+    this.setState({ cifrado: {
+      bi: bi, ci: ci, cid: cid || '', modo: cid ? 'ver' : 'importar', cargando: !!cid,
+      cifrado: null, url: '', texto: '', pegado: null, tono: '', deteccion: null,
+      guardando: false, error: '', aviso: ''
+    } });
+    if (!cid) return;
+    D().getCifrado(this.state.organizationId, cid, (c, err) => {
+      this.setState((s) => {
+        if (!s.cifrado || s.cifrado.cid !== cid) return null;
+        if (err) return { cifrado: Object.assign({}, s.cifrado, { cargando: false, error: 'No se pudo leer el cifrado: revisa tu conexión.' }) };
+        if (!c) return { cifrado: Object.assign({}, s.cifrado, { cargando: false, modo: 'importar', cid: '', aviso: 'El cifrado vinculado ya no existe. Impórtalo de nuevo.' }) };
+        return { cifrado: Object.assign({}, s.cifrado, { cargando: false, cifrado: c }) };
+      });
+    });
+  }
+
+  cerrarCifrado() { this.setState({ cifrado: null }); }
+
+  setCifrado(patch) {
+    this.setState((s) => (s.cifrado ? { cifrado: Object.assign({}, s.cifrado, patch) } : null));
+  }
+
+  /* Reemplazar conserva el mismo id: se actualiza en todas las canciones
+     y eventos que ya lo usan. */
+  reemplazarCifrado() {
+    const c = this.state.cifrado;
+    if (!c) return;
+    this._pegadoEl = null;
+    this.setCifrado({ modo: 'importar', url: c.cifrado ? c.cifrado.fuenteUrl : '', texto: '', pegado: null, tono: '', deteccion: null, error: '', aviso: '' });
+  }
+
+  cancelarImportacion() {
+    const c = this.state.cifrado;
+    if (c && c.cifrado) this.setCifrado({ modo: 'ver', error: '', aviso: '' });
+    else this.cerrarCifrado();
+  }
+
+  procesarPegado(html, texto) {
+    const C = window.RepertorioCifrado;
+    const p = C.parsePegado(html, texto);
+    const hayAcordes = p.lineas.some((l) => l.t === 'a');
+    const det = hayAcordes ? C.detectarTono(p.lineas) : null;
+    /* Lo que se ve en el textarea es la versión en texto; si luego se edita
+       a mano se vuelve a leer como texto (onCifTexto). */
+    const visible = p.lineas.map((l) => l.x).join('\n');
+    this.setCifrado({ texto: visible, pegado: hayAcordes ? p : null, deteccion: det, tono: det && det.tono ? det.tono : '', error: hayAcordes ? '' : 'No se encontraron acordes en lo pegado. Copia la letra con los acordes desde LaCuerda.' });
+  }
+
+  guardarCifrado() {
+    const R = D();
+    const s = this.state;
+    const c = s.cifrado;
+    if (!c || c.guardando || !s.draft || !R.puede(s.userDoc, 'cifrados.editar')) return;
+    const cn = s.draft.bloques[c.bi] && s.draft.bloques[c.bi].canciones[c.ci];
+    if (!cn) return;
+    const datos = { titulo: cn.t, artista: cn.sm, fuenteUrl: c.url, tonoOriginal: c.tono, lineas: c.pegado ? c.pegado.lineas : [] };
+    if (!R.prepararCifrado(datos)) {
+      this.setCifrado({ error: 'Falta algo: un enlace válido de LaCuerda, el cifrado pegado con acordes y su tono original.' });
+      return;
+    }
+    this.setCifrado({ guardando: true, error: '' });
+    R.saveCifrado(s.organizationId, c.cid, datos, (ok, id) => {
+      if (!ok) { this.setCifrado({ guardando: false, error: 'No se guardó el cifrado: revisa tu sesión o conexión.' }); return; }
+      const bi = c.bi, ci = c.ci;
+      this.setDraft((x) => { x.bloques[bi].canciones[ci].cid = id; });
+      /* Quien administra el repertorio lo deja además en el catálogo; para el
+         resto, el catálogo lo toma del evento en cuanto este se guarde. */
+      const titulo = (cn.t || '').trim();
+      if (titulo && R.puede(s.userDoc, 'repertorio.gestionar')) {
+        R.saveSongOverride(s.organizationId, R.songKey(titulo, (cn.sm || '').trim(), (cn.u || '').trim()), { cifradoId: id });
+      }
+      R.getCifrado(s.organizationId, id, (cf) => this.setCifrado({
+        guardando: false, modo: 'ver', cid: id, cifrado: cf,
+        aviso: 'Cifrado guardado. Guarda el evento para que quede vinculado a esta canción.'
+      }));
+    });
+  }
+
+  /* Campos del modal para renderVals. */
+  valsCifrado(catalogo) {
+    const R = D();
+    const C = window.RepertorioCifrado;
+    const s = this.state;
+    const c = s.cifrado;
+    const cn = c && s.draft && s.draft.bloques[c.bi] ? s.draft.bloques[c.bi].canciones[c.ci] : null;
+    const segStyle = (sg) => sg.acorde
+      ? (sg.desconocido ? 'color:#9a9694;text-decoration:underline dotted' : 'font-weight:800;color:var(--ac-dk)')
+      : '';
+    const pintar = (lineas) => lineas.map((l) => ({ segs: l.segs.map((sg) => ({ txt: sg.txt, style: segStyle(sg) })) }));
+    const out = {
+      cifAbierto: !!(c && cn),
+      cerrarCifrado: () => this.cerrarCifrado(),
+      reemplazarCifrado: () => this.reemplazarCifrado(),
+      cancelarImportacion: () => this.cancelarImportacion(),
+      guardarCifrado: () => this.guardarCifrado(),
+      cifKicker: '', cifTitulo: '', cifArtista: '',
+      cifCargando: false, cifVer: false, cifImportar: false,
+      cifHayAviso: false, cifAviso: '', cifHayError: false, cifError: '',
+      cifTonoMostrado: '', cifTonoOrigenTxt: '', cifAvisos: [], cifLineas: [], cifFuenteUrl: '#',
+      cifPuedeEditar: false,
+      cifUrl: '', onCifUrl: () => {}, cifUrlInvalida: false, cifUrlValida: false, cifUrlNormalizada: '#', cifBuscarUrl: '#',
+      cifTexto: '', onCifTexto: () => {}, cifHayPegado: false, cifResumen: '', cifResumenStyle: '',
+      cifTono: '', onCifTono: () => {}, cifTonos: [], cifDeteccion: '', cifPreview: [],
+      cifGuardarLabel: 'Guardar cifrado', cifGuardarStyle: ''
+    };
+    if (!out.cifAbierto) return out;
+
+    const puedeEditar = R.puede(s.userDoc, 'cifrados.editar');
+    out.cifPuedeEditar = puedeEditar;
+    out.cifTitulo = (cn.t || '').trim() || 'Canción sin nombre';
+    out.cifArtista = (cn.sm || '').trim();
+    out.cifKicker = c.modo === 'ver' ? 'Cifrado' : (c.cid ? 'Reemplazar cifrado' : 'Agregar cifrado');
+    out.cifCargando = c.cargando;
+    out.cifHayAviso = !!c.aviso; out.cifAviso = c.aviso;
+    out.cifHayError = !!c.error; out.cifError = c.error;
+
+    if (c.modo === 'ver' && c.cifrado && !c.cargando) {
+      const r = C.transponerCifrado(c.cifrado, cn.k);
+      out.cifVer = true;
+      out.cifTonoMostrado = r.tono || '—';
+      out.cifTonoOrigenTxt = r.tonoOriginal
+        ? (r.delta ? 'Transpuesto desde ' + r.tonoOriginal + ' (tono del cifrado)' : 'Tono del cifrado: ' + r.tonoOriginal)
+        : '';
+      out.cifAvisos = r.avisos.map((a) => C.mensajeAviso(a, r, cn.k)).filter(Boolean);
+      out.cifLineas = pintar(r.lineas);
+      out.cifFuenteUrl = c.cifrado.fuenteUrl || '#';
+    }
+
+    if (c.modo === 'importar' && !c.cargando) {
+      out.cifImportar = true;
+      const urlNorm = R.urlCifrado(c.url);
+      out.cifUrl = c.url;
+      out.onCifUrl = (e) => this.setCifrado({ url: e.target.value });
+      out.cifUrlInvalida = !!(c.url || '').trim() && !urlNorm;
+      out.cifUrlValida = !!urlNorm;
+      out.cifUrlNormalizada = urlNorm || '#';
+      out.cifBuscarUrl = C.urlBusqueda(cn.t, cn.sm);
+      out.cifTexto = c.texto;
+      out.onCifTexto = (e) => {
+        const v = e.target.value;
+        if (!v.trim()) { this.setCifrado({ texto: v, pegado: null, deteccion: null, tono: '', error: '' }); return; }
+        this.procesarPegado('', v);
+      };
+      if (c.pegado) {
+        const p = c.pegado;
+        const nAcordes = p.lineas.filter((l) => l.t === 'a').length;
+        out.cifHayPegado = true;
+        out.cifResumen = '✓ ' + nAcordes + (nAcordes === 1 ? ' línea' : ' líneas') + ' con acordes · ' + p.acordes + ' acordes · ' +
+          (p.origen === 'html' ? 'leídos con las marcas de LaCuerda.' : 'detectados en texto plano: revisa que estén bien marcados en verde.') +
+          (p.desconocidos.length ? ' No reconocidos: ' + p.desconocidos.join(', ') + '.' : '');
+        out.cifResumenStyle = 'font-size:13px;margin:6px 0 0;color:' + (p.origen === 'html' && !p.desconocidos.length ? 'var(--ac-dk)' : '#8a5a00');
+        const lista = C.TONOS_LISTA.slice();
+        if (c.tono && lista.indexOf(c.tono) < 0) lista.unshift(c.tono);
+        out.cifTonos = [{ valor: '', label: 'Elige…' }].concat(lista.map((t) => ({ valor: t, label: t })));
+        out.cifTono = c.tono;
+        out.onCifTono = (e) => this.setCifrado({ tono: e.target.value });
+        const det = c.deteccion;
+        out.cifDeteccion = det && det.tono
+          ? (c.tono === det.tono
+            ? 'Detectado automáticamente' + (det.confianza < 0.15 ? ' (verifícalo: podría ser ' + (det.candidatos[1] ? det.candidatos[1].tono : 'otro') + ')' : '')
+            : 'Detectado: ' + det.tono)
+          : 'No se pudo detectar: elígelo';
+        out.cifPreview = pintar(C.transponerCifrado({ tonoOriginal: c.tono, lineas: p.lineas }, 'Original').lineas);
+      }
+      const listo = puedeEditar && !!urlNorm && !!c.pegado && !!c.tono && !c.guardando;
+      out.cifGuardarLabel = c.guardando ? 'Guardando…' : (c.cid ? 'Reemplazar cifrado' : 'Guardar cifrado');
+      out.cifGuardarStyle = 'font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border:2px solid var(--ac);' +
+        (listo ? 'background:var(--ac);color:#fff;cursor:pointer' : 'background:#fff;color:#9a9694;border-color:#d7d3d3;cursor:not-allowed');
+    }
+    return out;
+  }
+
   renderVals() {
     const R = D();
     const s = this.state;
@@ -1197,6 +1515,7 @@ class Component extends DCLogic {
        que dejen de sugerirse aquí sin tocar el texto ya guardado en los
        eventos históricos que las usan). */
     const catalogo = R.buildSongCatalog(s.data.eventos, s.songOverrides).filter((so) => !so.archivado);
+    const puedeCifrar = R.puede(s.userDoc, 'cifrados.editar');
 
     /* Catálogo de salmistas: también es una llave (identifica versiones), así
        que necesita su propio autocomplete para no fragmentarse en variantes
@@ -1261,6 +1580,8 @@ class Component extends DCLogic {
         /* Se habilita solo con un link de YouTube reconocible en `u`, sin
            importar si llegó ahí por autocomplete o escrito/pegado a mano. */
         const videoId = R.youtubeId(cn.u);
+        const cid = R.cifradoIdDeCancion(cn, catalogo);
+        const tieneTitulo = !!(cn.t || '').trim();
         const activa = s.reproduciendoKey === rowKey;
         const enPausa = activa && s.reproduciendoPausado;
         return {
@@ -1295,6 +1616,9 @@ class Component extends DCLogic {
                 x.bloques[bi].canciones[ci].t = so.nombre;
                 x.bloques[bi].canciones[ci].sm = so.salmista;
                 x.bloques[bi].canciones[ci].u = so.u;
+                /* El cifrado viaja con la canción elegida (ver buildSongCatalog). */
+                if (so.cifradoId) x.bloques[bi].canciones[ci].cid = so.cifradoId;
+                else delete x.bloques[bi].canciones[ci].cid;
               });
               abrirFila(false);
             }
@@ -1318,6 +1642,15 @@ class Component extends DCLogic {
                     : 'border:1.5px solid var(--ac);background:#fff;color:var(--ac)') +
             (videoId ? '' : ';visibility:hidden;pointer-events:none'),
           onPlay: () => this.togglePlay(rowKey, videoId),
+          /* ♪ Cifrado: relleno si la canción ya tiene (propio o del catálogo),
+             contorno si todavía no. Igual que ▶, siempre ocupa su columna. */
+          cifradoTitle: cid ? 'Ver cifrado' : 'Agregar cifrado',
+          cifradoBtnStyle: 'width:22px;height:22px;border-radius:50%;padding:0;font-size:12px;' +
+            'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+            (cid ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
+                 : 'border:1.5px dashed #9a9694;background:#fff;color:#7d7979') +
+            (tieneTitulo && (cid || puedeCifrar) ? '' : ';visibility:hidden;pointer-events:none'),
+          onCifrado: () => { if (tieneTitulo && (cid || puedeCifrar)) this.abrirCifrado(bi, ci, cid); },
           remove: () => this.setDraft((x) => {
             const arr = x.bloques[bi].canciones;
             if (arr.length > 1) arr.splice(ci, 1); else arr[ci] = R.song();
@@ -1517,7 +1850,7 @@ class Component extends DCLogic {
       moverMesSiguiente: () => this.moverShiftMonth(1),
       cerrarMover: () => this.cerrarMover(),
       detenerPropagacion: (e) => this.detenerPropagacion(e)
-    });
+    }, this.valsCifrado());
   }
 }
 

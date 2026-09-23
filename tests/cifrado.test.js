@@ -202,6 +202,15 @@ test('detección de la tonalidad original', () => {
   assert.equal(C.detectarTono([{ t: 'l', x: 'sin acordes' }]).tono, null);
 });
 
+test('mensajes de aviso, lista de tonos y búsqueda', () => {
+  const cif = { tonoOriginal: 'A', lineas: [{ t: 'a', x: 'A', i: [[0, 'A']] }] };
+  const r = C.transponerCifrado(cif, 'G - A');
+  assert.equal(C.mensajeAviso('TONO_INVALIDO', r, 'G - A'), 'El tono "G - A" no se reconoce; se muestra en el tono del cifrado (A).');
+  for (const cod of ['ORIGINAL', 'SIN_TONO', 'SIN_TONO_ORIGINAL', 'MODO_DISTINTO', 'ACORDES_DESCONOCIDOS']) assert.ok(C.mensajeAviso(cod, r, ''));
+  for (const t of C.TONOS_LISTA) assert.equal(C.parseTono(t).label, t);
+  assert.equal(C.urlBusqueda('Manda el fuego', ' Vino Nuevo'), 'https://acordes.lacuerda.net/busca.php?exp=Manda%20el%20fuego%20Vino%20Nuevo');
+});
+
 test('URL de LaCuerda: validación y normalización a .shtml', () => {
   const ok = 'https://acordes.lacuerda.net/vino_nuevo/manda_el_fuego.shtml';
   assert.equal(C.normalizarUrlCifrado(ok), ok);

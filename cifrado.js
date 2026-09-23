@@ -471,6 +471,31 @@
     return { lineas: out, tono: tono, tonoOriginal: origen ? origen.label : null, delta: delta, avisos: avisos };
   }
 
+  /* Texto para mostrar cada aviso de transponerCifrado. `r` es su resultado
+     y `tonoDestinoTxt` el tono configurado en la canción. */
+  function mensajeAviso(codigo, r, tonoDestinoTxt) {
+    var orig = (r && r.tonoOriginal) || '';
+    switch (codigo) {
+      case 'ORIGINAL': return 'Tono "Original": se muestra en el tono del cifrado' + (orig ? ' (' + orig + ')' : '') + '.';
+      case 'SIN_TONO': return 'Esta canción no tiene tono configurado; se muestra en el tono del cifrado' + (orig ? ' (' + orig + ')' : '') + '.';
+      case 'TONO_INVALIDO': return 'El tono "' + String(tonoDestinoTxt || '').trim() + '" no se reconoce; se muestra en el tono del cifrado' + (orig ? ' (' + orig + ')' : '') + '.';
+      case 'SIN_TONO_ORIGINAL': return 'El cifrado no tiene tono original registrado; se muestra tal como se copió.';
+      case 'MODO_DISTINTO': return 'El tono configurado y el del cifrado' + (orig ? ' (' + orig + ')' : '') + ' no son del mismo modo (mayor/menor): se transpuso por su relativa. Verifica el tono.';
+      case 'ACORDES_DESCONOCIDOS': return 'Algunos acordes no se reconocieron y se dejaron sin cambios (en gris).';
+      default: return '';
+    }
+  }
+
+  /* Tonalidades para elegir el tono original de un cifrado. */
+  var TONOS_LISTA = ['C', 'C#', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B',
+    'Cm', 'C#m', 'Dm', 'D#m', 'Ebm', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'Bbm', 'Bm'];
+
+  /* Búsqueda de la canción en LaCuerda (para el botón "Buscar"). */
+  function urlBusqueda(titulo, artista) {
+    var q = ((titulo || '') + ' ' + (artista || '')).replace(/\s+/g, ' ').trim();
+    return 'https://acordes.lacuerda.net/busca.php?exp=' + encodeURIComponent(q);
+  }
+
   /* Texto plano ya transpuesto (útil para pruebas y para copiar). */
   function textoTranspuesto(cifrado, tonoDestinoTxt, ajuste) {
     return transponerCifrado(cifrado, tonoDestinoTxt, ajuste).lineas.map(function (l) {
@@ -493,6 +518,7 @@
     parseAcorde: parseAcorde, esAcorde: esAcorde, claseAcorde: claseAcorde, transponerAcorde: transponerAcorde,
     parseTono: parseTono, semitonos: semitonos, detectarTono: detectarTono,
     parsePegado: parsePegado, transponerCifrado: transponerCifrado, textoTranspuesto: textoTranspuesto,
+    mensajeAviso: mensajeAviso, TONOS_LISTA: TONOS_LISTA, urlBusqueda: urlBusqueda,
     normalizarUrlCifrado: normalizarUrlCifrado
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
