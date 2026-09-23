@@ -46,8 +46,13 @@ test('prepararCifrado normaliza y rechaza datos incompletos', () => {
   assert.equal(p.fuenteUrl, 'https://acordes.lacuerda.net/artista/cancion.shtml');
   assert.equal(p.tonoOriginal, 'A');
   assert.equal(p.titulo, 'Canción de prueba');
-  assert.equal(R.prepararCifrado({ ...CIFRADO, fuenteUrl: 'https://otro.com/a/b' }), null);
+  // El enlace es opcional y puede ser de otra fuente; solo se rechaza si no es http(s)
+  assert.equal(R.prepararCifrado({ ...CIFRADO, fuenteUrl: '' }).fuenteUrl, '');
+  assert.equal(R.prepararCifrado({ ...CIFRADO, fuenteUrl: ' https://www.cifraclub.com/x/y/ ' }).fuenteUrl, 'https://www.cifraclub.com/x/y/');
+  assert.equal(R.prepararCifrado({ ...CIFRADO, fuenteUrl: 'javascript:alert(1)' }), null);
+  assert.equal(R.prepararCifrado({ ...CIFRADO, fuenteUrl: 'no es un enlace' }), null);
   assert.equal(R.prepararCifrado({ ...CIFRADO, tonoOriginal: 'Original' }), null);
+  assert.equal(R.prepararCifrado({ ...CIFRADO, tonoOriginal: '' }), null);
   assert.equal(R.prepararCifrado({ ...CIFRADO, tonoOriginal: 'xx' }), null);
   assert.equal(R.prepararCifrado({ ...CIFRADO, lineas: [{ t: 'l', x: 'solo letra' }] }), null);
   // Campos extra y posiciones fuera de la línea se descartan
@@ -82,6 +87,14 @@ test('saveCifrado reemplaza sin tocar createdAt/createdBy', async () => {
   assert.equal('createdBy' in escrito[0].v, false);
 });
 
+test('saveCifrado sin enlace: lo borra al reemplazar', async () => {
+  const { fb, escrito } = firebaseFalso();
+  const R = cargar(fb);
+  const ok = await new Promise((res) => R.saveCifrado('org1', 'c9', { ...CIFRADO, fuenteUrl: '' }, (b) => res(b)));
+  assert.equal(ok, true);
+  assert.equal(escrito[0].v.fuenteUrl, null);
+});
+
 test('saveCifrado no escribe sin sesión o con datos inválidos, y reporta el rechazo', async () => {
   const sinSesion = firebaseFalso({ uid: null });
   let R = cargar(sinSesion.fb);
@@ -89,7 +102,7 @@ test('saveCifrado no escribe sin sesión o con datos inválidos, y reporta el re
   assert.equal(sinSesion.escrito.length, 0);
   const normal = firebaseFalso();
   R = cargar(normal.fb);
-  assert.equal(await new Promise((r) => R.saveCifrado('org1', '', { ...CIFRADO, fuenteUrl: '' }, r)), false);
+  assert.equal(await new Promise((r) => R.saveCifrado('org1', '', { ...CIFRADO, tonoOriginal: '' }, r)), false);
   assert.equal(normal.escrito.length, 0);
   const rechazo = firebaseFalso({ rechazar: true });
   R = cargar(rechazo.fb);

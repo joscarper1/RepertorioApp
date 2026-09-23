@@ -347,8 +347,20 @@
     var lineas = null, origen = 'texto';
     if (html && /<a\b/i.test(html)) {
       lineas = lineasDesdeSegmentos(segmentosHtml(html));
-      if (lineas.some(function (l) { return l.t === 'a'; })) origen = 'html';
-      else lineas = null;
+      /* En otros sitios los <a> suelen ser enlaces, no acordes: si muchos de
+         los marcados no son acordes, se lee como texto plano. */
+      var marcados = 0, validos = 0;
+      lineas.forEach(function (l) {
+        (l.i || []).forEach(function (par) { marcados++; if (esAcorde(par[1])) validos++; });
+      });
+      if (marcados && validos / marcados < 0.7) lineas = null;
+      else if (lineas.some(function (l) { return l.t === 'a'; })) {
+        origen = 'html';
+        /* Quien sube el cifrado a veces escribe algunas líneas de acordes
+           sin marcarlas (p. ej. "Intro (2 veces): F - C - Dm7 - F"): esas
+           pasan por la misma heurística del texto plano. */
+        lineas = lineas.map(function (l) { return l.t === 'l' ? lineaDeTexto(l.x) : l; });
+      } else lineas = null;
     }
     if (!lineas) {
       var fuente = texto;
@@ -514,12 +526,31 @@
     return 'https://acordes.lacuerda.net/' + m[1].toLowerCase() + '/' + m[2].toLowerCase() + (m[3] || '') + '.shtml';
   }
 
+  /* Enlace de la fuente de un cifrado (opcional): '' si viene vacío, la
+     versión normalizada si es de LaCuerda, el enlace tal cual si es otro
+     sitio http(s), o null si no es un enlace válido (p. ej. "javascript:"). */
+  function normalizarUrlFuente(url) {
+    var s = (url || '').trim();
+    if (!s) return '';
+    var lc = normalizarUrlCifrado(s);
+    if (lc) return lc;
+    if (s.length > 300 || !/^https?:\/\/[a-z0-9.-]+\.[a-z]{2,}(?::\d+)?(?:[/?#][^\s]*)?$/i.test(s)) return null;
+    return s;
+  }
+
+  /* Nombre corto del sitio para mostrar ("LaCuerda.net", "cifraclub.com"). */
+  function nombreFuente(url) {
+    var m = /^https?:\/\/(?:www\.|acordes\.)?([^/?#:]+)/i.exec(url || '');
+    if (!m) return '';
+    return /lacuerda\.net$/i.test(m[1]) ? 'LaCuerda.net' : m[1].toLowerCase();
+  }
+
   var api = {
     parseAcorde: parseAcorde, esAcorde: esAcorde, claseAcorde: claseAcorde, transponerAcorde: transponerAcorde,
     parseTono: parseTono, semitonos: semitonos, detectarTono: detectarTono,
     parsePegado: parsePegado, transponerCifrado: transponerCifrado, textoTranspuesto: textoTranspuesto,
     mensajeAviso: mensajeAviso, TONOS_LISTA: TONOS_LISTA, urlBusqueda: urlBusqueda,
-    normalizarUrlCifrado: normalizarUrlCifrado
+    normalizarUrlCifrado: normalizarUrlCifrado, normalizarUrlFuente: normalizarUrlFuente, nombreFuente: nombreFuente
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.RepertorioCifrado = api;

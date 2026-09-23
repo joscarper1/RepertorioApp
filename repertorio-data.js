@@ -1132,21 +1132,23 @@
   /* Topes de tamaño: los mismos que validan las reglas de la base. */
   var LIMITES_CIFRADO = { lineas: 600, texto: 400, acordesPorLinea: 60, acorde: 20, titulo: 200 };
 
-  /* URL de la fuente normalizada (acordes.lacuerda.net, .shtml) o null. */
+  /* Enlace de la fuente (opcional): '' si no hay, normalizado si es de
+     LaCuerda, tal cual si es otro sitio http(s); null si no es válido. */
   function urlCifrado(url) {
     var C = w.RepertorioCifrado;
-    return C ? C.normalizarUrlCifrado(url) : null;
+    return C ? C.normalizarUrlFuente(url) : null;
   }
 
   /* Deja solo lo que admite el formato de cifrado.js, recortado a los topes.
-     null si falta la URL válida, un tono original reconocible o al menos
-     una línea de acordes. No incluye los campos de auditoría. */
+     null si el enlace (opcional) no es válido, si falta un tono original
+     reconocible o al menos una línea de acordes. No incluye los campos de
+     auditoría. */
   function prepararCifrado(data) {
     var C = w.RepertorioCifrado;
     data = data || {};
     var fuenteUrl = urlCifrado(data.fuenteUrl);
     var tono = C ? C.parseTono(data.tonoOriginal) : null;
-    if (!fuenteUrl || !tono || tono.especial) return null;
+    if (fuenteUrl === null || !tono || tono.especial) return null;
     var L = LIMITES_CIFRADO;
     var lineas = (Array.isArray(data.lineas) ? data.lineas : []).slice(0, L.lineas).map(function (ln) {
       var x = String((ln && ln.x) || '').slice(0, L.texto);
@@ -1201,6 +1203,8 @@
     var ref = id ? base.child(id) : base.push();
     var TS = w.firebase.database.ServerValue.TIMESTAMP;
     var payload = clone(limpio);
+    /* Sin enlace: se omite (y al reemplazar, se borra el anterior). */
+    if (!payload.fuenteUrl) payload.fuenteUrl = null;
     payload.updatedAt = TS;
     payload.updatedBy = user.uid;
     if (!id) { payload.createdAt = TS; payload.createdBy = user.uid; }

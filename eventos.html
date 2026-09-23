@@ -33,8 +33,8 @@
 <!-- ?v= obliga al navegador a bajar la versión que corresponde a esta
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
-<script src="cifrado.js?v=20260923"></script>
-<script src="repertorio-data.js?v=20260923"></script>
+<script src="cifrado.js?v=20260923c"></script>
+<script src="repertorio-data.js?v=20260923c"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
 *{box-sizing:border-box}
@@ -612,7 +612,9 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
                 <sc-for list="{{ cifLineas }}" as="ln" hint-placeholder-count="6"><div class="cifrado-linea"><sc-for list="{{ ln.segs }}" as="sg" hint-placeholder-count="2"><span style="{{ sg.style }}">{{ sg.txt }}</span></sc-for></div></sc-for>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
-                <a class="cifrado-btn" href="{{ cifFuenteUrl }}" target="_blank" rel="noopener noreferrer">Ver en LaCuerda ↗</a>
+                <sc-if value="{{ cifTieneFuente }}" hint-placeholder-val="{{ false }}">
+                  <a class="cifrado-btn" href="{{ cifFuenteUrl }}" target="_blank" rel="noopener noreferrer">Ver en {{ cifFuenteNombre }} ↗</a>
+                </sc-if>
                 <sc-if value="{{ cifPuedeEditar }}" hint-placeholder-val="{{ false }}">
                   <button type="button" class="cifrado-btn" onClick="{{ reemplazarCifrado }}">Reemplazar cifrado</button>
                 </sc-if>
@@ -623,10 +625,10 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
           <sc-if value="{{ cifImportar }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:18px">
               <div>
-                <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">1 · Enlace de LaCuerda</div>
-                <input value="{{ cifUrl }}" onChange="{{ onCifUrl }}" placeholder="https://acordes.lacuerda.net/artista/cancion" autoComplete="off" style="width:100%;margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:0;border-bottom:2px solid var(--ink);background:transparent;padding:6px 2px">
+                <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">1 · Enlace de la fuente <span style="font-weight:600;letter-spacing:.04em;text-transform:none">(opcional)</span></div>
+                <input value="{{ cifUrl }}" onChange="{{ onCifUrl }}" placeholder="https://acordes.lacuerda.net/… u otra fuente" autoComplete="off" style="width:100%;margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:0;border-bottom:2px solid var(--ink);background:transparent;padding:6px 2px">
                 <sc-if value="{{ cifUrlInvalida }}" hint-placeholder-val="{{ false }}">
-                  <div style="font-size:12px;color:#b00020;margin-top:4px">Debe ser un enlace de una canción en acordes.lacuerda.net</div>
+                  <div style="font-size:12px;color:#b00020;margin-top:4px">Debe ser un enlace completo que empiece con https://, o déjalo vacío.</div>
                 </sc-if>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">
                   <a class="cifrado-btn" href="{{ cifBuscarUrl }}" target="_blank" rel="noopener noreferrer">Buscar en LaCuerda ↗</a>
@@ -637,7 +639,7 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
               </div>
               <div>
                 <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">2 · Copia y pega la letra con acordes</div>
-                <p style="font-size:13px;color:#54514f;margin:6px 0 0;line-height:1.5">En LaCuerda selecciona desde el primer acorde hasta el final de la canción, cópiala (Ctrl+C) y pégala aquí (Ctrl+V). Lo que no sea parte de la canción, como notas del autor, puedes borrarlo aquí.</p>
+                <p style="font-size:13px;color:#54514f;margin:6px 0 0;line-height:1.5">Desde LaCuerda u otra fuente, selecciona desde el primer acorde hasta el final de la canción, cópiala (Ctrl+C) y pégala aquí (Ctrl+V). También puedes escribirla: cada línea de acordes encima de su letra. Con un enlace de LaCuerda se usan sus marcas de acordes; si no, los acordes se detectan en el texto. Lo que no sea parte de la canción, como notas del autor, puedes borrarlo aquí.</p>
                 <textarea id="cifrado-pegado" value="{{ cifTexto }}" onChange="{{ onCifTexto }}" rows="6" placeholder="Pega aquí el cifrado…" spellCheck="false" style="width:100%;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.4;padding:10px;border:2px solid var(--ink);background:#fff;resize:vertical;white-space:pre;overflow-x:auto"></textarea>
               </div>
               <sc-if value="{{ cifHayPegado }}" hint-placeholder-val="{{ false }}">
@@ -1129,15 +1131,37 @@ class Component extends DCLogic {
     else this.cerrarCifrado();
   }
 
-  procesarPegado(html, texto) {
+  /* Cómo se lee lo pegado lo decide el enlace: con uno de LaCuerda se usan
+     las marcas de acordes de su HTML; sin enlace o de otra fuente se toma
+     solo el texto plano y los acordes se detectan en él. Lo pegado se
+     guarda tal cual (crudo*) para volver a leerlo si el enlace cambia
+     después de pegar. `url` omitido = el enlace escrito en el modal. */
+  procesarPegado(html, texto, url) {
     const C = window.RepertorioCifrado;
-    const p = C.parsePegado(html, texto);
+    const c = this.state.cifrado;
+    const enlace = url !== undefined ? url : (c ? c.url : '');
+    const usarHtml = !!html && !!C.normalizarUrlCifrado(enlace);
+    const p = C.parsePegado(usarHtml ? html : '', texto || '');
     const hayAcordes = p.lineas.some((l) => l.t === 'a');
     const det = hayAcordes ? C.detectarTono(p.lineas) : null;
     /* Lo que se ve en el textarea es la versión en texto; si luego se edita
        a mano se vuelve a leer como texto (onCifTexto). */
     const visible = p.lineas.map((l) => l.x).join('\n');
-    this.setCifrado({ texto: visible, pegado: hayAcordes ? p : null, deteccion: det, tono: det && det.tono ? det.tono : '', error: hayAcordes ? '' : 'No se encontraron acordes en lo pegado. Copia la letra con los acordes desde LaCuerda.' });
+    this.setCifrado({
+      crudoHtml: html || '', crudoTexto: texto || '', leidoConHtml: usarHtml,
+      texto: visible, pegado: hayAcordes ? p : null, deteccion: det, tono: det && det.tono ? det.tono : '',
+      error: hayAcordes ? '' : 'No se encontraron acordes. Pega o escribe la letra con cada línea de acordes encima de su letra.'
+    });
+  }
+
+  cambiarUrlCifrado(url) {
+    const C = window.RepertorioCifrado;
+    const c = this.state.cifrado;
+    if (!c) return;
+    this.setCifrado({ url: url });
+    /* Si ya se pegó desde una página y el enlace cambia entre LaCuerda y
+       otra fuente, se vuelve a leer lo pegado con el modo que corresponde. */
+    if (c.crudoHtml && !!C.normalizarUrlCifrado(url) !== !!c.leidoConHtml) this.procesarPegado(c.crudoHtml, c.crudoTexto, url);
   }
 
   guardarCifrado() {
@@ -1149,7 +1173,7 @@ class Component extends DCLogic {
     if (!cn) return;
     const datos = { titulo: cn.t, artista: cn.sm, fuenteUrl: c.url, tonoOriginal: c.tono, lineas: c.pegado ? c.pegado.lineas : [] };
     if (!R.prepararCifrado(datos)) {
-      this.setCifrado({ error: 'Falta algo: un enlace válido de LaCuerda, el cifrado pegado con acordes y su tono original.' });
+      this.setCifrado({ error: 'Falta algo: el cifrado con acordes y su tono original (y, si pusiste un enlace, que sea válido).' });
       return;
     }
     this.setCifrado({ guardando: true, error: '' });
@@ -1190,7 +1214,7 @@ class Component extends DCLogic {
       cifKicker: '', cifTitulo: '', cifArtista: '',
       cifCargando: false, cifVer: false, cifImportar: false,
       cifHayAviso: false, cifAviso: '', cifHayError: false, cifError: '',
-      cifTonoMostrado: '', cifTonoOrigenTxt: '', cifAvisos: [], cifLineas: [], cifFuenteUrl: '#',
+      cifTonoMostrado: '', cifTonoOrigenTxt: '', cifAvisos: [], cifLineas: [], cifFuenteUrl: '#', cifTieneFuente: false, cifFuenteNombre: '',
       cifPuedeEditar: false,
       cifUrl: '', onCifUrl: () => {}, cifUrlInvalida: false, cifUrlValida: false, cifUrlNormalizada: '#', cifBuscarUrl: '#',
       cifTexto: '', onCifTexto: () => {}, cifHayPegado: false, cifResumen: '', cifResumenStyle: '',
@@ -1217,22 +1241,24 @@ class Component extends DCLogic {
         : '';
       out.cifAvisos = r.avisos.map((a) => C.mensajeAviso(a, r, cn.k)).filter(Boolean);
       out.cifLineas = pintar(r.lineas);
+      out.cifTieneFuente = !!c.cifrado.fuenteUrl;
       out.cifFuenteUrl = c.cifrado.fuenteUrl || '#';
+      out.cifFuenteNombre = C.nombreFuente(c.cifrado.fuenteUrl) || 'la fuente';
     }
 
     if (c.modo === 'importar' && !c.cargando) {
       out.cifImportar = true;
       const urlNorm = R.urlCifrado(c.url);
       out.cifUrl = c.url;
-      out.onCifUrl = (e) => this.setCifrado({ url: e.target.value });
-      out.cifUrlInvalida = !!(c.url || '').trim() && !urlNorm;
+      out.onCifUrl = (e) => this.cambiarUrlCifrado(e.target.value);
+      out.cifUrlInvalida = urlNorm === null;
       out.cifUrlValida = !!urlNorm;
       out.cifUrlNormalizada = urlNorm || '#';
       out.cifBuscarUrl = C.urlBusqueda(cn.t, cn.sm);
       out.cifTexto = c.texto;
       out.onCifTexto = (e) => {
         const v = e.target.value;
-        if (!v.trim()) { this.setCifrado({ texto: v, pegado: null, deteccion: null, tono: '', error: '' }); return; }
+        if (!v.trim()) { this.setCifrado({ texto: v, crudoHtml: '', crudoTexto: '', pegado: null, deteccion: null, tono: '', error: '' }); return; }
         this.procesarPegado('', v);
       };
       if (c.pegado) {
@@ -1240,8 +1266,8 @@ class Component extends DCLogic {
         const nAcordes = p.lineas.filter((l) => l.t === 'a').length;
         out.cifHayPegado = true;
         out.cifResumen = '✓ ' + nAcordes + (nAcordes === 1 ? ' línea' : ' líneas') + ' con acordes · ' + p.acordes + ' acordes · ' +
-          (p.origen === 'html' ? 'leídos con las marcas de LaCuerda.' : 'detectados en texto plano: revisa que estén bien marcados en verde.') +
-          (p.desconocidos.length ? ' No reconocidos: ' + p.desconocidos.join(', ') + '.' : '');
+          (p.origen === 'html' ? 'leídos con las marcas de LaCuerda.' : 'detectados en el texto: revisa que estén marcados en verde.') +
+          (p.desconocidos.length ? ' No reconocidos: ' + p.desconocidos.join(', ').replace(/\.$/, '') + '.' : '');
         out.cifResumenStyle = 'font-size:13px;margin:6px 0 0;color:' + (p.origen === 'html' && !p.desconocidos.length ? 'var(--ac-dk)' : '#8a5a00');
         const lista = C.TONOS_LISTA.slice();
         if (c.tono && lista.indexOf(c.tono) < 0) lista.unshift(c.tono);
@@ -1256,7 +1282,7 @@ class Component extends DCLogic {
           : 'No se pudo detectar: elígelo';
         out.cifPreview = pintar(C.transponerCifrado({ tonoOriginal: c.tono, lineas: p.lineas }, 'Original').lineas);
       }
-      const listo = puedeEditar && !!urlNorm && !!c.pegado && !!c.tono && !c.guardando;
+      const listo = puedeEditar && urlNorm !== null && !!c.pegado && !!c.tono && !c.guardando;
       out.cifGuardarLabel = c.guardando ? 'Guardando…' : (c.cid ? 'Reemplazar cifrado' : 'Guardar cifrado');
       out.cifGuardarStyle = 'font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border:2px solid var(--ac);' +
         (listo ? 'background:var(--ac);color:#fff;cursor:pointer' : 'background:#fff;color:#9a9694;border-color:#d7d3d3;cursor:not-allowed');

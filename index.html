@@ -17,7 +17,11 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="menu-config.js"></script>
-<script src="repertorio-data.js"></script>
+<!-- ?v= obliga al navegador a bajar la versión que corresponde a esta
+     página en vez de una copia vieja en caché: súbelo al cambiar estos
+     archivos junto con funciones nuevas que la página use. -->
+<script src="cifrado.js?v=20260923c"></script>
+<script src="repertorio-data.js?v=20260923c"></script>
 <style>
 :root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--gold:#c9982e;--gold-dk:#7a5610;--gold-lt:#f6ecd3;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
 *{box-sizing:border-box}
@@ -27,6 +31,19 @@ a{color:var(--ac-dk);text-decoration:none;border-bottom:1px solid var(--ac)}
 a:hover{color:#fff;background:var(--ac)}
 button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 ::selection{background:var(--ac-lt)}
+.cifrado-overlay{position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
+.cifrado-modal{width:min(100%,760px);max-height:90vh;display:flex;flex-direction:column;background:#fff;border:2px solid var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.cifrado-head{padding:16px 20px 12px;border-bottom:1px solid #eae9e9;flex:none}
+.cifrado-body{padding:16px 20px 20px;overflow-y:auto;flex:1 1 auto;min-height:0}
+.cifrado-hoja{font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.45;overflow-x:auto;padding:4px 0}
+.cifrado-linea{white-space:pre;min-height:1.45em}
+.cifrado-ctrl{font-size:13px;font-weight:800;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:4px 10px;cursor:pointer;min-width:38px}
+a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
+@media (max-width:640px){
+  .cifrado-overlay{padding:0}
+  .cifrado-modal{width:100%;height:100%;max-height:none;border:0}
+  .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
+}
 </style>
 </helmet>
 
@@ -280,7 +297,12 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
                               </sc-if>
                               <span style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
                             </div>
-                            <span style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
+                            <sc-if value="{{ cn.tieneCifrado }}" hint-placeholder-val="{{ false }}">
+                              <button type="button" onClick="{{ cn.onCifrado }}" title="Ver letra y acordes en este tono" aria-label="{{ cn.cifradoLabel }}" style="font-family:inherit;font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap;border:1.5px solid var(--ac);cursor:pointer">{{ cn.k }} <span style="font-size:11px">♪</span></button>
+                            </sc-if>
+                            <sc-if value="{{ cn.sinCifrado }}" hint-placeholder-val="{{ true }}">
+                              <span style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
+                            </sc-if>
                             <button onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
                           </div>
                         </sc-for>
@@ -370,6 +392,62 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:
       </div>
     </div>
   </sc-if>
+
+  <sc-if value="{{ cifAbierto }}" hint-placeholder-val="{{ false }}">
+    <div class="cifrado-overlay" onClick="{{ cerrarCifrado }}">
+      <div class="cifrado-modal" role="dialog" aria-modal="true" aria-label="Letra y acordes" onClick="{{ detenerPropagacion }}">
+        <div class="cifrado-head">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+            <div style="min-width:0">
+              <div style="font-size:18px;font-weight:800;line-height:1.2">{{ cifTitulo }}</div>
+              <div style="font-size:13px;color:#6b6866;margin-top:2px">{{ cifArtista }}</div>
+            </div>
+            <button type="button" onClick="{{ cerrarCifrado }}" aria-label="Cerrar" style="font-size:18px;border:0;background:transparent;color:#7d7979;cursor:pointer;padding:2px 4px">✕</button>
+          </div>
+          <sc-if value="{{ cifListo }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px">
+              <span style="font-size:14px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 10px">Tono: {{ cifTono }}</span>
+              <span style="font-size:12px;color:#6b6866">{{ cifOrigenTxt }}</span>
+              <span style="flex:1"></span>
+              <button type="button" class="cifrado-ctrl" onClick="{{ cifBajar }}" title="Bajar medio tono" aria-label="Bajar medio tono">−½</button>
+              <button type="button" class="cifrado-ctrl" onClick="{{ cifSubir }}" title="Subir medio tono" aria-label="Subir medio tono">+½</button>
+              <button type="button" class="cifrado-ctrl" onClick="{{ cifMenosLetra }}" title="Letra más pequeña" aria-label="Letra más pequeña">A−</button>
+              <button type="button" class="cifrado-ctrl" onClick="{{ cifMasLetra }}" title="Letra más grande" aria-label="Letra más grande">A+</button>
+            </div>
+            <sc-if value="{{ cifHayAjuste }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:#8a5a00">
+                <span>{{ cifAjusteTxt }} (solo en tu pantalla)</span>
+                <button type="button" onClick="{{ cifRestablecer }}" style="font-size:12px;font-weight:800;border:0;background:transparent;color:var(--ac-dk);text-decoration:underline;cursor:pointer;padding:0">Volver al tono configurado</button>
+              </div>
+            </sc-if>
+          </sc-if>
+        </div>
+        <div class="cifrado-body">
+          <sc-if value="{{ cifCargando }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:14px;color:#7d7979;margin:0">Cargando cifrado…</p>
+          </sc-if>
+          <sc-if value="{{ cifHayError }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:14px;color:#b00020;margin:0">{{ cifError }}</p>
+          </sc-if>
+          <sc-if value="{{ cifListo }}" hint-placeholder-val="{{ false }}">
+            <div>
+              <sc-for list="{{ cifAvisos }}" as="av" hint-placeholder-count="1">
+                <p style="font-size:12px;color:#8a5a00;background:#fff6e0;padding:6px 10px;margin:0 0 10px">{{ av }}</p>
+              </sc-for>
+              <div class="cifrado-hoja" style="{{ cifHojaStyle }}">
+                <sc-for list="{{ cifLineas }}" as="ln" hint-placeholder-count="8"><div class="cifrado-linea"><sc-for list="{{ ln.segs }}" as="sg" hint-placeholder-count="2"><span style="{{ sg.style }}">{{ sg.txt }}</span></sc-for></div></sc-for>
+              </div>
+              <sc-if value="{{ cifTieneFuente }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:16px;padding-top:10px;border-top:1px solid #eae9e9;font-size:12px;color:#7d7979">
+                  Fuente: <a class="cifrado-fuente" href="{{ cifFuenteUrl }}" target="_blank" rel="noopener noreferrer">{{ cifFuenteNombre }} ↗</a>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
 </div>
 </sc-if>
 
@@ -382,7 +460,10 @@ class Component extends DCLogic {
     filtroAbierto: false, filtroTexto: '', filtroId: new URLSearchParams(location.search).get('eventid') || null, colapsadas: {}, diaColapsado: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false,
     reproduciendoKey: null, reproduciendoPausado: false,
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
-    participacionesAbierto: false, participacionesBusqueda: '', personaSeleccionada: null
+    participacionesAbierto: false, participacionesBusqueda: '', personaSeleccionada: null,
+    /* Catálogo de la organización (para heredar el cifrado de una canción,
+       ver R.cifradoIdDeCancion) y modal de cifrado (null = cerrado). */
+    songOverrides: {}, cifradoVer: null
   };
 
   componentDidMount() {
@@ -413,6 +494,7 @@ class Component extends DCLogic {
       R.getOrganizationBySlug(slug.trim(), (org) => {
         if (!org) { this.setState({ modo: 'error' }); return; }
         this.setState({ modo: 'calendario', org: org });
+        this._unSongOverrides = R.watchSongCatalog(org.id, (map) => this.setState({ songOverrides: map }));
         this._unwatch = R.watchEventsForOrg(org.id, (evs) => {
           /* Solo se muestran eventos Publicado/Cancelado; Borrador y
              Archivado son de uso exclusivo del panel de administración. */
@@ -468,6 +550,8 @@ class Component extends DCLogic {
   }
 
   componentWillUnmount() {
+    if (this._unSongOverrides) this._unSongOverrides();
+    if (this._escCifrado) document.removeEventListener('keydown', this._escCifrado);
     if (this._unwatch) this._unwatch();
     if (this._unauth) this._unauth();
     if (this._unwatchOrgsCheck) this._unwatchOrgsCheck();
@@ -525,6 +609,100 @@ class Component extends DCLogic {
 
   detenerPropagacion(e) {
     if (e && e.stopPropagation) e.stopPropagation();
+  }
+
+  /* --- Modal de cifrado (letra + acordes en el tono de la canción) ---
+     Se lee una sola vez de cifrados/{org}/{cid} y se transpone aquí mismo
+     (cifrado.js). Tamaño de letra y ±½ tono son solo para quien mira: el
+     tamaño se recuerda en este navegador, el ajuste de tono no se guarda. */
+
+  abrirCifrado(cid, c) {
+    const R = window.RepertorioData;
+    if (!cid || !this.state.org) return;
+    let tamano = 15;
+    try { tamano = Number(localStorage.getItem('repertorio-cifrado-tamano')) || 15; } catch (e) { /* sin storage */ }
+    this.setState({ cifradoVer: {
+      cid: cid, t: (c.t || '').trim().split('\n')[0], sm: (c.sm || '').trim(),
+      k: c.k || '', cargando: true, error: '', cifrado: null,
+      tamano: Math.min(22, Math.max(12, tamano)), ajuste: 0
+    } });
+    if (!this._escCifrado) {
+      this._escCifrado = (e) => { if (e.key === 'Escape' && this.state.cifradoVer) this.cerrarCifrado(); };
+      document.addEventListener('keydown', this._escCifrado);
+    }
+    document.body.style.overflow = 'hidden';
+    R.getCifrado(this.state.org.id, cid, (cf, err) => {
+      this.setState((s) => {
+        if (!s.cifradoVer || s.cifradoVer.cid !== cid) return null;
+        const error = err ? 'No se pudo cargar el cifrado. Revisa tu conexión e inténtalo de nuevo.'
+          : (!cf ? 'El cifrado de esta canción ya no está disponible.' : '');
+        return { cifradoVer: Object.assign({}, s.cifradoVer, { cargando: false, cifrado: cf, error: error }) };
+      });
+    });
+  }
+
+  cerrarCifrado() {
+    document.body.style.overflow = '';
+    this.setState({ cifradoVer: null });
+  }
+
+  /* Incrementos sobre el estado actual (no sobre el del último render),
+     para que varios clics seguidos cuenten todos. `ajuste: 0` restablece. */
+  ajustarCifrado(cambio) {
+    this.setState((s) => {
+      if (!s.cifradoVer) return null;
+      const v = Object.assign({}, s.cifradoVer);
+      if (cambio.dTamano) {
+        v.tamano = Math.min(22, Math.max(12, v.tamano + cambio.dTamano));
+        try { localStorage.setItem('repertorio-cifrado-tamano', String(v.tamano)); } catch (e) { /* sin storage */ }
+      }
+      if (cambio.dAjuste) v.ajuste = Math.min(11, Math.max(-11, v.ajuste + cambio.dAjuste));
+      if (cambio.ajuste === 0) v.ajuste = 0;
+      return { cifradoVer: v };
+    });
+  }
+
+  valsCifrado() {
+    const C = window.RepertorioCifrado;
+    const v = this.state.cifradoVer;
+    const out = {
+      cifAbierto: !!v, cifCargando: false, cifHayError: false, cifError: '', cifListo: false,
+      cifTitulo: '', cifArtista: '', cifTono: '', cifOrigenTxt: '', cifAvisos: [], cifLineas: [],
+      cifHojaStyle: '', cifFuenteUrl: '#', cifTieneFuente: false, cifFuenteNombre: '', cifHayAjuste: false, cifAjusteTxt: '',
+      cerrarCifrado: () => this.cerrarCifrado(),
+      cifMenosLetra: () => this.ajustarCifrado({ dTamano: -1 }),
+      cifMasLetra: () => this.ajustarCifrado({ dTamano: 1 }),
+      cifBajar: () => this.ajustarCifrado({ dAjuste: -1 }),
+      cifSubir: () => this.ajustarCifrado({ dAjuste: 1 }),
+      cifRestablecer: () => this.ajustarCifrado({ ajuste: 0 })
+    };
+    if (!v) return out;
+    out.cifTitulo = v.t;
+    out.cifArtista = v.sm;
+    out.cifCargando = v.cargando;
+    out.cifHayError = !!v.error;
+    out.cifError = v.error;
+    if (!v.cifrado || v.cargando || v.error) return out;
+    const r = C.transponerCifrado(v.cifrado, v.k, v.ajuste);
+    out.cifListo = true;
+    out.cifArtista = v.sm || v.cifrado.artista || '';
+    out.cifTono = r.tono || '—';
+    out.cifOrigenTxt = r.tonoOriginal && r.delta ? 'Cifrado original en ' + r.tonoOriginal : '';
+    out.cifAvisos = r.avisos.map((a) => C.mensajeAviso(a, r, v.k)).filter(Boolean);
+    out.cifHayAjuste = v.ajuste !== 0;
+    const n = Math.abs(v.ajuste);
+    out.cifAjusteTxt = n ? 'Ajuste: ' + (v.ajuste > 0 ? '+' : '−') + (Math.floor(n / 2) || '') + (n % 2 ? '½' : '') + (n > 2 ? ' tonos' : ' tono') : '';
+    out.cifHojaStyle = 'font-size:' + v.tamano + 'px';
+    out.cifTieneFuente = !!v.cifrado.fuenteUrl;
+    out.cifFuenteUrl = v.cifrado.fuenteUrl || '#';
+    out.cifFuenteNombre = C.nombreFuente(v.cifrado.fuenteUrl) || 'enlace';
+    out.cifLineas = r.lineas.map((l) => ({
+      segs: l.segs.map((sg) => ({
+        txt: sg.txt,
+        style: sg.acorde ? (sg.desconocido ? 'color:#9a9694;text-decoration:underline dotted' : 'font-weight:800;color:var(--ac-dk)') : ''
+      }))
+    }));
+    return out;
   }
 
   flash(msg) {
@@ -638,6 +816,7 @@ class Component extends DCLogic {
             const activa = this.state.reproduciendoKey === key;
             const enPausa = activa && this.state.reproduciendoPausado;
             const label = R.songLabelParts(c);
+            const cid = R.cifradoIdDeCancion(c, this._catalogo);
             return {
               t: label.fullText,
               tieneLineas: label.hasLineBreaks,
@@ -658,7 +837,13 @@ class Component extends DCLogic {
                 (activa ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
                         : 'border:1.5px solid var(--ac);background:#fff;color:var(--ac)') +
                 (videoId ? '' : ';visibility:hidden;pointer-events:none'),
-              onPlay: () => this.togglePlay(key, videoId)
+              onPlay: () => this.togglePlay(key, videoId),
+              /* El Tono abre la letra con acordes cuando la canción tiene
+                 cifrado (propio o heredado del catálogo). */
+              tieneCifrado: !!cid,
+              sinCifrado: !cid,
+              cifradoLabel: 'Ver cifrado de ' + label.fullText + (c.k ? ' en ' + c.k : ''),
+              onCifrado: () => this.abrirCifrado(cid, c)
             };
           })
         }))
@@ -740,6 +925,10 @@ class Component extends DCLogic {
       irABienvenida: () => { window.location.href = 'index.html?bienvenida=1'; }
     };
     if (s.modo !== 'calendario' || !s.org) return Object.assign(base, { estado: 'Cargando…' });
+
+    /* Lo usa renderEvento (vía R.cifradoIdDeCancion) para que una canción
+       sin cifrado propio herede el que ya se importó para ella. */
+    this._catalogo = R.buildSongCatalog(s.eventos, s.songOverrides);
 
     const keys = Array.from(new Set(s.eventos.map((e) => R.monthKey(e.fecha)))).sort();
     const hoy = R.hoyKey();
@@ -1035,6 +1224,7 @@ class Component extends DCLogic {
     /* Botones del pie: definidos en menu-config.js (ACCIONES_CALENDARIO).
        Los de tipo 'accion' se resuelven con la función registrada aquí
        bajo su mismo id. */
+    Object.assign(vals, this.valsCifrado());
     const accionesPagina = { whatsapp: vals.copiarWa };
     vals.menuAcciones = window.RepertorioMenu.accionesCalendario(s.org, null).map((a) =>
       Object.assign(a, { onClick: accionesPagina[a.id] || (() => {}) }));

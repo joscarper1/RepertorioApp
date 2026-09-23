@@ -179,6 +179,30 @@ test('texto: palabras de la letra no se confunden con acordes', () => {
   assert.deepEqual(p.lineas.map((l) => l.t), ['l', 'l', 'l', 'l', 'a', 'a']);
 });
 
+test('HTML con líneas de acordes que el autor no marcó', () => {
+  // Caso real (LaCuerda, "Nada es imposible"): la intro viene como texto sin <a>
+  const html = '<pre>Intro (2 veces): F - C - Dm7 - F\n\n<div></div><a>C</a>            <a>Dm7</a>\nNo voy a vivir por lo que veo\nA ti te canto</pre>';
+  const p = C.parsePegado(html, '');
+  assert.equal(p.origen, 'html');
+  assert.deepEqual(p.lineas.map((l) => l.t), ['a', 'l', 'a', 'l', 'l']);
+  assert.deepEqual(p.lineas[0].i, [[17, 'F'], [21, 'C'], [25, 'Dm7'], [31, 'F']]);
+  assert.equal(C.textoTranspuesto({ tonoOriginal: 'C', lineas: p.lineas }, 'D').split('\n')[0], 'Intro (2 veces): G - D - Em7 - G');
+});
+
+test('HTML de otra fuente con enlaces normales: se lee como texto', () => {
+  const html = '<div><a href="/artista">Marcos Witt</a> · <a href="/x">Ver más</a></div><pre>G      C\nTe alabaré\nD      G\nMi Señor</pre>';
+  const texto = 'Marcos Witt · Ver más\nG      C\nTe alabaré\nD      G\nMi Señor';
+  const p = C.parsePegado(html, texto);
+  assert.equal(p.origen, 'texto');
+  assert.deepEqual(p.desconocidos, []);
+  assert.deepEqual(p.lineas.map((l) => l.t), ['l', 'a', 'l', 'a', 'l']);
+  // Sin <pre>: los enlaces sí quedarían marcados como "acordes"; al no serlo, se usa el texto
+  const sinPre = '<p><a href="/artista">Marcos Witt</a> · <a href="/x">Ver más</a> · <a>G</a></p><p>G      C<br>Te alabaré</p>';
+  const q = C.parsePegado(sinPre, 'Marcos Witt · Ver más · G\nG      C\nTe alabaré');
+  assert.equal(q.origen, 'texto');
+  assert.deepEqual(q.desconocidos, []);
+});
+
 test('pegado seguro: scripts y estilos se descartan, nada se ejecuta', () => {
   const html = '<pre><script>alert(1)</script><style>a{}</style><a>G</a>  <a onclick="x()">C</a>\nhola <img src=x onerror=alert(1)></pre>';
   const p = C.parsePegado(html, '');
@@ -221,4 +245,19 @@ test('URL de LaCuerda: validación y normalización a .shtml', () => {
   assert.equal(C.normalizarUrlCifrado('https://acordes.lacuerda.net.evil.com/a/b'), null);
   assert.equal(C.normalizarUrlCifrado('javascript:alert(1)'), null);
   assert.equal(C.normalizarUrlCifrado(''), null);
+});
+
+test('enlace de fuente opcional: LaCuerda u otro sitio http(s)', () => {
+  assert.equal(C.normalizarUrlFuente(''), '');
+  assert.equal(C.normalizarUrlFuente('   '), '');
+  assert.equal(C.normalizarUrlFuente('https://acordes.lacuerda.net/vino_nuevo/manda_el_fuego'), 'https://acordes.lacuerda.net/vino_nuevo/manda_el_fuego.shtml');
+  assert.equal(C.normalizarUrlFuente(' https://www.cifraclub.com/marcos-witt/x/ '), 'https://www.cifraclub.com/marcos-witt/x/');
+  assert.equal(C.normalizarUrlFuente('http://example.org/cancion?id=3#a'), 'http://example.org/cancion?id=3#a');
+  assert.equal(C.normalizarUrlFuente('javascript:alert(1)'), null);
+  assert.equal(C.normalizarUrlFuente('data:text/html,hola'), null);
+  assert.equal(C.normalizarUrlFuente('www.cifraclub.com/x'), null);
+  assert.equal(C.normalizarUrlFuente('https://a b.com'), null);
+  assert.equal(C.nombreFuente('https://acordes.lacuerda.net/a/b.shtml'), 'LaCuerda.net');
+  assert.equal(C.nombreFuente('https://www.CifraClub.com/x'), 'cifraclub.com');
+  assert.equal(C.nombreFuente(''), '');
 });
