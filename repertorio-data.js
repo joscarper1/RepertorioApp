@@ -20,6 +20,12 @@
      autorizar que la propia cuenta tome ese rol, organizaciones y persona. */
   var ACCESOS_PATH = 'accesosPorCorreo';
   var SONG_CATALOG_PATH = 'songCatalog';
+  /* Cifrados (letra + acordes) importados una vez por canción:
+     {orgId: {cifradoId: {titulo, artista, fuenteUrl, tonoOriginal, lineas,
+     createdAt, createdBy, updatedAt, updatedBy}}}. Las canciones de los
+     eventos lo referencian con `cid`; ver cifrado.js para el formato de
+     `lineas` y la transposición. */
+  var CIFRADOS_PATH = 'cifrados';
   var MUSICIANS_PATH = 'musicians';
   var META_PATH = 'meta';
   /* Correos que ya editaban el repertorio antes de que existiera el rol de
@@ -92,7 +98,11 @@
           var salmista = (c.sm || '').trim();
           var url = (c.u || '').trim();
           var key = songKey(nombre, salmista, url);
-          if (!porClave.has(key)) porClave.set(key, { key: key, nombre: nombre, salmista: salmista, u: url });
+          if (!porClave.has(key)) porClave.set(key, { key: key, nombre: nombre, salmista: salmista, u: url, cid: '', cidFecha: '' });
+          /* El cifrado viaja con la canción: si en algún evento ya se
+             importó, el catálogo lo ofrece (el del evento más reciente). */
+          var entry = porClave.get(key);
+          if (c.cid && (!entry.cid || (ev.fecha || '') > entry.cidFecha)) { entry.cid = c.cid; entry.cidFecha = ev.fecha || ''; }
         });
       });
     });
@@ -104,6 +114,7 @@
         nombre: ov && ov.titulo ? ov.titulo : entry.nombre,
         salmista: ov && ov.artista !== undefined ? ov.artista : entry.salmista,
         u: ov && ov.url !== undefined ? ov.url : entry.u,
+        cifradoId: (ov && ov.cifradoId) || entry.cid,
         archivado: !!(ov && ov.archivado)
       });
     });
@@ -117,7 +128,7 @@
       if (porClave.has(key)) return;
       var ov = overrides[key];
       if (!ov || !ov.titulo) return;
-      out.push({ key: key, nombre: ov.titulo, salmista: ov.artista || '', u: ov.url || '', archivado: !!ov.archivado });
+      out.push({ key: key, nombre: ov.titulo, salmista: ov.artista || '', u: ov.url || '', cifradoId: ov.cifradoId || '', archivado: !!ov.archivado });
     });
     out.sort(function (a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
     return out;
@@ -713,10 +724,11 @@
      eventos.estado (publicar / borrador / cancelar / archivar),
      eventos.todos (editar/mover cualquier evento, no solo aquellos donde su
      persona es integrante), usuarios.gestionar, repertorio.gestionar,
-     organizaciones.gestionar. */
+     organizaciones.gestionar, cifrados.editar (importar/reemplazar el
+     cifrado de las canciones de los eventos que puede editar). */
   var PERMISOS_POR_ROL = {
     admin: ['*'],
-    normal: ['eventos.ver', 'eventos.editar', 'eventos.mover']
+    normal: ['eventos.ver', 'eventos.editar', 'eventos.mover', 'cifrados.editar']
   };
 
   function puede(userDoc, permiso) {
@@ -1089,7 +1101,7 @@
     return function () { ref.off('value', handler); };
   }
 
-  /* patch: { titulo, artista, url, archivado }, cualquier subconjunto. No
+  /* patch: { titulo, artista, url, cifradoId, archivado }, cualquier subconjunto. No
      toca los eventos históricos que ya usan esta canción — solo afecta el
      catálogo que alimenta el autocompletado y el CRUD de Repertorio del
      panel. */
@@ -1100,6 +1112,7 @@
     if (patch.titulo !== undefined) safe.titulo = patch.titulo;
     if (patch.artista !== undefined) safe.artista = patch.artista;
     if (patch.url !== undefined) safe.url = patch.url;
+    if (patch.cifradoId !== undefined) safe.cifradoId = patch.cifradoId || null;
     if (patch.archivado !== undefined) safe.archivado = !!patch.archivado;
     root.child(SONG_CATALOG_PATH).child(orgId).child(key).update(safe).then(function () { cb && cb(true); }, function (err) {
       console.error('Firebase saveSongOverride rechazado:', err && err.code, err && err.message, err);
@@ -1112,6 +1125,111 @@
      nada de los eventos que ya la usan (para no romper su historial). */
   function archiveSong(orgId, key, cb) {
     saveSongOverride(orgId, key, { archivado: true }, cb);
+  }
+
+  /* --- Cifrados (letra + acordes, ver cifrado.js) --- */
+
+  /* Topes de tamaño: los mismos que validan las reglas de la base. */
+  var LIMITES_CIFRADO = { lineas: 600, texto: 400, acordesPorLinea: 60, acorde: 20, titulo: 200 };
+
+  /* URL de la fuente normalizada (acordes.lacuerda.net, .shtml) o null. */
+  function urlCifrado(url) {
+    var C = w.RepertorioCifrado;
+    return C ? C.normalizarUrlCifrado(url) : null;
+  }
+
+  /* Deja solo lo que admite el formato de cifrado.js, recortado a los topes.
+     null si falta la URL válida, un tono original reconocible o al menos
+     una línea de acordes. No incluye los campos de auditoría. */
+  function prepararCifrado(data) {
+    var C = w.RepertorioCifrado;
+    data = data || {};
+    var fuenteUrl = urlCifrado(data.fuenteUrl);
+    var tono = C ? C.parseTono(data.tonoOriginal) : null;
+    if (!fuenteUrl || !tono || tono.especial) return null;
+    var L = LIMITES_CIFRADO;
+    var lineas = (Array.isArray(data.lineas) ? data.lineas : []).slice(0, L.lineas).map(function (ln) {
+      var x = String((ln && ln.x) || '').slice(0, L.texto);
+      if (ln && ln.t === 'a' && Array.isArray(ln.i)) {
+        var i = ln.i.filter(function (p) {
+          return Array.isArray(p) && typeof p[0] === 'number' && p[0] >= 0 && p[0] < x.length &&
+            typeof p[1] === 'string' && p[1].length > 0 && p[1].length <= L.acorde;
+        }).slice(0, L.acordesPorLinea).map(function (p) { return [Math.floor(p[0]), p[1]]; });
+        if (i.length) return { t: 'a', x: x, i: i };
+      }
+      return { t: 'l', x: x };
+    });
+    if (!lineas.some(function (l) { return l.t === 'a'; })) return null;
+    return {
+      titulo: String(data.titulo || '').trim().slice(0, L.titulo),
+      artista: String(data.artista || '').trim().slice(0, L.titulo),
+      fuenteUrl: fuenteUrl,
+      tonoOriginal: tono.label,
+      lineas: lineas
+    };
+  }
+
+  /* Cifrados ya leídos en esta página: se leen una sola vez (al abrir el
+     modal), no se quedan escuchando cambios. */
+  var cifradosLeidos = {};
+
+  /* cb(cifrado | null, error). null sin error = no existe. */
+  function getCifrado(orgId, id, cb) {
+    var k = orgId + '/' + id;
+    if (cifradosLeidos[k]) { cb(cifradosLeidos[k], null); return; }
+    var root = dbRoot();
+    if (!root || !orgId || !id) { cb(null, root ? null : new Error('Firebase no disponible')); return; }
+    root.child(CIFRADOS_PATH).child(orgId).child(id).once('value').then(function (snap) {
+      var v = snap.val();
+      if (v) cifradosLeidos[k] = v;
+      cb(v || null, null);
+    }, function (err) {
+      console.error('Firebase getCifrado rechazado:', err && err.code, err && err.message, err);
+      cb(null, err || new Error('Error al leer el cifrado'));
+    });
+  }
+
+  /* Crea (id vacío) o reemplaza un cifrado. cb(ok, id). Requiere sesión:
+     las reglas exigen ser admin o miembro de la organización. */
+  function saveCifrado(orgId, id, data, cb) {
+    var root = dbRoot();
+    var auth = ensureAuthApp();
+    var user = auth && auth.currentUser;
+    var limpio = prepararCifrado(data);
+    if (!root || !orgId || !user || !limpio) { cb && cb(false, null); return; }
+    var base = root.child(CIFRADOS_PATH).child(orgId);
+    var ref = id ? base.child(id) : base.push();
+    var TS = w.firebase.database.ServerValue.TIMESTAMP;
+    var payload = clone(limpio);
+    payload.updatedAt = TS;
+    payload.updatedBy = user.uid;
+    if (!id) { payload.createdAt = TS; payload.createdBy = user.uid; }
+    ref.update(payload).then(function () {
+      var previo = cifradosLeidos[orgId + '/' + ref.key] || {};
+      limpio.createdAt = previo.createdAt || Date.now();
+      limpio.createdBy = previo.createdBy || user.uid;
+      limpio.updatedAt = Date.now();
+      limpio.updatedBy = user.uid;
+      cifradosLeidos[orgId + '/' + ref.key] = limpio;
+      cb && cb(true, ref.key);
+    }, function (err) {
+      console.error('Firebase saveCifrado rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false, null);
+    });
+  }
+
+  /* Cifrado que corresponde a una canción de un evento: el suyo propio
+     (`cid`) o, si no tiene, el del catálogo (buildSongCatalog) para esa
+     misma canción. '' si no hay. */
+  function cifradoIdDeCancion(c, catalogo) {
+    if (!c) return '';
+    if (c.cid) return c.cid;
+    if (!catalogo || !catalogo.length || !(c.t || '').trim()) return '';
+    var key = songKey((c.t || '').trim(), (c.sm || '').trim(), (c.u || '').trim());
+    for (var n = 0; n < catalogo.length; n++) {
+      if (catalogo[n].key === key) return catalogo[n].cifradoId || '';
+    }
+    return '';
   }
 
   /* Cambia la fecha de un evento ya existente (usado por el modal "Mover"). */
@@ -1564,6 +1682,8 @@
     watchAccesosPendientes: watchAccesosPendientes, crearAccesoPendiente: crearAccesoPendiente, borrarAccesoPendiente: borrarAccesoPendiente,
     watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, setEventEstado: setEventEstado, moveEvent: moveEvent,
     watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong,
+    urlCifrado: urlCifrado, prepararCifrado: prepararCifrado, getCifrado: getCifrado, saveCifrado: saveCifrado,
+    cifradoIdDeCancion: cifradoIdDeCancion,
     ESTADOS_CONFIRMACION: ESTADOS_CONFIRMACION, estadoConfirmacionSlot: estadoConfirmacionSlot, declinadosEvento: declinadosEvento,
     newMusician: newMusician, watchMusiciansForOrg: watchMusiciansForOrg, getMusician: getMusician,
     createMusician: createMusician, updateMusician: updateMusician,
