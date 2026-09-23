@@ -189,6 +189,14 @@ test('HTML con líneas de acordes que el autor no marcó', () => {
   assert.equal(C.textoTranspuesto({ tonoOriginal: 'C', lineas: p.lineas }, 'D').split('\n')[0], 'Intro (2 veces): G - D - Em7 - G');
 });
 
+test('HTML: acordes sin marcar dentro de una línea de acordes', () => {
+  // Caso real (LaCuerda, "Tu eres digno de gloria"): "(G/B C)" sin <a> al final
+  const html = '<pre><div></div><a>G</a>      <a>Fmaj7</a>  <a>G</a>  (G/B C) (pausa)\nLetra</pre>';
+  const p = C.parsePegado(html, '');
+  assert.deepEqual(p.lineas[0].i, [[0, 'G'], [7, 'Fmaj7'], [14, 'G'], [18, 'G/B'], [22, 'C']]);
+  assert.equal(C.textoTranspuesto({ tonoOriginal: 'C', lineas: p.lineas }, 'D').split('\n')[0], 'A      Gmaj7  A  (A/C# D) (pausa)');
+});
+
 test('HTML de otra fuente con enlaces normales: se lee como texto', () => {
   const html = '<div><a href="/artista">Marcos Witt</a> · <a href="/x">Ver más</a></div><pre>G      C\nTe alabaré\nD      G\nMi Señor</pre>';
   const texto = 'Marcos Witt · Ver más\nG      C\nTe alabaré\nD      G\nMi Señor';

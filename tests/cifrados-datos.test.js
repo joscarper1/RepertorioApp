@@ -146,6 +146,83 @@ test('el catálogo propaga el cifrado de los eventos y el override manda', () =>
   assert.equal(soloCat[0].cifradoId, 'c1');
 });
 
+/* Host mínimo del modal (lo que en la página es state.cifrado + setState). */
+function hostFalso(R, extra = {}) {
+  const h = { cifrado: null, guardados: [] };
+  h.ctl = R.modalCifrado(Object.assign({
+    estado: () => h.cifrado,
+    poner: (v) => { h.cifrado = v; },
+    parchar: (p) => { if (h.cifrado) h.cifrado = Object.assign({}, h.cifrado, p); },
+    orgId: () => 'org1',
+    puedeEditar: () => true,
+    alGuardar: (id, c, listo) => { h.guardados.push([id, c.songKey]); listo('Guardado.'); }
+  }, extra));
+  return h;
+}
+const espera = (ms = 5) => new Promise((r) => setTimeout(r, ms));
+const HTML_LC = '<pre><div></div><a>A</a>    <a>D</a>\nLetra\nIntro: A - E</pre>';
+const TXT_LC = 'A    D\nLetra\nIntro: A - E';
+
+test('modalCifrado: importar, el enlace decide el modo, guardar y ver', async () => {
+  const { fb, escrito } = firebaseFalso();
+  const R = cargar(fb);
+  const h = hostFalso(R);
+  h.ctl.abrir({ songKey: 'k1', t: 'Canción', sm: 'Artista', k: null }, '');
+  assert.equal(h.cifrado.modo, 'importar');
+  h.ctl.procesarPegado(HTML_LC, TXT_LC);
+  assert.equal(h.cifrado.pegado.origen, 'texto', 'sin enlace: texto plano');
+  h.ctl.cambiarUrl('https://acordes.lacuerda.net/a/b');
+  assert.equal(h.cifrado.pegado.origen, 'html', 'con LaCuerda: marcas del HTML');
+  h.ctl.cambiarUrl('https://otro.com/x');
+  assert.equal(h.cifrado.pegado.origen, 'texto');
+  assert.equal(h.cifrado.tono, 'A');
+  let v = h.ctl.vals();
+  assert.equal(v.cifImportar, true);
+  assert.equal(v.cifGuardarLabel, 'Guardar cifrado');
+  v.guardarCifrado();
+  await espera();
+  assert.equal(escrito[0].ruta, 'cifrados/org1/-nuevo1');
+  assert.equal(escrito[0].v.fuenteUrl, 'https://otro.com/x');
+  assert.deepEqual(h.guardados, [['-nuevo1', 'k1']]);
+  assert.equal(h.cifrado.modo, 'ver');
+  v = h.ctl.vals();
+  assert.equal(v.cifVer, true);
+  assert.equal(v.cifTonoMostrado, 'A');
+  assert.deepEqual(v.cifAvisos, [], 'sin tono configurado (catálogo): sin avisos de tono');
+  assert.equal(v.cifFuenteNombre, 'otro.com');
+});
+
+test('modalCifrado: abrir uno ya en caché lo muestra (lectura inmediata)', async () => {
+  const { fb } = firebaseFalso();
+  const R = cargar(fb);
+  const h = hostFalso(R);
+  await new Promise((ok) => R.saveCifrado('org1', 'c7', CIFRADO, ok));
+  h.ctl.abrir({ t: 'Canción', sm: '', k: 'B' }, 'c7');
+  assert.equal(h.cifrado.cargando, true);
+  await espera();
+  assert.equal(h.cifrado.cargando, false);
+  const v = h.ctl.vals();
+  assert.equal(v.cifTonoMostrado, 'B');
+  assert.equal(v.cifTonoOrigenTxt, 'Transpuesto desde A (tono del cifrado)');
+  assert.deepEqual(v.cifLineas[0].segs.filter((s) => s.style).map((s) => s.txt), ['B', 'E']);
+});
+
+test('modalCifrado: sin permiso no guarda; inexistente pasa a importar', async () => {
+  const { fb, escrito } = firebaseFalso();
+  const R = cargar(fb);
+  const h = hostFalso(R, { puedeEditar: () => false });
+  h.ctl.abrir({ t: 'X', sm: '', k: 'C' }, '');
+  h.ctl.procesarPegado('', 'C  G\nletra');
+  h.ctl.vals().guardarCifrado();
+  await espera();
+  assert.equal(escrito.length, 0);
+  assert.ok(/not-allowed/.test(h.ctl.vals().cifGuardarStyle));
+  h.ctl.abrir({ t: 'X', sm: '', k: 'C' }, 'no-existe');
+  await espera();
+  assert.equal(h.cifrado.modo, 'importar');
+  assert.ok(/ya no existe/.test(h.cifrado.aviso));
+});
+
 test('permisos: normal y admin pueden editar cifrados', () => {
   const R = cargar(firebaseFalso().fb);
   assert.equal(R.puede({ role: 'normal' }, 'cifrados.editar'), true);

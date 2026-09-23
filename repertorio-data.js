@@ -1222,6 +1222,235 @@
     });
   }
 
+  /* Controlador del modal "Cifrado" (ver/importar), compartido por el paso 4
+     de eventos.html y la pestaña Repertorio de admin.html: cada página pone
+     el marcado (idéntico) y le pasa aquí cómo leer/escribir su estado y qué
+     hacer al guardar. El estado del modal vive en `state.cifrado` de la
+     página (null = cerrado).
+       host.estado()          → state.cifrado actual
+       host.poner(v)          → reemplaza state.cifrado (v o null)
+       host.parchar(patch)    → mezcla patch en state.cifrado (si está abierto)
+       host.orgId()           → organización activa
+       host.puedeEditar()     → si puede importar/reemplazar
+       host.alGuardar(id, c, listo) → vincula el cifrado guardado (a la canción
+                                del borrador, al catálogo…); listo(aviso)
+     abrir(extra, cid) recibe en `extra` lo propio de la página más la canción:
+     { t, sm, k } — k null = sin tono configurado (catálogo): se muestra en
+     el tono del cifrado sin avisos de tono. */
+  function modalCifrado(host) {
+    var C = function () { return w.RepertorioCifrado; };
+    var elPegado = null, escPuesto = false;
+
+    function segStyle(sg) {
+      return sg.acorde ? (sg.desconocido ? 'color:#9a9694;text-decoration:underline dotted' : 'font-weight:800;color:var(--ac-dk)') : '';
+    }
+    function pintar(lineas) {
+      return lineas.map(function (l) { return { segs: l.segs.map(function (sg) { return { txt: sg.txt, style: segStyle(sg) }; }) }; });
+    }
+
+    function abrir(extra, cid) {
+      elPegado = null;
+      host.poner(Object.assign({}, extra, {
+        cid: cid || '', modo: cid ? 'ver' : 'importar', cargando: !!cid,
+        cifrado: null, url: '', texto: '', pegado: null, tono: '', deteccion: null,
+        crudoHtml: '', crudoTexto: '', leidoConHtml: false,
+        guardando: false, error: '', aviso: ''
+      }));
+      if (!cid) return;
+      /* Diferido: si ya está en caché, getCifrado responde en el acto, antes
+         de que la página haya registrado el modal recién abierto. */
+      setTimeout(function () {
+        getCifrado(host.orgId(), cid, function (cf, err) {
+          var c = host.estado();
+          if (!c || c.cid !== cid) return;
+          if (err) host.parchar({ cargando: false, error: 'No se pudo leer el cifrado: revisa tu conexión.' });
+          else if (!cf) host.parchar({ cargando: false, modo: 'importar', cid: '', aviso: 'El cifrado vinculado ya no existe. Impórtalo de nuevo.' });
+          else host.parchar({ cargando: false, cifrado: cf });
+        });
+      }, 0);
+    }
+
+    function cerrar() { host.poner(null); }
+
+    /* Reemplazar conserva el mismo id: se actualiza en todas las canciones
+       y eventos que ya lo usan. */
+    function reemplazar() {
+      var c = host.estado();
+      if (!c) return;
+      elPegado = null;
+      host.parchar({ modo: 'importar', url: c.cifrado ? (c.cifrado.fuenteUrl || '') : '', texto: '', pegado: null, tono: '', deteccion: null,
+        crudoHtml: '', crudoTexto: '', leidoConHtml: false, error: '', aviso: '' });
+    }
+
+    function cancelar() {
+      var c = host.estado();
+      if (c && c.cifrado) host.parchar({ modo: 'ver', error: '', aviso: '' });
+      else cerrar();
+    }
+
+    /* Cómo se lee lo pegado lo decide el enlace: con uno de LaCuerda se usan
+       las marcas de acordes de su HTML; sin enlace o de otra fuente se toma
+       solo el texto plano y los acordes se detectan en él. Lo pegado se
+       guarda tal cual (crudo*) para volver a leerlo si el enlace cambia.
+       `url` omitido = el enlace escrito en el modal. */
+    function procesarPegado(html, texto, url) {
+      var c = host.estado();
+      var enlace = url !== undefined ? url : (c ? c.url : '');
+      var usarHtml = !!html && !!C().normalizarUrlCifrado(enlace);
+      var p = C().parsePegado(usarHtml ? html : '', texto || '');
+      var hayAcordes = p.lineas.some(function (l) { return l.t === 'a'; });
+      var det = hayAcordes ? C().detectarTono(p.lineas) : null;
+      host.parchar({
+        crudoHtml: html || '', crudoTexto: texto || '', leidoConHtml: usarHtml,
+        /* El textarea muestra la versión en texto; si luego se edita a mano
+           se vuelve a leer como texto. */
+        texto: p.lineas.map(function (l) { return l.x; }).join('\n'),
+        pegado: hayAcordes ? p : null, deteccion: det, tono: det && det.tono ? det.tono : '',
+        error: hayAcordes ? '' : 'No se encontraron acordes. Pega o escribe la letra con cada línea de acordes encima de su letra.'
+      });
+    }
+
+    function cambiarUrl(url) {
+      var c = host.estado();
+      if (!c) return;
+      host.parchar({ url: url });
+      if (c.crudoHtml && !!C().normalizarUrlCifrado(url) !== !!c.leidoConHtml) procesarPegado(c.crudoHtml, c.crudoTexto, url);
+    }
+
+    function cambiarTexto(v) {
+      if (!v.trim()) { host.parchar({ texto: v, crudoHtml: '', crudoTexto: '', pegado: null, deteccion: null, tono: '', error: '' }); return; }
+      procesarPegado('', v);
+    }
+
+    function guardar() {
+      var c = host.estado();
+      if (!c || c.guardando || !host.puedeEditar()) return;
+      var datos = { titulo: c.t, artista: c.sm, fuenteUrl: c.url, tonoOriginal: c.tono, lineas: c.pegado ? c.pegado.lineas : [] };
+      if (!prepararCifrado(datos)) {
+        host.parchar({ error: 'Falta algo: el cifrado con acordes y su tono original (y, si pusiste un enlace, que sea válido).' });
+        return;
+      }
+      host.parchar({ guardando: true, error: '' });
+      saveCifrado(host.orgId(), c.cid, datos, function (ok, id) {
+        if (!ok) { host.parchar({ guardando: false, error: 'No se guardó el cifrado: revisa tu sesión o conexión.' }); return; }
+        host.alGuardar(id, c, function (aviso) {
+          getCifrado(host.orgId(), id, function (cf) {
+            host.parchar({ guardando: false, modo: 'ver', cid: id, cifrado: cf, aviso: aviso || 'Cifrado guardado.' });
+          });
+        });
+      });
+    }
+
+    /* Llamar en componentDidUpdate: engancha el pegado al textarea (el motor
+       de plantillas no expone onPaste; se vuelve a enganchar si React lo
+       recrea) y Esc para cerrar. Del portapapeles se lee el HTML y el texto;
+       nunca se inserta en la página. */
+    function enganchar() {
+      var el = w.document.getElementById('cifrado-pegado');
+      if (el && el !== elPegado) {
+        elPegado = el;
+        el.addEventListener('paste', function (e) {
+          var dt = e.clipboardData;
+          if (!dt) return;
+          var html = dt.getData('text/html') || '';
+          var texto = dt.getData('text/plain') || '';
+          if (!html && !texto) return;
+          e.preventDefault();
+          procesarPegado(html, texto);
+        });
+      }
+      if (!escPuesto) {
+        escPuesto = true;
+        w.document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && host.estado()) cerrar(); });
+      }
+    }
+
+    /* Campos del modal para renderVals (mismos nombres en ambas páginas). */
+    function vals() {
+      var c = host.estado();
+      var out = {
+        cifAbierto: !!c,
+        cerrarCifrado: cerrar, reemplazarCifrado: reemplazar, cancelarImportacion: cancelar, guardarCifrado: guardar,
+        /* Clic dentro del modal: no debe llegar al fondo (que lo cierra). */
+        detenerPropagacion: function (e) { if (e && e.stopPropagation) e.stopPropagation(); },
+        cifKicker: '', cifTitulo: '', cifArtista: '',
+        cifCargando: false, cifVer: false, cifImportar: false,
+        cifHayAviso: false, cifAviso: '', cifHayError: false, cifError: '',
+        cifTonoMostrado: '', cifTonoOrigenTxt: '', cifAvisos: [], cifLineas: [], cifFuenteUrl: '#', cifTieneFuente: false, cifFuenteNombre: '',
+        cifPuedeEditar: false,
+        cifUrl: '', onCifUrl: function () {}, cifUrlInvalida: false, cifUrlValida: false, cifUrlNormalizada: '#', cifBuscarUrl: '#',
+        cifTexto: '', onCifTexto: function () {}, cifHayPegado: false, cifResumen: '', cifResumenStyle: '',
+        cifTono: '', onCifTono: function () {}, cifTonos: [], cifDeteccion: '', cifPreview: [],
+        cifGuardarLabel: 'Guardar cifrado', cifGuardarStyle: ''
+      };
+      if (!c) return out;
+      var puedeEditarlo = host.puedeEditar();
+      out.cifPuedeEditar = puedeEditarlo;
+      out.cifTitulo = (c.t || '').trim() || 'Canción sin nombre';
+      out.cifArtista = (c.sm || '').trim();
+      out.cifKicker = c.modo === 'ver' ? 'Cifrado' : (c.cid ? 'Reemplazar cifrado' : 'Agregar cifrado');
+      out.cifCargando = c.cargando;
+      out.cifHayAviso = !!c.aviso; out.cifAviso = c.aviso;
+      out.cifHayError = !!c.error; out.cifError = c.error;
+
+      if (c.modo === 'ver' && c.cifrado && !c.cargando) {
+        var sinTono = c.k === null || c.k === undefined;
+        var r = C().transponerCifrado(c.cifrado, sinTono ? 'Original' : c.k);
+        out.cifVer = true;
+        out.cifTonoMostrado = r.tono || '—';
+        out.cifTonoOrigenTxt = sinTono ? 'Tono en que está escrito'
+          : (r.tonoOriginal ? (r.delta ? 'Transpuesto desde ' + r.tonoOriginal + ' (tono del cifrado)' : 'Tono del cifrado: ' + r.tonoOriginal) : '');
+        out.cifAvisos = r.avisos.filter(function (a) { return !(sinTono && a === 'ORIGINAL'); })
+          .map(function (a) { return C().mensajeAviso(a, r, c.k); }).filter(Boolean);
+        out.cifLineas = pintar(r.lineas);
+        out.cifTieneFuente = !!c.cifrado.fuenteUrl;
+        out.cifFuenteUrl = c.cifrado.fuenteUrl || '#';
+        out.cifFuenteNombre = C().nombreFuente(c.cifrado.fuenteUrl) || 'la fuente';
+      }
+
+      if (c.modo === 'importar' && !c.cargando) {
+        out.cifImportar = true;
+        var urlNorm = urlCifrado(c.url);
+        out.cifUrl = c.url;
+        out.onCifUrl = function (e) { cambiarUrl(e.target.value); };
+        out.cifUrlInvalida = urlNorm === null;
+        out.cifUrlValida = !!urlNorm;
+        out.cifUrlNormalizada = urlNorm || '#';
+        out.cifBuscarUrl = C().urlBusqueda(c.t, c.sm);
+        out.cifTexto = c.texto;
+        out.onCifTexto = function (e) { cambiarTexto(e.target.value); };
+        if (c.pegado) {
+          var p = c.pegado;
+          var nAcordes = p.lineas.filter(function (l) { return l.t === 'a'; }).length;
+          out.cifHayPegado = true;
+          out.cifResumen = '✓ ' + nAcordes + (nAcordes === 1 ? ' línea' : ' líneas') + ' con acordes · ' + p.acordes + ' acordes · ' +
+            (p.origen === 'html' ? 'leídos con las marcas de LaCuerda.' : 'detectados en el texto: revisa que estén marcados en verde.') +
+            (p.desconocidos.length ? ' No reconocidos: ' + p.desconocidos.join(', ').replace(/\.$/, '') + '.' : '');
+          out.cifResumenStyle = 'font-size:13px;margin:6px 0 0;color:' + (p.origen === 'html' && !p.desconocidos.length ? 'var(--ac-dk)' : '#8a5a00');
+          var lista = C().TONOS_LISTA.slice();
+          if (c.tono && lista.indexOf(c.tono) < 0) lista.unshift(c.tono);
+          out.cifTonos = [{ valor: '', label: 'Elige…' }].concat(lista.map(function (t) { return { valor: t, label: t }; }));
+          out.cifTono = c.tono;
+          out.onCifTono = function (e) { host.parchar({ tono: e.target.value }); };
+          var det = c.deteccion;
+          out.cifDeteccion = det && det.tono
+            ? (c.tono === det.tono
+              ? 'Detectado automáticamente' + (det.confianza < 0.15 ? ' (verifícalo: podría ser ' + (det.candidatos[1] ? det.candidatos[1].tono : 'otro') + ')' : '')
+              : 'Detectado: ' + det.tono)
+            : 'No se pudo detectar: elígelo';
+          out.cifPreview = pintar(C().transponerCifrado({ tonoOriginal: c.tono, lineas: p.lineas }, 'Original').lineas);
+        }
+        var listo = puedeEditarlo && urlNorm !== null && !!c.pegado && !!c.tono && !c.guardando;
+        out.cifGuardarLabel = c.guardando ? 'Guardando…' : (c.cid ? 'Reemplazar cifrado' : 'Guardar cifrado');
+        out.cifGuardarStyle = 'font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border:2px solid var(--ac);' +
+          (listo ? 'background:var(--ac);color:#fff;cursor:pointer' : 'background:#fff;color:#9a9694;border-color:#d7d3d3;cursor:not-allowed');
+      }
+      return out;
+    }
+
+    return { abrir: abrir, cerrar: cerrar, vals: vals, enganchar: enganchar, procesarPegado: procesarPegado, cambiarUrl: cambiarUrl };
+  }
+
   /* Cifrado que corresponde a una canción de un evento: el suyo propio
      (`cid`) o, si no tiene, el del catálogo (buildSongCatalog) para esa
      misma canción. '' si no hay. */
@@ -1687,7 +1916,7 @@
     watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, setEventEstado: setEventEstado, moveEvent: moveEvent,
     watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong,
     urlCifrado: urlCifrado, prepararCifrado: prepararCifrado, getCifrado: getCifrado, saveCifrado: saveCifrado,
-    cifradoIdDeCancion: cifradoIdDeCancion,
+    cifradoIdDeCancion: cifradoIdDeCancion, modalCifrado: modalCifrado,
     ESTADOS_CONFIRMACION: ESTADOS_CONFIRMACION, estadoConfirmacionSlot: estadoConfirmacionSlot, declinadosEvento: declinadosEvento,
     newMusician: newMusician, watchMusiciansForOrg: watchMusiciansForOrg, getMusician: getMusician,
     createMusician: createMusician, updateMusician: updateMusician,

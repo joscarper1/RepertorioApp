@@ -334,6 +334,22 @@
     return esLineaAcordes ? { t: 'a', x: x, i: acordes } : { t: 'l', x: x };
   }
 
+  /* En una línea que ya es de acordes (marcada en el HTML), suma los que el
+     autor dejó sin marcar, p. ej. "G  Gsus4  G  (G/B C)". */
+  function completarLinea(ln) {
+    var ocupado = ln.i.map(function (p) { return [p[0], p[0] + p[1].length]; });
+    var extra = [];
+    var re = /[^\s\-|()[\]{},>]+/g, m;
+    while ((m = re.exec(ln.x))) {
+      var ini = m.index, fin = ini + m[0].length;
+      if (!esAcorde(m[0])) continue;
+      if (ocupado.some(function (r) { return ini < r[1] && fin > r[0]; })) continue;
+      extra.push([ini, m[0]]);
+    }
+    if (!extra.length) return ln;
+    return { t: 'a', x: ln.x, i: ln.i.concat(extra).sort(function (a, b) { return a[0] - b[0]; }) };
+  }
+
   function recortarVacias(lineas) {
     while (lineas.length && lineas[0].t === 'l' && !lineas[0].x.trim()) lineas.shift();
     while (lineas.length && lineas[lineas.length - 1].t === 'l' && !lineas[lineas.length - 1].x.trim()) lineas.pop();
@@ -359,7 +375,7 @@
         /* Quien sube el cifrado a veces escribe algunas líneas de acordes
            sin marcarlas (p. ej. "Intro (2 veces): F - C - Dm7 - F"): esas
            pasan por la misma heurística del texto plano. */
-        lineas = lineas.map(function (l) { return l.t === 'l' ? lineaDeTexto(l.x) : l; });
+        lineas = lineas.map(function (l) { return l.t === 'l' ? lineaDeTexto(l.x) : completarLinea(l); });
       } else lineas = null;
     }
     if (!lineas) {
