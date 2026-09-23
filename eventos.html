@@ -57,6 +57,13 @@ input::placeholder,textarea::placeholder{color:#bab6b6}
 .slot-grid{display:grid;grid-template-columns:170px 1fr auto 20px;gap:8px;align-items:center}
 .cancion-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cancion-grid-4{display:grid;grid-template-columns:1fr 64px 22px 22px 20px;gap:8px;align-items:center}
+/* Calendario del paso 1: una sola cuadrícula (cabecera y cuerpo con las
+   mismas columnas); minmax(0,1fr) impide que el contenido de una celda
+   ensanche su columna y descuadre el mes. */
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.cal-celda{min-width:0;overflow:hidden}
+.cal-mes{font-size:32px}
+.paso-tab{overflow-wrap:anywhere}
 .cifrado-overlay{position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
 .cifrado-modal{width:min(100%,760px);max-height:90vh;display:flex;flex-direction:column;background:#fff;border:2px solid var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.28)}
 .cifrado-head{padding:16px 20px 12px;border-bottom:1px solid #eae9e9;flex:none}
@@ -74,7 +81,25 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
   .admin-backdrop.abierto{display:block;position:fixed;inset:0;background:rgba(20,18,17,.45);z-index:999}
 }
 @media (max-width:640px){
+  /* Encabezado: en móvil dos filas — ☰ + título + sesión arriba y los
+     botones (Dashboard, Ver publicado) debajo, del mismo ancho. Los
+     contenedores intermedios se "disuelven" (display:contents) para que
+     cada pieza caiga en su celda. */
+  .top-bar{display:grid !important;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"burger titulo der" "acciones acciones acciones";column-gap:12px !important;row-gap:14px;align-items:center !important}
+  .top-izq,.top-col{display:contents !important}
+  .top-bar .admin-burger{grid-area:burger}
+  .top-titulo{grid-area:titulo;align-items:center !important;gap:8px !important;min-width:0}
+  .top-nombre{font-size:12px !important;letter-spacing:.06em !important}
+  .top-der{grid-area:der}
+  .top-salir{font-size:12px !important;padding:6px 10px !important}
+  .top-acciones{grid-area:acciones;margin-top:0 !important;gap:8px !important}
+  .top-acciones a{flex:1 1 0;text-align:center}
   .field-grid-2,.slot-grid,.cancion-grid-2,.cancion-grid-4{grid-template-columns:1fr}
+  .cal-celda{padding:4px !important;min-height:52px !important}
+  .cal-marca-txt{display:none}
+  .cal-mes{font-size:22px}
+  .paso-tab{font-size:10px !important;letter-spacing:.04em !important;padding:8px 3px !important}
+  .cal-marca{font-size:12px !important;letter-spacing:0 !important}
   .cifrado-overlay{padding:0}
   .cifrado-modal{width:100%;height:100%;max-height:none;border:0}
   .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
@@ -84,28 +109,28 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
 <div style="{{ containerStyle }}">
 
   <sc-if value="{{ noEmbebido }}" hint-placeholder-val="{{ true }}">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
-    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 auto">
+  <div class="top-bar" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
+    <div class="top-izq" style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 auto">
       <sc-if value="{{ permitido }}" hint-placeholder-val="{{ true }}">
         <button type="button" class="admin-burger" onClick="{{ toggleSidebar }}" aria-label="Abrir menú">☰</button>
       </sc-if>
-      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto">
-        <div style="display:flex;align-items:baseline;gap:12px;min-width:0">
+      <div class="top-col" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto">
+        <div class="top-titulo" style="display:flex;align-items:baseline;gap:12px;min-width:0">
           <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
-          <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Administración de Eventos</span>
+          <span class="top-nombre" style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Administración de Eventos</span>
         </div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
+        <div class="top-acciones" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
           <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
             <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
           </sc-for>
         </div>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
+    <div class="top-der" style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
       <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
-        <button onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
+        <button class="top-salir" onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
       </div>
     </div>
   </div>
@@ -164,7 +189,7 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
   </sc-if>
   <div style="display:flex;gap:2px;margin-top:0;background:var(--ink);padding:2px">
     <sc-for list="{{ pasos }}" as="p" hint-placeholder-count="4">
-      <div style="{{ p.style }}">{{ p.label }}</div>
+      <div class="paso-tab" style="{{ p.style }}">{{ p.label }}</div>
     </sc-for>
   </div>
 
@@ -172,25 +197,25 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
     <section style="padding-top:32px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:12px">
         <button onClick="{{ mesAnterior }}" style="font-size:16px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:6px 12px;cursor:pointer">←</button>
-        <h2 style="font-size:32px;font-weight:800;letter-spacing:-.02em;margin:0;text-transform:uppercase">{{ mesLabel }}</h2>
+        <h2 class="cal-mes" style="font-weight:800;letter-spacing:-.02em;margin:0;text-transform:uppercase;text-align:center;min-width:0">{{ mesLabel }}</h2>
         <button onClick="{{ mesSiguiente }}" style="font-size:16px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:6px 12px;cursor:pointer">→</button>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:16px">
+      <div class="cal-grid" style="margin-top:16px;padding:0 2px">
         <sc-for list="{{ cabeceras }}" as="h" hint-placeholder-count="7">
           <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979;padding:4px 6px">{{ h }}</div>
         </sc-for>
       </div>
-      <div style="display:flex;flex-direction:column;gap:2px;background:var(--ink);border:2px solid var(--ink);margin-top:2px">
+      <div class="cal-grid" style="background:var(--ink);border:2px solid var(--ink);margin-top:2px">
         <sc-for list="{{ filas }}" as="fila" hint-placeholder-count="5">
-          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
+          <div style="display:contents">
             <sc-for list="{{ fila.celdas }}" as="c" hint-placeholder-count="7">
-              <button onClick="{{ c.onClick }}" style="{{ c.style }}">
+              <button class="cal-celda" onClick="{{ c.onClick }}" title="{{ c.titulo }}" style="{{ c.style }}">
                 <span style="display:flex;align-items:center;justify-content:space-between;width:100%">
                   <span style="{{ c.diaStyle }}">{{ c.dia }}</span>
                   <span title="{{ c.alertaTitulo }}" style="{{ c.alertaStyle }}">⚠️</span>
                 </span>
-                <span style="{{ c.marcaStyle }}">{{ c.marca }}</span>
+                <span class="cal-marca" style="{{ c.marcaStyle }}">{{ c.marcaNum }}<span class="cal-marca-txt">{{ c.marcaTxt }}</span></span>
               </button>
             </sc-for>
           </div>
@@ -1177,7 +1202,7 @@ class Component extends DCLogic {
     const pasoStyle = (n) => {
       const on = enWizard ? paso === n : n === 1;
       const done = enWizard ? paso > n : false;
-      return 'flex:1;text-align:center;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:10px 6px;background:' +
+      return 'flex:1;min-width:0;text-align:center;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:10px 6px;background:' +
         (on ? 'var(--ac)' : (done ? '#605d5d' : 'var(--bg)')) + ';color:' + (on || done ? '#fff' : '#7d7979');
     };
     const pasosDef = [{ n: 1, texto: 'Fecha' }, { n: 2, texto: 'Evento' }];
@@ -1192,7 +1217,7 @@ class Component extends DCLogic {
     const hoyIso = R.iso(hoyDate.getFullYear(), hoyDate.getMonth(), hoyDate.getDate());
     const filas = R.calendario(year, month - 1).map((fila, fi) => ({
       celdas: fila.map((c, ci) => {
-        if (!c) return { dia: '', marca: '', marcaStyle: 'display:none', diaStyle: '', alertaStyle: 'display:none', alertaTitulo: '', style: 'border:0;background:var(--bg);min-height:64px;cursor:default', onClick: () => {} };
+        if (!c) return { dia: '', marcaNum: '', marcaTxt: '', titulo: '', marcaStyle: 'display:none', diaStyle: '', alertaStyle: 'display:none', alertaTitulo: '', style: 'border:0;background:var(--bg);min-height:64px;cursor:default', onClick: () => {} };
         const evsDia = delDia(c.iso);
         const n = evsDia.length;
         const nDeclinados = evsDia.reduce((acc, ev) => acc + R.declinadosEvento(ev).length, 0);
@@ -1207,7 +1232,11 @@ class Component extends DCLogic {
             (esHoy ? (sel ? ';border:2px solid #fff' : ';background:var(--ac);color:#fff') : ''),
           alertaStyle: nDeclinados ? 'font-size:13px;line-height:1' : 'display:none',
           alertaTitulo: nDeclinados ? (nDeclinados + (nDeclinados > 1 ? ' personas declinaron' : ' persona declinó') + ' y siguen programadas') : '',
-          marca: n ? (n + (n > 1 ? ' eventos' : ' evento')) : '',
+          /* En móvil solo se ve el número (.cal-marca-txt se oculta); el
+             texto completo queda en el title de la celda. */
+          marcaNum: n ? String(n) : '',
+          marcaTxt: n ? (n > 1 ? ' eventos' : ' evento') : '',
+          titulo: n ? (n + (n > 1 ? ' eventos' : ' evento')) : '',
           marcaStyle: n
             ? ('display:block;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-top:4px;color:' + (sel ? '#fff' : 'var(--ac-dk)'))
             : 'display:none',

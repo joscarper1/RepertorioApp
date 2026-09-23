@@ -71,6 +71,19 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
   .admin-backdrop.abierto{display:block;position:fixed;inset:0;background:rgba(20,18,17,.45);z-index:999}
 }
 @media (max-width:640px){
+  /* Encabezado: en móvil dos filas — ☰ + título + sesión arriba y los
+     botones (Dashboard, Ver publicado) debajo, del mismo ancho. Los
+     contenedores intermedios se "disuelven" (display:contents) para que
+     cada pieza caiga en su celda. */
+  .top-bar{display:grid !important;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"burger titulo der" "acciones acciones acciones";column-gap:12px !important;row-gap:14px;align-items:center !important}
+  .top-izq,.top-col{display:contents !important}
+  .top-bar .admin-burger{grid-area:burger}
+  .top-titulo{grid-area:titulo;align-items:center !important;gap:8px !important;min-width:0}
+  .top-nombre{font-size:12px !important;letter-spacing:.06em !important}
+  .top-der{grid-area:der}
+  .top-salir{font-size:12px !important;padding:6px 10px !important}
+  .top-acciones{grid-area:acciones;margin-top:0 !important;gap:8px !important}
+  .top-acciones a{flex:1 1 0;text-align:center}
   .cifrado-overlay{padding:0}
   .cifrado-modal{width:100%;height:100%;max-height:none;border:0}
   .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
@@ -79,27 +92,27 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
 </helmet>
 <div style="max-width:1100px;margin:0 auto;padding:0 20px 96px">
 
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
-    <div style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 auto">
+  <div class="top-bar" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
+    <div class="top-izq" style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 auto">
       <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ true }}">
         <button type="button" class="admin-burger" onClick="{{ toggleSidebar }}" aria-label="Abrir menú">☰</button>
       </sc-if>
-      <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto">
-        <div style="display:flex;align-items:baseline;gap:12px;min-width:0">
+      <div class="top-col" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto">
+        <div class="top-titulo" style="display:flex;align-items:baseline;gap:12px;min-width:0">
           <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
-          <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Panel de Administración</span>
+          <span class="top-nombre" style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Panel de Administración</span>
         </div>
-          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
+          <div class="top-acciones" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
             <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
               <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
             </sc-for>
           </div>
         </div>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
+    <div class="top-der" style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
-        <button onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
+        <button class="top-salir" onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
       </div>
     </div>
   </div>
