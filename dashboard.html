@@ -31,7 +31,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="menu-config.js"></script>
-<script src="repertorio-data.js"></script>
+<script src="repertorio-data.js?v=20260924a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -203,7 +203,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .disp-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,0,0,.08)}
 .disp-form .full{grid-column:1/-1}
 @media (max-width:860px){
-  .dash{display:flex;flex-direction:column;gap:22px}
+  .dash{display:flex;flex-direction:column;align-items:stretch;gap:22px}
   .dash-aside{position:static;display:contents}
   .o-1{order:1}.o-2{order:2}.o-3{order:3}
   .resp{flex-direction:column;align-items:stretch}
@@ -277,7 +277,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
     <sc-if value="{{ viewOnlyActivo }}" hint-placeholder-val="{{ false }}">
       <div class="aviso" style="margin-top:16px">
-        <span>Viendo el dashboard de {{ musicoNombreVisto }} · solo lectura</span>
+        <span>Viendo el dashboard de {{ musicoNombreVisto }}. Puedes agregar o quitar sus fechas no disponibles; la confirmación de participación solo la hace esa persona.</span>
         <a class="btn-sec" href="{{ miDashboardHref }}">Volver a mi dashboard</a>
       </div>
     </sc-if>
@@ -287,7 +287,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         <span class="perfil-avatar">{{ inicial }}</span>
         <div style="min-width:0;display:flex;flex-direction:column;gap:8px">
           <div>
-            <div class="kicker">Mi dashboard</div>
+            <div class="kicker">{{ kickerPerfil }}</div>
             <h1 class="mes-titulo">{{ musicoNombre }}</h1>
           </div>
           <div class="chips">
@@ -329,6 +329,10 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 </div>
                 <div class="card-tema">{{ ev.servicio }}</div>
                 <div class="card-sub">{{ ev.fechaLarga }}<sc-if value="{{ ev.miRol }}" hint-placeholder-val="{{ false }}"> · {{ ev.miRol }}</sc-if></div>
+                <sc-if value="{{ ev.soloLectura }}" hint-placeholder-val="{{ false }}">
+                  <div class="resp-l" style="margin-top:10px;color:var(--muted2)">Solo {{ ev.personaNombre }} puede confirmar su participación.</div>
+                </sc-if>
+                <sc-if value="{{ ev.puedeResponder }}" hint-placeholder-val="{{ true }}">
                 <div class="resp">
                   <span class="resp-l">¿Confirmas tu participación?</span>
                   <div class="seg">
@@ -336,15 +340,16 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                     <button type="button" class="{{ ev.noClase }}" onClick="{{ ev.onNo }}" disabled="{{ ev.botonesDeshabilitados }}">No</button>
                   </div>
                 </div>
+                </sc-if>
                 <sc-if value="{{ ev.motivo }}" hint-placeholder-val="{{ false }}">
-                  <div class="motivo">Declinaste · {{ ev.motivo }}</div>
+                  <div class="motivo">{{ ev.motivoTexto }}</div>
                 </sc-if>
               </div>
             </article>
           </sc-for>
         </div>
         <sc-if value="{{ sinEventos }}" hint-placeholder-val="{{ false }}">
-          <div class="vacio-caja">No tienes próximos eventos asignados.</div>
+          <div class="vacio-caja">{{ sinEventosTexto }}</div>
         </sc-if>
       </section>
 
@@ -581,6 +586,9 @@ class Component extends DCLogic {
      select es controlado, así que mientras no se confirme sigue mostrando
      la respuesta anterior. */
   onRespuesta(ev, slot, valor) {
+    /* Un admin viendo el dashboard de otra persona no confirma por ella. */
+    const s = this.state;
+    if (!s.effectiveMusicianId || s.effectiveMusicianId !== s.miMusicianId) return;
     if (valor === 'si') this.responder(ev, slot.id, 'aceptado', '');
     else if (valor === 'no') this.setState({ declinar: { ev: ev, slotId: slot.id }, declinarMotivo: '' });
   }
@@ -622,6 +630,7 @@ class Component extends DCLogic {
     const puedeResponder = s.effectiveMusicianId && s.effectiveMusicianId === s.miMusicianId;
     const botonesDeshabilitados = !puedeResponder;
 
+    const nombreVisto = ((s.musico && s.musico.nombre) || s.usuarioNombre || '').trim() || 'la persona';
     const hoy = todayIso();
     const propios = [];
     (s.eventos || []).forEach((ev) => {
@@ -639,7 +648,7 @@ class Component extends DCLogic {
     const eventosLista = propios.map(({ ev, slot }) => {
       const estado = R.estadoConfirmacionSlot(slot);
       const dn = R.diaNombre(ev.fecha) || '';
-      const badge = estado === 'aceptado' ? ['badge b-ok', 'Confirmado'] : (estado === 'rechazado' ? ['badge b-no', 'Declinaste'] : ['badge b-pend', 'Acción Requerida']);
+      const badge = estado === 'aceptado' ? ['badge b-ok', 'Confirmado'] : (estado === 'rechazado' ? ['badge b-no', puedeResponder ? 'Declinaste' : 'Declinó'] : ['badge b-pend', puedeResponder ? 'Acción Requerida' : 'Pendiente']);
       return {
         id: ev.id,
         clase: 'card' + (ev.fecha === hoy ? ' hoy' : ''),
@@ -652,11 +661,15 @@ class Component extends DCLogic {
         miRol: R.bandaLabel ? R.bandaLabel(slot) : (slot.tipo || ''),
         badgeClase: badge[0], badgeTexto: badge[1],
         botonesDeshabilitados: botonesDeshabilitados,
+        puedeResponder: !!puedeResponder,
+        soloLectura: !puedeResponder,
+        personaNombre: nombreVisto,
         siClase: 'si' + (estado === 'aceptado' ? ' on' : ''),
         noClase: 'no' + (estado === 'rechazado' ? ' on' : ''),
         onSi: () => { if (estado !== 'aceptado') this.onRespuesta(ev, slot, 'si'); },
         onNo: () => this.onRespuesta(ev, slot, 'no'),
         motivo: estado === 'rechazado' ? (slot.motivoDeclinacion || '') : '',
+        motivoTexto: (puedeResponder ? 'Declinaste · ' : 'Declinó · ') + (slot.motivoDeclinacion || ''),
         pendiente: estado === 'pendiente'
       };
     });
@@ -708,6 +721,8 @@ class Component extends DCLogic {
       menuAcciones: window.RepertorioMenu.accionesDashboard(s.org, s.userDoc),
 
       viewOnlyActivo: s.viewOnlyActivo,
+      kickerPerfil: s.viewOnlyActivo ? 'Dashboard de' : 'Mi dashboard',
+      sinEventosTexto: s.viewOnlyActivo ? 'No tiene próximos eventos asignados.' : 'No tienes próximos eventos asignados.',
       musicoNombreVisto: nombre,
       miDashboardHref: s.org ? ('dashboard.html?org=' + s.org.slug) : 'dashboard.html',
 

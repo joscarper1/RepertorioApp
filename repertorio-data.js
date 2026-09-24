@@ -725,10 +725,13 @@
      eventos.todos (editar/mover cualquier evento, no solo aquellos donde su
      persona es integrante), usuarios.gestionar, repertorio.gestionar,
      organizaciones.gestionar, cifrados.editar (importar/reemplazar el
-     cifrado de las canciones de los eventos que puede editar). */
+     cifrado de las canciones de los eventos que puede editar),
+     canciones.editar (sub-pestaña Canciones y el orden en la revisión),
+     banda.editar (sub-pestaña Banda: asignar integrantes; sin él la banda
+     solo se consulta en la revisión y se guarda tal como está en la nube). */
   var PERMISOS_POR_ROL = {
     admin: ['*'],
-    normal: ['eventos.ver', 'eventos.editar', 'eventos.mover', 'cifrados.editar']
+    normal: ['eventos.ver', 'eventos.editar', 'canciones.editar', 'cifrados.editar']
   };
 
   function puede(userDoc, permiso) {
