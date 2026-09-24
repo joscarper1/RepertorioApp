@@ -10,7 +10,7 @@
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/styles.css">
 <script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -23,31 +23,350 @@
 <script src="cifrado.js?v=20260923e"></script>
 <script src="repertorio-data.js?v=20260923e"></script>
 <style>
-:root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--gold:#c9982e;--gold-dk:#7a5610;--gold-lt:#f6ecd3;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
+:root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body,Archivo),Archivo,sans-serif;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:'Archivo',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip}
+button,input,select{font-family:inherit}
 a{color:var(--ac-dk);text-decoration:none;border-bottom:1px solid var(--ac)}
 a:hover{color:#fff;background:var(--ac)}
-button:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
 ::selection{background:var(--ac-lt)}
+
+/* ---- Estructura general ---- */
+.pag{max-width:1320px;margin:0 auto;padding:0 32px 64px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px;border-bottom:1px solid rgba(0,0,0,.12)}
+.top-org{display:flex;align-items:center;gap:10px;min-width:0;position:relative}
+.top-cuadro{width:14px;height:14px;background:var(--ac);flex:none}
+.top-nombre{font-weight:800;font-size:14px;letter-spacing:.14em;font-stretch:112%;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-switch{display:flex;align-items:center;gap:8px;background:transparent;border:0;padding:0;cursor:pointer;color:inherit;min-width:0}
+.top-der{display:flex;align-items:center;gap:18px;flex:none}
+.sep-v{width:1px;height:20px;background:rgba(0,0,0,.15);flex:none}
+.usuario{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.btn-texto{background:none;border:0;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;padding:6px 0}
+.btn-texto:hover{color:var(--ink)}
+.btn-sec{background:#fff;border:1px solid rgba(0,0,0,.18);border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn-sec:hover{border-color:var(--ink)}
+.btn-sec.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn-link{background:none;border:0;font-size:15px;font-weight:600;color:var(--ac);cursor:pointer;min-height:44px;padding:0 6px}
+.dropdown{position:absolute;top:100%;left:0;z-index:40;min-width:240px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:10px;margin-top:8px;box-shadow:0 16px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;color:var(--ink)}
+.dropdown input{border:0;border-bottom:1px solid var(--line);padding:12px;font-size:14px;outline:none}
+.dropdown-lista{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;padding:4px}
+.dropdown-item{display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;border-radius:6px;cursor:pointer;background:transparent;color:var(--ink)}
+.dropdown-item:hover{background:var(--soft)}
+.dropdown-item.on{background:var(--ac);color:#fff}
+
+.titulo-fila{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:22px 0 16px}
+.kicker{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac);margin-bottom:6px}
+.mes-titulo{margin:0;font-size:42px;line-height:1;font-weight:900;font-stretch:115%;letter-spacing:-.01em;text-transform:uppercase}
+.titulo-acc{display:flex;align-items:center;gap:8px;flex:none}
+.seg{display:flex;padding:4px;background:var(--sf);border-radius:9px;gap:2px}
+.seg button{border:0;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.meses-panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 16px;display:flex;flex-direction:column;gap:12px}
+.meses-grupo{display:flex;flex-direction:column;gap:8px}
+.meses-chips{display:flex;flex-wrap:wrap;gap:6px}
+.mes-chip{padding:7px 13px;border-radius:999px;border:1px solid rgba(0,0,0,.14);background:#fff;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer}
+.mes-chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.rotulo{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2)}
+.vacio-caja{padding:28px 20px;border:1px dashed rgba(0,0,0,.2);border-radius:12px;text-align:center;font-size:14px;color:var(--muted)}
+
+/* ---- Selector de semanas ---- */
+.semanas{display:grid;gap:8px}
+.sem{text-align:left;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:background .15s;min-width:0}
+.sem-top{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%}
+.sem-n{font-size:11px;font-weight:800;letter-spacing:.14em}
+.sem-pill{font-size:9.5px;font-weight:800;letter-spacing:.08em;padding:3px 6px;border-radius:4px;background:#ecebe8;color:var(--ink);white-space:nowrap}
+.sem-rango{font-size:15px;font-weight:600;white-space:nowrap}
+.sem-count{font-size:12px;opacity:.65}
+.sem-dot{width:6px;height:6px;border-radius:50%;background:var(--muted2);display:inline-block;margin-left:6px;vertical-align:middle}
+.sem.fin{color:var(--muted2)}
+.sem.fin .sem-pill{color:var(--muted)}
+.sem.fin .sem-dot{background:#b9b6b0}
+.sem.activa{background:var(--ink);border-color:var(--ink);color:#fff}
+.sem.activa .sem-pill{background:rgba(255,255,255,.16);color:#fff}
+.sem.cur{background:var(--ac-lt);border-color:var(--ac);color:#0a5a2c}
+.sem.cur .sem-pill{background:var(--ac);color:#fff}
+.sem.cur .sem-dot{background:var(--ac)}
+.sem.cur.activa{background:var(--ac);color:#fff}
+.sem.cur.activa .sem-pill{background:#fff;color:var(--ac)}
+.sem.activa .sem-dot{background:#fff}
+
+/* ---- Barra de filtros ---- */
+.barra{display:flex;align-items:center;justify-content:space-between;gap:12px 16px;padding:16px 0;flex-wrap:wrap;position:relative;z-index:10}
+.barra-izq{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}
+.buscar-wrap{position:relative}
+.btn-buscar{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;border:1px solid var(--ink);background:#fff;color:var(--ink);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-buscar.on{background:var(--ink);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:1px solid rgba(0,0,0,.14);background:#fff;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+.resaltar{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--muted)}
+.resaltar select{font-size:13px;font-weight:600;padding:7px 10px;border-radius:8px;border:1px solid rgba(0,0,0,.18);background:#fff;color:var(--ink);cursor:pointer;max-width:220px}
+.buscar-velo{position:fixed;inset:0;z-index:20}
+.barra-der{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.dropdown-part{left:auto;right:0;z-index:21}
+.part-modal{width:min(100%,480px);max-height:min(80vh,640px);overflow-y:auto;background:#fff;border-radius:14px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.part-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.part-item:hover{border-color:var(--ink);background:#f4f3ef}
+.part-rol{font-size:12px;font-weight:700;color:var(--ac-dk)}
+.buscar-panel{position:absolute;top:46px;left:0;width:560px;max-width:calc(100vw - 64px);z-index:21;background:#fff;border-radius:14px;border:1px solid rgba(0,0,0,.12);box-shadow:0 16px 40px rgba(0,0,0,.18);padding:12px;display:flex;flex-direction:column;gap:8px}
+.buscar-input{display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:10px;border:1.5px solid var(--ink);color:var(--muted2)}
+.buscar-input input{flex:1;min-width:0;border:0;outline:none;font-size:14px;padding:12px 0;background:transparent;color:var(--ink)}
+.buscar-lista{max-height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.res{cursor:pointer;display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:10px}
+.res:hover{background:#f4f3ef}
+.res.sel{background:#eef6f1}
+.res.pasado{opacity:.7}
+.res-meta{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.res-tema{font-size:14px;font-weight:600;line-height:1.35}
+.res-vacio{padding:20px;text-align:center;font-size:13px;color:var(--muted)}
+.agarre{width:40px;height:4px;border-radius:2px;background:#d4d1cb;align-self:center}
+.buscar-cab{display:flex;flex-direction:column;gap:6px}
+.buscar-cab-fila{display:flex;align-items:center;justify-content:space-between;font-size:17px;font-weight:800}
+
+/* ---- Lista (tarjetas) + detalle ---- */
+.principal{display:grid;grid-template-columns:360px minmax(0,1fr);gap:24px;align-items:start}
+.col-lista{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px}
+.lista-semana,.lista-mes{flex-direction:column;gap:10px}
+.lista-cab{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
+.lista-cab-txt{display:flex;flex-direction:column;gap:2px}
+.lista-cab-dia{font-size:14px;font-weight:700}
+.btn-pildora{display:flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(0,0,0,.14);background:#fff;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer}
+.card{cursor:pointer;display:grid;grid-template-columns:60px minmax(0,1fr);gap:14px;padding:14px;border-radius:12px;background:#fff;border:2px solid transparent;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:border-color .15s,box-shadow .15s,opacity .15s}
+.card:hover{box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.card.pasado{opacity:.72}
+.card.sel{border-color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.08);opacity:1}
+.card.dim{opacity:.4}
+.card-fecha{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;padding:8px 0;background:var(--soft);color:var(--ink)}
+.card.hoy .card-fecha{background:var(--gold)}
+.card.sel .card-fecha{background:var(--ink);color:#fff}
+.card-dow{font-size:11px;font-weight:800;letter-spacing:.12em}
+.card-dia{font-size:28px;font-weight:900;font-stretch:112%;line-height:1}
+.card-cuerpo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.card-tipo{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;min-width:0}
+.card-tipo-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-hora{margin-left:auto;font-weight:600;color:var(--muted);white-space:nowrap}
+.card-tema{font-size:16px;font-weight:600;line-height:1.3;text-wrap:pretty;overflow-wrap:anywhere}
+.card-tema.tachado{text-decoration:line-through}
+.card-tema.pendiente{color:var(--muted2)}
+.card-pie{display:flex;align-items:center;gap:8px;margin-top:2px;min-height:22px}
+.avatares{display:flex;padding-right:6px}
+.avatar-mini{width:22px;height:22px;margin-right:-6px;border-radius:50%;border:2px solid #fff;color:#fff;font-size:8.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.badges{margin-left:auto;display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.badge{font-size:9.5px;font-weight:800;letter-spacing:.08em;padding:3px 6px;border-radius:4px;white-space:nowrap}
+.b-hoy{background:var(--gold);color:var(--ink)}
+.b-part{background:var(--ac-lt);color:var(--ac)}
+.b-fin{background:#ecebe8;color:var(--muted)}
+.b-canc{background:var(--red);color:#fff}
+.b-dirige{background:var(--blue-lt);color:var(--blue)}
+.b-aviso{background:var(--gold-lt);color:var(--gold-dk)}
+.card-chev{font-size:20px;color:var(--muted3);line-height:1}
+
+.cal{background:#fff;border-radius:12px;border:1px solid var(--line);padding:16px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-dow{text-align:center;font-size:11px;font-weight:800;color:var(--muted2);letter-spacing:.1em;padding-bottom:4px}
+.cal-celda{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:14px;font-weight:500;color:var(--muted2);border:1.5px solid transparent;min-width:0}
+.cal-celda.vacia{visibility:hidden}
+.cal-celda.ev{background:#f4f3ef;color:var(--ink);font-weight:800;cursor:pointer}
+.cal-celda.dia{cursor:pointer}
+.cal-celda.hoy{border-color:var(--gold)}
+.cal-celda.sel{background:var(--ink);color:#fff;font-weight:800;border-color:var(--ink)}
+.dots{display:flex;gap:3px;height:6px;align-items:center}
+.dots .dot{width:6px;height:6px}
+.leyenda{display:flex;flex-direction:column;gap:8px;padding:10px 4px 0}
+.leyenda-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+
+.detalle{min-width:0;background:#fff;border-radius:14px;border:1px solid var(--line)}
+.det-cab{padding:26px 32px 22px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;gap:24px;align-items:flex-end}
+.det-cab-txt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.det-pills{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill-tipo{font-size:11px;font-weight:800;letter-spacing:.1em;padding:4px 8px;border-radius:5px;border:1px solid currentColor;text-transform:uppercase}
+.pill-estado{font-size:11px;font-weight:800;letter-spacing:.1em;padding:4px 8px;border-radius:5px;background:var(--ac-lt);color:var(--ac)}
+.pill-estado.fin{background:#ecebe8;color:var(--muted)}
+.pill-estado.hoy{background:var(--gold);color:var(--ink)}
+.pill-estado.canc{background:var(--red);color:#fff}
+.det-dia{margin:0;font-size:50px;font-weight:900;font-stretch:115%;line-height:.95;letter-spacing:-.01em;text-transform:uppercase}
+.det-dia.tachado{text-decoration:line-through}
+.det-fecha{font-size:15px;color:var(--muted)}
+.det-fecha strong{color:var(--ink)}
+a.btn-cal{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:13px;font-weight:700;flex:none;white-space:nowrap}
+a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn-cal .mas{font-size:16px;line-height:1}
+.det-grid{padding:24px 32px 32px;display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:24px}
+.det-main,.det-aside{min-width:0}
+.det-aside{display:flex;flex-direction:column;gap:18px}
+.det-tema{display:flex;flex-direction:column;gap:6px;margin-bottom:28px}
+.det-tema-txt{font-size:24px;font-weight:600;line-height:1.25;text-wrap:pretty;overflow-wrap:anywhere}
+.det-cita{font-size:14px;line-height:1.55;color:var(--muted);border-left:2px solid var(--ac);padding-left:12px;margin-top:6px;text-wrap:pretty;white-space:pre-line}
+.det-rep-t{margin-bottom:14px;display:block}
+.bloque{margin-bottom:18px}
+.parte{display:flex;align-items:center;gap:12px;margin:4px 0 14px}
+.parte .linea{flex:1;height:2px;background:var(--ac)}
+.parte-t{font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk)}
+.bloque-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.bloque-t .linea{flex:1;height:1px;background:rgba(0,0,0,.12)}
+.bloque-lista{display:flex;flex-direction:column;border:1px solid rgba(0,0,0,.09);border-radius:10px;overflow:hidden}
+.can{display:grid;grid-template-columns:22px minmax(0,1fr) auto 32px;gap:12px;align-items:center;padding:12px 14px;background:#fff;border-top:1px solid rgba(0,0,0,.07);transition:background .15s}
+.can:first-child{border-top:0}
+.can.resaltada{background:#eef3fb}
+.can.sonando{background:#eef6f1}
+.can-num{font-size:12px;font-weight:700;color:var(--muted3);font-variant-numeric:tabular-nums}
+.can-info{min-width:0}
+.can-t{font-size:15px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.can-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:3px}
+.can-meta strong{color:var(--ink);font-weight:600}
+.avatar-xs{width:18px;height:18px;flex:none;border-radius:50%;color:#fff;font-size:7.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.medley{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:8px}
+.medley-chip{font-size:11.5px;padding:3px 8px;border-radius:999px;background:var(--soft);color:#3d3a36}
+.tono{justify-self:start;font-size:12px;font-weight:800;padding:4px 8px;border-radius:5px;background:var(--ac-lt);color:var(--ac);white-space:nowrap;border:1.5px solid transparent}
+.tono-btn{cursor:pointer;border-color:var(--ac)}
+.tono-btn:hover{background:var(--ac);color:#fff}
+.play{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--ac);background:transparent;color:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.play.on{background:var(--ac);color:#fff}
+.play.oculto{visibility:hidden;pointer-events:none}
+.callout{background:var(--gold-lt);border-radius:12px;padding:16px 18px}
+.callout-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dk)}
+.callout p{margin:8px 0 0;font-size:14px;line-height:1.55;text-wrap:pretty;white-space:pre-line}
+.callout-aviso{border:1.5px solid var(--gold)}
+.caja{border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.caja p{margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted);white-space:pre-line}
+.caja-banda{padding-bottom:8px}
+.caja-banda .rotulo{display:block;margin-bottom:8px}
+.banda-fila{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid rgba(0,0,0,.06);font-size:13px}
+.banda-rol{color:var(--muted)}
+.banda-nombres{text-align:right;font-weight:600}
+.banda-nombres .yo{font-weight:800;color:var(--ac)}
+.banda-nombres .dest{color:var(--ink)}
+.banda-tarea{font-size:12px;line-height:1.45;color:#4d6b08;background:#f5fadd;border-left:3px solid #a8d92f;padding:6px 10px;margin:0 0 8px}
+.det-barra{display:none}
+.pie{display:flex;justify-content:space-between;gap:20px;padding:32px 0 0;font-size:12px;letter-spacing:.06em;color:var(--muted);flex-wrap:wrap}
+.pie-acc{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pie a.btn-sec{border-bottom:1px solid rgba(0,0,0,.18)}
+.pie a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
+
+/* ---- Modal de cifrado ---- */
 .cifrado-overlay{position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
-.cifrado-modal{width:min(100%,760px);max-height:90vh;display:flex;flex-direction:column;background:#fff;border:2px solid var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.cifrado-modal{width:min(100%,760px);max-height:90vh;display:flex;flex-direction:column;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.28)}
 .cifrado-head{padding:16px 20px 12px;border-bottom:1px solid #eae9e9;flex:none}
 .cifrado-body{padding:16px 20px 20px;overflow-y:auto;flex:1 1 auto;min-height:0}
 .cifrado-hoja{font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.45;overflow-x:auto;padding:4px 0}
 .cifrado-linea{white-space:pre;min-height:1.45em}
-.cifrado-ctrl{font-size:13px;font-weight:800;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:4px 10px;cursor:pointer;min-width:38px}
+.cifrado-ctrl{font-size:13px;font-weight:800;border:1px solid rgba(0,0,0,.18);border-radius:6px;background:#fff;color:var(--ink);padding:4px 10px;cursor:pointer;min-width:38px}
+.cifrado-ctrl:hover{border-color:var(--ink)}
 a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
-.mes-titulo{font-size:56px}
-@media (max-width:640px){
-  /* "SEPTIEMBRE 2026" a 56px no cabe en un teléfono y ensanchaba toda la
-     página (y con ella los modales). La barra de cada semana se parte en
-     dos líneas en vez de salirse de la pantalla. */
-  .mes-titulo{font-size:38px}
-  .semana-barra{flex-wrap:wrap;gap:6px 10px !important;padding:10px 12px !important}
+
+/* Escritorio vs. teléfono: un mismo marcado, con piezas exclusivas de cada
+   uno (la tira de días y la barra "‹ Semana N" solo existen en el teléfono;
+   el conmutador Semana/Mes y los avatares, solo en escritorio). */
+@media (min-width:861px){
+  .solo-movil{display:none !important}
+}
+@media (max-width:860px){
+  .solo-desk{display:none !important}
+  .pag{padding:0 20px 40px}
+  .top{min-height:52px;gap:10px}
+  .top-der{gap:10px}
+  .avatar{width:32px;height:32px}
+  .titulo-fila{padding:14px 0 4px;align-items:flex-end}
+  .kicker{font-size:10px;margin-bottom:4px}
+  .mes-titulo{font-size:31px}
+  .semanas{display:flex !important;overflow-x:auto;padding:14px 20px 12px;margin:0 -20px;scrollbar-width:none}
+  .semanas::-webkit-scrollbar{display:none}
+  .sem{flex:none;gap:3px;padding:9px 12px;min-height:48px}
+  .sem-n{font-size:10px;letter-spacing:.12em}
+  .sem-rango{font-size:13px}
+  .tira{background:#fff;border-radius:14px;padding:8px 6px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;border:1px solid rgba(0,0,0,.07)}
+  .tira-dia{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;min-height:44px;border-radius:10px;color:var(--muted3);font-weight:500;transition:background .15s}
+  .tira-dia.fuera{color:#cfccc6}
+  .tira-dia.ev{color:var(--ink);font-weight:800;cursor:pointer}
+  .tira-dia.dentro{cursor:pointer}
+  .tira-dia.hoy{box-shadow:inset 0 0 0 1.5px var(--gold);font-weight:800}
+  .tira-dia.sel{background:var(--ink);color:#fff;box-shadow:none}
+  .tira-l{font-size:10px;font-weight:800;letter-spacing:.08em;opacity:.7}
+  .tira-d{font-size:17px}
+  .tira .dots{height:5px}
+  .tira .dots .dot{width:5px;height:5px}
+  .barra{flex-direction:column;align-items:stretch;padding:16px 0}
+  .barra-izq{flex-direction:column;align-items:stretch;gap:8px}
+  .btn-buscar{width:100%;min-height:46px;padding:0 14px;border-radius:12px;border-color:rgba(0,0,0,.14);color:var(--muted2);font-size:14px;font-weight:400}
+  .btn-buscar.on{background:#fff;color:var(--muted2)}
+  .rotulo-tipo{font-size:10px;padding-top:6px}
+  .chips{flex-wrap:nowrap;overflow-x:auto;margin:0 -20px;padding:0 20px 4px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:none;padding:8px 12px;min-height:36px;font-size:12.5px}
+  /* min-width:0 en toda la cadena: si no, las fichas de tipo (sin salto de
+     línea) y el ancho natural del <select> ensanchan la página entera. */
+  .barra-izq,.chips,.resaltar,.buscar-wrap,.barra-der{min-width:0;max-width:100%}
+  .barra-der{flex-direction:column;align-items:stretch;gap:8px}
+  .barra-der .btn-sec{width:100%;min-height:40px;font-size:13px}
+  .dropdown-part{left:0;right:0;min-width:0}
+  .part-modal{width:100%;height:100%;max-height:none;border-radius:0}
+  .resaltar{justify-content:space-between}
+  .resaltar select{flex:1;width:0;min-width:0;max-width:none}
+  .buscar-velo{background:rgba(0,0,0,.35);z-index:60}
+  .buscar-panel{position:fixed;left:0;right:0;bottom:0;top:110px;width:auto;max-width:none;z-index:61;border-radius:22px 22px 0 0;border:0;padding:10px 16px 20px;gap:10px}
+  .buscar-input input{font-size:16px}
+  .buscar-lista{flex:1;max-height:none;margin:0 -4px}
+  .principal{display:block}
+  .col-lista{position:static;max-height:none;overflow:visible;padding:0}
+  .lista-semana{display:flex !important}
+  .lista-mes{display:none !important}
+  .card{grid-template-columns:54px minmax(0,1fr) 12px;gap:12px;padding:12px;border-radius:14px;border:1px solid rgba(0,0,0,.07);box-shadow:none;align-items:center}
+  .card.sel{border-color:rgba(0,0,0,.07);box-shadow:none}
+  .card.sel .card-fecha{background:var(--soft);color:var(--ink)}
+  .card.hoy .card-fecha{background:var(--gold)}
+  .card:active{transform:scale(.98)}
+  .card-fecha{align-self:stretch;border-radius:9px}
+  .card-dow{font-size:10px;letter-spacing:.1em}
+  .card-dia{font-size:24px}
+  .card-tipo{font-size:11.5px;gap:6px}
+  .card-hora{margin-left:0}
+  .card-hora::before{content:'· '}
+  .card-tema{font-size:15px}
+  .badges{margin-left:0;justify-content:flex-start}
+  .badge{font-size:9px}
+  .card-pie{min-height:0}
+  /* El detalle se vuelve una pantalla que entra deslizándose desde la
+     derecha; visibility evita que, cerrado, sea alcanzable con el teclado. */
+  .detalle{position:fixed;inset:0;z-index:50;border:0;border-radius:0;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);visibility:hidden;transition:transform .32s cubic-bezier(.2,.8,.2,1),visibility 0s linear .32s}
+  .detalle.abierto{transform:none;visibility:visible;transition:transform .32s cubic-bezier(.2,.8,.2,1)}
+  .det-barra{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;flex:none;border-bottom:1px solid rgba(0,0,0,.08)}
+  .det-volver{display:flex;align-items:center;gap:4px;min-height:44px;padding:0 8px;background:none;border:0;font-size:15px;font-weight:600;color:var(--ac);cursor:pointer}
+  .det-volver span{font-size:24px;line-height:1}
+  .det-fecha-corta{font-size:12px;font-weight:700;color:var(--muted);padding-right:8px}
+  .det-scroll{flex:1;overflow-y:auto;padding:18px 20px 28px}
+  .det-cab{padding:0;border:0;flex-direction:column;align-items:stretch;gap:14px;margin-bottom:20px}
+  .det-cab-txt{gap:8px}
+  .pill-tipo,.pill-estado{font-size:10px;padding:4px 7px}
+  .det-dia{font-size:38px}
+  .det-fecha{font-size:14px}
+  a.btn-cal{justify-content:center;min-height:46px;border-radius:10px;font-size:14px}
+  .det-grid{padding:0;display:flex;flex-direction:column;gap:12px}
+  .det-main,.det-aside{display:contents}
+  .det-tema{order:1;background:#fff;border-radius:14px;padding:16px;margin:0}
+  .det-tema-txt{font-size:19px;line-height:1.3}
+  .det-cita{font-size:13px;margin-top:10px}
+  .o-2{order:2}
+  .o-3{order:3;margin-top:8px}
+  .o-4{order:4}
+  .callout{border-radius:14px;padding:14px 16px}
+  .callout p{font-size:13.5px;margin-top:6px}
+  .caja{background:#fff;border:0;border-radius:14px;padding:14px 16px}
+  .caja-banda{padding-bottom:6px}
+  .bloque{margin-bottom:16px}
+  .bloque-t{font-size:10px;gap:8px}
+  .bloque-lista{background:#fff;border:0;border-radius:12px}
+  .can{grid-template-columns:minmax(0,1fr) auto 40px;gap:10px;padding:11px 12px 11px 14px}
+  .can-t{font-size:14.5px}
+  .can-meta{font-size:12px;margin-top:2px;gap:4px}
+  .medley-chip{font-size:11px;padding:3px 7px}
+  .tono{font-size:11.5px;padding:4px 7px}
+  .play{width:40px;height:40px}
   .cifrado-overlay{padding:0}
-  .cifrado-modal{width:100%;height:100%;max-height:none;border:0}
+  .cifrado-modal{width:100%;height:100%;max-height:none;border-radius:0}
   .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
 }
 </style>
@@ -90,313 +409,389 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
 </sc-if>
 
 <sc-if value="{{ esCalendario }}" hint-placeholder-val="{{ true }}">
-<div style="max-width:1320px;margin:0 auto;padding:0 24px 96px">
+<div class="pag">
 
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
-    <div style="display:flex;align-items:baseline;gap:12px;min-width:0;flex:1 1 auto;position:relative">
-      <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
+  <header class="top">
+    <div class="top-org">
+      <span class="top-cuadro"></span>
       <sc-if value="{{ noHayOtrasOrgs }}" hint-placeholder-val="{{ true }}">
-        <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">{{ nombreOrg }}</span>
+        <span class="top-nombre">{{ nombreOrg }}</span>
       </sc-if>
       <sc-if value="{{ hayOtrasOrgs }}" hint-placeholder-val="{{ false }}">
-        <button type="button" onClick="{{ toggleOrgSwitcher }}" style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0;background:transparent;border:0;padding:0;cursor:pointer;color:inherit">
-          <span>{{ nombreOrg }}</span>
+        <button type="button" class="top-switch" onClick="{{ toggleOrgSwitcher }}">
+          <span class="top-nombre">{{ nombreOrg }}</span>
           <span style="font-size:11px">▾</span>
         </button>
         <sc-if value="{{ orgSwitcherAbierto }}" hint-placeholder-val="{{ false }}">
-          <div style="position:absolute;top:100%;left:0;z-index:30;min-width:240px;background:#fff;border:2px solid var(--ink);margin-top:6px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column;color:var(--ink)">
-            <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
-            <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column">
+          <div class="dropdown">
+            <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off">
+            <div class="dropdown-lista">
               <sc-for list="{{ misOrgsLista }}" as="o" hint-placeholder-count="2">
-                <button type="button" style="{{ o.style }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
+                <button type="button" class="{{ o.clase }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
               </sc-for>
             </div>
           </div>
         </sc-if>
       </sc-if>
     </div>
-    <sc-if value="{{ sesionActiva }}" hint-placeholder-val="{{ false }}">
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:0 0 auto">
-        <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
-        <button onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
-      </div>
-    </sc-if>
-    <sc-if value="{{ sesionInactiva }}" hint-placeholder-val="{{ true }}">
-      <button onClick="{{ irABienvenida }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;flex:0 0 auto">Iniciar sesión</button>
-    </sc-if>
-  </div>
-
-  <sc-if value="{{ mostrarEncabezadoMes }}" hint-placeholder-val="{{ true }}">
-  <header style="display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:32px 0 24px;border-bottom:2px solid var(--ink)">
-    <div>
-      <div style="font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ kicker }}</div>
-      <h1 class="mes-titulo" style="line-height:.92;font-weight:800;letter-spacing:-.03em;margin:12px 0 0;text-transform:uppercase">{{ mesLabel }}</h1>
+    <div class="top-der">
+      <sc-if value="{{ hayOtrosMeses }}" hint-placeholder-val="{{ false }}">
+        <button type="button" class="btn-texto solo-desk" onClick="{{ toggleMeses }}">{{ mesesBtnLabel }}</button>
+        <span class="sep-v solo-desk"></span>
+      </sc-if>
+      <sc-if value="{{ sesionActiva }}" hint-placeholder-val="{{ false }}">
+        <div class="usuario">
+          <span class="avatar" title="{{ usuarioNombre }}">{{ usuarioIniciales }}</span>
+          <span class="solo-desk">{{ usuarioNombre }}</span>
+        </div>
+        <button type="button" class="btn-sec" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
+      </sc-if>
+      <sc-if value="{{ sesionInactiva }}" hint-placeholder-val="{{ true }}">
+        <button type="button" class="btn-sec" onClick="{{ irABienvenida }}">Iniciar sesión</button>
+      </sc-if>
     </div>
   </header>
-  </sc-if>
 
-  <sc-if value="{{ mesesVisibles }}" hint-placeholder-val="{{ true }}">
-    <div style="display:flex;gap:2px;flex-wrap:wrap;padding:16px 0 0">
-      <sc-for list="{{ meses }}" as="m" hint-placeholder-count="3">
-        <button onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button>
-      </sc-for>
-      <sc-if value="{{ hayMesesAnteriores }}" hint-placeholder-val="{{ true }}">
-        <button onClick="{{ toggleMeses }}" style="{{ mesesBtnStyle }}">{{ mesesBtnLabel }}</button>
+  <div class="titulo-fila">
+    <div style="min-width:0">
+      <div class="kicker">{{ kicker }}</div>
+      <h1 class="mes-titulo">{{ mesLabel }}</h1>
+    </div>
+    <div class="titulo-acc">
+      <sc-if value="{{ hayOtrosMeses }}" hint-placeholder-val="{{ false }}">
+        <button type="button" class="btn-sec solo-movil" onClick="{{ toggleMeses }}">{{ mesesBtnLabelCorto }}</button>
+      </sc-if>
+      <sc-if value="{{ mesConEventos }}" hint-placeholder-val="{{ true }}">
+        <div class="seg solo-desk">
+          <button type="button" class="{{ segSemanaClase }}" onClick="{{ verSemana }}">Semana</button>
+          <button type="button" class="{{ segMesClase }}" onClick="{{ verMes }}">Mes</button>
+        </div>
       </sc-if>
     </div>
-    <sc-if value="{{ mesesAbierto }}" hint-placeholder-val="{{ true }}">
-      <div style="background:var(--sf);border:2px solid var(--ink);margin-top:8px;padding:12px;display:flex;flex-wrap:wrap;gap:2px;max-height:min(50vh,320px);overflow-y:auto">
-        <sc-for list="{{ mesesAnteriores }}" as="m" hint-placeholder-count="3">
-          <button onClick="{{ m.pick }}" style="{{ m.style }}">{{ m.label }}</button>
-        </sc-for>
-      </div>
-    </sc-if>
-  </sc-if>
+  </div>
 
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 0 0">
-    <button onClick="{{ toggleFiltro }}" style="{{ filtroBtnStyle }}">{{ filtroBtnLabel }}</button>
-    <div style="position:relative">
-      <button onClick="{{ toggleParticipaciones }}" style="{{ participacionesBtnStyle }}">{{ participacionesBtnLabel }}</button>
-      <sc-if value="{{ participacionesAbierto }}" hint-placeholder-val="{{ false }}">
-        <div style="position:absolute;top:100%;left:0;z-index:30;min-width:240px;background:#fff;border:2px solid var(--ink);margin-top:6px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column;color:var(--ink)">
-          <input value="{{ participacionesBusqueda }}" onChange="{{ onParticipacionesBusqueda }}" placeholder="Buscar por nombre…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
-          <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column">
-            <sc-for list="{{ personasMesLista }}" as="p" hint-placeholder-count="2">
-              <button type="button" style="display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;cursor:pointer;background:transparent;color:var(--ink)" onClick="{{ p.onClick }}">{{ p.nombre }}</button>
+  <sc-if value="{{ mesesAbierto }}" hint-placeholder-val="{{ false }}">
+    <div class="meses-panel">
+      <sc-for list="{{ mesesGrupos }}" as="g" hint-placeholder-count="1">
+        <div class="meses-grupo">
+          <span class="rotulo">{{ g.titulo }}</span>
+          <div class="meses-chips">
+            <sc-for list="{{ g.meses }}" as="m" hint-placeholder-count="2">
+              <button type="button" class="{{ m.clase }}" onClick="{{ m.pick }}">{{ m.label }}</button>
             </sc-for>
-            <p style="{{ personasMesVaciaStyle }}">Sin participantes este mes.</p>
           </div>
         </div>
-      </sc-if>
-    </div>
-    <sc-if value="{{ filtroActivo }}" hint-placeholder-val="{{ true }}">
-      <span style="font-size:13px;color:#54514f;flex:1 1 180px">{{ filtroResumen }}</span>
-      <button onClick="{{ quitarFiltro }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer">Quitar filtro ✕</button>
-    </sc-if>
-  </div>
-
-  <sc-if value="{{ filtroAbierto }}" hint-placeholder-val="{{ true }}">
-    <div style="background:var(--sf);border:2px solid var(--ink);margin-top:12px;padding:16px;display:flex;flex-direction:column;gap:12px">
-      <input value="{{ filtroTexto }}" onChange="{{ onFiltroTexto }}" placeholder="Buscar por fecha, servicio o tema…" style="font-size:16px;padding:14px;border:2px solid var(--ink);background:#fff;width:100%">
-      <div style="display:flex;flex-direction:column;gap:6px;max-height:min(60vh,420px);overflow-y:auto">
-        <sc-for list="{{ filtroLista }}" as="fe" hint-placeholder-count="3">
-          <button onClick="{{ fe.onClick }}" style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:#fff;border:2px solid var(--ink);padding:14px;cursor:pointer;width:100%">
-            <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac-dk)">{{ fe.fechaLabel }}</span>
-            <span style="font-size:15px;font-weight:600;line-height:1.3">{{ fe.tema }}</span>
-          </button>
-        </sc-for>
-      </div>
-      <div style="font-size:13px;color:#7d7979;padding:2px">{{ filtroVacio }}</div>
+      </sc-for>
     </div>
   </sc-if>
 
-  <sc-for list="{{ semanas }}" as="sem" hint-placeholder-count="2">
-    <section style="padding-top:40px">
-      <div class="semana-barra" onClick="{{ sem.toggle }}" style="display:flex;align-items:center;gap:16px;background:var(--ink);color:var(--bg);padding:12px 16px;cursor:pointer">
-        <span style="{{ sem.tituloStyle }}">{{ sem.titulo }}</span>
-        <span style="{{ sem.rangoStyle }}">{{ sem.rango }}</span>
-        <span style="flex:1"></span>
-        <span style="{{ sem.estadoStyle }}">{{ sem.estadoLabel }}</span>
-        <span style="color:#fff;font-size:14px;line-height:1">{{ sem.icono }}</span>
-      </div>
-      <sc-if value="{{ sem.tieneAvisos }}" hint-placeholder-val="{{ true }}">
-        <div style="{{ sem.avisosStyle }}">
-          <span style="font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dk)">Importante</span>
-          <sc-for list="{{ sem.avisos }}" as="aviso" hint-placeholder-count="1">
-            <div style="font-size:16px;font-weight:700;line-height:1.4;color:var(--gold-dk)">{{ aviso }}</div>
-          </sc-for>
+  <sc-if value="{{ mesVacio }}" hint-placeholder-val="{{ false }}">
+    <div class="vacio-caja" style="margin-top:12px">{{ vacio }}</div>
+  </sc-if>
+
+  <sc-if value="{{ mesConEventos }}" hint-placeholder-val="{{ true }}">
+    <div class="semanas" style="{{ semanasStyle }}">
+      <sc-for list="{{ semanas }}" as="w" hint-placeholder-count="5">
+        <button type="button" class="{{ w.clase }}" onClick="{{ w.onClick }}">
+          <span class="sem-top">
+            <span class="sem-n"><span class="solo-desk">SEMANA</span><span class="solo-movil">SEM</span> {{ w.n }}<span class="sem-dot solo-movil"></span></span>
+            <span class="sem-pill solo-desk">{{ w.estado }}</span>
+          </span>
+          <span class="sem-rango">{{ w.rango }}</span>
+          <span class="sem-count solo-desk">{{ w.count }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div class="tira solo-movil">
+      <sc-for list="{{ tira }}" as="x" hint-placeholder-count="7">
+        <div class="{{ x.clase }}" onClick="{{ x.onClick }}">
+          <span class="tira-l">{{ x.l }}</span>
+          <span class="tira-d">{{ x.d }}</span>
+          <span class="dots"><sc-for list="{{ x.dots }}" as="o" hint-placeholder-count="1"><span class="dot" style="{{ o.style }}"></span></sc-for></span>
         </div>
-      </sc-if>
-      <div style="display:{{ sem.gridDisplay }};grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px;background:var(--sf);border:2px solid var(--ink);border-top:0">
-        <sc-for list="{{ sem.dias }}" as="dia" hint-placeholder-count="3">
-          <article style="background:var(--sf);padding:24px;outline:2px solid var(--ink)">
-            <div onClick="{{ dia.toggleColapso }}" style="display:flex;align-items:center;gap:12px;cursor:pointer">
-              <div style="{{ dia.diaStyle }}">{{ dia.diaNombre }}</div>
-              <span style="flex:1"></span>
-              <span style="color:var(--ink);font-size:16px;line-height:1">{{ dia.iconoColapso }}</span>
-            </div>
-            <div style="{{ dia.contentStyle }}">
-            <sc-for list="{{ dia.eventos }}" as="ev" hint-placeholder-count="2">
-              <sc-if value="{{ ev.separador }}" hint-placeholder-val="{{ true }}">
-                <div style="height:2px;background:var(--ink);opacity:.25;margin:20px 0"></div>
-              </sc-if>
-              <div style="{{ ev.wrapStyle }}">
-                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
-                  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-                    <span style="{{ ev.subStyle }}">{{ ev.sub }}</span>
+      </sc-for>
+    </div>
+
+    <div class="barra">
+      <div class="barra-izq">
+        <div class="buscar-wrap">
+          <button type="button" class="{{ buscarBtnClase }}" onClick="{{ toggleBuscar }}">
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></line></svg>
+            <span>Filtrar por evento</span>
+          </button>
+          <sc-if value="{{ buscarAbierto }}" hint-placeholder-val="{{ false }}">
+            <div class="buscar-velo" onClick="{{ cerrarBuscar }}"></div>
+            <div class="buscar-panel" role="dialog" aria-label="Filtrar por evento">
+              <div class="buscar-cab solo-movil">
+                <span class="agarre"></span>
+                <div class="buscar-cab-fila"><span>Filtrar por evento</span><button type="button" class="btn-link" onClick="{{ cerrarBuscar }}">Cerrar</button></div>
+              </div>
+              <div class="buscar-input">
+                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></line></svg>
+                <input autoFocus="{{ true }}" value="{{ buscarTexto }}" onChange="{{ onBuscarTexto }}" placeholder="Buscar por fecha, servicio o tema…" autoComplete="off">
+              </div>
+              <div class="buscar-lista">
+                <sc-for list="{{ resultados }}" as="r" hint-placeholder-count="3">
+                  <div class="{{ r.clase }}" onClick="{{ r.onClick }}">
+                    <div class="res-meta" style="{{ r.colorStyle }}"><span class="dot" style="{{ r.dotStyle }}"></span>{{ r.meta }}</div>
+                    <div class="res-tema">{{ r.tema }}</div>
                   </div>
-                  <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
-                    <span style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ink);padding:4px 8px;white-space:nowrap">{{ ev.hora }}</span>
-                    <span>
-                    <div style="display:flex;gap:6px">
-                      <a href="{{ ev.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar" aria-label="Guardar en Google Calendar" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;text-decoration:none">
-                        <img src="assets/icons/google-calendar.svg" alt="Google Calendar" width="22" height="22" style="display:block">
-                      </a>
-                      <!--a href="{{ ev.icsHref }}" download="{{ ev.icsFilename }}" title="Agregar al calendario" aria-label="Agregar al calendario" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:2px solid var(--ink);background:#fff;font-size:20px;text-decoration:none;line-height:1">📅</a-->
-                    </div>
-                    </span>
-                    <sc-if value="{{ ev.mostrarCancelado }}" hint-placeholder-val="{{ false }}">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;background:#b00020;color:#fff;padding:4px 8px;white-space:nowrap">Cancelado</span>
-                    </sc-if>
-                  </div>
-                </div>
-                <div style="height:2px;background:var(--ink);margin-top:8px"></div>
-                <sc-if value="{{ ev.tieneBanda }}" hint-placeholder-val="{{ true }}">
-                  <div style="border-bottom:2px solid var(--ink);padding:12px;margin-top:14px">
-                    <div onClick="{{ ev.toggleBanda }}" style="display:flex;align-items:center;gap:10px;cursor:pointer">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Banda</span>
-                      <span style="flex:1;height:2px;background:#d7d3d3"></span>
-                      <span style="font-size:13px;font-weight:800;letter-spacing:.02em;color:var(--ac-dk);white-space:nowrap">{{ ev.bandaToggleLabel }}</span>
-                    </div>
-                    <div style="{{ ev.bandaListaStyle }}">
-                      <sc-for list="{{ ev.bandaLista }}" as="p" hint-placeholder-count="4">
-                        <div onClick="{{ p.onClick }}" title="{{ p.tarea }}" style="{{ p.rowStyle }}">
-                          <div>
-                            <span style="font-size:16px;font-weight:700">{{ p.nombre }}</span>
-                            <span style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ p.tipo }}</span>
-                          </div>
-                          <sc-if value="{{ p.resaltado }}" hint-placeholder-val="{{ true }}">
-                            <span style="font-size:11px;font-weight:800;letter-spacing:.06em;color:#4d6b08;background:#d7ef8e;padding:4px 8px;text-align:center;white-space:nowrap">{{ p.badge }}</span>
-                          </sc-if>
-                        </div>
-                        <sc-if value="{{ p.mostrarTarea }}" hint-placeholder-val="{{ true }}">
-                          <div style="background:#f5fadd;border-left:3px solid #a8d92f;padding:8px 12px;font-size:13px;color:#4d6b08;line-height:1.45">{{ p.tarea }}</div>
-                        </sc-if>
-                      </sc-for>
-                    </div>
-                  </div>
+                </sc-for>
+                <sc-if value="{{ sinResultados }}" hint-placeholder-val="{{ false }}">
+                  <div class="res-vacio">Sin resultados para “{{ buscarTexto }}”.</div>
                 </sc-if>
-                <div style="padding:16px 0 4px">
-                  <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tema</div>
-                  <div style="font-size:19px;font-weight:600;line-height:1.3;margin-top:8px;text-wrap:pretty">{{ ev.tema }}</div>
-                  <div style="font-size:14px;line-height:1.55;color:#54514f;margin-top:8px;border-left:2px solid var(--ac);padding-left:12px;text-wrap:pretty">{{ ev.cita }}</div>
-                </div>
-                <div style="display:flex;flex-direction:column;gap:16px;margin-top:24px">
-                  <sc-for list="{{ ev.bloques }}" as="bl" hint-placeholder-count="5">
-                    <div>
-                      <sc-if value="{{ bl.mostrarParte }}" hint-placeholder-val="{{ false }}">
-                        <div class="parte" style="{{ bl.parteStyle }}">
-                          <span style="flex:1;height:2px;background:var(--ac)"></span>
-                          <span style="font-size:14px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk);text-align:center">{{ bl.parteTitulo }}</span>
-                          <span style="flex:1;height:2px;background:var(--ac)"></span>
-                        </div>
-                      </sc-if>
-                      <div style="display:flex;align-items:center;gap:8px">
-                        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">{{ bl.titulo }}</span>
-                        <span style="flex:1;height:2px;background:var(--ink)"></span>
-                      </div>
-                      <div style="display:flex;flex-direction:column;gap:2px;margin-top:8px">
-                        <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
-                          <div onDoubleClick="{{ cn.onOpen }}" title="{{ cn.rowTitle }}" style="display:grid;grid-template-columns:1fr auto 22px;gap:8px;align-items:center;background:#fff;padding:8px 12px;position:relative">
-                            <sc-if value="{{ cn.tieneUrl }}" hint-placeholder-val="{{ true }}">
-                              <a href="{{ cn.u }}" target="_blank" rel="noopener" style="display:none;position:absolute;inset:0;border-bottom:none"></a>
-                            </sc-if>
-                            <div>
-                              <sc-if value="{{ cn.tieneLineas }}" hint-placeholder-val="{{ true }}">
-                                <div style="font-weight:600">
-                                  <span style="font-size:16px">{{ cn.lineaPrimera }}</span>
-                                  <sc-for list="{{ cn.lineasResto }}" as="linea" hint-placeholder-count="1">
-                                    <span style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ linea }}</span>
-                                  </sc-for>
-                                </div>
-                              </sc-if>
-                              <sc-if value="{{ cn.sinLineas }}" hint-placeholder-val="{{ false }}">
-                                <span style="font-size:16px;font-weight:600">{{ cn.t }}</span>
-                              </sc-if>
-                              <span style="display:block;font-size:12px;color:#6b6866;margin-top:4px">{{ cn.d }}</span>
-                            </div>
-                            <sc-if value="{{ cn.tieneCifrado }}" hint-placeholder-val="{{ false }}">
-                              <button type="button" onClick="{{ cn.onCifrado }}" title="Ver letra y acordes en este tono" aria-label="{{ cn.cifradoLabel }}" style="font-family:inherit;font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap;border:1.5px solid var(--ac);cursor:pointer">{{ cn.k }} <span style="font-size:11px">♪</span></button>
-                            </sc-if>
-                            <sc-if value="{{ cn.sinCifrado }}" hint-placeholder-val="{{ true }}">
-                              <span style="font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--ac-dk);background:var(--ac-lt);padding:4px 8px;text-align:center;white-space:nowrap">{{ cn.k }}</span>
-                            </sc-if>
-                            <button onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
-                          </div>
-                        </sc-for>
-                      </div>
-                    </div>
-                  </sc-for>
-                  <sc-if value="{{ ev.tieneDetalles }}" hint-placeholder-val="{{ true }}">
-                    <div>
-                      <div style="display:flex;align-items:center;gap:8px">
-                        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Detalles y responsable</span>
-                        <span style="flex:1;height:2px;background:var(--ink)"></span>
-                      </div>
-                      <div style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.detalles }}</div>
-                    </div>
-                  </sc-if>
-                  <sc-if value="{{ ev.tienePersonas }}" hint-placeholder-val="{{ true }}">
-                    <div>
-                      <div style="display:flex;align-items:center;gap:8px">
-                        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Personas requeridas</span>
-                        <span style="flex:1;height:2px;background:var(--ink)"></span>
-                      </div>
-                      <div style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.personas }}</div>
-                    </div>
-                  </sc-if>
-                  <sc-if value="{{ ev.tieneNotas }}" hint-placeholder-val="{{ true }}">
-                    <div>
-                      <div style="display:flex;align-items:center;gap:8px">
-                        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">Indicaciones para el ensayo</span>
-                        <span style="flex:1;height:2px;background:var(--ink)"></span>
-                      </div>
-                      <div style="font-size:14px;color:#54514f;margin-top:8px;line-height:1.55">{{ ev.notas }}</div>
-                    </div>
-                  </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ hayTipos }}" hint-placeholder-val="{{ true }}">
+          <span class="sep-v solo-desk" style="margin:0 6px"></span>
+          <span class="rotulo rotulo-tipo">Tipo</span>
+          <div class="chips">
+            <sc-for list="{{ tipos }}" as="t" hint-placeholder-count="3">
+              <button type="button" class="{{ t.clase }}" onClick="{{ t.onClick }}"><span class="dot" style="{{ t.dotStyle }}"></span>{{ t.label }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+      <div class="barra-der">
+        <div class="buscar-wrap">
+          <button type="button" class="{{ participacionesBtnClase }}" onClick="{{ toggleParticipaciones }}">{{ participacionesBtnLabel }}</button>
+          <sc-if value="{{ participacionesAbierto }}" hint-placeholder-val="{{ false }}">
+            <div class="buscar-velo solo-desk" onClick="{{ toggleParticipaciones }}"></div>
+            <div class="dropdown dropdown-part">
+              <input autoFocus="{{ true }}" value="{{ participacionesBusqueda }}" onChange="{{ onParticipacionesBusqueda }}" placeholder="Buscar por nombre…" autoComplete="off">
+              <div class="dropdown-lista">
+                <sc-for list="{{ personasMesLista }}" as="p" hint-placeholder-count="2">
+                  <button type="button" class="dropdown-item" onClick="{{ p.onClick }}">{{ p.nombre }}</button>
+                </sc-for>
+                <sc-if value="{{ personasMesVacia }}" hint-placeholder-val="{{ false }}">
+                  <p class="res-vacio" style="margin:0">Sin participantes este mes.</p>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ hayPersonas }}" hint-placeholder-val="{{ true }}">
+          <label class="resaltar">Resaltar persona
+            <select value="{{ persona }}" onChange="{{ onPersona }}">
+              <sc-for list="{{ personas }}" as="p" hint-placeholder-count="3"><option value="{{ p.v }}">{{ p.label }}</option></sc-for>
+            </select>
+          </label>
+        </sc-if>
+      </div>
+    </div>
+
+    <div class="principal">
+      <div class="col-lista">
+        <div class="lista-semana" style="{{ semanaDisplay }}">
+          <div class="lista-cab solo-movil">
+            <div class="lista-cab-txt">
+              <span class="rotulo" style="font-size:10px">{{ listaTitulo }}</span>
+              <sc-if value="{{ hayDiaFiltro }}" hint-placeholder-val="{{ false }}"><span class="lista-cab-dia">{{ diaFiltroLabel }}</span></sc-if>
+            </div>
+            <sc-if value="{{ hayDiaFiltro }}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="btn-pildora" onClick="{{ quitarDiaFiltro }}">Ver semana <span style="font-size:14px;line-height:1;color:var(--muted2)">×</span></button>
+            </sc-if>
+          </div>
+          <sc-for list="{{ tarjetas }}" as="c" hint-placeholder-count="3">
+            <div class="{{ c.clase }}" onClick="{{ c.onClick }}">
+              <div class="card-fecha"><span class="card-dow">{{ c.dow }}</span><span class="card-dia">{{ c.dia }}</span></div>
+              <div class="card-cuerpo">
+                <div class="card-tipo"><span class="dot" style="{{ c.dotStyle }}"></span><span class="card-tipo-txt" style="{{ c.colorStyle }}">{{ c.tipo }}</span><span class="card-hora">{{ c.hora }}</span></div>
+                <div class="{{ c.temaClase }}">{{ c.tema }}</div>
+                <div class="card-pie">
+                  <div class="avatares solo-desk"><sc-for list="{{ c.lideres }}" as="l" hint-placeholder-count="2"><span class="avatar-mini" style="{{ l.style }}" title="{{ l.nombre }}">{{ l.i }}</span></sc-for></div>
+                  <div class="badges"><sc-for list="{{ c.badges }}" as="b" hint-placeholder-count="1"><span class="{{ b.clase }}">{{ b.t }}</span></sc-for></div>
                 </div>
               </div>
-            </sc-for>
+              <span class="card-chev solo-movil">›</span>
             </div>
-          </article>
-        </sc-for>
+          </sc-for>
+          <sc-if value="{{ listaVacia }}" hint-placeholder-val="{{ false }}">
+            <div class="vacio-caja">{{ listaVaciaTxt }}</div>
+          </sc-if>
+        </div>
+
+        <div class="lista-mes" style="{{ mesDisplay }}">
+          <div class="cal">
+            <div class="cal-grid">
+              <sc-for list="{{ dowLetras }}" as="x" hint-placeholder-count="7"><span class="cal-dow">{{ x }}</span></sc-for>
+              <sc-for list="{{ calCeldas }}" as="k" hint-placeholder-count="30">
+                <div class="{{ k.clase }}" onClick="{{ k.onClick }}"><span>{{ k.d }}</span><span class="dots"><sc-for list="{{ k.dots }}" as="o" hint-placeholder-count="1"><span class="dot" style="{{ o.style }}"></span></sc-for></span></div>
+              </sc-for>
+            </div>
+          </div>
+          <span class="rotulo" style="padding:6px 4px 0">{{ diaMesLabel }}</span>
+          <sc-for list="{{ tarjetasDia }}" as="c" hint-placeholder-count="1">
+            <div class="{{ c.clase }}" onClick="{{ c.onClick }}">
+              <div class="card-fecha"><span class="card-dow">{{ c.dow }}</span><span class="card-dia">{{ c.dia }}</span></div>
+              <div class="card-cuerpo">
+                <div class="card-tipo"><span class="dot" style="{{ c.dotStyle }}"></span><span class="card-tipo-txt" style="{{ c.colorStyle }}">{{ c.tipo }}</span><span class="card-hora">{{ c.hora }}</span></div>
+                <div class="{{ c.temaClase }}">{{ c.tema }}</div>
+                <div class="card-pie">
+                  <div class="avatares"><sc-for list="{{ c.lideres }}" as="l" hint-placeholder-count="2"><span class="avatar-mini" style="{{ l.style }}" title="{{ l.nombre }}">{{ l.i }}</span></sc-for></div>
+                  <div class="badges"><sc-for list="{{ c.badges }}" as="b" hint-placeholder-count="1"><span class="{{ b.clase }}">{{ b.t }}</span></sc-for></div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ diaMesVacio }}" hint-placeholder-val="{{ false }}">
+            <div class="vacio-caja" style="padding:20px">No hay eventos este día.</div>
+          </sc-if>
+          <div class="leyenda">
+            <sc-for list="{{ leyenda }}" as="g" hint-placeholder-count="3"><div class="leyenda-item"><span class="dot" style="{{ g.dotStyle }}"></span>{{ g.label }} · {{ g.dias }}</div></sc-for>
+          </div>
+        </div>
       </div>
-    </section>
-  </sc-for>
 
-  <div style="font-size:14px;color:#7d7979;padding:40px 0 0">{{ vacio }}</div>
+      <sc-if value="{{ hayDetalle }}" hint-placeholder-val="{{ true }}">
+        <section class="{{ detalleClase }}" aria-label="Detalle del evento">
+          <div class="det-barra">
+            <button type="button" class="det-volver" onClick="{{ cerrarDetalle }}"><span aria-hidden="true">‹</span>{{ d.volverLabel }}</button>
+            <span class="det-fecha-corta">{{ d.fechaCorta }}</span>
+          </div>
+          <div class="det-scroll">
+            <div class="det-cab">
+              <div class="det-cab-txt">
+                <div class="det-pills">
+                  <span class="pill-tipo" style="{{ d.colorStyle }}">{{ d.tipo }}</span>
+                  <span class="{{ d.estadoClase }}">{{ d.estado }}</span>
+                </div>
+                <h2 class="{{ d.diaClase }}">{{ d.diaNombre }}</h2>
+                <div class="det-fecha">{{ d.fechaLarga }} · <strong>{{ d.hora }}</strong></div>
+              </div>
+              <a class="btn-cal" href="{{ d.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar"><span class="mas">+</span>Añadir a calendario</a>
+            </div>
+            <div class="det-grid">
+              <div class="det-main">
+                <div class="det-tema">
+                  <span class="rotulo">Tema</span>
+                  <div class="det-tema-txt">{{ d.tema }}</div>
+                  <sc-if value="{{ d.tieneCita }}" hint-placeholder-val="{{ true }}"><div class="det-cita">{{ d.cita }}</div></sc-if>
+                </div>
+                <sc-if value="{{ d.tieneRepertorio }}" hint-placeholder-val="{{ true }}">
+                  <div class="o-3">
+                    <span class="rotulo det-rep-t">Repertorio</span>
+                    <sc-for list="{{ d.bloques }}" as="b" hint-placeholder-count="3">
+                      <div class="bloque">
+                        <sc-if value="{{ b.mostrarParte }}" hint-placeholder-val="{{ false }}">
+                          <div class="parte"><span class="linea"></span><span class="parte-t">{{ b.parteTitulo }}</span><span class="linea"></span></div>
+                        </sc-if>
+                        <div class="bloque-t">{{ b.titulo }}<span class="linea"></span></div>
+                        <div class="bloque-lista">
+                          <sc-for list="{{ b.canciones }}" as="s" hint-placeholder-count="2">
+                            <div class="{{ s.clase }}" onDoubleClick="{{ s.onOpen }}" title="{{ s.rowTitle }}">
+                              <span class="can-num solo-desk">{{ s.num }}</span>
+                              <div class="can-info">
+                                <div class="can-t">{{ s.t }}</div>
+                                <sc-if value="{{ s.tieneMeta }}" hint-placeholder-val="{{ true }}">
+                                  <div class="can-meta">
+                                    <sc-if value="{{ s.tieneArtista }}" hint-placeholder-val="{{ true }}"><span>{{ s.a }}</span></sc-if>
+                                    <sc-if value="{{ s.ambos }}" hint-placeholder-val="{{ true }}"><span>·</span></sc-if>
+                                    <sc-if value="{{ s.tieneDirige }}" hint-placeholder-val="{{ true }}">
+                                      <span class="avatar-xs solo-desk" style="{{ s.byStyle }}">{{ s.byI }}</span>
+                                      <span class="solo-movil">dirige</span>
+                                      <strong>{{ s.by }}</strong>
+                                    </sc-if>
+                                  </div>
+                                </sc-if>
+                                <sc-if value="{{ s.tieneMedley }}" hint-placeholder-val="{{ false }}">
+                                  <div class="medley"><sc-for list="{{ s.medley }}" as="m" hint-placeholder-count="3"><span class="medley-chip">{{ m }}</span></sc-for></div>
+                                </sc-if>
+                              </div>
+                              <sc-if value="{{ s.tieneCifrado }}" hint-placeholder-val="{{ false }}">
+                                <button type="button" class="tono tono-btn" onClick="{{ s.onCifrado }}" title="Ver letra y acordes en este tono" aria-label="{{ s.cifradoLabel }}">{{ s.k }} <span style="font-size:10px">♪</span></button>
+                              </sc-if>
+                              <sc-if value="{{ s.sinCifrado }}" hint-placeholder-val="{{ true }}">
+                                <span class="tono">{{ s.k }}</span>
+                              </sc-if>
+                              <button type="button" class="{{ s.playClase }}" onClick="{{ s.onPlay }}" aria-label="{{ s.playLabel }}" title="{{ s.playLabel }}">
+                                <sc-if value="{{ s.muestraPlay }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><polygon points="2,1 9,5 2,9" fill="currentColor"></polygon></svg></sc-if>
+                                <sc-if value="{{ s.muestraPausa }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><rect x="1.5" y="1" width="2.5" height="8" fill="currentColor"></rect><rect x="6" y="1" width="2.5" height="8" fill="currentColor"></rect></svg></sc-if>
+                              </button>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ d.repertorioPendiente }}" hint-placeholder-val="{{ false }}">
+                  <div class="o-3">
+                    <span class="rotulo det-rep-t">Repertorio</span>
+                    <div class="vacio-caja" style="padding:20px">El repertorio de este evento aún no está confirmado.</div>
+                  </div>
+                </sc-if>
+              </div>
+              <div class="det-aside">
+                <sc-if value="{{ d.tieneAviso }}" hint-placeholder-val="{{ false }}">
+                  <div class="callout callout-aviso o-2"><div class="callout-t">Importante</div><p>{{ d.aviso }}</p></div>
+                </sc-if>
+                <sc-if value="{{ d.tieneNotas }}" hint-placeholder-val="{{ false }}">
+                  <div class="callout o-2"><div class="callout-t">Indicaciones para el ensayo</div><p>{{ d.notas }}</p></div>
+                </sc-if>
+                <sc-if value="{{ d.tieneDetalles }}" hint-placeholder-val="{{ false }}">
+                  <div class="caja o-2"><span class="rotulo">Detalles y responsable</span><p>{{ d.detalles }}</p></div>
+                </sc-if>
+                <sc-if value="{{ d.tienePersonas }}" hint-placeholder-val="{{ false }}">
+                  <div class="caja o-2"><span class="rotulo">Personas requeridas</span><p>{{ d.personas }}</p></div>
+                </sc-if>
+                <sc-if value="{{ d.tieneBanda }}" hint-placeholder-val="{{ true }}">
+                  <div class="caja caja-banda o-4">
+                    <span class="rotulo">Banda</span>
+                    <sc-for list="{{ d.banda }}" as="m" hint-placeholder-count="5">
+                      <div class="banda-fila">
+                        <span class="banda-rol">{{ m.rol }}</span>
+                        <span class="banda-nombres"><sc-for list="{{ m.nombres }}" as="n" hint-placeholder-count="1"><span>{{ n.sep }}</span><span class="{{ n.clase }}">{{ n.nombre }}</span></sc-for></span>
+                      </div>
+                      <sc-for list="{{ m.tareas }}" as="t" hint-placeholder-count="1"><div class="banda-tarea">★ {{ t }}</div></sc-for>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+    </div>
+  </sc-if>
 
-  <div style="display:flex;justify-content:center;padding:32px 0 0">
-    <button onClick="{{ volverArriba }}" style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.04em;padding:10px 16px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer">
-      <span aria-hidden="true" style="font-size:14px;line-height:1">↑</span>
-      Volver arriba
-    </button>
-  </div>
-
-  <footer style="display:flex;justify-content:space-between;gap:20px;padding:24px 0 0;font-size:12px;letter-spacing:.06em;color:#6b6866;flex-wrap:wrap">
+  <footer class="pie">
     <span>{{ nota }}</span>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
+    <div class="pie-acc">
+      <span style="color:var(--ac-dk)">{{ estado }}</span>
       <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
         <sc-if value="{{ ma.esLink }}" hint-placeholder-val="{{ true }}">
-          <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
+          <a class="btn-sec" href="{{ ma.href }}">{{ ma.label }}</a>
         </sc-if>
         <sc-if value="{{ ma.esAccion }}" hint-placeholder-val="{{ false }}">
-          <button type="button" onClick="{{ ma.onClick }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer">{{ ma.label }}</button>
+          <button type="button" class="btn-sec" onClick="{{ ma.onClick }}">{{ ma.label }}</button>
         </sc-if>
       </sc-for>
     </div>
   </footer>
-
   <sc-if value="{{ participacionesModalAbierto }}" hint-placeholder-val="{{ false }}">
-    <div style="position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ cerrarParticipaciones }}">
-      <div style="width:min(100%,480px);max-height:min(80vh,640px);overflow-y:auto;background:#fff;border:2px solid var(--ink);padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.28)" onClick="{{ detenerPropagacion }}">
+    <div class="cifrado-overlay" onClick="{{ cerrarParticipaciones }}">
+      <div class="part-modal" role="dialog" aria-modal="true" aria-label="Participaciones" onClick="{{ detenerPropagacion }}">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">Participaciones de {{ participacionesNombre }}</span>
-          <button type="button" onClick="{{ cerrarParticipaciones }}" aria-label="Cerrar" style="font-size:14px;border:0;background:transparent;color:#7d7979;cursor:pointer;padding:2px">✕</button>
+          <span class="kicker" style="margin:0">Participaciones de {{ participacionesNombre }}</span>
+          <button type="button" onClick="{{ cerrarParticipaciones }}" aria-label="Cerrar" style="font-size:16px;border:0;background:transparent;color:var(--muted2);cursor:pointer;padding:2px 4px">✕</button>
         </div>
-        <p style="font-size:13px;color:#54514f;margin:8px 0 0">Eventos de {{ participacionesMesLabel }} donde participa.</p>
+        <p style="font-size:13px;color:var(--muted);margin:6px 0 0">Eventos de {{ participacionesMesLabel }} donde participa.</p>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
           <sc-for list="{{ participacionesLista }}" as="pe" hint-placeholder-count="2">
-            <div onClick="{{ pe.onClick }}" style="border:2px solid var(--ink);padding:12px 14px;cursor:pointer" title="Filtrar por este evento">
-              <div style="font-size:12px;color:#7d7979">{{ pe.diaLabel }}</div>
-              <div style="font-size:15px;font-weight:800">{{ pe.fechaLarga }} · {{ pe.hora }}</div>
-              <div style="font-size:13px;color:#54514f;margin-top:2px">{{ pe.servicio }}</div>
-              <div style="font-size:12px;font-weight:700;color:var(--ac-dk);margin-top:6px">{{ pe.tipo }}</div>
+            <div class="part-item" onClick="{{ pe.onClick }}" title="Ver este evento">
+              <div class="res-meta" style="{{ pe.colorStyle }}"><span class="dot" style="{{ pe.dotStyle }}"></span>{{ pe.meta }}</div>
+              <div class="res-tema">{{ pe.tema }}</div>
+              <div class="part-rol">{{ pe.tipo }}</div>
             </div>
           </sc-for>
         </div>
-        <p style="{{ participacionesVaciaStyle }}">No tiene participaciones este mes.</p>
+        <sc-if value="{{ participacionesVacia }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:13px;color:var(--muted);padding:12px 2px;margin:0">No tiene participaciones este mes.</p>
+        </sc-if>
       </div>
     </div>
   </sc-if>
@@ -465,9 +860,18 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
 class Component extends DCLogic {
   state = {
     modo: 'cargando', org: null, eventos: [], mes: new URLSearchParams(location.search).get('month') || '', estado: '', errorLogin: '', usuarioNombre: null,
-    filtroAbierto: false, filtroTexto: '', filtroId: new URLSearchParams(location.search).get('eventid') || null, colapsadas: {}, diaColapsado: {}, bandaAbierta: {}, tareaAbierta: {}, mesesAbierto: false,
-    reproduciendoKey: null, reproduciendoPausado: false,
+    mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false,
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
+    /* Vista de eventos: 'semana' (tarjetas de la semana elegida) o 'mes'
+       (calendario). eventoSel viene de ?eventid= para abrir un enlace
+       compartido directo en ese evento; semanaSel/diaMes/diaFiltro en null
+       dejan que renderVals elija lo más útil (la semana en curso, etc.).
+       detalleAbierto solo tiene efecto en el teléfono, donde el detalle es
+       una pantalla aparte. misLinks = musicianLinks de la cuenta, para
+       marcar "Participas" / "(tú)". */
+    vista: 'semana', semanaSel: null, eventoSel: new URLSearchParams(location.search).get('eventid') || null,
+    diaMes: null, diaFiltro: null, tipoSel: 'all', persona: '', buscarAbierto: false, buscarTexto: '',
+    detalleAbierto: false, misLinks: {},
     participacionesAbierto: false, participacionesBusqueda: '', personaSeleccionada: null,
     /* Catálogo de la organización (para heredar el cifrado de una canción,
        ver R.cifradoIdDeCancion) y modal de cifrado (null = cerrado). */
@@ -489,8 +893,9 @@ class Component extends DCLogic {
       this._unauth = R.onAuthChange((user) => {
         this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null });
         this._detenerSeguimientoMisOrgs();
-        if (!user) { this.setState({ misOrgs: [] }); return; }
+        if (!user) { this.setState({ misOrgs: [], misLinks: {} }); return; }
         this._unwatchUser = R.watchUser(user.uid, (doc) => {
+          this.setState({ misLinks: R.userMusicianLinks(doc) });
           const ids = R.userOrgIds(doc);
           if (this._unmyorgs) { this._unmyorgs(); this._unmyorgs = null; }
           if (!ids.length) { this.setState({ misOrgs: [] }); return; }
@@ -509,6 +914,9 @@ class Component extends DCLogic {
           const visibles = evs.filter((e) => R.esVisiblePublico(e));
           this.setState((s) => {
             let mes = s.mes;
+            /* Un enlace con ?eventid= (sin ?month=) abre el mes de ese evento. */
+            const compartido = !mes && s.eventoSel ? visibles.find((e) => e.id === s.eventoSel) : null;
+            if (compartido) mes = R.monthKey(compartido.fecha);
             const keys = Array.from(new Set(visibles.map((e) => R.monthKey(e.fecha)))).sort();
             if (!mes) {
               const hoy = R.hoyKey();
@@ -734,128 +1142,229 @@ class Component extends DCLogic {
     return R.horaMinutos(a.hora) - R.horaMinutos(b.hora);
   }
 
-  /* Una fila por integrante con nombre, con el mismo look de las filas de
-     canciones (reutiliza .row/.cn/.cd/.ck) para que la tarjeta luzca
-     consistente. Ordenadas según BANDA_ROLES. Los resaltados llevan sombreado
-     verde lima; si tienen tarea asignada, tocar la fila (no sólo el tooltip)
-     abre/cierra una nota debajo con el encargo — clave por evento+integrante
-     para que cada persona se expanda de forma independiente. */
-  renderBanda(banda, evId) {
+  /* Color fijo por tipo de evento (según su posición en R.SERVICIOS, para
+     que "Culto Familiar" sea siempre azul sin importar el mes); un tipo que
+     no esté en esa lista cae en un color derivado de su nombre. */
+  colorTipo(servicio) {
     const R = window.RepertorioData;
-    const orden = R.BANDA_ROLES.map((r) => r.tipo);
-    return (banda || [])
-      .filter((b) => b.nombre && b.nombre.trim())
-      .slice()
-      .sort((a, b) => {
-        const d = orden.indexOf(a.tipo) - orden.indexOf(b.tipo);
-        return d !== 0 ? d : (a.numero || 0) - (b.numero || 0);
-      })
-      .map((b) => {
-        const resaltado = !!b.resaltado;
-        const tarea = (b.tarea || '').trim();
-        const tieneTarea = resaltado && !!tarea;
-        const key = evId + '|' + b.id;
-        const mostrarTarea = tieneTarea && !!this.state.tareaAbierta[key];
-        return {
-          tipo: b.tipo,
-          nombre: b.nombre.trim(),
-          resaltado: resaltado,
-          badge: tieneTarea ? '★ Ver tarea' : '★',
-          tarea: tarea,
-          mostrarTarea: mostrarTarea,
-          rowStyle: 'display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;background:' +
-            (resaltado ? '#eaf7ae' : '#fff') + ';padding:8px 12px' + (tieneTarea ? ';cursor:pointer' : ''),
-          onClick: tieneTarea
-            ? () => this.setState((s) => ({ tareaAbierta: Object.assign({}, s.tareaAbierta, { [key]: !s.tareaAbierta[key] }) }))
-            : undefined
-        };
-      });
+    const PAL = ['#0e7a3c', '#2c5fa6', '#b3542b', '#7a5a9e', '#8a6d1e', '#3d7f86', '#b0356a', '#4f6b2a', '#6b6866'];
+    const i = R.SERVICIOS.indexOf(servicio);
+    return i >= 0 ? PAL[i % PAL.length] : this.colorNombre(servicio || '');
   }
 
-  renderEvento(ev) {
+  /* Color de avatar para una persona, estable entre recargas. */
+  colorNombre(nombre) {
+    const PAL = ['#0e7a3c', '#2c5fa6', '#b3542b', '#7a5a9e', '#8a6d1e', '#3d7f86'];
+    let h = 0;
+    for (const ch of String(nombre)) h = (h * 31 + ch.charCodeAt(0)) % 997;
+    return PAL[h % PAL.length];
+  }
+
+  iniciales(nombre) {
+    const p = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+    if (!p.length) return '';
+    return (p.length > 1 ? p[0][0] + p[1][0] : p[0].slice(0, 2)).toUpperCase();
+  }
+
+  normalizar(t) {
+    return String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  /* Canciones con título, en el orden en que se muestran. */
+  cancionesDe(ev) {
+    return (ev.bloques || []).reduce((acc, bl) => acc.concat((bl.canciones || []).filter((c) => c.t && c.t.trim())), []);
+  }
+
+  /* ¿La persona (nombre, sin distinguir mayúsculas) toca en la banda o
+     dirige alguna canción de este evento? Es lo que usa "Resaltar persona". */
+  participa(ev, nombre) {
+    const k = nombre.trim().toLowerCase();
+    return (ev.banda || []).some((b) => (b.nombre || '').trim().toLowerCase() === k) ||
+      this.cancionesDe(ev).some((c) => (c.d || '').trim().toLowerCase() === k);
+  }
+
+  /* Cambiar de evento seleccionado también actualiza ?eventid= en la URL,
+     así el enlace de la barra de direcciones abre directo ese evento. En el
+     teléfono además abre el detalle (en escritorio ya está a la vista). */
+  seleccionarEvento(ev, extra) {
+    this.setState(Object.assign({ eventoSel: ev.id, detalleAbierto: true }, extra || {}));
+    this._actualizarUrlEventId(ev.id);
+    if (window.matchMedia && window.matchMedia('(max-width:860px)').matches) document.body.style.overflow = 'hidden';
+  }
+
+  cerrarDetalle() {
+    this.setState({ detalleAbierto: false });
+    if (!this.state.cifradoVer) document.body.style.overflow = '';
+  }
+
+  elegirMes(k) {
+    this.setState({ mes: k, mesesAbierto: false, semanaSel: null, eventoSel: null, diaMes: null, diaFiltro: null, tipoSel: 'all', buscarAbierto: false });
+    const params = new URLSearchParams(location.search);
+    params.set('month', k);
+    params.delete('eventid');
+    history.replaceState(null, '', location.pathname + '?' + params.toString());
+  }
+
+  /* Estado de una semana según sus eventos PUBLICADO agendados, no según el
+     rango domingo—sábado ni los cancelados: si el único evento de la semana
+     ya pasó está Finalizada aunque hoy caiga dentro de esos siete días; y
+     si lo único que queda por venir está cancelado, también. */
+  estadoSemana(evs, hoyISO) {
     const R = window.RepertorioData;
-    const bandaLista = this.renderBanda(ev.banda, ev.id);
-    const tieneRepertorio = (ev.bloques || []).some((bl) => bl.canciones.some((c) => c.t && c.t.trim()));
-    /* Cerrado por defecto para no alargar la tarjeta, salvo que no haya
-       repertorio: ahí la banda es la información principal y debe verse
-       de una vez. El usuario puede alternarlo igual en cualquier caso. */
-    const bandaAbiertaDefault = !tieneRepertorio;
-    const bandaAbierta = Object.prototype.hasOwnProperty.call(this.state.bandaAbierta, ev.id)
-      ? this.state.bandaAbierta[ev.id] : bandaAbiertaDefault;
+    const fechas = evs.filter((ev) => R.estadoEvento(ev) === 'PUBLICADO').map((ev) => ev.fecha);
+    if (!fechas.length) return 'fin';
+    const primera = fechas.reduce((a, b) => (a < b ? a : b));
+    const ultima = fechas.reduce((a, b) => (a > b ? a : b));
+    if (ultima < hoyISO) return 'fin';
+    if (primera > hoyISO) return 'next';
+    return 'cur';
+  }
+
+  /* Datos de una tarjeta compacta de la lista (semana, día del mes). */
+  tarjeta(ev, ctx) {
+    const R = window.RepertorioData;
+    const d = R.parse(ev.fecha);
     const cancelado = R.estadoEvento(ev) === 'CANCELADO';
+    const pasado = ev.fecha < ctx.hoyISO;
+    const hoy = ev.fecha === ctx.hoyISO;
+    const sel = !!ctx.sel && ev.id === ctx.sel.id;
+    const canciones = this.cancionesDe(ev);
+    const dim = !!ctx.persona && !this.participa(ev, ctx.persona);
+    const badges = [];
+    if (ctx.persona && !dim) {
+      const k = ctx.persona.toLowerCase();
+      const n = canciones.filter((c) => (c.d || '').trim().toLowerCase() === k).length;
+      if (n) badges.push({ t: 'DIRIGE ' + n, clase: 'badge b-dirige' });
+    }
+    if (cancelado) badges.push({ t: 'CANCELADO', clase: 'badge b-canc' });
+    if (hoy && !cancelado) badges.push({ t: 'HOY', clase: 'badge b-hoy' });
+    if (ctx.miMusico && (ev.banda || []).some((b) => b.musicianId === ctx.miMusico && (b.nombre || '').trim())) badges.push({ t: 'PARTICIPAS', clase: 'badge b-part' });
+    if (ev.avisoImportante && ev.avisoImportante.trim() && !pasado) badges.push({ t: 'IMPORTANTE', clase: 'badge b-aviso' });
+    if (pasado && !cancelado) badges.push({ t: 'FINALIZADO', clase: 'badge b-fin' });
+    const lideres = [];
+    canciones.forEach((c) => {
+      const n = (c.d || '').trim();
+      if (n && !lideres.some((l) => l.toLowerCase() === n.toLowerCase())) lideres.push(n);
+    });
+    const color = this.colorTipo(ev.servicio);
     return {
-      dia: R.diaNombre(ev.fecha),
-      hora: ev.hora,
-      sub: [R.fechaLarga(ev.fecha), ev.servicio].filter(Boolean).join(' · '),
-      mostrarCancelado: cancelado,
-      /* Cuando el tipo de servicio no usa repertorio musical (ver
-         SERVICIOS_CON_REPERTORIO), se resalta en dorado para que salte a
-         la vista frente a los que sí lo llevan; un evento cancelado además
-         se tacha para señalarlo de un vistazo. */
-      subStyle: 'font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;' + (R.usaRepertorio(ev.servicio)
-        ? 'color:var(--ac-dk)'
-        : 'color:var(--gold-dk);background:var(--gold-lt);padding:4px 8px;margin:-4px 0 0 -8px') + (cancelado ? ';text-decoration:line-through' : ''),
+      id: ev.id,
+      dow: R.DIAS[d.getDay()].slice(0, 3).toUpperCase(),
+      dia: d.getDate(),
+      tipo: ev.servicio || 'Evento',
+      dotStyle: 'background:' + color,
+      colorStyle: 'color:' + color,
+      hora: ev.hora || '',
       tema: ev.tema || 'Por confirmar',
-      cita: ev.cita,
-      notas: ev.notas,
-      icsHref: R.icsDataHref(ev),
-      icsFilename: R.icsFilename(ev),
+      temaClase: 'card-tema' + (cancelado ? ' tachado' : '') + (ev.tema ? '' : ' pendiente'),
+      lideres: lideres.slice(0, 5).map((n) => ({ nombre: n, i: this.iniciales(n), style: 'background:' + this.colorNombre(n) })),
+      badges: badges.slice(0, 3),
+      clase: 'card' + (sel ? ' sel' : '') + (hoy ? ' hoy' : '') + (dim ? ' dim' : (pasado && !sel ? ' pasado' : '')),
+      onClick: () => this.seleccionarEvento(ev)
+    };
+  }
+
+  /* Banda agrupada por rol (Corista: A · B · C), en el orden de
+     BANDA_ROLES. Quien tiene estrella (resaltado) va marcado con ★ y su
+     tarea se lista debajo de la fila; la cuenta con sesión iniciada se
+     marca "(tú)". */
+  bandaDetalle(ev, miMusico) {
+    const R = window.RepertorioData;
+    const orden = R.BANDA_ROLES.map((r) => r.tipo);
+    const slots = (ev.banda || []).filter((b) => b.nombre && b.nombre.trim()).slice().sort((a, b) => {
+      const ia = orden.indexOf(a.tipo), ib = orden.indexOf(b.tipo);
+      const d = (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+      return d !== 0 ? d : (a.numero || 0) - (b.numero || 0);
+    });
+    const filas = [];
+    slots.forEach((b) => {
+      let f = filas.find((x) => x.rol === b.tipo);
+      if (!f) { f = { rol: b.tipo, nombres: [], tareas: [] }; filas.push(f); }
+      const yo = !!miMusico && b.musicianId === miMusico;
+      f.nombres.push({
+        sep: f.nombres.length ? ' · ' : '',
+        nombre: (b.resaltado ? '★ ' : '') + b.nombre.trim() + (yo ? ' (tú)' : ''),
+        clase: yo ? 'yo' : (b.resaltado ? 'dest' : '')
+      });
+      const tarea = (b.tarea || '').trim();
+      if (b.resaltado && tarea) f.tareas.push(b.nombre.trim() + ': ' + tarea);
+    });
+    return filas;
+  }
+
+  /* Todo lo que muestra el panel de detalle de un evento. */
+  detalle(ev, ctx) {
+    const R = window.RepertorioData;
+    const d = R.parse(ev.fecha);
+    const cancelado = R.estadoEvento(ev) === 'CANCELADO';
+    const dias = Math.round((d - R.parse(ctx.hoyISO)) / 86400000);
+    const estado = cancelado ? ['CANCELADO', 'canc'] : dias < 0 ? ['FINALIZADO', 'fin'] : dias === 0 ? ['HOY', 'hoy']
+      : [dias === 1 ? 'MAÑANA' : 'EN ' + dias + ' DÍAS', ''];
+    const personaK = ctx.persona ? ctx.persona.toLowerCase() : '';
+    let num = 0;
+    const bloques = this.marcarPartes((ev.bloques || []).map((bl, blIdx) => ({
+      titulo: bl.titulo,
+      parte: R.bloqueParte(bl),
+      canciones: (bl.canciones || []).map((c, i) => ({ c: c, i: i })).filter((x) => x.c.t && x.c.t.trim()).map(({ c, i }) => {
+        num++;
+        const videoId = R.youtubeId(c.u);
+        const key = ev.id + '|' + blIdx + '|' + i;
+        const activa = this.state.reproduciendoKey === key;
+        const sonando = activa && !this.state.reproduciendoPausado;
+        /* Un título con saltos de línea es un popurrí: la primera línea es
+           el nombre y el resto, los coros que lo forman (como chips). */
+        const lineas = c.t.trim().split('\n').map((l) => l.trim()).filter(Boolean);
+        const medley = lineas.slice(1).map((l) => l.replace(/^[-–•·]\s*/, '')).filter(Boolean);
+        const artista = (c.sm || '').trim();
+        const dirige = (c.d || '').trim();
+        const cid = R.cifradoIdDeCancion(c, this._catalogo);
+        const titulo = lineas[0] || c.t.trim();
+        return {
+          num: String(num).padStart(2, '0'),
+          t: titulo, a: artista, by: dirige, byI: this.iniciales(dirige), byStyle: 'background:' + this.colorNombre(dirige),
+          tieneArtista: !!artista, tieneDirige: !!dirige, ambos: !!artista && !!dirige, tieneMeta: !!artista || !!dirige,
+          medley: medley, tieneMedley: medley.length > 0,
+          k: c.k || '—',
+          clase: 'can' + (activa ? ' sonando' : (personaK && dirige.toLowerCase() === personaK ? ' resaltada' : '')),
+          rowTitle: c.u && c.u.trim() ? 'Doble click para abrir el enlace' : '',
+          onOpen: () => { if (c.u && c.u.trim()) window.open(c.u, '_blank', 'noopener'); },
+          /* El botón siempre ocupa su columna; sin video solo se oculta. */
+          playClase: 'play' + (activa ? ' on' : '') + (videoId ? '' : ' oculto'),
+          muestraPlay: !sonando, muestraPausa: sonando,
+          playLabel: sonando ? 'Pausar audio' : (activa ? 'Reanudar audio' : 'Reproducir audio'),
+          onPlay: () => this.togglePlay(key, videoId),
+          tieneCifrado: !!cid, sinCifrado: !cid,
+          cifradoLabel: 'Ver cifrado de ' + titulo + (c.k ? ' en ' + c.k : ''),
+          onCifrado: () => this.abrirCifrado(cid, c)
+        };
+      })
+    })).filter((bl) => bl.canciones.length));
+    const banda = this.bandaDetalle(ev, ctx.miMusico);
+    const txt = (v) => (v && String(v).trim()) || '';
+    const color = this.colorTipo(ev.servicio);
+    return {
+      tipo: ev.servicio || 'Evento',
+      colorStyle: 'color:' + color,
+      estado: estado[0],
+      estadoClase: 'pill-estado' + (estado[1] ? ' ' + estado[1] : ''),
+      diaNombre: R.diaNombre(ev.fecha),
+      diaClase: 'det-dia' + (cancelado ? ' tachado' : ''),
+      fechaLarga: R.fechaLarga(ev.fecha) + ' de ' + d.getFullYear(),
+      fechaCorta: R.DIAS[d.getDay()].slice(0, 3).toUpperCase() + ' ' + d.getDate() + ' ' + R.MESES[d.getMonth()].slice(0, 3).toUpperCase(),
+      volverLabel: 'Semana ' + R.semanaDelMes(ev.fecha),
+      hora: ev.hora || '',
       gcalHref: R.googleCalendarUrl(ev),
-      tieneNotas: !!(ev.notas && ev.notas.trim()),
-      bandaLista: bandaLista,
-      tieneBanda: bandaLista.length > 0,
-      bandaAbierta: bandaAbierta,
-      bandaToggleLabel: bandaAbierta ? 'Ver menos ▲' : 'Ver más… ▼',
-      /* display (no sc-if): así la lista sigue en el DOM y el CSS de impresión
-         puede forzarla a visible aunque el usuario la haya dejado cerrada. */
-      bandaListaStyle: 'display:' + (bandaAbierta ? 'flex' : 'none') + ';flex-direction:column;gap:2px;margin-top:8px',
-      toggleBanda: () => this.setState((s) => ({ bandaAbierta: Object.assign({}, s.bandaAbierta, { [ev.id]: !bandaAbierta }) })),
-      detalles: ev.detalles,
-      tieneDetalles: !!(ev.detalles && ev.detalles.trim()),
-      personas: ev.personas,
-      tienePersonas: !!(ev.personas && ev.personas.trim()),
-      bloques: this.marcarPartes(ev.bloques
-        .map((bl, blIdx) => ({
-          titulo: bl.titulo,
-          parte: R.bloqueParte(bl),
-          canciones: bl.canciones.filter((c) => c.t && c.t.trim()).map((c, i) => {
-            const videoId = R.youtubeId(c.u);
-            const key = ev.id + '|' + blIdx + '|' + i;
-            const activa = this.state.reproduciendoKey === key;
-            const enPausa = activa && this.state.reproduciendoPausado;
-            const label = R.songLabelParts(c);
-            const cid = R.cifradoIdDeCancion(c, this._catalogo);
-            return {
-              t: label.fullText,
-              tieneLineas: label.hasLineBreaks,
-              sinLineas: !label.hasLineBreaks,
-              lineaPrimera: label.lines[0] || '',
-              lineasResto: label.hasLineBreaks ? label.lines.slice(1) : [], d: c.d ? 'dirige ' + c.d : '', k: c.k || '—', u: c.u || '#',
-              tieneUrl: !!(c.u && c.u.trim()),
-              rowTitle: c.u && c.u.trim() ? 'Doble click para abrir el enlace' : '',
-              onOpen: () => { if (c.u && c.u.trim()) window.open(c.u, '_blank', 'noopener'); },
-              playIcon: activa && !enPausa ? '❚❚' : '▶',
-              playLabel: activa && !enPausa ? 'Pausar audio' : (enPausa ? 'Reanudar audio' : 'Reproducir audio'),
-              /* El botón siempre se renderiza (nunca sc-if) para no romper las
-                 columnas del grid; cuando no hay video se oculta con
-                 visibility:hidden en vez de display:none, así conserva su
-                 espacio y el resto de la fila no se desalinea. */
-              playBtnStyle: 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
-                'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
-                (activa ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
-                        : 'border:1.5px solid var(--ac);background:#fff;color:var(--ac)') +
-                (videoId ? '' : ';visibility:hidden;pointer-events:none'),
-              onPlay: () => this.togglePlay(key, videoId),
-              /* El Tono abre la letra con acordes cuando la canción tiene
-                 cifrado (propio o heredado del catálogo). */
-              tieneCifrado: !!cid,
-              sinCifrado: !cid,
-              cifradoLabel: 'Ver cifrado de ' + label.fullText + (c.k ? ' en ' + c.k : ''),
-              onCifrado: () => this.abrirCifrado(cid, c)
-            };
-          })
-        }))
-        .filter((bl) => bl.canciones.length))
+      tema: ev.tema || 'Por confirmar',
+      cita: txt(ev.cita), tieneCita: !!txt(ev.cita),
+      aviso: txt(ev.avisoImportante), tieneAviso: !!txt(ev.avisoImportante),
+      notas: txt(ev.notas), tieneNotas: !!txt(ev.notas),
+      detalles: txt(ev.detalles), tieneDetalles: !!txt(ev.detalles),
+      personas: txt(ev.personas), tienePersonas: !!txt(ev.personas),
+      bloques: bloques,
+      tieneRepertorio: bloques.length > 0,
+      repertorioPendiente: !bloques.length && R.usaRepertorio(ev.servicio),
+      banda: banda,
+      tieneBanda: banda.length > 0
     };
   }
 
@@ -868,49 +1377,44 @@ class Component extends DCLogic {
     secciones.forEach((bl) => { if (partes.indexOf(bl.parte) < 0) partes.push(bl.parte); });
     return secciones.map((bl, i) => Object.assign(bl, {
       mostrarParte: partes.length > 1 && (i === 0 || secciones[i - 1].parte !== bl.parte),
-      parteTitulo: 'Bloque ' + (partes.indexOf(bl.parte) + 1),
-      parteStyle: 'display:flex;align-items:center;gap:12px;margin:' + (i === 0 ? '0' : '12px') + ' 0 12px'
+      parteTitulo: 'Bloque ' + (partes.indexOf(bl.parte) + 1)
     }));
   }
 
-  /* Agrupa eventos de un mismo día en una sola columna: cada uno conserva su
-     propio bloque, con un separador visual entre ellos cuando hay más de uno. */
-  renderDia(fecha, evs) {
+  /* Texto del mes para pegar en WhatsApp (mismo formato de siempre). */
+  textoWhatsApp(evs) {
     const R = window.RepertorioData;
-    /* Un día ya caducado se colapsa automáticamente aunque su semana siga
-       "En curso" (la semana no colapsa mientras tenga algún día vigente,
-       pero los días individuales que ya pasaron sí deben plegarse solos).
-       El usuario puede expandir/colapsar cualquier día manualmente sin
-       importar su fecha. */
-    const yaPasoDia = fecha < this.hoyISO();
-    const colapsado = Object.prototype.hasOwnProperty.call(this.state.diaColapsado, fecha)
-      ? this.state.diaColapsado[fecha] : yaPasoDia;
-    return {
-      diaNombre: R.diaNombre(fecha),
-      diaStyle: 'font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1;text-transform:uppercase' +
-        (yaPasoDia ? ';text-decoration:line-through' : ''),
-      fechaLarga: R.fechaLarga(fecha),
-      iconoColapso: colapsado ? '▲' : '▼',
-      /* display (no sc-if): igual que con la banda, así el CSS de impresión
-         puede forzar el contenido a visible aunque el usuario lo haya
-         dejado colapsado. */
-      contentStyle: 'display:' + (colapsado ? 'none' : 'block'),
-      toggleColapso: () => this.setState((s) => ({ diaColapsado: Object.assign({}, s.diaColapsado, { [fecha]: !colapsado }) })),
-      eventos: evs.map((ev, i) => Object.assign(this.renderEvento(ev), {
-        separador: i > 0,
-        wrapStyle: i === 0 ? 'margin-top:16px' : 'margin-top:20px'
-      }))
-    };
-  }
-
-  agruparDias(evs) {
-    const orden = [];
-    const grupos = {};
+    const out = [];
     evs.forEach((ev) => {
-      if (!grupos[ev.fecha]) { grupos[ev.fecha] = []; orden.push(ev.fecha); }
-      grupos[ev.fecha].push(ev);
+      out.push('🎼 ' + R.diaNombre(ev.fecha) + ' ' + ev.hora + ' — ' + [R.fechaLarga(ev.fecha), ev.servicio].filter(Boolean).join(' · '));
+      const banda = (ev.banda || []).filter((b) => b.nombre && b.nombre.trim());
+      if (banda.length) {
+        const orden = R.BANDA_ROLES.map((r) => r.tipo);
+        banda.slice().sort((a, b) => (orden.indexOf(a.tipo) - orden.indexOf(b.tipo)) || ((a.numero || 0) - (b.numero || 0)))
+          .forEach((b) => out.push(b.tipo + ': ' + b.nombre.trim() + (b.resaltado && b.tarea && b.tarea.trim() ? ' (' + b.tarea.trim() + ')' : '')));
+        out.push('');
+      }
+      out.push('Tema: ' + (ev.tema || 'Por confirmar'));
+      if (ev.cita) out.push(ev.cita);
+      out.push('');
+      const secciones = this.marcarPartes((ev.bloques || []).map((bl) => ({
+        titulo: bl.titulo, parte: R.bloqueParte(bl), canciones: (bl.canciones || []).filter((c) => c.t && c.t.trim())
+      })).filter((bl) => bl.canciones.length));
+      secciones.forEach((bl) => {
+        if (bl.mostrarParte) out.push('*' + bl.parteTitulo.toUpperCase() + '*');
+        out.push('- ' + bl.titulo + ':');
+        bl.canciones.forEach((c) => {
+          out.push('🎶 ' + R.songLabel(c) + (c.k ? ' (' + c.k + ')' : '') + (c.d ? ' · dirige ' + c.d : '') + (c.u && c.u.trim() ? '\n' + c.u.trim() : ''));
+        });
+        out.push('');
+      });
+      if (ev.detalles && ev.detalles.trim()) { out.push('Detalles y responsable: ' + ev.detalles); out.push(''); }
+      if (ev.personas && ev.personas.trim()) { out.push('Personas requeridas: ' + ev.personas); out.push(''); }
+      if (ev.notas && ev.notas.trim()) { out.push(ev.notas); out.push(''); }
+      out.push('———');
+      out.push('');
     });
-    return orden.map((f) => this.renderDia(f, grupos[f]));
+    return out.join('\n');
   }
 
   renderVals() {
@@ -928,222 +1432,209 @@ class Component extends DCLogic {
       cerrarSesion: () => R.signOutUser(),
       errorLogin: s.errorLogin || '',
       usuarioNombre: s.usuarioNombre || '',
+      usuarioIniciales: this.iniciales(s.usuarioNombre || ''),
       sesionActiva: !!s.usuarioNombre,
       sesionInactiva: !s.usuarioNombre,
       irABienvenida: () => { window.location.href = 'index.html?bienvenida=1'; }
     };
     if (s.modo !== 'calendario' || !s.org) return Object.assign(base, { estado: 'Cargando…' });
 
-    /* Lo usa renderEvento (vía R.cifradoIdDeCancion) para que una canción
-       sin cifrado propio herede el que ya se importó para ella. */
+    /* Lo usa detalle() (vía R.cifradoIdDeCancion) para que una canción sin
+       cifrado propio herede el que ya se importó para ella. */
     this._catalogo = R.buildSongCatalog(s.eventos, s.songOverrides);
+    const hoyISO = this.hoyISO();
+    const miMusico = (s.misLinks || {})[s.org.id] || null;
 
-    const keys = Array.from(new Set(s.eventos.map((e) => R.monthKey(e.fecha)))).sort();
+    // ---- meses: el en curso y los futuros primero, los pasados aparte
+    const keys = Array.from(new Set(s.eventos.map((e) => R.monthKey(e.fecha))));
     const hoy = R.hoyKey();
     if (keys.indexOf(hoy) < 0) keys.push(hoy);
     keys.sort();
-
-    const mesBtn = (k) => ({
+    const mesChip = (k) => ({
       label: R.monthLabel(k) + (k === hoy ? ' · mes en curso' : ''),
-      style: 'font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;cursor:pointer;border:2px solid var(--ink);background:' +
-        (k === s.mes ? 'var(--ink)' : 'transparent') + ';color:' + (k === s.mes ? 'var(--bg)' : 'var(--ink)'),
-      pick: () => {
-        this.setState({ mes: k, mesesAbierto: false });
-        const params = new URLSearchParams(location.search);
-        params.set('month', k);
-        history.replaceState(null, '', location.pathname + '?' + params.toString());
-      }
+      clase: 'mes-chip' + (k === s.mes ? ' on' : ''),
+      pick: () => this.elegirMes(k)
     });
-    /* El mes en curso y cualquier mes futuro ya programado quedan siempre a
-       la vista; los meses pasados se guardan en un panel aparte para que la
-       fila no crezca sin límite a medida que pasa el tiempo. */
-    const mesesAnterioresKeys = keys.filter((k) => k < hoy);
-    const meses = keys.filter((k) => k >= hoy).map(mesBtn);
-    const mesesAnteriores = mesesAnterioresKeys.map(mesBtn);
+    const anteriores = keys.filter((k) => k < hoy).reverse();
+    const proximos = keys.filter((k) => k >= hoy);
+    const mesesGrupos = [];
+    if (proximos.length) mesesGrupos.push({ titulo: 'Mes en curso y próximos', meses: proximos.map(mesChip) });
+    if (anteriores.length) mesesGrupos.push({ titulo: 'Meses anteriores', meses: anteriores.map(mesChip) });
 
-    // ---- filtro de búsqueda: elige un evento puntual de todo el repertorio
-    const eventoActivo = s.filtroId ? (s.eventos.find((e) => e.id === s.filtroId) || null) : null;
-    const filtroActivo = !!eventoActivo;
+    // ---- eventos del mes, agrupados por semana (fila del calendario)
+    const delMes = s.eventos.filter((e) => R.monthKey(e.fecha) === s.mes).sort((a, b) => this.ordenFechaHora(a, b));
+    const grupos = {};
+    delMes.forEach((ev) => { const w = R.semanaDelMes(ev.fecha); (grupos[w] = grupos[w] || []).push(ev); });
+    const numsSemana = Object.keys(grupos).map(Number).sort((a, b) => a - b);
 
-    const q = String(s.filtroTexto || '').trim().toLowerCase();
-    /* Acotado al mes que se está viendo (no a todo el historial): filtrar es
-       para ubicar un evento dentro del mes actual, no buscar en toda la base. */
-    const todos = s.eventos
-      .filter((ev) => R.monthKey(ev.fecha) === s.mes)
-      .sort((a, b) => this.ordenFechaHora(a, b));
-    const filtroLista = todos.filter((ev) => {
-      if (!q) return true;
-      const hay = [R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio, ev.tema].join(' ').toLowerCase();
-      return hay.indexOf(q) >= 0;
-    }).map((ev) => ({
-      fechaLabel: R.diaNombre(ev.fecha) + ' · ' + R.fechaLarga(ev.fecha) + ' · ' + ev.hora + (ev.servicio ? ' · ' + ev.servicio : ''),
-      tema: ev.tema || 'Sin tema',
-      onClick: () => { this.setState({ filtroId: ev.id, filtroAbierto: false, filtroTexto: '' }); this._actualizarUrlEventId(ev.id); }
-    }));
-
-    const hoyISO = this.hoyISO();
-
-    // ---- Ver Participaciones: nombres de banda del mes calendario mostrado
-    const nombresMesMap = new Map();
-    s.eventos.filter((ev) => R.monthKey(ev.fecha) === s.mes).forEach((ev) => {
-      (ev.banda || []).forEach((b) => {
-        const nombre = (b.nombre || '').trim();
-        if (!nombre) return;
-        const k = nombre.toLowerCase();
-        if (!nombresMesMap.has(k)) nombresMesMap.set(k, nombre);
-      });
+    const tiposMes = Array.from(new Set(delMes.map((e) => e.servicio || 'Evento'))).sort((a, b) => {
+      const ia = R.SERVICIOS.indexOf(a), ib = R.SERVICIOS.indexOf(b);
+      return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, 'es');
     });
-    const qP = (s.participacionesBusqueda || '').trim().toLowerCase();
-    const personasMesTodas = Array.from(nombresMesMap.values()).sort((a, b) => a.localeCompare(b, 'es'));
-    const personasMesFiltradas = qP ? personasMesTodas.filter((n) => n.toLowerCase().indexOf(qP) >= 0) : personasMesTodas;
-    const personasMesLista = personasMesFiltradas.map((nombre) => ({
-      nombre: nombre,
-      onClick: () => this.abrirParticipaciones(nombre)
-    }));
+    const tipoSel = tiposMes.indexOf(s.tipoSel) >= 0 ? s.tipoSel : 'all';
+    const pasaTipo = (ev) => tipoSel === 'all' || (ev.servicio || 'Evento') === tipoSel;
 
-    /* Modal "Ver Participaciones": participaciones (PUBLICADO) de la persona
-       elegida en el dropdown, acotadas al mes calendario que se está viendo
-       (s.mes) — no solo las futuras, y no todo el historial: si el usuario
-       navega a otro mes, el modal debe reflejar ese mismo mes. El estilo del
-       listado sigue el de "Próximos eventos" del dashboard, pero de solo
-       lectura (sin botones de Aceptar/Declinar), ya que esta vista es
-       pública y no depende de una sesión iniciada. */
-    const personaSel = s.personaSeleccionada;
-    let participacionesLista = [];
-    if (personaSel) {
-      const keySel = personaSel.toLowerCase();
-      participacionesLista = s.eventos
-        .filter((ev) => R.estadoEvento(ev) === 'PUBLICADO' && R.monthKey(ev.fecha) === s.mes)
-        .map((ev) => {
-          const slot = (ev.banda || []).find((b) => (b.nombre || '').trim().toLowerCase() === keySel);
-          return slot ? { ev: ev, slot: slot } : null;
-        })
-        .filter(Boolean)
-        .sort((a, b) => this.ordenFechaHora(a.ev, b.ev))
-        .map(({ ev, slot }) => ({
-          diaLabel: R.diaNombre(ev.fecha),
-          fechaLarga: R.fechaLarga(ev.fecha),
-          hora: ev.hora,
-          servicio: ev.servicio,
-          tipo: R.bandaLabel(slot),
-          onClick: () => {
-            this.setState({
-              filtroId: ev.id, filtroAbierto: false, filtroTexto: '',
-              personaSeleccionada: null, participacionesBusqueda: ''
-            });
-            this._actualizarUrlEventId(ev.id);
-          }
-        }));
+    // ---- selección: evento → su semana; si no hay, la semana en curso
+    let sel = s.eventoSel ? (delMes.find((e) => e.id === s.eventoSel) || null) : null;
+    const estados = {};
+    numsSemana.forEach((n) => { estados[n] = this.estadoSemana(grupos[n], hoyISO); });
+    let semana = numsSemana.indexOf(s.semanaSel) >= 0 ? s.semanaSel : null;
+    if (semana == null && sel) semana = R.semanaDelMes(sel.fecha);
+    if (semana == null) {
+      semana = numsSemana.find((n) => estados[n] === 'cur');
+      if (semana == null) semana = numsSemana.find((n) => estados[n] === 'next');
+      if (semana == null) semana = numsSemana[numsSemana.length - 1];
+    }
+    const vista = s.vista === 'mes' ? 'mes' : 'semana';
+    const deSemana = (grupos[semana] || []).filter(pasaTipo);
+    const diaFiltro = s.diaFiltro && s.diaFiltro.slice(0, 7) === s.mes && R.semanaDelMes(s.diaFiltro) === semana ? s.diaFiltro : null;
+    const listaSemana = diaFiltro ? deSemana.filter((e) => e.fecha === diaFiltro) : deSemana;
+    const diaMes = s.diaMes && s.diaMes.slice(0, 7) === s.mes ? s.diaMes : (sel ? sel.fecha : ((listaSemana[0] || delMes[0] || {}).fecha || null));
+    const listaDia = delMes.filter((e) => e.fecha === diaMes && pasaTipo(e));
+    const candidatos = vista === 'mes' ? listaDia : listaSemana;
+    if (!sel || (candidatos.length && candidatos.indexOf(sel) < 0)) {
+      sel = candidatos.find((e) => e.fecha >= hoyISO) || candidatos[0] || sel || (grupos[semana] || [])[0] || null;
     }
 
-    let semanas;
-    if (filtroActivo) {
-      semanas = [{
-        titulo: 'Resultado del filtro',
-        rango: R.diaNombre(eventoActivo.fecha) + ' ' + R.fechaLarga(eventoActivo.fecha),
-        tituloStyle: 'font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px',
-        rangoStyle: 'font-size:14px;font-weight:600;letter-spacing:.06em;color:#d7d3d3',
-        avisos: eventoActivo.avisoImportante && eventoActivo.avisoImportante.trim() ? [eventoActivo.avisoImportante.trim()] : [],
-        tieneAvisos: !!(eventoActivo.avisoImportante && eventoActivo.avisoImportante.trim()),
-        estadoLabel: '',
-        estadoStyle: 'display:none',
-        dias: this.agruparDias([eventoActivo]),
-        expandido: true, gridDisplay: 'grid', icono: '', toggle: () => {}
-      }];
-    } else {
-      const delMes = s.eventos
-        .filter((e) => R.monthKey(e.fecha) === s.mes)
-        .sort((a, b) => this.ordenFechaHora(a, b));
+    const persona = s.persona || '';
+    const ctx = { hoyISO: hoyISO, sel: sel, persona: persona, miMusico: miMusico };
 
-      const grupos = {};
-      delMes.forEach((ev) => {
-        const w = R.semanaDelMes(ev.fecha);
-        (grupos[w] = grupos[w] || []).push(ev);
-      });
-
-      const rango = (evs) => {
-        const dias = evs.map((e) => R.parse(e.fecha).getDate());
-        const a = Math.min.apply(null, dias), b = Math.max.apply(null, dias);
-        const mesNombre = R.MESES[R.parse(evs[0].fecha).getMonth()];
-        return a === b ? (a + ' de ' + mesNombre) : (a + ' — ' + b + ' de ' + mesNombre);
+    const mesNum = Number((s.mes || '').slice(5, 7)) - 1;
+    const mesCorto = (R.MESES[mesNum] || '').slice(0, 3);
+    const semanas = numsSemana.map((n) => {
+      const evs = grupos[n];
+      const dias = evs.map((e) => R.parse(e.fecha).getDate());
+      const lo = Math.min.apply(null, dias), hi = Math.max.apply(null, dias);
+      const est = estados[n];
+      return {
+        n: n,
+        rango: (lo === hi ? lo : lo + ' — ' + hi) + ' ' + mesCorto,
+        count: evs.length + (evs.length === 1 ? ' evento' : ' eventos'),
+        estado: est === 'fin' ? 'FINALIZADA' : est === 'cur' ? 'EN CURSO' : 'PRÓXIMA',
+        clase: 'sem ' + est + (n === semana ? ' activa' : ''),
+        onClick: () => { this.setState({ semanaSel: n, eventoSel: null, diaFiltro: null }); this._actualizarUrlEventId(null); }
       };
+    });
 
-      semanas = Object.keys(grupos).sort((a, b) => a - b).map((w) => {
-        const evs = grupos[w];
-        const key = s.mes + '-S' + w;
-        /* El estado depende de los eventos PUBLICADO agendados en la semana,
-           no del rango completo domingo—sábado ni de eventos cancelados: si
-           el único evento de la semana ya pasó, la semana está Finalizada
-           aunque hoy aún caiga dentro de esos mismos siete días calendario;
-           y si lo único que queda por venir está cancelado (sin ningún otro
-           evento publicado), ya no hay nada pendiente y también se marca
-           Finalizada en vez de "En curso"/"Próximamente". */
-        const publicados = evs.filter((ev) => R.estadoEvento(ev) === 'PUBLICADO');
-        let yaPaso, esFutura;
-        if (!publicados.length) {
-          yaPaso = true;
-          esFutura = false;
-        } else {
-          const fechasPub = publicados.map((ev) => ev.fecha);
-          const primeraFecha = fechasPub.reduce((a, b) => (a < b ? a : b));
-          const ultimaFecha = fechasPub.reduce((a, b) => (a > b ? a : b));
-          yaPaso = ultimaFecha < hoyISO;
-          esFutura = primeraFecha > hoyISO;
+    /* Tira de 7 días de la semana elegida (solo en el teléfono): tocar un
+       día con eventos filtra la lista a ese día; tocarlo otra vez lo quita. */
+    const y = Number((s.mes || '').slice(0, 4));
+    const primeroDow = new Date(y, mesNum, 1).getDay();
+    const diasEnMes = new Date(y, mesNum + 1, 0).getDate();
+    const inicioFila = 1 - primeroDow + (semana - 1) * 7;
+    const iso = (dia) => s.mes + '-' + String(dia).padStart(2, '0');
+    const tira = [0, 1, 2, 3, 4, 5, 6].map((i) => {
+      const dia = inicioFila + i;
+      const dentro = dia >= 1 && dia <= diasEnMes;
+      const f = dentro ? iso(dia) : null;
+      const evs = dentro ? delMes.filter((e) => e.fecha === f && pasaTipo(e)) : [];
+      const esSel = dentro && diaFiltro === f;
+      return {
+        l: R.DIAS[i].charAt(0),
+        d: new Date(y, mesNum, dia).getDate(),
+        dots: evs.map((e) => ({ style: 'background:' + (esSel ? '#fff' : this.colorTipo(e.servicio)) })),
+        clase: 'tira-dia' + (dentro ? ' dentro' : ' fuera') + (evs.length ? ' ev' : '') + (f === hoyISO ? ' hoy' : '') + (esSel ? ' sel' : ''),
+        onClick: dentro ? () => this.setState({ diaFiltro: esSel ? null : f }) : undefined
+      };
+    });
+
+    // ---- calendario del mes (vista "Mes" de escritorio)
+    const calCeldas = [];
+    for (let i = 0; i < primeroDow; i++) calCeldas.push({ d: '', dots: [], clase: 'cal-celda vacia', onClick: undefined });
+    for (let dia = 1; dia <= diasEnMes; dia++) {
+      const f = iso(dia);
+      const evs = delMes.filter((e) => e.fecha === f && pasaTipo(e));
+      const esSel = f === diaMes;
+      calCeldas.push({
+        d: dia,
+        dots: evs.map((e) => ({ style: 'background:' + (esSel ? '#fff' : this.colorTipo(e.servicio)) })),
+        clase: 'cal-celda dia' + (evs.length ? ' ev' : '') + (f === hoyISO ? ' hoy' : '') + (esSel ? ' sel' : ''),
+        onClick: () => {
+          const extra = { diaMes: f, semanaSel: R.semanaDelMes(f) };
+          if (evs.length) this.seleccionarEvento(evs[0], Object.assign(extra, { detalleAbierto: false }));
+          else this.setState(extra);
         }
-        const badge = yaPaso
-          ? { label: 'Finalizada', bg: 'var(--ac)', color: '#fff' }
-          : esFutura
-            ? { label: 'Próximamente', bg: '#c7cad0', color: '#3a3f47' }
-            : { label: 'En curso', bg: 'var(--gold)', color: '#fff' };
-        const colapsada = Object.prototype.hasOwnProperty.call(s.colapsadas, key) ? s.colapsadas[key] : yaPaso;
-        const avisos = evs
-          .filter((ev) => ev.avisoImportante && ev.avisoImportante.trim())
-          .map((ev) => ev.avisoImportante.trim());
+      });
+    }
+    const diaMesD = diaMes ? R.parse(diaMes) : null;
+
+    // ---- Filtrar por evento: busca dentro del mes que se está viendo
+    const q = this.normalizar(s.buscarTexto).trim();
+    const resultados = delMes.filter((ev) => !q || this.normalizar([R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio, ev.tema].join(' ')).indexOf(q) >= 0)
+      .map((ev) => {
+        const color = this.colorTipo(ev.servicio);
         return {
-          titulo: 'Semana ' + w,
-          rango: rango(evs),
-          avisos: avisos,
-          tieneAvisos: avisos.length > 0,
-          /* display (no sc-if), igual que el grid de días: así el CSS de
-             impresión puede forzarlo a visible aunque el usuario haya
-             colapsado la semana. */
-          avisosStyle: 'background:var(--gold-lt);border:2px solid var(--gold-dk);border-top:0;padding:12px 16px;flex-direction:column;gap:6px;display:' + (colapsada ? 'none' : 'flex'),
-          /* Tachado solo cuando la semana ya finalizó, para señalar de un
-             vistazo que ya pasó sin tener que abrirla. */
-          tituloStyle: 'font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#fff;background:var(--ac);padding:4px 8px' +
-            (yaPaso ? ';text-decoration:line-through' : ''),
-          rangoStyle: 'font-size:14px;font-weight:600;letter-spacing:.06em;color:#d7d3d3' +
-            (yaPaso ? ';text-decoration:line-through' : ''),
-          estadoLabel: badge.label,
-          estadoStyle: 'font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;white-space:nowrap;background:' + badge.bg + ';color:' + badge.color,
-          dias: this.agruparDias(evs),
-          expandido: !colapsada,
-          gridDisplay: colapsada ? 'none' : 'grid',
-          icono: colapsada ? '▲' : '▼',
-          toggle: () => this.setState((st) => {
-            const actual = Object.prototype.hasOwnProperty.call(st.colapsadas, key) ? st.colapsadas[key] : yaPaso;
-            return { colapsadas: Object.assign({}, st.colapsadas, { [key]: !actual }) };
-          })
+          meta: [R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio].filter(Boolean).join(' · '),
+          tema: ev.tema || 'Sin tema',
+          colorStyle: 'color:' + color, dotStyle: 'background:' + color,
+          clase: 'res' + (sel && ev.id === sel.id ? ' sel' : '') + (ev.fecha < hoyISO ? ' pasado' : ''),
+          onClick: () => this.seleccionarEvento(ev, { semanaSel: R.semanaDelMes(ev.fecha), diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all', buscarAbierto: false, buscarTexto: '' })
         };
       });
+
+    // ---- Resaltar persona: integrantes de banda y quienes dirigen este mes
+    const nombres = new Map();
+    let miNombre = '';
+    delMes.forEach((ev) => {
+      (ev.banda || []).forEach((b) => {
+        const n = (b.nombre || '').trim();
+        if (!n) return;
+        if (!nombres.has(n.toLowerCase())) nombres.set(n.toLowerCase(), n);
+        if (miMusico && b.musicianId === miMusico) miNombre = n;
+      });
+      this.cancionesDe(ev).forEach((c) => {
+        const n = (c.d || '').trim();
+        if (n && !nombres.has(n.toLowerCase())) nombres.set(n.toLowerCase(), n);
+      });
+    });
+    const personas = [{ v: '', label: 'Nadie' }].concat(Array.from(nombres.values()).sort((a, b) => a.localeCompare(b, 'es'))
+      .map((n) => ({ v: n, label: n + (miNombre && n.toLowerCase() === miNombre.toLowerCase() ? ' (yo)' : '') })));
+
+    /* "Ver participaciones": integrantes de banda del mes mostrado; al
+       elegir uno se abre el modal con sus eventos PUBLICADO de ese mes y el
+       rol que cumple en cada uno (solo lectura: la vista es pública). */
+    const nombresBanda = new Map();
+    delMes.forEach((ev) => (ev.banda || []).forEach((b) => {
+      const n = (b.nombre || '').trim();
+      if (n && !nombresBanda.has(n.toLowerCase())) nombresBanda.set(n.toLowerCase(), n);
+    }));
+    const qP = (s.participacionesBusqueda || '').trim().toLowerCase();
+    const personasMesLista = Array.from(nombresBanda.values()).sort((a, b) => a.localeCompare(b, 'es'))
+      .filter((n) => !qP || n.toLowerCase().indexOf(qP) >= 0)
+      .map((n) => ({ nombre: n, onClick: () => this.abrirParticipaciones(n) }));
+    let participacionesLista = [];
+    if (s.personaSeleccionada) {
+      const kSel = s.personaSeleccionada.toLowerCase();
+      participacionesLista = delMes.filter((ev) => R.estadoEvento(ev) === 'PUBLICADO').map((ev) => {
+        const slot = (ev.banda || []).find((b) => (b.nombre || '').trim().toLowerCase() === kSel);
+        if (!slot) return null;
+        const color = this.colorTipo(ev.servicio);
+        return {
+          meta: [R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio].filter(Boolean).join(' · '),
+          tema: ev.tema || 'Por confirmar',
+          tipo: R.bandaLabel(slot),
+          colorStyle: 'color:' + color, dotStyle: 'background:' + color,
+          onClick: () => this.seleccionarEvento(ev, { semanaSel: R.semanaDelMes(ev.fecha), diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all', personaSeleccionada: null })
+        };
+      }).filter(Boolean);
     }
 
-    const q2 = (s.orgSwitcherBusqueda || '').trim().toLowerCase();
-    const misOrgsFiltradas = q2 ? s.misOrgs.filter((o) => o.name.toLowerCase().indexOf(q2) >= 0) : s.misOrgs;
-    const misOrgsLista = misOrgsFiltradas.map((o) => ({
+    const misOrgsQ = (s.orgSwitcherBusqueda || '').trim().toLowerCase();
+    const misOrgsLista = (misOrgsQ ? s.misOrgs.filter((o) => o.name.toLowerCase().indexOf(misOrgsQ) >= 0) : s.misOrgs).map((o) => ({
       id: o.id, nombre: o.name,
-      style: 'display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;cursor:pointer;background:' +
-        (o.id === s.org.id ? 'var(--ac)' : 'transparent') + ';color:' + (o.id === s.org.id ? '#fff' : 'var(--ink)'),
+      clase: 'dropdown-item' + (o.id === s.org.id ? ' on' : ''),
       onClick: () => this.irAOrg(o)
     }));
 
+    const tipos = tiposMes.length > 1 ? [{ k: 'all', label: 'Todos' }].concat(tiposMes.map((t) => ({ k: t, label: t }))).map((t) => ({
+      label: t.label,
+      clase: 'chip' + (t.k === tipoSel ? ' on' : ''),
+      dotStyle: 'background:' + (t.k === 'all' ? (t.k === tipoSel ? '#fff' : 'var(--ink)') : this.colorTipo(t.k)),
+      onClick: () => this.setState({ tipoSel: t.k })
+    })) : [];
+
     const vals = Object.assign(base, {
       estado: s.estado,
-      kicker: filtroActivo ? 'Filtrado por fecha' : 'Calendario Mensual',
-      mesLabel: R.monthLabel(s.mes),
-      /* Filtrado por evento, el encabezado grande repite lo que ya dice la
-         barra "Resultado del filtro": se oculta para ganar espacio. */
-      mostrarEncabezadoMes: !filtroActivo,
       nota: s.org.nota || '',
       nombreOrg: s.org.name,
       hayOtrasOrgs: s.misOrgs.length > 1,
@@ -1153,80 +1644,87 @@ class Component extends DCLogic {
       onOrgSwitcherBusqueda: (e) => this.setState({ orgSwitcherBusqueda: e.target.value }),
       toggleOrgSwitcher: () => this.toggleOrgSwitcher(),
       misOrgsLista: misOrgsLista,
-      meses: meses,
-      mesesVisibles: !filtroActivo,
-      hayMesesAnteriores: mesesAnterioresKeys.length > 0,
-      mesesAnteriores: mesesAnteriores,
-      mesesAbierto: s.mesesAbierto,
-      mesesBtnLabel: s.mesesAbierto ? 'Cerrar meses anteriores ✕' : ('Meses anteriores (' + mesesAnterioresKeys.length + ')'),
-      mesesBtnStyle: 'font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:8px 12px;cursor:pointer;border:2px solid var(--ink);background:' +
-        (s.mesesAbierto ? 'var(--ink)' : 'transparent') + ';color:' + (s.mesesAbierto ? 'var(--bg)' : 'var(--ink)'),
-      toggleMeses: () => this.setState((st) => ({ mesesAbierto: !st.mesesAbierto })),
-      semanas: semanas,
-      vacio: semanas.length ? '' : 'Todavía no hay participaciones cargadas para este mes. Ve a "Capturar" para agregarlas.',
 
-      filtroAbierto: s.filtroAbierto,
-      filtroActivo: filtroActivo,
-      filtroTexto: s.filtroTexto,
-      filtroLista: filtroLista,
-      filtroVacio: filtroLista.length ? '' : 'No hay eventos que coincidan con la búsqueda.',
-      filtroResumen: filtroActivo ? (R.diaNombre(eventoActivo.fecha) + ' ' + R.fechaLarga(eventoActivo.fecha) + ' · ' + eventoActivo.hora) : '',
-      filtroBtnLabel: s.filtroAbierto ? 'Cerrar filtro' : (filtroActivo ? 'Cambiar filtro' : 'Filtrar por Evento'),
-      filtroBtnStyle: 'font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);cursor:pointer;background:' +
-        (s.filtroAbierto ? 'var(--ink)' : 'transparent') + ';color:' + (s.filtroAbierto ? 'var(--bg)' : 'var(--ink)'),
-      toggleFiltro: () => this.setState((st) => ({ filtroAbierto: !st.filtroAbierto })),
-      quitarFiltro: () => { this.setState({ filtroId: null, filtroAbierto: false, filtroTexto: '' }); this._actualizarUrlEventId(null); },
-      onFiltroTexto: (e) => { const v = e.target.value; this.setState({ filtroTexto: v }); },
+      kicker: 'Calendario Mensual',
+      mesLabel: R.monthLabel(s.mes),
+      hayOtrosMeses: keys.length > 1,
+      mesesBtnLabel: s.mesesAbierto ? 'Cerrar meses ✕' : (anteriores.length ? 'Meses anteriores (' + anteriores.length + ')' : 'Otros meses'),
+      mesesBtnLabelCorto: s.mesesAbierto ? 'Cerrar ✕' : 'Meses',
+      mesesAbierto: s.mesesAbierto,
+      toggleMeses: () => this.setState((st) => ({ mesesAbierto: !st.mesesAbierto })),
+      mesesGrupos: mesesGrupos,
+
+      mesVacio: !delMes.length,
+      mesConEventos: delMes.length > 0,
+      vacio: 'Todavía no hay eventos publicados para ' + R.monthLabel(s.mes) + '.',
+      segSemanaClase: vista === 'semana' ? 'on' : '',
+      segMesClase: vista === 'mes' ? 'on' : '',
+      verSemana: () => this.setState({ vista: 'semana' }),
+      verMes: () => this.setState({ vista: 'mes', diaMes: sel ? sel.fecha : s.diaMes }),
+      semanaDisplay: vista === 'semana' ? 'display:flex' : 'display:none',
+      mesDisplay: vista === 'mes' ? 'display:flex' : 'display:none',
+
+      semanas: semanas,
+      semanasStyle: 'grid-template-columns:repeat(' + Math.max(1, semanas.length) + ',minmax(0,1fr))',
+      tira: tira,
+
+      buscarAbierto: s.buscarAbierto,
+      buscarBtnClase: 'btn-buscar' + (s.buscarAbierto ? ' on' : ''),
+      toggleBuscar: () => this.setState((st) => ({ buscarAbierto: !st.buscarAbierto, buscarTexto: '' })),
+      cerrarBuscar: () => this.setState({ buscarAbierto: false }),
+      buscarTexto: s.buscarTexto,
+      onBuscarTexto: (e) => this.setState({ buscarTexto: e.target.value }),
+      resultados: resultados,
+      sinResultados: !resultados.length,
+
+      hayTipos: tipos.length > 0,
+      tipos: tipos,
+      hayPersonas: personas.length > 1,
+      personas: personas,
+      persona: persona,
+      onPersona: (e) => this.setState({ persona: e.target.value }),
 
       participacionesAbierto: s.participacionesAbierto,
-      participacionesBtnLabel: s.participacionesAbierto ? 'Cerrar' : (s.personaSeleccionada || 'Seleccionar persona'),
-      participacionesBtnStyle: 'font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);cursor:pointer;background:' +
-        (s.participacionesAbierto ? 'var(--ink)' : 'transparent') + ';color:' + (s.participacionesAbierto ? 'var(--bg)' : 'var(--ink)'),
+      participacionesBtnLabel: s.participacionesAbierto ? 'Cerrar' : 'Ver participaciones',
+      participacionesBtnClase: 'btn-sec' + (s.participacionesAbierto ? ' on' : ''),
       toggleParticipaciones: () => this.toggleParticipaciones(),
       participacionesBusqueda: s.participacionesBusqueda,
       onParticipacionesBusqueda: (e) => this.setState({ participacionesBusqueda: e.target.value }),
       personasMesLista: personasMesLista,
-      personasMesVaciaStyle: personasMesLista.length ? 'display:none' : 'font-size:13px;color:#9a9694;padding:10px',
-
-      participacionesModalAbierto: !!personaSel,
-      participacionesNombre: personaSel || '',
+      personasMesVacia: !personasMesLista.length,
+      participacionesModalAbierto: !!s.personaSeleccionada,
+      participacionesNombre: s.personaSeleccionada || '',
       participacionesMesLabel: R.monthLabel(s.mes),
       participacionesLista: participacionesLista,
-      participacionesVaciaStyle: participacionesLista.length ? 'display:none' : 'font-size:13px;color:#7d7979;padding:12px 2px',
+      participacionesVacia: !participacionesLista.length,
       cerrarParticipaciones: () => this.cerrarParticipaciones(),
-      detenerPropagacion: (e) => this.detenerPropagacion(e),
 
-      volverArriba: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+      listaTitulo: diaFiltro ? 'Día seleccionado' : 'Toda la semana',
+      hayDiaFiltro: !!diaFiltro,
+      diaFiltroLabel: diaFiltro ? R.diaNombre(diaFiltro) + ' ' + R.fechaLarga(diaFiltro) : '',
+      quitarDiaFiltro: () => this.setState({ diaFiltro: null }),
+      tarjetas: listaSemana.map((ev) => this.tarjeta(ev, ctx)),
+      listaVacia: !listaSemana.length,
+      listaVaciaTxt: diaFiltro ? 'No hay eventos este día.' : 'No hay eventos de este tipo en esta semana.',
+
+      dowLetras: R.DIAS.map((dn) => dn.charAt(0)),
+      calCeldas: calCeldas,
+      diaMesLabel: diaMesD ? (R.diaNombre(diaMes) + ' ' + R.fechaLarga(diaMes)).toUpperCase() : '',
+      tarjetasDia: listaDia.map((ev) => this.tarjeta(ev, ctx)),
+      diaMesVacio: !listaDia.length,
+      leyenda: tiposMes.map((t) => ({
+        label: t, dotStyle: 'background:' + this.colorTipo(t),
+        dias: Array.from(new Set(delMes.filter((e) => (e.servicio || 'Evento') === t).map((e) => R.parse(e.fecha).getDate()))).join(', ')
+      })),
+
+      hayDetalle: !!sel,
+      d: sel ? this.detalle(sel, ctx) : {},
+      detalleClase: 'detalle' + (s.detalleAbierto ? ' abierto' : ''),
+      cerrarDetalle: () => this.cerrarDetalle(),
+
+      detenerPropagacion: (e) => this.detenerPropagacion(e),
       copiarWa: () => {
-        const out = [];
-        semanas.forEach((sem) => {
-          sem.dias.forEach((dia) => {
-            dia.eventos.forEach((ev) => {
-              out.push('🎼 ' + ev.dia + ' ' + ev.hora + ' — ' + ev.sub);
-              if (ev.tieneBanda) {
-                ev.bandaLista.forEach((p) => out.push(p.tipo + ': ' + p.nombre + (p.tarea ? ' (' + p.tarea + ')' : '')));
-                out.push('');
-              }
-              out.push('Tema: ' + ev.tema);
-              if (ev.cita) out.push(ev.cita);
-              out.push('');
-              ev.bloques.forEach((bl) => {
-                if (bl.mostrarParte) out.push('*' + bl.parteTitulo.toUpperCase() + '*');
-                out.push('- ' + bl.titulo + ':');
-                bl.canciones.forEach((c) => {
-                  out.push('🎶 ' + c.t + (c.k && c.k !== '—' ? ' (' + c.k + ')' : '') + (c.d ? ' · ' + c.d : '') + (c.u && c.u !== '#' ? '\n' + c.u : ''));
-                });
-                out.push('');
-              });
-              if (ev.tieneDetalles) { out.push('Detalles y responsable: ' + ev.detalles); out.push(''); }
-              if (ev.tienePersonas) { out.push('Personas requeridas: ' + ev.personas); out.push(''); }
-              if (ev.tieneNotas) { out.push(ev.notas); out.push(''); }
-              out.push('———');
-              out.push('');
-            });
-          });
-        });
-        const text = out.join('\n');
+        const text = this.textoWhatsApp(delMes);
         const done = () => this.flash('Copiado');
         if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, done);
         else done();
