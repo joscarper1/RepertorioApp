@@ -1079,6 +1079,31 @@
     });
   }
 
+  /* Guardado de quien no tiene 'banda.editar': escribe campo por campo
+     (update) sin tocar banda, integrantes, estado, fecha, organizationId
+     ni id. Las reglas de la base solo le permiten escribir esos otros
+     campos (ver events/$eventId/$campo), así que un set() del evento
+     completo sería rechazado. `original` es el evento como está en la
+     nube: los campos que ya no vienen en `evento` se borran (null). */
+  var CAMPOS_EVENTO_PROTEGIDOS = ['id', 'organizationId', 'estado', 'integrantes', 'banda', 'fecha'];
+
+  function saveEventSinBanda(evento, original, cb) {
+    var root = dbRoot();
+    if (!root || !evento || !evento.id) { cb && cb(false); return; }
+    var ev = clone(evento);
+    var cambios = {};
+    Object.keys(ev).forEach(function (k) {
+      if (CAMPOS_EVENTO_PROTEGIDOS.indexOf(k) < 0) cambios[k] = ev[k];
+    });
+    Object.keys(original || {}).forEach(function (k) {
+      if (CAMPOS_EVENTO_PROTEGIDOS.indexOf(k) < 0 && !(k in ev)) cambios[k] = null;
+    });
+    root.child(EVENTS_PATH).child(ev.id).update(cambios).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase saveEventSinBanda rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
   /* Cambia solo el estado de un evento ya existente, sin pasar por el
      asistente completo (usado por las acciones rápidas "Cancelado" y
      "Archivar" del listado del día). */
@@ -1916,7 +1941,7 @@
     normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL,
     integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,
     watchAccesosPendientes: watchAccesosPendientes, crearAccesoPendiente: crearAccesoPendiente, borrarAccesoPendiente: borrarAccesoPendiente,
-    watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, setEventEstado: setEventEstado, moveEvent: moveEvent,
+    watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, saveEventSinBanda: saveEventSinBanda, setEventEstado: setEventEstado, moveEvent: moveEvent,
     watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong,
     urlCifrado: urlCifrado, prepararCifrado: prepararCifrado, getCifrado: getCifrado, saveCifrado: saveCifrado,
     cifradoIdDeCancion: cifradoIdDeCancion, modalCifrado: modalCifrado,
