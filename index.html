@@ -329,10 +329,15 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
      derecha; visibility evita que, cerrado, sea alcanzable con el teclado. */
   .detalle{position:fixed;inset:0;z-index:50;border:0;border-radius:0;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);visibility:hidden;transition:transform .32s cubic-bezier(.2,.8,.2,1),visibility 0s linear .32s}
   .detalle.abierto{transform:none;visibility:visible;transition:transform .32s cubic-bezier(.2,.8,.2,1)}
-  .det-barra{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;flex:none;border-bottom:1px solid rgba(0,0,0,.08)}
+  /* Barra de abajo, al alcance del pulgar: volver a la semana y pasar al
+     evento anterior/siguiente de esa misma lista. */
+  .det-barra{display:flex;align-items:center;justify-content:space-between;padding:6px 12px calc(6px + env(safe-area-inset-bottom));flex:none;border-top:1px solid rgba(0,0,0,.08);background:#fff}
   .det-volver{display:flex;align-items:center;gap:4px;min-height:44px;padding:0 8px;background:none;border:0;font-size:15px;font-weight:600;color:var(--ac);cursor:pointer}
   .det-volver span{font-size:24px;line-height:1}
-  .det-fecha-corta{font-size:12px;font-weight:700;color:var(--muted);padding-right:8px}
+  .det-nav{display:flex;align-items:center;gap:2px}
+  .det-nav-btn{width:44px;height:44px;border:0;background:none;border-radius:10px;font-size:26px;line-height:1;color:var(--ac);cursor:pointer}
+  .det-nav-btn:disabled{color:var(--line);cursor:default}
+  .det-nav-pos{min-width:40px;text-align:center;font-size:12px;font-weight:700;color:var(--muted)}
   .det-scroll{flex:1;overflow-y:auto;padding:18px 20px 28px}
   .det-cab{padding:0;border:0;flex-direction:column;align-items:stretch;gap:14px;margin-bottom:20px}
   .det-cab-txt{gap:8px}
@@ -660,11 +665,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
 
       <sc-if value="{{ hayDetalle }}" hint-placeholder-val="{{ true }}">
         <section class="{{ detalleClase }}" aria-label="Detalle del evento">
-          <div class="det-barra">
-            <button type="button" class="det-volver" onClick="{{ cerrarDetalle }}"><span aria-hidden="true">‹</span>{{ d.volverLabel }}</button>
-            <span class="det-fecha-corta">{{ d.fechaCorta }}</span>
-          </div>
-          <div class="det-scroll">
+          <div class="det-scroll" id="det-scroll">
             <div class="det-cab">
               <div class="det-cab-txt">
                 <div class="det-pills">
@@ -764,6 +765,16 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
                 </sc-if>
               </div>
             </div>
+          </div>
+          <div class="det-barra">
+            <button type="button" class="det-volver" onClick="{{ cerrarDetalle }}"><span aria-hidden="true">‹</span>{{ d.volverLabel }}</button>
+            <sc-if value="{{ navHay }}" hint-placeholder-val="{{ true }}">
+              <div class="det-nav">
+                <button type="button" class="det-nav-btn" onClick="{{ navAnterior }}" disabled="{{ navSinAnterior }}" aria-label="Evento anterior">‹</button>
+                <span class="det-nav-pos">{{ navPos }}</span>
+                <button type="button" class="det-nav-btn" onClick="{{ navSiguiente }}" disabled="{{ navSinSiguiente }}" aria-label="Evento siguiente">›</button>
+              </div>
+            </sc-if>
           </div>
         </section>
       </sc-if>
@@ -942,8 +953,9 @@ class Component extends DCLogic {
             if (compartido) cambios.detalleAbierto = true;
             return cambios;
           }, () => {
-            if (primeraCarga && this.state.detalleAbierto && window.matchMedia && window.matchMedia('(max-width:860px)').matches) {
+            if (primeraCarga && this.state.detalleAbierto && this._esTelefono()) {
               document.body.style.overflow = 'hidden';
+              this._empujarDetalle();
             }
           });
         });
@@ -990,6 +1002,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     if (this._unSongOverrides) this._unSongOverrides();
     if (this._escCifrado) document.removeEventListener('keydown', this._escCifrado);
+    if (this._onPopState) window.removeEventListener('popstate', this._onPopState);
     if (this._unwatch) this._unwatch();
     if (this._unauth) this._unauth();
     if (this._unwatchOrgsCheck) this._unwatchOrgsCheck();
@@ -1007,7 +1020,7 @@ class Component extends DCLogic {
   _actualizarUrlEventId(id) {
     const params = new URLSearchParams(location.search);
     if (id) params.set('eventid', id); else params.delete('eventid');
-    history.replaceState(null, '', location.pathname + '?' + params.toString());
+    history.replaceState(history.state, '', location.pathname + '?' + params.toString());
   }
 
   iniciarSesion() {
@@ -1201,12 +1214,45 @@ class Component extends DCLogic {
      así el enlace de la barra de direcciones abre directo ese evento. En el
      teléfono además abre el detalle (en escritorio ya está a la vista). */
   seleccionarEvento(ev, extra) {
-    this.setState(Object.assign({ eventoSel: ev.id, detalleAbierto: true }, extra || {}));
+    const cambios = Object.assign({ eventoSel: ev.id, detalleAbierto: true }, extra || {});
+    const abre = cambios.detalleAbierto && !this.state.detalleAbierto && this._esTelefono();
+    this.setState(cambios);
     this._actualizarUrlEventId(ev.id);
-    if (window.matchMedia && window.matchMedia('(max-width:860px)').matches) document.body.style.overflow = 'hidden';
+    if (abre) this._empujarDetalle();
+    if (this._esTelefono()) document.body.style.overflow = 'hidden';
   }
 
+  /* En el teléfono el detalle es una pantalla aparte, así que se le da su
+     propia entrada en el historial: el gesto/botón "atrás" del navegador
+     vuelve a la semana en lugar de salir a la página anterior (p. ej. el
+     dashboard). */
+  _esTelefono() {
+    return !!(window.matchMedia && window.matchMedia('(max-width:860px)').matches);
+  }
+
+  _empujarDetalle() {
+    /* Tras recargar con el detalle abierto, la entrada ya existe. */
+    if (!(history.state && history.state.detalle)) history.pushState({ detalle: true }, '', location.href);
+    if (!this._onPopState) {
+      this._onPopState = () => {
+        if (history.state && history.state.detalle) return;
+        if (this.state.cifradoVer) this.cerrarCifrado();
+        if (this.state.detalleAbierto) this._cerrarDetalleSinHistorial();
+        /* La entrada anterior puede traer el eventid de otro evento. */
+        this._actualizarUrlEventId(this.state.eventoSel);
+      };
+      window.addEventListener('popstate', this._onPopState);
+    }
+  }
+
+  /* El botón "‹ Semana N" deshace la entrada del historial (si la hay) para
+     que un "atrás" posterior no reabra el detalle; popstate lo cierra. */
   cerrarDetalle() {
+    if (history.state && history.state.detalle) { history.back(); return; }
+    this._cerrarDetalleSinHistorial();
+  }
+
+  _cerrarDetalleSinHistorial() {
     this.setState({ detalleAbierto: false });
     if (!this.state.cifradoVer) document.body.style.overflow = '';
   }
@@ -1357,7 +1403,6 @@ class Component extends DCLogic {
       diaNombre: R.diaNombre(ev.fecha),
       diaClase: 'det-dia' + (cancelado ? ' tachado' : ''),
       fechaLarga: R.fechaLarga(ev.fecha) + ' de ' + d.getFullYear(),
-      fechaCorta: R.DIAS[d.getDay()].slice(0, 3).toUpperCase() + ' ' + d.getDate() + ' ' + R.MESES[d.getMonth()].slice(0, 3).toUpperCase(),
       volverLabel: 'Semana ' + R.semanaDelMes(ev.fecha),
       hora: ev.hora || '',
       gcalHref: R.googleCalendarUrl(ev),
@@ -1499,12 +1544,27 @@ class Component extends DCLogic {
     const proximoSemana = listaSemana.find((e) => e.fecha >= hoyISO) || listaSemana[0] || delMes[0] || null;
     const diaMes = s.diaMes && s.diaMes.slice(0, 7) === s.mes ? s.diaMes : ((sel || proximoSemana || {}).fecha || null);
     const listaDia = delMes.filter((e) => e.fecha === diaMes && pasaTipo(e));
-    const candidatos = vista === 'mes' ? listaDia : listaSemana;
+    /* El teléfono siempre muestra la semana aunque el estado diga 'mes'; si
+       no, un diaMes viejo haría que tocar otra tarjeta abra otro evento. */
+    const candidatos = vista === 'mes' && !this._esTelefono() ? listaDia : listaSemana;
     if (!sel || (candidatos.length && candidatos.indexOf(sel) < 0)) {
       sel = candidatos.find((e) => e.fecha >= hoyISO) || candidatos[0] || sel || (grupos[semana] || [])[0] || null;
     }
 
     const ctx = { hoyISO: hoyISO, sel: sel, miMusico: miMusico };
+
+    /* ‹ › del detalle (teléfono): recorren las mismas tarjetas de la semana
+       de donde se abrió; si el evento no está en ellas (p. ej. vino de la
+       búsqueda), toda su semana. */
+    const navLista = !sel ? [] : (listaSemana.indexOf(sel) >= 0 ? listaSemana : (grupos[R.semanaDelMes(sel.fecha)] || [sel]));
+    const navI = navLista.indexOf(sel);
+    const navIr = (ev) => {
+      if (!ev) return;
+      this.seleccionarEvento(ev, navLista === listaSemana ? {}
+        : { semanaSel: R.semanaDelMes(ev.fecha), diaFiltro: null, tipoSel: 'all' });
+      const sc = document.getElementById('det-scroll');
+      if (sc) sc.scrollTop = 0;
+    };
 
     /* Banner "Importante" de la semana elegida: el aviso de cada evento que
        aún no pasa y no está cancelado; tocarlo abre ese evento. */
@@ -1732,6 +1792,12 @@ class Component extends DCLogic {
       d: sel ? this.detalle(sel, ctx) : {},
       detalleClase: 'detalle' + (s.detalleAbierto ? ' abierto' : ''),
       cerrarDetalle: () => this.cerrarDetalle(),
+      navHay: navLista.length > 1,
+      navPos: (navI + 1) + ' de ' + navLista.length,
+      navSinAnterior: navI <= 0,
+      navSinSiguiente: navI >= navLista.length - 1,
+      navAnterior: () => navIr(navLista[navI - 1]),
+      navSiguiente: () => navIr(navLista[navI + 1]),
 
       detenerPropagacion: (e) => this.detenerPropagacion(e),
       copiarWa: () => {
