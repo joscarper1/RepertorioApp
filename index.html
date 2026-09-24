@@ -905,17 +905,27 @@ class Component extends DCLogic {
           /* Solo se muestran eventos Publicado/Cancelado; Borrador y
              Archivado son de uso exclusivo del panel de administración. */
           const visibles = evs.filter((e) => R.esVisiblePublico(e));
+          /* Un enlace con ?eventid= abre ese evento: su mes y, en el
+             teléfono, directo la pantalla de detalle (solo en la primera
+             carga, para que una actualización en vivo no la vuelva a abrir). */
+          const primeraCarga = !this._eventosCargados;
+          this._eventosCargados = true;
           this.setState((s) => {
             let mes = s.mes;
-            /* Un enlace con ?eventid= (sin ?month=) abre el mes de ese evento. */
-            const compartido = !mes && s.eventoSel ? visibles.find((e) => e.id === s.eventoSel) : null;
+            const compartido = primeraCarga && s.eventoSel ? visibles.find((e) => e.id === s.eventoSel) : null;
             if (compartido) mes = R.monthKey(compartido.fecha);
             const keys = Array.from(new Set(visibles.map((e) => R.monthKey(e.fecha)))).sort();
             if (!mes) {
               const hoy = R.hoyKey();
               mes = keys.indexOf(hoy) >= 0 ? hoy : (keys[keys.length - 1] || hoy);
             }
-            return { eventos: visibles, mes: mes };
+            const cambios = { eventos: visibles, mes: mes };
+            if (compartido) cambios.detalleAbierto = true;
+            return cambios;
+          }, () => {
+            if (primeraCarga && this.state.detalleAbierto && window.matchMedia && window.matchMedia('(max-width:860px)').matches) {
+              document.body.style.overflow = 'hidden';
+            }
           });
         });
       });
