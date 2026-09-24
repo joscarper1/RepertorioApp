@@ -103,11 +103,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .chip{display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:1px solid rgba(0,0,0,.14);background:#fff;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
 .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
-.resaltar{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--muted)}
-.resaltar select{font-size:13px;font-weight:600;padding:7px 10px;border-radius:8px;border:1px solid rgba(0,0,0,.18);background:#fff;color:var(--ink);cursor:pointer;max-width:220px}
 .buscar-velo{position:fixed;inset:0;z-index:20}
-.barra-der{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.dropdown-part{left:auto;right:0;z-index:21}
 .part-modal{width:min(100%,480px);max-height:min(80vh,640px);overflow-y:auto;background:#fff;border-radius:14px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.28)}
 .part-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
 .part-item:hover{border-color:var(--ink);background:#f4f3ef}
@@ -122,6 +118,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .res.pasado{opacity:.7}
 .res-meta{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .res-tema{font-size:14px;font-weight:600;line-height:1.35}
+.res-sub{font-size:12px;color:var(--muted)}
 .res-vacio{padding:20px;text-align:center;font-size:13px;color:var(--muted)}
 .agarre{width:40px;height:4px;border-radius:2px;background:#d4d1cb;align-self:center}
 .buscar-cab{display:flex;flex-direction:column;gap:6px}
@@ -139,7 +136,6 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .card:hover{box-shadow:0 6px 18px rgba(0,0,0,.08)}
 .card.pasado{opacity:.72}
 .card.sel{border-color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.08);opacity:1}
-.card.dim{opacity:.4}
 .card-fecha{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;padding:8px 0;background:var(--soft);color:var(--ink)}
 .card.hoy .card-fecha{background:var(--gold)}
 .card.sel .card-fecha{background:var(--ink);color:#fff}
@@ -161,7 +157,6 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .b-part{background:var(--ac-lt);color:var(--ac)}
 .b-fin{background:#ecebe8;color:var(--muted)}
 .b-canc{background:var(--red);color:#fff}
-.b-dirige{background:var(--blue-lt);color:var(--blue)}
 .b-aviso{background:var(--gold-lt);color:var(--gold-dk)}
 .card-chev{font-size:20px;color:var(--muted3);line-height:1}
 
@@ -211,7 +206,6 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .bloque-lista{display:flex;flex-direction:column;border:1px solid rgba(0,0,0,.09);border-radius:10px;overflow:hidden}
 .can{display:grid;grid-template-columns:22px minmax(0,1fr) auto 32px;gap:12px;align-items:center;padding:12px 14px;background:#fff;border-top:1px solid rgba(0,0,0,.07);transition:background .15s}
 .can:first-child{border-top:0}
-.can.resaltada{background:#eef3fb}
 .can.sonando{background:#eef6f1}
 .can-num{font-size:12px;font-weight:700;color:var(--muted3);font-variant-numeric:tabular-nums}
 .can-info{min-width:0}
@@ -298,14 +292,9 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .chips::-webkit-scrollbar{display:none}
   .chip{flex:none;padding:8px 12px;min-height:36px;font-size:12.5px}
   /* min-width:0 en toda la cadena: si no, las fichas de tipo (sin salto de
-     línea) y el ancho natural del <select> ensanchan la página entera. */
-  .barra-izq,.chips,.resaltar,.buscar-wrap,.barra-der{min-width:0;max-width:100%}
-  .barra-der{flex-direction:column;align-items:stretch;gap:8px}
-  .barra-der .btn-sec{width:100%;min-height:40px;font-size:13px}
-  .dropdown-part{left:0;right:0;min-width:0}
+     línea) ensanchan la página entera. */
+  .barra-izq,.chips,.buscar-wrap{min-width:0;max-width:100%}
   .part-modal{width:100%;height:100%;max-height:none;border-radius:0}
-  .resaltar{justify-content:space-between}
-  .resaltar select{flex:1;width:0;min-width:0;max-width:none}
   .buscar-velo{background:rgba(0,0,0,.35);z-index:60}
   .buscar-panel{position:fixed;left:0;right:0;bottom:0;top:110px;width:auto;max-width:none;z-index:61;border-radius:22px 22px 0 0;border:0;padding:10px 16px 20px;gap:10px}
   .buscar-input input{font-size:16px}
@@ -545,6 +534,36 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
             </div>
           </sc-if>
         </div>
+        <div class="buscar-wrap">
+          <button type="button" class="{{ participacionesBtnClase }}" onClick="{{ toggleParticipaciones }}">
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="4.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M2 13c.6-2.8 2.6-4.3 5-4.3s4.4 1.5 5 4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+            <span>Ver participaciones</span>
+          </button>
+          <sc-if value="{{ participacionesAbierto }}" hint-placeholder-val="{{ false }}">
+            <div class="buscar-velo" onClick="{{ toggleParticipaciones }}"></div>
+            <div class="buscar-panel" role="dialog" aria-label="Ver participaciones">
+              <div class="buscar-cab solo-movil">
+                <span class="agarre"></span>
+                <div class="buscar-cab-fila"><span>Ver participaciones</span><button type="button" class="btn-link" onClick="{{ toggleParticipaciones }}">Cerrar</button></div>
+              </div>
+              <div class="buscar-input">
+                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="4.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M2 13c.6-2.8 2.6-4.3 5-4.3s4.4 1.5 5 4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
+                <input autoFocus="{{ true }}" value="{{ participacionesBusqueda }}" onChange="{{ onParticipacionesBusqueda }}" placeholder="Buscar por nombre…" autoComplete="off">
+              </div>
+              <div class="buscar-lista">
+                <sc-for list="{{ personasMesLista }}" as="p" hint-placeholder-count="3">
+                  <div class="res" onClick="{{ p.onClick }}">
+                    <div class="res-tema">{{ p.nombre }}</div>
+                    <div class="res-sub">{{ p.resumen }}</div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ personasMesVacia }}" hint-placeholder-val="{{ false }}">
+                  <div class="res-vacio">{{ personasMesVaciaTxt }}</div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-if>
+        </div>
         <sc-if value="{{ hayTipos }}" hint-placeholder-val="{{ true }}">
           <span class="sep-v solo-desk" style="margin:0 6px"></span>
           <span class="rotulo rotulo-tipo">Tipo</span>
@@ -553,32 +572,6 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
               <button type="button" class="{{ t.clase }}" onClick="{{ t.onClick }}"><span class="dot" style="{{ t.dotStyle }}"></span>{{ t.label }}</button>
             </sc-for>
           </div>
-        </sc-if>
-      </div>
-      <div class="barra-der">
-        <div class="buscar-wrap">
-          <button type="button" class="{{ participacionesBtnClase }}" onClick="{{ toggleParticipaciones }}">{{ participacionesBtnLabel }}</button>
-          <sc-if value="{{ participacionesAbierto }}" hint-placeholder-val="{{ false }}">
-            <div class="buscar-velo solo-desk" onClick="{{ toggleParticipaciones }}"></div>
-            <div class="dropdown dropdown-part">
-              <input autoFocus="{{ true }}" value="{{ participacionesBusqueda }}" onChange="{{ onParticipacionesBusqueda }}" placeholder="Buscar por nombre…" autoComplete="off">
-              <div class="dropdown-lista">
-                <sc-for list="{{ personasMesLista }}" as="p" hint-placeholder-count="2">
-                  <button type="button" class="dropdown-item" onClick="{{ p.onClick }}">{{ p.nombre }}</button>
-                </sc-for>
-                <sc-if value="{{ personasMesVacia }}" hint-placeholder-val="{{ false }}">
-                  <p class="res-vacio" style="margin:0">Sin participantes este mes.</p>
-                </sc-if>
-              </div>
-            </div>
-          </sc-if>
-        </div>
-        <sc-if value="{{ hayPersonas }}" hint-placeholder-val="{{ true }}">
-          <label class="resaltar">Resaltar persona
-            <select value="{{ persona }}" onChange="{{ onPersona }}">
-              <sc-for list="{{ personas }}" as="p" hint-placeholder-count="3"><option value="{{ p.v }}">{{ p.label }}</option></sc-for>
-            </select>
-          </label>
         </sc-if>
       </div>
     </div>
@@ -862,15 +855,15 @@ class Component extends DCLogic {
     modo: 'cargando', org: null, eventos: [], mes: new URLSearchParams(location.search).get('month') || '', estado: '', errorLogin: '', usuarioNombre: null,
     mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false,
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
-    /* Vista de eventos: 'semana' (tarjetas de la semana elegida) o 'mes'
-       (calendario). eventoSel viene de ?eventid= para abrir un enlace
+    /* Vista de eventos: 'mes' (calendario, la inicial) o 'semana' (tarjetas
+       de la semana elegida; en el teléfono siempre es esta). eventoSel viene de ?eventid= para abrir un enlace
        compartido directo en ese evento; semanaSel/diaMes/diaFiltro en null
        dejan que renderVals elija lo más útil (la semana en curso, etc.).
        detalleAbierto solo tiene efecto en el teléfono, donde el detalle es
        una pantalla aparte. misLinks = musicianLinks de la cuenta, para
        marcar "Participas" / "(tú)". */
-    vista: 'semana', semanaSel: null, eventoSel: new URLSearchParams(location.search).get('eventid') || null,
-    diaMes: null, diaFiltro: null, tipoSel: 'all', persona: '', buscarAbierto: false, buscarTexto: '',
+    vista: 'mes', semanaSel: null, eventoSel: new URLSearchParams(location.search).get('eventid') || null,
+    diaMes: null, diaFiltro: null, tipoSel: 'all', buscarAbierto: false, buscarTexto: '',
     detalleAbierto: false, misLinks: {},
     participacionesAbierto: false, participacionesBusqueda: '', personaSeleccionada: null,
     /* Catálogo de la organización (para heredar el cifrado de una canción,
@@ -1012,7 +1005,7 @@ class Component extends DCLogic {
   }
 
   toggleParticipaciones() {
-    this.setState((s) => ({ participacionesAbierto: !s.participacionesAbierto, participacionesBusqueda: '' }));
+    this.setState((s) => ({ participacionesAbierto: !s.participacionesAbierto, participacionesBusqueda: '', buscarAbierto: false }));
   }
 
   abrirParticipaciones(nombre) {
@@ -1175,14 +1168,6 @@ class Component extends DCLogic {
     return (ev.bloques || []).reduce((acc, bl) => acc.concat((bl.canciones || []).filter((c) => c.t && c.t.trim())), []);
   }
 
-  /* ¿La persona (nombre, sin distinguir mayúsculas) toca en la banda o
-     dirige alguna canción de este evento? Es lo que usa "Resaltar persona". */
-  participa(ev, nombre) {
-    const k = nombre.trim().toLowerCase();
-    return (ev.banda || []).some((b) => (b.nombre || '').trim().toLowerCase() === k) ||
-      this.cancionesDe(ev).some((c) => (c.d || '').trim().toLowerCase() === k);
-  }
-
   /* Cambiar de evento seleccionado también actualiza ?eventid= en la URL,
      así el enlace de la barra de direcciones abre directo ese evento. En el
      teléfono además abre el detalle (en escritorio ya está a la vista). */
@@ -1229,13 +1214,7 @@ class Component extends DCLogic {
     const hoy = ev.fecha === ctx.hoyISO;
     const sel = !!ctx.sel && ev.id === ctx.sel.id;
     const canciones = this.cancionesDe(ev);
-    const dim = !!ctx.persona && !this.participa(ev, ctx.persona);
     const badges = [];
-    if (ctx.persona && !dim) {
-      const k = ctx.persona.toLowerCase();
-      const n = canciones.filter((c) => (c.d || '').trim().toLowerCase() === k).length;
-      if (n) badges.push({ t: 'DIRIGE ' + n, clase: 'badge b-dirige' });
-    }
     if (cancelado) badges.push({ t: 'CANCELADO', clase: 'badge b-canc' });
     if (hoy && !cancelado) badges.push({ t: 'HOY', clase: 'badge b-hoy' });
     if (ctx.miMusico && (ev.banda || []).some((b) => b.musicianId === ctx.miMusico && (b.nombre || '').trim())) badges.push({ t: 'PARTICIPAS', clase: 'badge b-part' });
@@ -1259,7 +1238,7 @@ class Component extends DCLogic {
       temaClase: 'card-tema' + (cancelado ? ' tachado' : '') + (ev.tema ? '' : ' pendiente'),
       lideres: lideres.slice(0, 5).map((n) => ({ nombre: n, i: this.iniciales(n), style: 'background:' + this.colorNombre(n) })),
       badges: badges.slice(0, 3),
-      clase: 'card' + (sel ? ' sel' : '') + (hoy ? ' hoy' : '') + (dim ? ' dim' : (pasado && !sel ? ' pasado' : '')),
+      clase: 'card' + (sel ? ' sel' : '') + (hoy ? ' hoy' : '') + (pasado && !sel ? ' pasado' : ''),
       onClick: () => this.seleccionarEvento(ev)
     };
   }
@@ -1300,7 +1279,6 @@ class Component extends DCLogic {
     const dias = Math.round((d - R.parse(ctx.hoyISO)) / 86400000);
     const estado = cancelado ? ['CANCELADO', 'canc'] : dias < 0 ? ['FINALIZADO', 'fin'] : dias === 0 ? ['HOY', 'hoy']
       : [dias === 1 ? 'MAÑANA' : 'EN ' + dias + ' DÍAS', ''];
-    const personaK = ctx.persona ? ctx.persona.toLowerCase() : '';
     let num = 0;
     const bloques = this.marcarPartes((ev.bloques || []).map((bl, blIdx) => ({
       titulo: bl.titulo,
@@ -1325,7 +1303,7 @@ class Component extends DCLogic {
           tieneArtista: !!artista, tieneDirige: !!dirige, ambos: !!artista && !!dirige, tieneMeta: !!artista || !!dirige,
           medley: medley, tieneMedley: medley.length > 0,
           k: c.k || '—',
-          clase: 'can' + (activa ? ' sonando' : (personaK && dirige.toLowerCase() === personaK ? ' resaltada' : '')),
+          clase: 'can' + (activa ? ' sonando' : ''),
           rowTitle: c.u && c.u.trim() ? 'Doble click para abrir el enlace' : '',
           onOpen: () => { if (c.u && c.u.trim()) window.open(c.u, '_blank', 'noopener'); },
           /* El botón siempre ocupa su columna; sin video solo se oculta. */
@@ -1489,15 +1467,15 @@ class Component extends DCLogic {
     const deSemana = (grupos[semana] || []).filter(pasaTipo);
     const diaFiltro = s.diaFiltro && s.diaFiltro.slice(0, 7) === s.mes && R.semanaDelMes(s.diaFiltro) === semana ? s.diaFiltro : null;
     const listaSemana = diaFiltro ? deSemana.filter((e) => e.fecha === diaFiltro) : deSemana;
-    const diaMes = s.diaMes && s.diaMes.slice(0, 7) === s.mes ? s.diaMes : (sel ? sel.fecha : ((listaSemana[0] || delMes[0] || {}).fecha || null));
+    const proximoSemana = listaSemana.find((e) => e.fecha >= hoyISO) || listaSemana[0] || delMes[0] || null;
+    const diaMes = s.diaMes && s.diaMes.slice(0, 7) === s.mes ? s.diaMes : ((sel || proximoSemana || {}).fecha || null);
     const listaDia = delMes.filter((e) => e.fecha === diaMes && pasaTipo(e));
     const candidatos = vista === 'mes' ? listaDia : listaSemana;
     if (!sel || (candidatos.length && candidatos.indexOf(sel) < 0)) {
       sel = candidatos.find((e) => e.fecha >= hoyISO) || candidatos[0] || sel || (grupos[semana] || [])[0] || null;
     }
 
-    const persona = s.persona || '';
-    const ctx = { hoyISO: hoyISO, sel: sel, persona: persona, miMusico: miMusico };
+    const ctx = { hoyISO: hoyISO, sel: sel, miMusico: miMusico };
 
     const mesNum = Number((s.mes || '').slice(5, 7)) - 1;
     const mesCorto = (R.MESES[mesNum] || '').slice(0, 3);
@@ -1512,7 +1490,11 @@ class Component extends DCLogic {
         count: evs.length + (evs.length === 1 ? ' evento' : ' eventos'),
         estado: est === 'fin' ? 'FINALIZADA' : est === 'cur' ? 'EN CURSO' : 'PRÓXIMA',
         clase: 'sem ' + est + (n === semana ? ' activa' : ''),
-        onClick: () => { this.setState({ semanaSel: n, eventoSel: null, diaFiltro: null }); this._actualizarUrlEventId(null); }
+        /* Elegir una semana que no es la en curso pasa a la vista Semana. */
+        onClick: () => {
+          this.setState(Object.assign({ semanaSel: n, eventoSel: null, diaFiltro: null }, est === 'cur' ? {} : { vista: 'semana' }));
+          this._actualizarUrlEventId(null);
+        }
       };
     });
 
@@ -1549,10 +1531,12 @@ class Component extends DCLogic {
         d: dia,
         dots: evs.map((e) => ({ style: 'background:' + (esSel ? '#fff' : this.colorTipo(e.servicio)) })),
         clase: 'cal-celda dia' + (evs.length ? ' ev' : '') + (f === hoyISO ? ' hoy' : '') + (esSel ? ' sel' : ''),
+        /* Tocar un día se queda en la vista Mes: muestra los eventos de ese
+           día debajo del calendario y selecciona el primero. */
         onClick: () => {
-          const extra = { diaMes: f, semanaSel: R.semanaDelMes(f) };
+          const extra = { diaMes: f, semanaSel: R.semanaDelMes(f), diaFiltro: null };
           if (evs.length) this.seleccionarEvento(evs[0], Object.assign(extra, { detalleAbierto: false }));
-          else this.setState(extra);
+          else { this.setState(Object.assign(extra, { eventoSel: null })); this._actualizarUrlEventId(null); }
         }
       });
     }
@@ -1572,36 +1556,25 @@ class Component extends DCLogic {
         };
       });
 
-    // ---- Resaltar persona: integrantes de banda y quienes dirigen este mes
-    const nombres = new Map();
-    let miNombre = '';
-    delMes.forEach((ev) => {
-      (ev.banda || []).forEach((b) => {
-        const n = (b.nombre || '').trim();
-        if (!n) return;
-        if (!nombres.has(n.toLowerCase())) nombres.set(n.toLowerCase(), n);
-        if (miMusico && b.musicianId === miMusico) miNombre = n;
-      });
-      this.cancionesDe(ev).forEach((c) => {
-        const n = (c.d || '').trim();
-        if (n && !nombres.has(n.toLowerCase())) nombres.set(n.toLowerCase(), n);
-      });
-    });
-    const personas = [{ v: '', label: 'Nadie' }].concat(Array.from(nombres.values()).sort((a, b) => a.localeCompare(b, 'es'))
-      .map((n) => ({ v: n, label: n + (miNombre && n.toLowerCase() === miNombre.toLowerCase() ? ' (yo)' : '') })));
-
     /* "Ver participaciones": integrantes de banda del mes mostrado; al
        elegir uno se abre el modal con sus eventos PUBLICADO de ese mes y el
        rol que cumple en cada uno (solo lectura: la vista es pública). */
     const nombresBanda = new Map();
     delMes.forEach((ev) => (ev.banda || []).forEach((b) => {
       const n = (b.nombre || '').trim();
-      if (n && !nombresBanda.has(n.toLowerCase())) nombresBanda.set(n.toLowerCase(), n);
+      if (!n) return;
+      const k = n.toLowerCase();
+      if (!nombresBanda.has(k)) nombresBanda.set(k, { nombre: n, eventos: new Set() });
+      if (R.estadoEvento(ev) === 'PUBLICADO') nombresBanda.get(k).eventos.add(ev.id);
     }));
     const qP = (s.participacionesBusqueda || '').trim().toLowerCase();
-    const personasMesLista = Array.from(nombresBanda.values()).sort((a, b) => a.localeCompare(b, 'es'))
-      .filter((n) => !qP || n.toLowerCase().indexOf(qP) >= 0)
-      .map((n) => ({ nombre: n, onClick: () => this.abrirParticipaciones(n) }));
+    const personasMesLista = Array.from(nombresBanda.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+      .filter((x) => !qP || this.normalizar(x.nombre).indexOf(this.normalizar(qP)) >= 0)
+      .map((x) => ({
+        nombre: x.nombre,
+        resumen: x.eventos.size + (x.eventos.size === 1 ? ' evento' : ' eventos') + ' este mes',
+        onClick: () => this.abrirParticipaciones(x.nombre)
+      }));
     let participacionesLista = [];
     if (s.personaSeleccionada) {
       const kSel = s.personaSeleccionada.toLowerCase();
@@ -1670,7 +1643,7 @@ class Component extends DCLogic {
 
       buscarAbierto: s.buscarAbierto,
       buscarBtnClase: 'btn-buscar' + (s.buscarAbierto ? ' on' : ''),
-      toggleBuscar: () => this.setState((st) => ({ buscarAbierto: !st.buscarAbierto, buscarTexto: '' })),
+      toggleBuscar: () => this.setState((st) => ({ buscarAbierto: !st.buscarAbierto, buscarTexto: '', participacionesAbierto: false })),
       cerrarBuscar: () => this.setState({ buscarAbierto: false }),
       buscarTexto: s.buscarTexto,
       onBuscarTexto: (e) => this.setState({ buscarTexto: e.target.value }),
@@ -1679,19 +1652,15 @@ class Component extends DCLogic {
 
       hayTipos: tipos.length > 0,
       tipos: tipos,
-      hayPersonas: personas.length > 1,
-      personas: personas,
-      persona: persona,
-      onPersona: (e) => this.setState({ persona: e.target.value }),
 
       participacionesAbierto: s.participacionesAbierto,
-      participacionesBtnLabel: s.participacionesAbierto ? 'Cerrar' : 'Ver participaciones',
-      participacionesBtnClase: 'btn-sec' + (s.participacionesAbierto ? ' on' : ''),
+      participacionesBtnClase: 'btn-buscar' + (s.participacionesAbierto ? ' on' : ''),
       toggleParticipaciones: () => this.toggleParticipaciones(),
       participacionesBusqueda: s.participacionesBusqueda,
       onParticipacionesBusqueda: (e) => this.setState({ participacionesBusqueda: e.target.value }),
       personasMesLista: personasMesLista,
       personasMesVacia: !personasMesLista.length,
+      personasMesVaciaTxt: qP ? 'Sin resultados para “' + s.participacionesBusqueda + '”.' : 'Sin participantes este mes.',
       participacionesModalAbierto: !!s.personaSeleccionada,
       participacionesNombre: s.personaSeleccionada || '',
       participacionesMesLabel: R.monthLabel(s.mes),
