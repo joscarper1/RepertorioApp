@@ -7,15 +7,15 @@
 <script src="./support.js"></script>
 </head>
 <body>
-<div id="repertorio-checking" style="position:fixed;inset:0;background:var(--bg,#f3f2f2);display:flex;align-items:center;justify-content:center;z-index:2147483647">
-  <p style="font-size:14px;color:#7d7979;font-family:Archivo,sans-serif">Cargando…</p>
+<div id="repertorio-checking" style="position:fixed;inset:0;background:#efeeeb;display:flex;align-items:center;justify-content:center;z-index:2147483647">
+  <p style="font-size:14px;color:#8a867f;font-family:Archivo,sans-serif">Cargando…</p>
 </div>
-<div id="repertorio-gate" style="position:fixed;inset:0;background:rgba(243,242,242,.97);display:none;align-items:center;justify-content:center;z-index:2147483647;padding:20px">
-  <div style="width:min(100%,420px);background:#fff;border:2px solid var(--ink,#201e1d);padding:24px 24px 20px;box-shadow:0 16px 40px rgba(0,0,0,.12)">
-    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk,#08512c)">Acceso restringido</div>
-    <h2 style="font-size:28px;font-weight:800;margin:10px 0 0;text-transform:uppercase">Inicia sesión</h2>
-    <p style="font-size:14px;line-height:1.5;color:#54514f;margin:10px 0 0">Tu Dashboard muestra tus próximos eventos. Entra con tu cuenta de Google.</p>
-    <button id="repertorio-gate-signin" type="button" style="width:100%;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac,#0f7d45);background:var(--ac,#0f7d45);color:#fff;padding:10px 14px;cursor:pointer;margin-top:18px">Iniciar sesión con Google</button>
+<div id="repertorio-gate" style="position:fixed;inset:0;background:#efeeeb;display:none;align-items:center;justify-content:center;z-index:2147483647;padding:20px;font-family:Archivo,system-ui,sans-serif;color:#1d1b19">
+  <div style="width:min(100%,420px);background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,.08);padding:28px 24px 22px;box-shadow:0 16px 40px rgba(0,0,0,.10)">
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:14px;height:14px;background:#0e7a3c;flex:none"></span><span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#0e7a3c">Acceso restringido</span></div>
+    <h2 style="font-size:30px;font-weight:900;margin:12px 0 0;text-transform:uppercase;line-height:1">Inicia sesión</h2>
+    <p style="font-size:14px;line-height:1.5;color:#5d5a55;margin:10px 0 0">Tu dashboard muestra tus próximos eventos. Entra con tu cuenta de Google.</p>
+    <button id="repertorio-gate-signin" type="button" style="width:100%;min-height:46px;font-size:14px;font-weight:700;border:0;border-radius:10px;background:#1d1b19;color:#fff;padding:0 16px;cursor:pointer;margin-top:20px">Iniciar sesión con Google</button>
     <div id="repertorio-gate-error" style="min-height:18px;font-size:13px;color:#b00020;margin-top:8px"></div>
   </div>
 </div>
@@ -24,7 +24,7 @@
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/styles.css">
 <script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -33,171 +33,424 @@
 <script src="menu-config.js"></script>
 <script src="repertorio-data.js"></script>
 <style>
-:root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
+:root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body,Archivo),Archivo,sans-serif;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:'Archivo',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip}
+button,input,select,textarea{font-family:inherit;color:inherit}
 a{color:var(--ac-dk);text-decoration:none;border-bottom:1px solid var(--ac)}
 a:hover{color:#fff;background:var(--ac)}
-input,textarea,button,select{font-family:inherit;color:inherit;border-radius:0}
-input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+input::placeholder,textarea::placeholder{color:var(--muted3)}
 ::selection{background:var(--ac-lt)}
-.dash-grid{display:grid;grid-template-columns:280px 1fr;gap:0;border:2px solid var(--ink);margin-top:24px;background:#fff}
-.dash-side{border-right:2px solid var(--ink);padding:24px 20px}
-.dash-main{padding:24px 28px;min-width:0}
-.dash-confirmo{display:flex;flex-direction:column;gap:6px;min-width:170px}
-.dash-confirmo select{width:100%}
-@media (max-width:760px){
-  .dash-grid{grid-template-columns:1fr}
-  .dash-side{border-right:0;border-bottom:2px solid var(--ink);padding:16px}
-  .dash-main{padding:20px 16px}
-  /* Perfil compacto: avatar y nombre en una fila. */
-  .dash-perfil{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center}
-  .dash-perfil > .dash-avatar{grid-row:span 3;width:52px!important;height:52px!important;font-size:18px!important}
-  .dash-perfil > .dash-nombre{margin-top:0!important}
-  .dash-perfil > .dash-roles{margin-top:6px!important}
-  .dash-confirmo{width:100%}
-  .dash-disp-form{flex-direction:column;align-items:stretch!important}
-  .dash-disp-form label{min-width:0!important}
-  .dash-disp-form input,.dash-disp-form button{width:100%}
+
+/* ---- Estructura / barra superior (igual que index) ---- */
+.pag{max-width:1320px;margin:0 auto;padding:0 32px 64px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px;border-bottom:1px solid rgba(0,0,0,.12)}
+.top-org{display:flex;align-items:center;gap:10px;min-width:0}
+.top-cuadro{width:14px;height:14px;background:var(--ac);flex:none}
+.top-nombre{font-weight:800;font-size:14px;letter-spacing:.14em;font-stretch:112%;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-der{display:flex;align-items:center;gap:18px;flex:none}
+.top-org{position:relative;min-width:150px;flex:0 1 auto}
+.nav-movil{display:flex;gap:6px;overflow-x:auto;margin:0 -32px;padding:10px 32px 0;scrollbar-width:none}
+.nav-movil::-webkit-scrollbar{display:none}
+.nav-movil a{flex:none}
+@media (min-width:1141px){ .nav-angosto{display:none !important} }
+@media (max-width:1140px){ .nav-ancho{display:none !important} .usuario-nombre{display:none} .top-der{gap:10px} }
+.top-switch{display:flex;align-items:center;gap:8px;background:transparent;border:0;padding:0;cursor:pointer;color:inherit;min-width:0}
+.dropdown{position:absolute;top:100%;left:0;z-index:40;min-width:260px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:10px;margin-top:8px;box-shadow:0 16px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;color:var(--ink)}
+.dropdown input{border:0;border-bottom:1px solid var(--line);padding:12px;font-size:14px;outline:none}
+.dropdown-lista{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;padding:4px}
+.dropdown-item{display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;border-radius:6px;cursor:pointer;background:transparent;color:var(--ink)}
+.dropdown-item:hover{background:var(--soft)}
+.dropdown-item.on{background:var(--ac);color:#fff}
+.sugerencias{position:absolute;top:100%;left:0;right:0;z-index:30;margin-top:4px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.16);max-height:200px;overflow-y:auto;padding:4px}
+.sugerencias button{display:block;width:100%;text-align:left;font-size:13px;padding:9px 10px;border:0;border-radius:6px;background:transparent;cursor:pointer}
+.sugerencias button:hover{background:var(--soft)}
+.nav-mod{display:flex;align-items:center;gap:2px}
+.top-nav{display:flex;align-items:center;gap:6px}
+a.nav-link{font-size:13px;font-weight:600;color:var(--muted);border:0;padding:8px 10px;border-radius:6px;white-space:nowrap}
+a.nav-link:hover{background:var(--sf);color:var(--ink)}
+a.nav-link.on{background:var(--ink);color:#fff}
+a.nav-link.off,a.chip.off{opacity:.4;pointer-events:none}
+a.chip{border-bottom:1px solid rgba(0,0,0,.14)}
+a.chip:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
+a.chip.on,a.chip.on:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:6000;background:var(--ink);color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.25);white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.sep-v{width:1px;height:20px;background:rgba(0,0,0,.15);flex:none}
+.usuario{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.btn-sec{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,.18);border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn-sec:hover{border-color:var(--ink)}
+.btn-sec.on{background:var(--ink);border-color:var(--ink);color:#fff}
+a.btn-sec{border-bottom:1px solid rgba(0,0,0,.18)}
+a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
+.btn-pri{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-pri:hover{background:var(--ac);border-color:var(--ac)}
+.btn-pri:disabled{opacity:.4;cursor:not-allowed;background:var(--ink);border-color:var(--ink)}
+.btn-ac{background:var(--ac);border-color:var(--ac)}
+.btn-ac:hover{background:var(--ac-dk);border-color:var(--ac-dk)}
+.btn-peligro{background:var(--red);border-color:var(--red)}
+.btn-peligro:hover{background:#8a0019;border-color:#8a0019}
+.btn-texto{background:none;border:0;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;padding:6px 0}
+.btn-texto:hover{color:var(--ink)}
+.btn-quitar{background:none;border:0;width:32px;height:32px;border-radius:8px;color:var(--muted2);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.btn-quitar:hover{background:var(--red-lt);color:var(--red)}
+
+.titulo-fila{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:22px 0 16px;flex-wrap:wrap}
+.kicker{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac);margin-bottom:6px}
+.mes-titulo{margin:0;font-size:42px;line-height:1;font-weight:900;font-stretch:115%;letter-spacing:-.01em;text-transform:uppercase;overflow-wrap:anywhere}
+.rotulo{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2)}
+.sec-t{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.sec-t .linea{flex:1;height:1px;background:rgba(0,0,0,.12)}
+.sec-t .cuenta{font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.08em}
+.vacio-caja{padding:28px 20px;border:1px dashed rgba(0,0,0,.2);border-radius:12px;text-align:center;font-size:14px;color:var(--muted);text-wrap:pretty}
+.seg{display:flex;padding:4px;background:var(--sf);border-radius:9px;gap:2px}
+.seg button{border:0;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);white-space:nowrap}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button:disabled{cursor:not-allowed;opacity:.5}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:1px solid rgba(0,0,0,.14);background:#fff;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--ac-lt);color:var(--ac-dk);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+.badge{font-size:9.5px;font-weight:800;letter-spacing:.08em;padding:3px 6px;border-radius:4px;white-space:nowrap;text-transform:uppercase}
+.b-hoy{background:var(--gold);color:var(--ink)}
+.b-ok{background:var(--ac-lt);color:var(--ac)}
+.b-pend{background:var(--gold-lt);color:var(--gold-dk)}
+.b-no{background:var(--red-lt);color:var(--red)}
+.b-gris{background:#ecebe8;color:var(--muted)}
+.b-azul{background:var(--blue-lt);color:var(--blue)}
+
+/* ---- Tarjetas / cajas ---- */
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px}
+.panel-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(0,0,0,.08);flex-wrap:wrap}
+.panel-cuerpo{padding:18px 20px}
+.caja{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card{display:grid;grid-template-columns:60px minmax(0,1fr);gap:14px;padding:14px;border-radius:12px;background:#fff;border:2px solid transparent;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:border-color .15s,box-shadow .15s}
+.card.clic{cursor:pointer}
+.card.clic:hover{box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.card.sel{border-color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.card-fecha{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;padding:8px 0;background:var(--soft);color:var(--ink);align-self:start;min-height:64px}
+.card.hoy .card-fecha{background:var(--gold)}
+.card-dow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.card-dia{font-size:28px;font-weight:900;font-stretch:112%;line-height:1}
+.card-cuerpo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.card-tipo{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;min-width:0;flex-wrap:wrap}
+.card-hora{margin-left:auto;font-weight:600;color:var(--muted);white-space:nowrap}
+.card-tema{font-size:16px;font-weight:600;line-height:1.3;text-wrap:pretty;overflow-wrap:anywhere}
+.card-sub{font-size:13px;color:var(--muted)}
+.card-pie{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid rgba(0,0,0,.07)}
+.fila:first-child{border-top:0}
+
+/* ---- Formularios ---- */
+.campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.campo-l{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.campo-ayuda{font-size:12px;color:var(--muted2);line-height:1.4}
+.inp{width:100%;min-height:42px;font-size:14px;padding:9px 12px;border:1px solid rgba(0,0,0,.18);border-radius:8px;background:#fff;color:var(--ink);outline:none;transition:border-color .15s}
+.inp:hover{border-color:rgba(0,0,0,.35)}
+.inp:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+textarea.inp{line-height:1.5;resize:vertical}
+select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235d5a55' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;cursor:pointer}
+.inp:disabled{background:var(--soft);color:var(--muted2);cursor:not-allowed}
+.check{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;min-height:36px}
+.check input{width:18px;height:18px;accent-color:var(--ac);flex:none}
+
+/* ---- Modales ---- */
+.velo{position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{width:min(100%,440px);max-height:90vh;overflow-y:auto;background:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.modal-cab{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.modal-acc{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.aviso{padding:12px 16px;border-radius:12px;background:var(--ac-lt);color:var(--ac-dk);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media (min-width:861px){ .solo-movil{display:none !important} }
+@media (max-width:860px){
+  .solo-desk{display:none !important}
+  .pag{padding:0 16px 40px}
+  .top{min-height:52px;gap:10px}
+  .top-der{gap:10px}
+  .avatar{width:32px;height:32px}
+  .titulo-fila{padding:16px 0 10px}
+  .kicker{font-size:10px;margin-bottom:4px}
+  .mes-titulo{font-size:31px}
+  .nav-movil{margin:0 -16px;padding:10px 16px 0}
+  .card{grid-template-columns:54px minmax(0,1fr);gap:12px;padding:12px;border-radius:14px;border:1px solid rgba(0,0,0,.07);box-shadow:none}
+  .card-dow{font-size:10px}
+  .card-dia{font-size:24px}
+  .card-tema{font-size:15px}
+  .panel{border-radius:14px;border:0}
+  .panel-cab,.panel-cuerpo{padding:14px 16px}
+  .caja{border:0;border-radius:14px}
+  .inp{font-size:16px;min-height:46px}
+  .btn-pri{min-height:46px;border-radius:10px;font-size:14px}
+  .velo{padding:0;align-items:flex-end}
+  .modal{width:100%;border-radius:20px 20px 0 0;padding:18px 16px 24px}
+  .modal-acc .btn-pri,.modal-acc .btn-sec{flex:1;min-height:46px}
+}
+/* ---- Dashboard ---- */
+.dash{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
+.dash-lista{display:flex;flex-direction:column;gap:10px}
+.dash-aside{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px}
+.perfil{display:flex;align-items:center;gap:14px}
+.perfil-avatar{width:56px;height:56px;border-radius:50%;background:var(--ink);color:#fff;font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.resp{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:10px;margin-top:4px;border-top:1px solid rgba(0,0,0,.07)}
+.resp-l{font-size:12px;font-weight:700;color:var(--muted)}
+.resp .seg button{min-width:64px}
+.resp .seg button.si.on{background:var(--ac);color:#fff}
+.resp .seg button.no.on{background:var(--red);color:#fff}
+.motivo{font-size:12.5px;color:var(--red);background:var(--red-lt);border-radius:8px;padding:8px 10px}
+.disp-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,0,0,.08)}
+.disp-form .full{grid-column:1/-1}
+@media (max-width:860px){
+  .dash{display:flex;flex-direction:column;gap:22px}
+  .dash-aside{position:static;display:contents}
+  .o-1{order:1}.o-2{order:2}.o-3{order:3}
+  .resp{flex-direction:column;align-items:stretch}
+  .resp .seg{width:100%}
+  .resp .seg button{flex:1;min-height:40px}
+}
+@media (max-width:480px){ .disp-form{grid-template-columns:1fr} }
+
+/* ---- Barra de pestañas (teléfono) ---- */
+.tabbar{display:none}
+.mas-cab{display:flex;align-items:center;gap:12px;padding:0 0 14px;border-bottom:1px solid rgba(0,0,0,.08)}
+.mas-lista{display:flex;flex-direction:column;padding-top:4px}
+a.mas-fila,.mas-fila{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:0 4px;border:0;border-bottom:1px solid rgba(0,0,0,.06);background:none;font-size:15px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;width:100%;font-family:inherit}
+a.mas-fila:hover{background:none;color:var(--ink)}
+.mas-fila.peligro{color:var(--red);border-bottom:0}
+.agarre{width:40px;height:4px;border-radius:2px;background:#d4d1cb;margin:0 auto 14px}
+@media (max-width:860px){
+  .nav-movil{display:none !important}
+  .pag{padding-bottom:104px}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(0,0,0,.1);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;border:0;background:none;color:var(--muted2);font-size:10.5px;font-weight:700;letter-spacing:.02em;cursor:pointer;padding:0;font-family:inherit}
+  a.tab{border-bottom:0}
+  a.tab:hover{background:none;color:var(--ink)}
+  .tab-ico{width:48px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .tab.on{color:var(--ink)}
+  .tab.on .tab-ico{background:var(--ink);color:#fff}
+  .tab.off{opacity:.4;pointer-events:none}
+  .toast{bottom:92px}
 }
 </style>
 </helmet>
-<div style="max-width:980px;margin:0 auto;padding:0 20px 96px">
+<div class="pag">
 
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
-    <div style="display:flex;align-items:baseline;gap:12px;min-width:0">
-      <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
-      <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Dashboard{{ orgTituloSufijo }}</span>
+  <header class="top">
+    <div class="top-org">
+      <span class="top-cuadro"></span>
+      <span class="top-nombre">{{ orgNombreTop }}</span>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
-        <button onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
+    <div class="top-der">
+      <nav class="top-nav nav-ancho">
+        <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
+          <a class="nav-link" href="{{ ma.href }}">{{ ma.label }}</a>
+        </sc-for>
+      </nav>
+      <span class="sep-v nav-ancho"></span>
+      <div class="usuario">
+        <span class="avatar" title="{{ usuarioNombre }}">{{ usuarioIniciales }}</span>
+        <span class="usuario-nombre">{{ usuarioNombre }}</span>
       </div>
+      <button type="button" class="btn-sec solo-desk" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
     </div>
-  </div>
-
-  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
+  </header>
+  <nav class="nav-movil nav-angosto">
     <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
-      <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
+      <a class="btn-sec" href="{{ ma.href }}">{{ ma.label }}</a>
     </sc-for>
-  </div>
+  </nav>
 
   <sc-if value="{{ cargando }}" hint-placeholder-val="{{ false }}">
-    <p style="padding:40px 0;font-size:14px;color:#7d7979">Cargando…</p>
+    <p style="padding:48px 0;font-size:14px;color:var(--muted2);text-align:center">Cargando…</p>
   </sc-if>
 
   <sc-if value="{{ sinOrg }}" hint-placeholder-val="{{ false }}">
-    <div style="max-width:480px;margin:60px auto;text-align:center;border:2px solid var(--ink);padding:32px 24px">
-      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">Sin organización asignada</div>
-      <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:10px">Todavía no perteneces a ninguna organización. Pide a un administrador que te asigne una.</p>
+    <div class="panel" style="max-width:480px;margin:60px auto;text-align:center;padding:32px 24px">
+      <div class="kicker">Sin organización asignada</div>
+      <p style="font-size:14px;line-height:1.5;color:var(--muted);margin:10px 0 0">Todavía no perteneces a ninguna organización. Pide a un administrador que te asigne una.</p>
     </div>
   </sc-if>
 
-  <sc-if value="{{ listo }}" hint-placeholder-val="{{ false }}">
+  <sc-if value="{{ listo }}" hint-placeholder-val="{{ true }}">
 
     <sc-if value="{{ viewOnlyActivo }}" hint-placeholder-val="{{ false }}">
-      <div style="margin-top:16px;padding:12px 16px;border:2px solid var(--ac-dk);background:var(--ac-lt);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-        <span style="font-size:13px;font-weight:700;color:var(--ac-dk)">Viendo el dashboard de {{ musicoNombreVisto }} — solo lectura, no puedes decidir por otra persona.</span>
-        <a href="{{ miDashboardHref }}" style="font-size:12px;font-weight:700;letter-spacing:.04em;padding:6px 10px;border:2px solid var(--ac-dk);color:var(--ac-dk);background:#fff">Volver a mi dashboard</a>
+      <div class="aviso" style="margin-top:16px">
+        <span>Viendo el dashboard de {{ musicoNombreVisto }} · solo lectura</span>
+        <a class="btn-sec" href="{{ miDashboardHref }}">Volver a mi dashboard</a>
       </div>
     </sc-if>
 
-    <div class="dash-grid">
-      <div class="dash-side">
-        <div class="dash-perfil">
-          <div class="dash-avatar" style="width:64px;height:64px;border-radius:50%;background:var(--sf);border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#9a9694">{{ inicial }}</div>
-          <div class="dash-nombre" style="font-size:18px;font-weight:800;margin-top:14px">{{ musicoNombre }}</div>
-          <div class="dash-roles" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
-            <sc-for list="{{ rolesBanda }}" as="rb" hint-placeholder-count="2">
-              <span style="font-size:11px;font-weight:700;letter-spacing:.02em;border:2px solid var(--ac);background:var(--ac-lt);color:var(--ac-dk);padding:4px 8px">{{ rb.tipo }}</span>
-            </sc-for>
+    <div class="titulo-fila">
+      <div class="perfil">
+        <span class="perfil-avatar">{{ inicial }}</span>
+        <div style="min-width:0;display:flex;flex-direction:column;gap:8px">
+          <div>
+            <div class="kicker">Mi dashboard</div>
+            <h1 class="mes-titulo">{{ musicoNombre }}</h1>
           </div>
-          <p style="{{ sinRolesStyle }}">Sin roles de banda asignados todavía.</p>
+          <div class="chips">
+            <sc-for list="{{ rolesBanda }}" as="rb" hint-placeholder-count="2">
+              <span class="tag">{{ rb.tipo }}</span>
+            </sc-for>
+            <sc-if value="{{ sinRoles }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:12px;color:var(--muted2)">Sin roles de banda asignados todavía</span>
+            </sc-if>
+          </div>
         </div>
       </div>
+    </div>
 
-      <div class="dash-main">
-        <h2 style="font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:0 0 4px">Próximos eventos</h2>
-        <p style="font-size:12px;color:#7d7979;margin:0 0 16px">{{ orgNombre }}</p>
+    <div class="dash">
+      <section class="o-1" style="min-width:0">
+        <h2 class="sec-t">Próximos eventos <span class="cuenta">{{ eventosCuenta }}</span><span class="linea"></span></h2>
 
-        <sc-if value="{{ sinPerfil }}" hint-placeholder-val="{{ false }}">
-          <p style="font-size:13px;color:#7d7979;padding:12px 0">Todavía no tienes un perfil de músico vinculado a una cuenta. Contacta a un administrador para que te vincule a tus eventos.</p>
+        <sc-if value="{{ pendientesTexto }}" hint-placeholder-val="{{ false }}">
+          <div class="aviso" style="background:var(--gold-lt);color:var(--gold-dk);margin-bottom:12px">{{ pendientesTexto }}</div>
         </sc-if>
 
-        <sc-for list="{{ eventosLista }}" as="ev" hint-placeholder-count="2">
-          <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-            <div>
-              <div style="font-size:12px;color:#7d7979">{{ ev.orgNombre }}</div>
-              <div style="font-size:16px;font-weight:800">{{ ev.fechaLarga }} · {{ ev.hora }}</div>
-              <div style="font-size:13px;color:#54514f">{{ ev.servicio }}</div>
-            </div>
-            <label class="dash-confirmo">
-              <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Confirmo asistencia</span>
-              <select value="{{ ev.respuesta }}" onChange="{{ ev.onRespuesta }}" disabled="{{ ev.botonesDeshabilitados }}" style="{{ ev.respuestaStyle }}">
-                <sc-for list="{{ ev.opciones }}" as="op" hint-placeholder-count="3">
-                  <option value="{{ op.value }}">{{ op.label }}</option>
-                </sc-for>
-              </select>
-            </label>
-            <div style="{{ ev.motivoStyle }}">Declinaste · Motivo: {{ ev.motivo }}</div>
-          </div>
-        </sc-for>
-        <p style="{{ sinEventosStyle }}">No tienes próximos eventos asignados.</p>
+        <sc-if value="{{ sinPerfil }}" hint-placeholder-val="{{ false }}">
+          <div class="vacio-caja">Todavía no tienes un perfil de músico vinculado a tu cuenta. Pide a un administrador que te vincule a tus eventos.</div>
+        </sc-if>
 
-        <div id="disponibilidad" style="margin-top:32px;padding-top:20px;border-top:2px solid var(--ink)">
-          <h2 style="font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:0 0 12px">Fechas no disponibles</h2>
-
-          <sc-for list="{{ unavailableLista }}" as="u" hint-placeholder-count="2">
-            <div style="border:1px solid #eae9e9;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-              <div>
-                <div style="font-size:14px;font-weight:700">{{ u.rango }}</div>
-                <div style="{{ u.motivoStyle }}">{{ u.motivo }}</div>
+        <div class="dash-lista">
+          <sc-for list="{{ eventosLista }}" as="ev" hint-placeholder-count="3">
+            <article class="{{ ev.clase }}">
+              <div class="card-fecha">
+                <span class="card-dow">{{ ev.dow }}</span>
+                <span class="card-dia">{{ ev.dia }}</span>
               </div>
-              <button type="button" onClick="{{ u.eliminar }}" style="font-size:12px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:6px 10px;cursor:pointer">Quitar</button>
-            </div>
+              <div class="card-cuerpo">
+                <div class="card-tipo">
+                  <span class="{{ ev.badgeClase }}">{{ ev.badgeTexto }}</span>
+                  <sc-if value="{{ ev.esHoy }}" hint-placeholder-val="{{ false }}"><span class="badge b-hoy">Hoy</span></sc-if>
+                  <span class="card-hora">{{ ev.hora }}</span>
+                </div>
+                <div class="card-tema">{{ ev.servicio }}</div>
+                <div class="card-sub">{{ ev.fechaLarga }}<sc-if value="{{ ev.miRol }}" hint-placeholder-val="{{ false }}"> · {{ ev.miRol }}</sc-if></div>
+                <div class="resp">
+                  <span class="resp-l">¿Confirmas tu participación?</span>
+                  <div class="seg">
+                    <button type="button" class="{{ ev.siClase }}" onClick="{{ ev.onSi }}" disabled="{{ ev.botonesDeshabilitados }}">Sí</button>
+                    <button type="button" class="{{ ev.noClase }}" onClick="{{ ev.onNo }}" disabled="{{ ev.botonesDeshabilitados }}">No</button>
+                  </div>
+                </div>
+                <sc-if value="{{ ev.motivo }}" hint-placeholder-val="{{ false }}">
+                  <div class="motivo">Declinaste · {{ ev.motivo }}</div>
+                </sc-if>
+              </div>
+            </article>
           </sc-for>
-          <p style="{{ sinUnavailableStyle }}">No hay fechas marcadas como no disponibles.</p>
+        </div>
+        <sc-if value="{{ sinEventos }}" hint-placeholder-val="{{ false }}">
+          <div class="vacio-caja">No tienes próximos eventos asignados.</div>
+        </sc-if>
+      </section>
 
-          <sc-if value="{{ tienePerfil }}" hint-placeholder-val="{{ false }}">
-            <div class="dash-disp-form" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:14px;padding:14px;background:var(--bg)">
-              <label style="display:flex;flex-direction:column;gap:6px">
-                <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Desde</span>
-                <input type="date" value="{{ nuevaDisponibilidadInicio }}" onChange="{{ onNuevaDisponibilidadInicio }}" style="font-size:14px;padding:8px 10px;border:2px solid var(--ink);background:#fff">
-              </label>
-              <label style="display:flex;flex-direction:column;gap:6px">
-                <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Hasta</span>
-                <input type="date" value="{{ nuevaDisponibilidadFin }}" onChange="{{ onNuevaDisponibilidadFin }}" style="font-size:14px;padding:8px 10px;border:2px solid var(--ink);background:#fff">
-              </label>
-              <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:160px">
-                <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Motivo (opcional)</span>
-                <input value="{{ nuevaDisponibilidadMotivo }}" onChange="{{ onNuevaDisponibilidadMotivo }}" placeholder="Viaje, salud, etc." style="font-size:14px;padding:8px 10px;border:2px solid var(--ink);background:#fff">
-              </label>
-              <button type="button" onClick="{{ agregarDisponibilidad }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:9px 16px;cursor:pointer">Agregar</button>
+      <aside class="dash-aside">
+        <section id="disponibilidad" class="panel o-2">
+          <div class="panel-cab">
+            <div>
+              <div class="rotulo">Disponibilidad</div>
+              <div style="font-size:17px;font-weight:800;margin-top:4px">Fechas no disponibles</div>
             </div>
-          </sc-if>
+          </div>
+          <div class="panel-cuerpo">
+            <sc-for list="{{ unavailableLista }}" as="u" hint-placeholder-count="2">
+              <div class="fila">
+                <div style="min-width:0">
+                  <div style="font-size:14px;font-weight:700">{{ u.rango }}</div>
+                  <sc-if value="{{ u.motivo }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ u.motivo }}</div>
+                  </sc-if>
+                </div>
+                <button type="button" class="btn-quitar" onClick="{{ u.eliminar }}" aria-label="Quitar" title="Quitar">✕</button>
+              </div>
+            </sc-for>
+            <sc-if value="{{ sinUnavailable }}" hint-placeholder-val="{{ false }}">
+              <p style="font-size:13px;color:var(--muted2);margin:0">No hay fechas marcadas.</p>
+            </sc-if>
+
+            <sc-if value="{{ tienePerfil }}" hint-placeholder-val="{{ true }}">
+              <div class="disp-form">
+                <label class="campo">
+                  <span class="campo-l">Desde</span>
+                  <input class="inp" type="date" value="{{ nuevaDisponibilidadInicio }}" onChange="{{ onNuevaDisponibilidadInicio }}">
+                </label>
+                <label class="campo">
+                  <span class="campo-l">Hasta</span>
+                  <input class="inp" type="date" value="{{ nuevaDisponibilidadFin }}" onChange="{{ onNuevaDisponibilidadFin }}">
+                </label>
+                <label class="campo full">
+                  <span class="campo-l">Motivo (opcional)</span>
+                  <input class="inp" value="{{ nuevaDisponibilidadMotivo }}" onChange="{{ onNuevaDisponibilidadMotivo }}" placeholder="Viaje, salud, etc.">
+                </label>
+                <button type="button" class="btn-pri full" onClick="{{ agregarDisponibilidad }}" disabled="{{ agregarDeshabilitado }}">Agregar fecha</button>
+              </div>
+            </sc-if>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </sc-if>
+
+  <nav class="tabbar" aria-label="Navegación principal">
+    <sc-for list="{{ tabsMovil }}" as="t" hint-placeholder-count="3">
+      <a class="{{ t.clase }}" href="{{ t.href }}" onClick="{{ t.onClick }}">
+        <span class="tab-ico">
+          <sc-if value="{{ t.icoEventos }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg></sc-if>
+          <sc-if value="{{ t.icoUsuarios }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.6 3 5.2"></path></svg></sc-if>
+          <sc-if value="{{ t.icoRepertorio }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></sc-if>
+          <sc-if value="{{ t.icoInicio }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg></sc-if>
+          <sc-if value="{{ t.icoCalendario }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></sc-if>
+        </span>
+        <span>{{ t.label }}</span>
+      </a>
+    </sc-for>
+    <button type="button" class="{{ masClase }}" onClick="{{ toggleMas }}">
+      <span class="tab-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></span>
+      <span>Más</span>
+    </button>
+  </nav>
+
+  <sc-if value="{{ masAbierto }}" hint-placeholder-val="{{ false }}">
+    <div class="velo" onClick="{{ toggleMas }}">
+      <div class="modal" onClick="{{ detenerMas }}">
+        <div class="agarre"></div>
+        <div class="mas-cab">
+          <span class="avatar" style="width:40px;height:40px;font-size:14px">{{ usuarioIniciales }}</span>
+          <div style="min-width:0">
+            <div style="font-size:15px;font-weight:700">{{ usuarioNombre }}</div>
+            <div style="font-size:12.5px;color:var(--muted)">{{ masSub }}</div>
+          </div>
+        </div>
+        <div class="mas-lista">
+          <sc-for list="{{ masItems }}" as="mi" hint-placeholder-count="2">
+            <a class="mas-fila" href="{{ mi.href }}" onClick="{{ mi.onClick }}"><span>{{ mi.label }}</span><span style="color:var(--muted3);font-size:18px">›</span></a>
+          </sc-for>
+          <button type="button" class="mas-fila peligro" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
         </div>
       </div>
     </div>
   </sc-if>
 
   <sc-if value="{{ declinarAbierto }}" hint-placeholder-val="{{ false }}">
-    <div style="position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ cerrarDeclinar }}">
-      <div style="width:min(100%,400px);background:#fff;border:2px solid var(--ink);padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.28)" onClick="{{ detenerPropagacion }}">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Declinar participación</span>
-          <button type="button" onClick="{{ cerrarDeclinar }}" aria-label="Cerrar" style="font-size:14px;border:0;background:transparent;color:#7d7979;cursor:pointer;padding:2px">✕</button>
+    <div class="velo" onClick="{{ cerrarDeclinar }}">
+      <div class="modal" onClick="{{ detenerPropagacion }}">
+        <div class="modal-cab">
+          <span class="kicker" style="color:var(--red);margin:0">Declinar participación</span>
+          <button type="button" class="btn-quitar" onClick="{{ cerrarDeclinar }}" aria-label="Cerrar">✕</button>
         </div>
-        <p style="font-size:13px;color:#54514f;margin:8px 0 0">{{ declinarResumen }}</p>
-        <label style="display:flex;flex-direction:column;gap:6px;margin-top:16px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Motivo</span>
-          <textarea value="{{ declinarMotivo }}" onChange="{{ onDeclinarMotivo }}" rows="3" maxLength="500" placeholder="Viaje, salud, trabajo…" style="font-size:14px;line-height:1.5;padding:8px 10px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
+        <p style="font-size:15px;font-weight:600;margin:6px 0 0;line-height:1.4">{{ declinarResumen }}</p>
+        <label class="campo" style="margin-top:16px">
+          <span class="campo-l">Motivo</span>
+          <textarea class="inp" value="{{ declinarMotivo }}" onChange="{{ onDeclinarMotivo }}" rows="3" maxLength="500" placeholder="Viaje, salud, trabajo…"></textarea>
         </label>
-        <p style="font-size:12px;color:#7d7979;margin:8px 0 0">Esta fecha se agregará a tus fechas no disponibles.</p>
-        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
-          <button type="button" onClick="{{ cerrarDeclinar }}" style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cancelar</button>
-          <button type="button" onClick="{{ confirmarDeclinar }}" disabled="{{ declinarDeshabilitado }}" style="{{ confirmarDeclinarStyle }}">Declinar</button>
+        <p class="campo-ayuda" style="margin:8px 0 0">Esta fecha se agregará a tus fechas no disponibles.</p>
+        <div class="modal-acc">
+          <button type="button" class="btn-sec" onClick="{{ cerrarDeclinar }}">Cancelar</button>
+          <button type="button" class="btn-pri btn-peligro" onClick="{{ confirmarDeclinar }}" disabled="{{ declinarDeshabilitado }}">Declinar</button>
         </div>
       </div>
     </div>
@@ -263,7 +516,7 @@ class Component extends DCLogic {
     org: null, currentOrgId: null,
     miMusicianId: null, effectiveMusicianId: null, viewOnlyActivo: false,
     musico: null, eventos: [], unavailableDates: [],
-    nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: '',
+    nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: '', masAbierto: false,
     declinar: null, declinarMotivo: ''
   };
 
@@ -385,25 +638,29 @@ class Component extends DCLogic {
 
     const eventosLista = propios.map(({ ev, slot }) => {
       const estado = R.estadoConfirmacionSlot(slot);
-      const respuesta = estado === 'aceptado' ? 'si' : (estado === 'rechazado' ? 'no' : '');
-      const color = estado === 'aceptado' ? 'var(--ac)' : (estado === 'rechazado' ? '#b00020' : 'var(--ink)');
-      const opciones = (respuesta ? [] : [{ value: '', label: '— Seleccionar —' }])
-        .concat([{ value: 'si', label: 'Sí' }, { value: 'no', label: 'No' }]);
+      const dn = R.diaNombre(ev.fecha) || '';
+      const badge = estado === 'aceptado' ? ['badge b-ok', 'Confirmado'] : (estado === 'rechazado' ? ['badge b-no', 'Declinaste'] : ['badge b-pend', 'Acción Requerida']);
       return {
         id: ev.id,
-        orgNombre: s.org ? s.org.name : '',
-        fechaLarga: R.fechaLarga(ev.fecha) + ' (' + R.diaNombre(ev.fecha) + ')',
+        clase: 'card' + (ev.fecha === hoy ? ' hoy' : ''),
+        esHoy: ev.fecha === hoy,
+        dow: dn.slice(0, 3),
+        dia: String(parseInt((ev.fecha || '').slice(8), 10) || ''),
+        fechaLarga: dn.charAt(0).toUpperCase() + dn.slice(1) + ', ' + R.fechaLarga(ev.fecha),
         hora: ev.hora,
         servicio: ev.servicio,
+        miRol: R.bandaLabel ? R.bandaLabel(slot) : (slot.tipo || ''),
+        badgeClase: badge[0], badgeTexto: badge[1],
         botonesDeshabilitados: botonesDeshabilitados,
-        respuesta: respuesta,
-        opciones: opciones,
-        onRespuesta: (e) => this.onRespuesta(ev, slot, e.target.value),
-        respuestaStyle: 'font-size:14px;font-weight:700;padding:8px 10px;border:2px solid ' + color + ';background:#fff;color:' + color + ';cursor:pointer',
-        motivo: slot.motivoDeclinacion || '',
-        motivoStyle: estado === 'rechazado' && slot.motivoDeclinacion ? 'flex-basis:100%;font-size:12px;color:#b00020' : 'display:none'
+        siClase: 'si' + (estado === 'aceptado' ? ' on' : ''),
+        noClase: 'no' + (estado === 'rechazado' ? ' on' : ''),
+        onSi: () => { if (estado !== 'aceptado') this.onRespuesta(ev, slot, 'si'); },
+        onNo: () => this.onRespuesta(ev, slot, 'no'),
+        motivo: estado === 'rechazado' ? (slot.motivoDeclinacion || '') : '',
+        pendiente: estado === 'pendiente'
       };
     });
+    const pendientes = eventosLista.filter((e) => e.pendiente).length;
     const declinarEv = s.declinar ? s.declinar.ev : null;
     const declinarMotivoOk = !!(s.declinarMotivo || '').trim();
 
@@ -411,7 +668,6 @@ class Component extends DCLogic {
       id: u.id,
       rango: u.startDate === u.endDate ? R.fechaLarga(u.startDate) : (R.fechaLarga(u.startDate) + ' – ' + R.fechaLarga(u.endDate)),
       motivo: u.reason || '',
-      motivoStyle: u.reason ? 'font-size:12px;color:#7d7979' : 'display:none',
       eliminar: () => this.eliminarDisponibilidad(u.id)
     }));
 
@@ -423,6 +679,28 @@ class Component extends DCLogic {
       sinOrg: s.estadoAuth === 'sinOrg',
       listo: s.estadoAuth === 'listo',
       usuarioNombre: s.usuarioNombre || '',
+      usuarioIniciales: ((s.usuarioNombre || '').trim().split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('') || '?').toUpperCase(),
+      orgNombreTop: s.org ? s.org.name : 'Dashboard',
+      tabsMovil: [{
+        label: 'Inicio', href: '#', clase: 'tab on',
+        icoEventos: false, icoUsuarios: false, icoRepertorio: false, icoInicio: true, icoCalendario: false,
+        onClick: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ masAbierto: false }); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      }].concat(window.RepertorioMenu.accionesDashboard(s.org, s.userDoc).map((a) => ({
+        label: a.id === 'publicado' ? 'Calendario' : (a.id === 'eventos' ? 'Eventos' : a.label), href: a.href, clase: 'tab',
+        icoEventos: a.id === 'eventos', icoUsuarios: false, icoRepertorio: false, icoInicio: false, icoCalendario: a.id === 'publicado',
+        onClick: () => {}
+      }))),
+      masAbierto: s.masAbierto,
+      masClase: 'tab' + (s.masAbierto ? ' on' : ''),
+      toggleMas: () => this.setState((st) => ({ masAbierto: !st.masAbierto })),
+      detenerMas: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      masSub: s.org ? s.org.name : '',
+      masItems: [{ label: 'Fechas no disponibles', href: '#disponibilidad', onClick: (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        this.setState({ masAbierto: false });
+        const el = document.getElementById('disponibilidad');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } }],
       cerrarSesion: () => D().signOutUser(),
       orgNombre: s.org ? s.org.name : '',
       orgTituloSufijo: s.org ? (' · ' + s.org.name) : '',
@@ -436,15 +714,18 @@ class Component extends DCLogic {
       inicial: (nombre.trim().charAt(0) || '?').toUpperCase(),
       musicoNombre: nombre || 'Sin nombre',
       rolesBanda: rolesBanda,
-      sinRolesStyle: rolesBanda.length === 0 ? 'font-size:12px;color:#9a9694;margin-top:8px' : 'display:none',
+      sinRoles: rolesBanda.length === 0,
 
       sinPerfil: !s.effectiveMusicianId,
       tienePerfil: !!s.effectiveMusicianId,
       eventosLista: eventosLista,
-      sinEventosStyle: (eventosLista.length === 0 && s.effectiveMusicianId) ? 'font-size:13px;color:#9a9694;padding:8px 2px' : 'display:none',
+      sinEventos: eventosLista.length === 0 && !!s.effectiveMusicianId,
+      eventosCuenta: eventosLista.length ? String(eventosLista.length) : '',
+      pendientesTexto: (pendientes && !botonesDeshabilitados) ? (pendientes === 1 ? 'Tienes 1 evento esperando tu confirmación.' : 'Tienes ' + pendientes + ' eventos esperando tu confirmación.') : '',
 
       unavailableLista: unavailableLista,
-      sinUnavailableStyle: unavailableLista.length === 0 ? 'font-size:13px;color:#9a9694;padding:4px 2px' : 'display:none',
+      sinUnavailable: unavailableLista.length === 0,
+      agregarDeshabilitado: !(s.nuevaDisponibilidadInicio || '').trim(),
       nuevaDisponibilidadInicio: s.nuevaDisponibilidadInicio,
       onNuevaDisponibilidadInicio: (e) => this.setState({ nuevaDisponibilidadInicio: e.target.value }),
       nuevaDisponibilidadFin: s.nuevaDisponibilidadFin,
@@ -460,9 +741,7 @@ class Component extends DCLogic {
       cerrarDeclinar: () => this.setState({ declinar: null, declinarMotivo: '' }),
       detenerPropagacion: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       confirmarDeclinar: () => this.confirmarDeclinar(),
-      declinarDeshabilitado: !declinarMotivoOk,
-      confirmarDeclinarStyle: 'font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:8px 14px;border:2px solid #b00020;background:#b00020;color:#fff;cursor:' +
-        (declinarMotivoOk ? 'pointer' : 'not-allowed;opacity:.5')
+      declinarDeshabilitado: !declinarMotivoOk
     };
   }
 }

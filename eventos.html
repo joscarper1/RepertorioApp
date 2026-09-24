@@ -6,15 +6,15 @@
 <script src="./support.js"></script>
 </head>
 <body>
-<div id="repertorio-checking" style="position:fixed;inset:0;background:var(--bg,#f3f2f2);display:flex;align-items:center;justify-content:center;z-index:2147483647">
-  <p style="font-size:14px;color:#7d7979;font-family:Archivo,sans-serif">Cargando…</p>
+<div id="repertorio-checking" style="position:fixed;inset:0;background:#efeeeb;display:flex;align-items:center;justify-content:center;z-index:2147483647">
+  <p style="font-size:14px;color:#8a867f;font-family:Archivo,sans-serif">Cargando…</p>
 </div>
-<div id="repertorio-gate" style="position:fixed;inset:0;background:rgba(243,242,242,.97);display:none;align-items:center;justify-content:center;z-index:2147483647;padding:20px">
-  <div style="width:min(100%,420px);background:#fff;border:2px solid var(--ink,#201e1d);padding:24px 24px 20px;box-shadow:0 16px 40px rgba(0,0,0,.12)">
-    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk,#08512c)">Acceso restringido</div>
-    <h2 style="font-size:28px;font-weight:800;margin:10px 0 0;text-transform:uppercase">Inicia sesión</h2>
-    <p style="font-size:14px;line-height:1.5;color:#54514f;margin:10px 0 0">Este formulario es solo para el equipo de alabanza. Entra con la cuenta de Google autorizada.</p>
-    <button id="repertorio-gate-signin" type="button" style="width:100%;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac,#0f7d45);background:var(--ac,#0f7d45);color:#fff;padding:10px 14px;cursor:pointer;margin-top:18px">Iniciar sesión con Google</button>
+<div id="repertorio-gate" style="position:fixed;inset:0;background:#efeeeb;display:none;align-items:center;justify-content:center;z-index:2147483647;padding:20px;font-family:Archivo,system-ui,sans-serif;color:#1d1b19">
+  <div style="width:min(100%,420px);background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,.08);padding:28px 24px 22px;box-shadow:0 16px 40px rgba(0,0,0,.10)">
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:14px;height:14px;background:#0e7a3c;flex:none"></span><span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#0e7a3c">Acceso restringido</span></div>
+    <h2 style="font-size:30px;font-weight:900;margin:12px 0 0;text-transform:uppercase;line-height:1">Inicia sesión</h2>
+    <p style="font-size:14px;line-height:1.5;color:#5d5a55;margin:10px 0 0">Este panel es solo para administradores. Entra con la cuenta de Google autorizada.</p>
+    <button id="repertorio-gate-signin" type="button" style="width:100%;min-height:46px;font-size:14px;font-weight:700;border:0;border-radius:10px;background:#1d1b19;color:#fff;padding:0 16px;cursor:pointer;margin-top:20px">Iniciar sesión con Google</button>
     <div id="repertorio-gate-error" style="min-height:18px;font-size:13px;color:#b00020;margin-top:8px"></div>
   </div>
 </div>
@@ -23,7 +23,7 @@
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/styles.css">
 <script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -36,402 +36,743 @@
 <script src="cifrado.js?v=20260923e"></script>
 <script src="repertorio-data.js?v=20260923e"></script>
 <style>
-:root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
+:root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body,Archivo),Archivo,sans-serif;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:'Archivo',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip}
+button,input,select,textarea{font-family:inherit;color:inherit}
 a{color:var(--ac-dk);text-decoration:none;border-bottom:1px solid var(--ac)}
 a:hover{color:#fff;background:var(--ac)}
-input,textarea,button{font-family:inherit;color:inherit;border-radius:0}
-input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
-input::placeholder,textarea::placeholder{color:#bab6b6}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+input::placeholder,textarea::placeholder{color:var(--muted3)}
 ::selection{background:var(--ac-lt)}
-.admin-shell{display:flex;align-items:stretch;margin-top:24px;min-height:60vh;border:2px solid var(--ink);position:relative}
-.admin-side{width:240px;flex:0 0 240px;border-right:2px solid var(--ink);background:#fff;display:flex;flex-direction:column;transition:transform .25s ease}
-.admin-main{flex:1;min-width:0;padding:28px 32px;background:#fff}
-.side-group{padding:16px 14px;border-bottom:1px solid #eae9e9}
-.side-kicker{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#9a9694;padding:0 2px 8px}
-.admin-burger{display:none;width:38px;height:38px;align-items:center;justify-content:center;border:2px solid var(--ink);background:transparent;cursor:pointer;font-size:16px;flex:0 0 auto}
-.admin-backdrop{display:none}
-.field-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.slot-grid{display:grid;grid-template-columns:170px 1fr auto 20px;gap:8px;align-items:center}
-.cancion-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.cancion-grid-4{display:grid;grid-template-columns:1fr 64px 22px 22px 20px;gap:8px;align-items:center}
-/* Calendario del paso 1: una sola cuadrícula (cabecera y cuerpo con las
-   mismas columnas); minmax(0,1fr) impide que el contenido de una celda
-   ensanche su columna y descuadre el mes. */
-.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
-.cal-celda{min-width:0;overflow:hidden}
-.cal-mes{font-size:32px}
-.paso-tab{overflow-wrap:anywhere}
+
+/* ---- Estructura / barra superior (igual que index) ---- */
+.pag{max-width:1320px;margin:0 auto;padding:0 32px 64px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px;border-bottom:1px solid rgba(0,0,0,.12)}
+.top-org{display:flex;align-items:center;gap:10px;min-width:0}
+.top-cuadro{width:14px;height:14px;background:var(--ac);flex:none}
+.top-nombre{font-weight:800;font-size:14px;letter-spacing:.14em;font-stretch:112%;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-der{display:flex;align-items:center;gap:18px;flex:none}
+.top-org{position:relative;min-width:150px;flex:0 1 auto}
+.nav-movil{display:flex;gap:6px;overflow-x:auto;margin:0 -32px;padding:10px 32px 0;scrollbar-width:none}
+.nav-movil::-webkit-scrollbar{display:none}
+.nav-movil a{flex:none}
+@media (min-width:1141px){ .nav-angosto{display:none !important} }
+@media (max-width:1140px){ .nav-ancho{display:none !important} .usuario-nombre{display:none} .top-der{gap:10px} }
+.top-switch{display:flex;align-items:center;gap:8px;background:transparent;border:0;padding:0;cursor:pointer;color:inherit;min-width:0}
+.dropdown{position:absolute;top:100%;left:0;z-index:40;min-width:260px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:10px;margin-top:8px;box-shadow:0 16px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;color:var(--ink)}
+.dropdown input{border:0;border-bottom:1px solid var(--line);padding:12px;font-size:14px;outline:none}
+.dropdown-lista{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;padding:4px}
+.dropdown-item{display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;border-radius:6px;cursor:pointer;background:transparent;color:var(--ink)}
+.dropdown-item:hover{background:var(--soft)}
+.dropdown-item.on{background:var(--ac);color:#fff}
+.sugerencias{position:absolute;top:100%;left:0;right:0;z-index:30;margin-top:4px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.16);max-height:200px;overflow-y:auto;padding:4px}
+.sugerencias button{display:block;width:100%;text-align:left;font-size:13px;padding:9px 10px;border:0;border-radius:6px;background:transparent;cursor:pointer}
+.sugerencias button:hover{background:var(--soft)}
+.nav-mod{display:flex;align-items:center;gap:2px}
+.top-nav{display:flex;align-items:center;gap:6px}
+a.nav-link{font-size:13px;font-weight:600;color:var(--muted);border:0;padding:8px 10px;border-radius:6px;white-space:nowrap}
+a.nav-link:hover{background:var(--sf);color:var(--ink)}
+a.nav-link.on{background:var(--ink);color:#fff}
+a.nav-link.off,a.chip.off{opacity:.4;pointer-events:none}
+a.chip{border-bottom:1px solid rgba(0,0,0,.14)}
+a.chip:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
+a.chip.on,a.chip.on:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:6000;background:var(--ink);color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.25);white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.sep-v{width:1px;height:20px;background:rgba(0,0,0,.15);flex:none}
+.usuario{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.btn-sec{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,.18);border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn-sec:hover{border-color:var(--ink)}
+.btn-sec.on{background:var(--ink);border-color:var(--ink);color:#fff}
+a.btn-sec{border-bottom:1px solid rgba(0,0,0,.18)}
+a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
+.btn-pri{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-pri:hover{background:var(--ac);border-color:var(--ac)}
+.btn-pri:disabled{opacity:.4;cursor:not-allowed;background:var(--ink);border-color:var(--ink)}
+.btn-ac{background:var(--ac);border-color:var(--ac)}
+.btn-ac:hover{background:var(--ac-dk);border-color:var(--ac-dk)}
+.btn-peligro{background:var(--red);border-color:var(--red)}
+.btn-peligro:hover{background:#8a0019;border-color:#8a0019}
+.btn-texto{background:none;border:0;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;padding:6px 0}
+.btn-texto:hover{color:var(--ink)}
+.btn-quitar{background:none;border:0;width:32px;height:32px;border-radius:8px;color:var(--muted2);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.btn-quitar:hover{background:var(--red-lt);color:var(--red)}
+
+.titulo-fila{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:22px 0 16px;flex-wrap:wrap}
+.kicker{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac);margin-bottom:6px}
+.mes-titulo{margin:0;font-size:42px;line-height:1;font-weight:900;font-stretch:115%;letter-spacing:-.01em;text-transform:uppercase;overflow-wrap:anywhere}
+.rotulo{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2)}
+.sec-t{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.sec-t .linea{flex:1;height:1px;background:rgba(0,0,0,.12)}
+.sec-t .cuenta{font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.08em}
+.vacio-caja{padding:28px 20px;border:1px dashed rgba(0,0,0,.2);border-radius:12px;text-align:center;font-size:14px;color:var(--muted);text-wrap:pretty}
+.seg{display:flex;padding:4px;background:var(--sf);border-radius:9px;gap:2px}
+.seg button{border:0;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);white-space:nowrap}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button:disabled{cursor:not-allowed;opacity:.5}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:1px solid rgba(0,0,0,.14);background:#fff;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--ac-lt);color:var(--ac-dk);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+.badge{font-size:9.5px;font-weight:800;letter-spacing:.08em;padding:3px 6px;border-radius:4px;white-space:nowrap;text-transform:uppercase}
+.b-hoy{background:var(--gold);color:var(--ink)}
+.b-ok{background:var(--ac-lt);color:var(--ac)}
+.b-pend{background:var(--gold-lt);color:var(--gold-dk)}
+.b-no{background:var(--red-lt);color:var(--red)}
+.b-gris{background:#ecebe8;color:var(--muted)}
+.b-azul{background:var(--blue-lt);color:var(--blue)}
+
+/* ---- Tarjetas / cajas ---- */
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px}
+.panel-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(0,0,0,.08);flex-wrap:wrap}
+.panel-cuerpo{padding:18px 20px}
+.caja{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card{display:grid;grid-template-columns:60px minmax(0,1fr);gap:14px;padding:14px;border-radius:12px;background:#fff;border:2px solid transparent;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:border-color .15s,box-shadow .15s}
+.card.clic{cursor:pointer}
+.card.clic:hover{box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.card.sel{border-color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.card-fecha{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;padding:8px 0;background:var(--soft);color:var(--ink);align-self:start;min-height:64px}
+.card.hoy .card-fecha{background:var(--gold)}
+.card-dow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.card-dia{font-size:28px;font-weight:900;font-stretch:112%;line-height:1}
+.card-cuerpo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.card-tipo{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;min-width:0;flex-wrap:wrap}
+.card-hora{margin-left:auto;font-weight:600;color:var(--muted);white-space:nowrap}
+.card-tema{font-size:16px;font-weight:600;line-height:1.3;text-wrap:pretty;overflow-wrap:anywhere}
+.card-sub{font-size:13px;color:var(--muted)}
+.card-pie{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid rgba(0,0,0,.07)}
+.fila:first-child{border-top:0}
+
+/* ---- Formularios ---- */
+.campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.campo-l{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.campo-ayuda{font-size:12px;color:var(--muted2);line-height:1.4}
+.inp{width:100%;min-height:42px;font-size:14px;padding:9px 12px;border:1px solid rgba(0,0,0,.18);border-radius:8px;background:#fff;color:var(--ink);outline:none;transition:border-color .15s}
+.inp:hover{border-color:rgba(0,0,0,.35)}
+.inp:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+textarea.inp{line-height:1.5;resize:vertical}
+select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235d5a55' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;cursor:pointer}
+.inp:disabled{background:var(--soft);color:var(--muted2);cursor:not-allowed}
+.check{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;min-height:36px}
+.check input{width:18px;height:18px;accent-color:var(--ac);flex:none}
+
+/* ---- Modales ---- */
+.velo{position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{width:min(100%,440px);max-height:90vh;overflow-y:auto;background:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.modal-cab{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.modal-acc{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.aviso{padding:12px 16px;border-radius:12px;background:var(--ac-lt);color:var(--ac-dk);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media (min-width:861px){ .solo-movil{display:none !important} }
+@media (max-width:860px){
+  .solo-desk{display:none !important}
+  .pag{padding:0 16px 40px}
+  .top{min-height:52px;gap:10px}
+  .top-der{gap:10px}
+  .avatar{width:32px;height:32px}
+  .titulo-fila{padding:16px 0 10px}
+  .kicker{font-size:10px;margin-bottom:4px}
+  .mes-titulo{font-size:31px}
+  .nav-movil{margin:0 -16px;padding:10px 16px 0}
+  .card{grid-template-columns:54px minmax(0,1fr);gap:12px;padding:12px;border-radius:14px;border:1px solid rgba(0,0,0,.07);box-shadow:none}
+  .card-dow{font-size:10px}
+  .card-dia{font-size:24px}
+  .card-tema{font-size:15px}
+  .panel{border-radius:14px;border:0}
+  .panel-cab,.panel-cuerpo{padding:14px 16px}
+  .caja{border:0;border-radius:14px}
+  .inp{font-size:16px;min-height:46px}
+  .btn-pri{min-height:46px;border-radius:10px;font-size:14px}
+  .velo{padding:0;align-items:flex-end}
+  .modal{width:100%;border-radius:20px 20px 0 0;padding:18px 16px 24px}
+  .modal-acc .btn-pri,.modal-acc .btn-sec{flex:1;min-height:46px}
+}
+
+/* ---- Eventos: asistente de 3 pasos ---- */
+.pag.embed{max-width:none;padding:0}
+.pasos{display:flex;align-items:center;gap:10px;padding:18px 0 20px}
+.paso{display:flex;align-items:center;gap:10px;min-width:0;color:var(--muted2)}
+.paso-n{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:none;background:#fff}
+.paso-t{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.paso.on{color:var(--ink)}
+.paso.on .paso-n{background:var(--ink);border-color:var(--ink);color:#fff}
+.paso.done{color:var(--ac-dk)}
+.paso.done .paso-n{background:var(--ac);border-color:var(--ac);color:#fff}
+.paso-linea{flex:1;height:1px;background:rgba(0,0,0,.14);min-width:16px}
+.alerta{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;border-radius:12px;background:var(--red-lt);color:var(--red);font-size:13px;font-weight:700;margin-bottom:16px}
+.alerta .btn-sec{border-color:var(--red);color:var(--red)}
+
+.p1{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:24px;align-items:start}
+.cal{background:#fff;border-radius:14px;border:1px solid var(--line);padding:18px}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.cal-mes{margin:0;font-size:24px;font-weight:900;font-stretch:112%;text-transform:uppercase;letter-spacing:-.01em;text-align:center}
+.flecha-nav{width:38px;height:38px;border-radius:50%;border:1px solid rgba(0,0,0,.14);background:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none}
+.flecha-nav:hover{border-color:var(--ink)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-dow{text-align:center;font-size:11px;font-weight:800;color:var(--muted2);letter-spacing:.1em;padding-bottom:4px;text-transform:uppercase}
+.cal-celda{aspect-ratio:1.15;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:15px;font-weight:500;color:var(--muted);border:1.5px solid transparent;background:transparent;cursor:pointer;min-width:0;position:relative;padding:0}
+.cal-celda:hover{background:var(--soft)}
+.cal-celda.vacia{visibility:hidden;pointer-events:none}
+.cal-celda.ev{background:var(--ac-lt);color:var(--ac-dk);font-weight:800}
+.cal-celda.hoy{border-color:var(--gold)}
+.cal-celda.sel{background:var(--ink);color:#fff;font-weight:800;border-color:var(--ink)}
+.cal-dots{display:flex;gap:3px;height:6px;align-items:center}
+.cal-dots i{width:6px;height:6px;border-radius:50%;background:currentColor;display:block}
+.cal-alerta{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:var(--red)}
+
+.dia-panel{display:flex;flex-direction:column;gap:12px;position:sticky;top:16px}
+.dia-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.dia-t{font-size:22px;font-weight:900;font-stretch:112%;text-transform:uppercase;line-height:1.05;margin:0}
+.evc{background:#fff;border-radius:12px;border:2px solid transparent;box-shadow:0 1px 2px rgba(0,0,0,.05);padding:14px;display:flex;flex-direction:column;gap:10px}
+.evc.sel{border-color:var(--ink)}
+.evc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.evc-hora{font-size:13px;font-weight:800;padding:4px 8px;border-radius:6px;background:var(--soft)}
+.evc-tipo{font-size:12px;font-weight:700;color:var(--muted)}
+.evc-tema{font-size:16px;font-weight:600;line-height:1.3;text-wrap:pretty;overflow-wrap:anywhere}
+.evc-dec{display:flex;flex-direction:column;gap:3px;border-radius:8px;background:var(--red-lt);padding:8px 10px;font-size:12px;color:var(--ink)}
+.evc-acc{display:flex;align-items:center;gap:6px;border-top:1px solid rgba(0,0,0,.07);padding-top:10px}
+.ico{width:36px;height:36px;border-radius:8px;border:1px solid rgba(0,0,0,.14);background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.ico:hover{border-color:var(--ink)}
+.ico.peligro:hover{border-color:var(--red);color:var(--red)}
+.tipos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tipo{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(0,0,0,.12);background:#fff;cursor:pointer;min-height:58px}
+.tipo:hover{border-color:var(--ink)}
+.tipo-n{font-size:14px;font-weight:700;line-height:1.2}
+.tipo-s{font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.02em}
+.tipo.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tipo.on .tipo-s{color:rgba(255,255,255,.7)}
+
+.p2{display:flex;flex-direction:column;gap:16px}
+.p2-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.form-grid{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px}
+.form-col{display:flex;flex-direction:column;gap:16px}
+.inp-aviso{border-color:var(--gold)!important;background:var(--gold-lt)!important}
+.rol{background:#fff;border-radius:12px;border:1px solid var(--line);padding:14px 16px}
+.rol-cab{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.rol-t{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.slot{display:flex;flex-direction:column;gap:8px;padding:10px 0;border-top:1px solid rgba(0,0,0,.07)}
+.slot:first-of-type{border-top:0;padding-top:0}
+.slot-fila{display:grid;grid-template-columns:minmax(0,1fr) auto 32px;gap:6px 10px;align-items:center}
+.slot-l{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--ac-dk)}
+.warn{font-size:11.5px;font-weight:700;color:var(--red);background:var(--red-lt);padding:5px 9px;border-radius:6px;align-self:flex-start}
+.banda-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.parte{display:flex;align-items:center;gap:12px;margin:8px 0 4px}
+.parte .linea{flex:1;height:2px;background:var(--ac)}
+.parte-t{font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk)}
+.seccion{background:#fff;border-radius:12px;border:1px solid var(--line);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.seccion-cab{display:flex;align-items:center;gap:10px}
+.seccion-inp{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:0;border-bottom:1.5px dashed rgba(0,0,0,.2);background:transparent;padding:4px 0;flex:1;min-width:0;outline:none}
+.seccion-inp:focus{border-bottom-color:var(--ink)}
+.can{border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--soft)}
+.can-g1{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px}
+.can-g2{display:grid;grid-template-columns:minmax(0,1fr) 80px auto 36px 32px;gap:8px;align-items:center}
+.cif-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 14px;border-radius:999px;border:1.5px solid var(--ac);background:#fff;color:var(--ac-dk);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.cif-btn:hover{background:var(--ac-lt)}
+.cif-btn.on{background:var(--ac);color:#fff}
+.cif-btn.vacio{border-style:dashed}
+.cif-btn.inactivo{border-color:rgba(0,0,0,.18);color:var(--muted2);cursor:not-allowed;background:#fff}
+.cif-btn.oculto{visibility:hidden;pointer-events:none}
+.banda-sub{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac-dk);margin:10px 0 2px}
+.banda-sub:first-child{margin-top:0}
+.inp-tono{text-align:center;font-weight:800;color:var(--ac-dk);background:var(--ac-lt)!important;border-color:transparent!important}
+.inp-mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px!important;color:var(--muted)}
+.redondo{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--ac);background:#fff;color:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-size:13px}
+.redondo.on{background:var(--ac);color:#fff}
+.redondo.vacio{border-style:dashed;border-color:var(--muted3);color:var(--muted2)}
+.redondo.oculto{visibility:hidden;pointer-events:none}
+
+.p3{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+.rev-cab{padding:24px 28px 20px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;flex-direction:column;gap:10px}
+.rev-dia{margin:0;font-size:44px;font-weight:900;font-stretch:115%;line-height:.95;text-transform:uppercase}
+.rev-cuerpo{padding:22px 28px 28px;display:flex;flex-direction:column;gap:16px}
+.rev-tema{font-size:22px;font-weight:600;line-height:1.25;text-wrap:pretty}
+.cita{font-size:14px;line-height:1.55;color:var(--muted);border-left:2px solid var(--ac);padding-left:12px;white-space:pre-line}
+.callout{background:var(--gold-lt);border-radius:12px;padding:14px 16px}
+.callout-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dk)}
+.callout p{margin:6px 0 0;font-size:14px;line-height:1.55;white-space:pre-line}
+.sec-lista{display:flex;flex-direction:column;border:1px solid rgba(0,0,0,.09);border-radius:10px;overflow:hidden}
+.rcan{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 12px;background:#fff;border-top:1px solid rgba(0,0,0,.07)}
+.rcan:first-child{border-top:0}
+.tono{font-size:12px;font-weight:800;padding:4px 8px;border-radius:5px;background:var(--ac-lt);color:var(--ac);white-space:nowrap}
+.orden{display:flex;gap:4px}
+.flecha{width:28px;height:28px;border-radius:50%;border:1px solid rgba(0,0,0,.14);background:#fff;color:var(--ink);font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.flecha:hover{border-color:var(--ink)}
+.flecha.oculto{visibility:hidden;pointer-events:none}
+.banda-fila{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid rgba(0,0,0,.06);font-size:13px}
+.banda-fila:first-of-type{border-top:0}
+
+.wiz-barra{display:flex;align-items:center;gap:8px;margin-top:24px;padding:14px 0;border-top:1px solid rgba(0,0,0,.1)}
+.mov-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.mov-celda{aspect-ratio:1;border:0;border-radius:8px;background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink)}
+.mov-celda:hover{background:var(--soft)}
+.mov-celda.actual{background:var(--ac-lt);color:var(--ac-dk)}
+.mov-celda.pasado{color:#cfccc6;cursor:default;background:transparent}
+.mov-celda.vacia{visibility:hidden}
+
 .cifrado-overlay{position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
-.cifrado-modal{width:min(100%,760px);max-height:90vh;display:flex;flex-direction:column;background:#fff;border:2px solid var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.cifrado-modal{width:min(100%,760px);max-height:90vh;display:flex;flex-direction:column;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.28)}
 .cifrado-head{padding:16px 20px 12px;border-bottom:1px solid #eae9e9;flex:none}
 .cifrado-body{padding:16px 20px 20px;overflow-y:auto;flex:1 1 auto;min-height:0}
-.cifrado-hoja{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;line-height:1.4;overflow-x:auto;border:1px solid #eae9e9;padding:12px;background:#fff}
+.cifrado-hoja{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;line-height:1.4;overflow-x:auto;border:1px solid #eae9e9;border-radius:10px;padding:12px;background:#fff}
 .cifrado-linea{white-space:pre;min-height:1.4em}
-.cifrado-btn{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:6px 12px;cursor:pointer;text-decoration:none;display:inline-block}
-a.cifrado-btn:hover{background:var(--ink);color:#fff}
+.cifrado-btn{display:inline-flex;align-items:center;font-size:12px;font-weight:600;border:1px solid rgba(0,0,0,.18);border-radius:6px;background:#fff;color:var(--ink);padding:7px 12px;cursor:pointer;text-decoration:none}
+a.cifrado-btn{border-bottom:1px solid rgba(0,0,0,.18)}
+a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
+
 @media (max-width:860px){
-  .admin-burger{display:inline-flex}
-  .admin-shell{border:0;display:block}
-  .admin-side{position:fixed;top:0;left:0;bottom:0;width:270px;z-index:1000;transform:translateX(-100%);box-shadow:6px 0 28px rgba(0,0,0,.2)}
-  .admin-side.abierto{transform:translateX(0)}
-  .admin-main{border:2px solid var(--ink);padding:20px}
-  .admin-backdrop.abierto{display:block;position:fixed;inset:0;background:rgba(20,18,17,.45);z-index:999}
-}
-@media (max-width:640px){
-  /* Encabezado: en móvil dos filas — ☰ + título + sesión arriba y los
-     botones (Dashboard, Ver publicado) debajo, del mismo ancho. Los
-     contenedores intermedios se "disuelven" (display:contents) para que
-     cada pieza caiga en su celda. */
-  .top-bar{display:grid !important;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"burger titulo der" "acciones acciones acciones";column-gap:12px !important;row-gap:14px;align-items:center !important}
-  .top-izq,.top-col{display:contents !important}
-  .top-bar .admin-burger{grid-area:burger}
-  .top-titulo{grid-area:titulo;align-items:center !important;gap:8px !important;min-width:0}
-  .top-nombre{font-size:12px !important;letter-spacing:.06em !important}
-  .top-der{grid-area:der}
-  .top-salir{font-size:12px !important;padding:6px 10px !important}
-  .top-acciones{grid-area:acciones;margin-top:0 !important;gap:8px !important}
-  .top-acciones a{flex:1 1 0;text-align:center}
-  .field-grid-2,.slot-grid,.cancion-grid-2,.cancion-grid-4{grid-template-columns:1fr}
-  .cal-celda{padding:4px !important;min-height:52px !important}
-  .cal-marca-txt{display:none}
-  .cal-mes{font-size:22px}
-  .paso-tab{font-size:10px !important;letter-spacing:.04em !important;padding:8px 3px !important}
-  .cal-marca{font-size:12px !important;letter-spacing:0 !important}
+  .pasos{padding:14px 0 16px;gap:6px}
+  .paso .paso-t{display:none}
+  .paso.on .paso-t{display:block;font-size:13px}
+  .paso-linea{min-width:10px}
+  .p1{display:flex;flex-direction:column;gap:16px}
+  .cal{padding:12px;border:0}
+  .cal-celda{aspect-ratio:1;font-size:14px;border-radius:9px}
+  .cal-dots i{width:5px;height:5px}
+  .cal-mes{font-size:20px}
+  .dia-panel{position:static}
+  .dia-t{font-size:20px}
+  .evc{border:1px solid rgba(0,0,0,.07);box-shadow:none;border-radius:14px}
+  .evc-acc .ico{width:44px;height:44px}
+  .tipos{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+  .banda-grid{grid-template-columns:1fr}
+  .rol,.seccion{border:0;border-radius:14px}
+  .slot-fila .btn-quitar{width:44px;height:44px}
+  .can{background:var(--soft)}
+  .can-g1{grid-template-columns:1fr}
+  .can-g2{grid-template-columns:72px minmax(0,1fr) 44px 44px}
+  .can-g2 .inp-mono{grid-column:1/-1}
+  .cif-btn{min-height:46px}
+  .can-g2 .btn-quitar{grid-column:auto}
+  .redondo{width:44px;height:44px}
+  .p3{display:flex;flex-direction:column;gap:12px}
+  .rev-cab{padding:18px 16px 14px}
+  .rev-dia{font-size:34px}
+  .rev-cuerpo{padding:16px}
+  .rev-tema{font-size:19px}
+  .wiz-barra{position:sticky;bottom:0;z-index:20;background:var(--bg);margin:16px -16px 0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.06);border-top:1px solid rgba(0,0,0,.08)}
+  .wiz-barra .btn-pri{flex:1}
+  .wiz-barra .wiz-cancelar{min-height:46px;padding:0 4px;flex:none}
+  .wiz-barra .btn-sec{min-height:46px;border-radius:10px;padding:0 16px;font-size:14px}
   .cifrado-overlay{padding:0}
-  .cifrado-modal{width:100%;height:100%;max-height:none;border:0}
+  .cifrado-modal{width:100%;height:100%;max-height:none;border-radius:0}
   .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
+}
+
+/* ---- Barra de pestañas (teléfono) ---- */
+.tabbar{display:none}
+.mas-cab{display:flex;align-items:center;gap:12px;padding:0 0 14px;border-bottom:1px solid rgba(0,0,0,.08)}
+.mas-lista{display:flex;flex-direction:column;padding-top:4px}
+a.mas-fila,.mas-fila{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:0 4px;border:0;border-bottom:1px solid rgba(0,0,0,.06);background:none;font-size:15px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;width:100%;font-family:inherit}
+a.mas-fila:hover{background:none;color:var(--ink)}
+.mas-fila.peligro{color:var(--red);border-bottom:0}
+.agarre{width:40px;height:4px;border-radius:2px;background:#d4d1cb;margin:0 auto 14px}
+@media (max-width:860px){
+  .nav-movil{display:none !important}
+  .pag{padding-bottom:104px}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(0,0,0,.1);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;border:0;background:none;color:var(--muted2);font-size:10.5px;font-weight:700;letter-spacing:.02em;cursor:pointer;padding:0;font-family:inherit}
+  a.tab{border-bottom:0}
+  a.tab:hover{background:none;color:var(--ink)}
+  .tab-ico{width:48px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .tab.on{color:var(--ink)}
+  .tab.on .tab-ico{background:var(--ink);color:#fff}
+  .tab.off{opacity:.4;pointer-events:none}
+  .toast{bottom:92px}
 }
 </style>
 </helmet>
-<div style="{{ containerStyle }}">
+<div class="{{ pagClase }}">
 
   <sc-if value="{{ noEmbebido }}" hint-placeholder-val="{{ true }}">
-  <div class="top-bar" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
-    <div class="top-izq" style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 auto">
-      <sc-if value="{{ permitido }}" hint-placeholder-val="{{ true }}">
-        <button type="button" class="admin-burger" onClick="{{ toggleSidebar }}" aria-label="Abrir menú">☰</button>
+  <header class="top">
+    <div class="top-org">
+      <span class="top-cuadro"></span>
+      <button type="button" class="top-switch" onClick="{{ toggleOrgSwitcher }}">
+        <span class="top-nombre">{{ orgActualNombre }}</span>
+        <span style="font-size:11px">▾</span>
+      </button>
+      <sc-if value="{{ orgSwitcherAbierto }}" hint-placeholder-val="{{ false }}">
+        <div class="dropdown">
+          <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off">
+          <div class="dropdown-lista">
+            <sc-for list="{{ orgsSidebar }}" as="o" hint-placeholder-count="2">
+              <button type="button" class="{{ o.clase }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
+            </sc-for>
+            <sc-if value="{{ orgSwitcherVacio }}" hint-placeholder-val="{{ false }}">
+              <p style="font-size:13px;color:var(--muted2);padding:10px;margin:0">Sin resultados.</p>
+            </sc-if>
+          </div>
+        </div>
       </sc-if>
-      <div class="top-col" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto">
-        <div class="top-titulo" style="display:flex;align-items:baseline;gap:12px;min-width:0">
-          <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
-          <span class="top-nombre" style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Administración de Eventos</span>
-        </div>
-        <div class="top-acciones" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
-          <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
-            <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
-          </sc-for>
-        </div>
-      </div>
     </div>
-    <div class="top-der" style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
-      <span style="font-size:12px;letter-spacing:.06em;color:var(--ac-dk)">{{ estado }}</span>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
-        <button class="top-salir" onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
+    <nav class="nav-mod nav-ancho">
+      <sc-for list="{{ menuModulos }}" as="mm" hint-placeholder-count="4">
+        <a class="{{ mm.clase }}" href="{{ mm.href }}">{{ mm.label }}</a>
+      </sc-for>
+    </nav>
+    <div class="top-der">
+      <nav class="top-nav nav-ancho">
+        <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
+          <a class="nav-link" href="{{ ma.href }}">{{ ma.label }}</a>
+        </sc-for>
+      </nav>
+      <span class="sep-v nav-ancho"></span>
+      <div class="usuario">
+        <span class="avatar" title="{{ usuarioNombre }}">{{ usuarioIniciales }}</span>
+        <span class="usuario-nombre">{{ usuarioNombre }}</span>
       </div>
+      <button type="button" class="btn-sec solo-desk" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
     </div>
-  </div>
+  </header>
+  <nav class="nav-movil nav-angosto">
+    <sc-for list="{{ menuModulosMovil }}" as="mm" hint-placeholder-count="4">
+      <a class="{{ mm.clase }}" href="{{ mm.href }}">{{ mm.label }}</a>
+    </sc-for>
+    <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
+      <a class="chip" href="{{ ma.href }}">{{ ma.label }}</a>
+    </sc-for>
+  </nav>
   </sc-if>
 
   <sc-if value="{{ cargando }}" hint-placeholder-val="{{ false }}">
-    <p style="padding:40px 0;font-size:14px;color:#7d7979">Cargando…</p>
+    <p style="padding:48px 0;font-size:14px;color:var(--muted2);text-align:center">Cargando…</p>
   </sc-if>
 
   <sc-if value="{{ denegado }}" hint-placeholder-val="{{ false }}">
-    <div style="max-width:480px;margin:60px auto;text-align:center;border:2px solid var(--ink);padding:32px 24px">
-      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Acceso denegado</div>
-      <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:10px">{{ denegadoMotivo }}</p>
+    <div class="panel" style="max-width:480px;margin:60px auto;text-align:center;padding:32px 24px">
+      <div class="kicker" style="color:var(--red)">Acceso denegado</div>
+      <p style="font-size:14px;line-height:1.5;color:var(--muted);margin:10px 0 0">{{ denegadoMotivo }}</p>
     </div>
   </sc-if>
 
   <sc-if value="{{ permitido }}" hint-placeholder-val="{{ true }}">
-  <sc-if value="{{ noEmbebido }}" hint-placeholder-val="{{ true }}">
-  <div class="{{ backdropClase }}" onClick="{{ cerrarSidebarMovil }}"></div>
-  </sc-if>
-  <div class="admin-shell" style="{{ shellExtraStyle }}">
-    <sc-if value="{{ noEmbebido }}" hint-placeholder-val="{{ true }}">
-    <div class="{{ sidebarClase }}">
-      <div class="side-group" style="position:relative">
-        <div class="side-kicker">Organización activa</div>
-        <button type="button" onClick="{{ toggleOrgSwitcher }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;font-size:13px;font-weight:700;padding:8px 10px;border:2px solid var(--ink);background:#fff;cursor:pointer;text-align:left">
-          <span>{{ orgActualNombre }}</span>
-          <span>▾</span>
-        </button>
-        <sc-if value="{{ orgSwitcherAbierto }}" hint-placeholder-val="{{ false }}">
-          <div style="position:absolute;top:100%;left:14px;right:14px;z-index:30;background:#fff;border:2px solid var(--ink);margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column">
-            <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
-            <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column">
-              <sc-for list="{{ orgsSidebar }}" as="o" hint-placeholder-count="2">
-                <button type="button" style="{{ o.style }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
-              </sc-for>
-              <p style="{{ orgSwitcherVacioStyle }}">Sin resultados.</p>
-            </div>
-          </div>
-        </sc-if>
-      </div>
-      <div class="side-group" style="flex:1">
-        <div class="side-kicker">Módulos</div>
-        <sc-for list="{{ menuModulos }}" as="mm" hint-placeholder-count="4">
-          <button type="button" style="{{ mm.style }}" onClick="{{ mm.onClick }}" disabled="{{ mm.deshabilitado }}">{{ mm.label }}</button>
-        </sc-for>
+
+  <sc-if value="{{ mostrarTitulo }}" hint-placeholder-val="{{ true }}">
+    <div class="titulo-fila">
+      <div style="min-width:0">
+        <div class="kicker">Administración</div>
+        <h1 class="mes-titulo">Eventos</h1>
       </div>
     </div>
-    </sc-if>
-    <div class="admin-main" style="{{ mainExtraStyle }}">
+  </sc-if>
+
   <sc-if value="{{ hayAlertaDeclinados }}" hint-placeholder-val="{{ false }}">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 16px;padding:12px 16px;border:2px solid #b00020;background:#fdecee">
-      <span style="font-size:13px;font-weight:700;color:#b00020">⚠️ {{ alertaDeclinadosTexto }}</span>
-      <button type="button" onClick="{{ revisarDeclinados }}" style="font-size:12px;font-weight:700;letter-spacing:.04em;padding:6px 10px;border:2px solid #b00020;color:#b00020;background:#fff;cursor:pointer">Revisar</button>
+    <div class="alerta">
+      <span>{{ alertaDeclinadosTexto }}</span>
+      <button type="button" class="btn-sec" onClick="{{ revisarDeclinados }}">Revisar</button>
     </div>
   </sc-if>
-  <div style="display:flex;gap:2px;margin-top:0;background:var(--ink);padding:2px">
-    <sc-for list="{{ pasos }}" as="p" hint-placeholder-count="4">
-      <div class="paso-tab" style="{{ p.style }}">{{ p.label }}</div>
+
+  <div class="pasos">
+    <sc-for list="{{ pasos }}" as="p" hint-placeholder-count="3">
+      <div style="display:contents">
+        <sc-if value="{{ p.conLinea }}" hint-placeholder-val="{{ false }}"><span class="paso-linea"></span></sc-if>
+        <div class="{{ p.clase }}">
+          <span class="paso-n">{{ p.n }}</span>
+          <span class="paso-t">{{ p.label }}</span>
+        </div>
+      </div>
     </sc-for>
   </div>
 
   <sc-if value="{{ esPaso1 }}" hint-placeholder-val="{{ true }}">
-    <section style="padding-top:32px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:2px solid var(--ink);padding-bottom:12px">
-        <button onClick="{{ mesAnterior }}" style="font-size:16px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:6px 12px;cursor:pointer">←</button>
-        <h2 class="cal-mes" style="font-weight:800;letter-spacing:-.02em;margin:0;text-transform:uppercase;text-align:center;min-width:0">{{ mesLabel }}</h2>
-        <button onClick="{{ mesSiguiente }}" style="font-size:16px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:6px 12px;cursor:pointer">→</button>
+    <section class="p1">
+      <div class="cal">
+        <div class="cal-nav">
+          <button type="button" class="flecha-nav" onClick="{{ mesAnterior }}" aria-label="Mes anterior">‹</button>
+          <h2 class="cal-mes">{{ mesLabel }}</h2>
+          <button type="button" class="flecha-nav" onClick="{{ mesSiguiente }}" aria-label="Mes siguiente">›</button>
+        </div>
+        <div class="cal-grid">
+          <sc-for list="{{ cabeceras }}" as="h" hint-placeholder-count="7">
+            <div class="cal-dow">{{ h }}</div>
+          </sc-for>
+          <sc-for list="{{ celdas }}" as="c" hint-placeholder-count="35">
+            <button type="button" class="{{ c.clase }}" onClick="{{ c.onClick }}" title="{{ c.titulo }}">
+              <span>{{ c.dia }}</span>
+              <span class="cal-dots"><sc-for list="{{ c.dots }}" as="dt" hint-placeholder-count="0"><i></i></sc-for></span>
+              <sc-if value="{{ c.alerta }}" hint-placeholder-val="{{ false }}"><span class="cal-alerta" title="{{ c.alertaTitulo }}"></span></sc-if>
+            </button>
+          </sc-for>
+        </div>
       </div>
 
-      <div class="cal-grid" style="margin-top:16px;padding:0 2px">
-        <sc-for list="{{ cabeceras }}" as="h" hint-placeholder-count="7">
-          <div style="font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979;padding:4px 6px">{{ h }}</div>
-        </sc-for>
-      </div>
-      <div class="cal-grid" style="background:var(--ink);border:2px solid var(--ink);margin-top:2px">
-        <sc-for list="{{ filas }}" as="fila" hint-placeholder-count="5">
-          <div style="display:contents">
-            <sc-for list="{{ fila.celdas }}" as="c" hint-placeholder-count="7">
-              <button class="cal-celda" onClick="{{ c.onClick }}" title="{{ c.titulo }}" style="{{ c.style }}">
-                <span style="display:flex;align-items:center;justify-content:space-between;width:100%">
-                  <span style="{{ c.diaStyle }}">{{ c.dia }}</span>
-                  <span title="{{ c.alertaTitulo }}" style="{{ c.alertaStyle }}">⚠️</span>
-                </span>
-                <span class="cal-marca" style="{{ c.marcaStyle }}">{{ c.marcaNum }}<span class="cal-marca-txt">{{ c.marcaTxt }}</span></span>
-              </button>
-            </sc-for>
-          </div>
-        </sc-for>
-      </div>
-
-      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-top:32px;border-bottom:2px solid var(--ink);padding-bottom:8px">
-        <h3 style="font-size:16px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin:0">{{ fechaTitulo }}</h3>
-        <sc-if value="{{ puedeCrearEvento }}" hint-placeholder-val="{{ false }}">
-          <button onClick="{{ nuevoEvento }}" style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">+ Agregar</button>
-        </sc-if>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:2px;margin-top:12px">
-        <sc-for list="{{ eventosDelDia }}" as="ev" hint-placeholder-count="2">
-          <div style="display:flex;flex-direction:column;gap:10px;background:var(--sf);outline:2px solid var(--ink);padding:12px 14px">
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-              <span style="font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;border:2px solid var(--ink);padding:3px 8px">{{ ev.hora }}</span>
-              <span style="font-size:15px;font-weight:600">{{ ev.servicio }}</span>
-              <span style="font-size:13px;color:#6b6866">{{ ev.resumen }}</span>
+      <div class="dia-panel">
+        <sc-if value="{{ eligiendoTipo }}" hint-placeholder-val="{{ false }}">
+          <div class="panel">
+            <div class="panel-cab">
+              <div style="min-width:0">
+                <div class="kicker" style="margin-bottom:4px">{{ tipoKicker }}</div>
+                <div style="font-size:18px;font-weight:800">{{ fechaTitulo }}</div>
+              </div>
             </div>
-            <sc-if value="{{ ev.tieneDeclinados }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;flex-direction:column;gap:4px;border:2px solid #b00020;background:#fdecee;padding:8px 10px">
-                <span style="font-size:12px;font-weight:800;color:#b00020">⚠️ Declinaron y siguen programados:</span>
-                <sc-for list="{{ ev.declinados }}" as="dc" hint-placeholder-count="1">
-                  <span style="font-size:12px;color:#54514f"><b>{{ dc.nombre }}</b> ({{ dc.rol }}){{ dc.motivo }}</span>
+            <div class="panel-cuerpo" style="display:flex;flex-direction:column;gap:12px">
+              <span class="campo-l">¿Qué tipo de evento es?</span>
+              <div class="tipos">
+                <sc-for list="{{ tiposEvento }}" as="t" hint-placeholder-count="8">
+                  <button type="button" class="{{ t.clase }}" onClick="{{ t.onClick }}">
+                    <span class="tipo-n">{{ t.label }}</span>
+                    <span class="tipo-s">{{ t.sub }}</span>
+                  </button>
                 </sc-for>
               </div>
-            </sc-if>
-            <div style="display:flex;align-items:center;gap:12px">
-              <span style="{{ ev.estadoStyle }}">{{ ev.estadoLabel }}</span>
-              <span style="flex:1"></span>
-              <div style="display:flex;align-items:center;gap:0">
-                <sc-if value="{{ ev.puedeEditar }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ ev.editar }}" title="Editar" aria-label="Editar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                  </button>
-                </sc-if>
-                <sc-if value="{{ ev.puedeMover }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ ev.mover }}" title="Mover" aria-label="Mover" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-                  </button>
-                </sc-if>
-                <sc-if value="{{ ev.puedeEstado }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ ev.cancelar }}" title="Cancelado" aria-label="Cancelado" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"/></svg>
-                  </button>
-                </sc-if>
-                <sc-if value="{{ ev.puedeEstado }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ ev.borrar }}" title="Archivar" aria-label="Archivar" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;border-right-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-                  </button>
-                </sc-if>
-                <button onClick="{{ ev.ver }}" title="Ver en calendario" aria-label="Ver en calendario" style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:2px solid var(--ink);border-left-width:1px;background:transparent;color:var(--ink);cursor:pointer;padding:0">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
-                </button>
-              </div>
             </div>
           </div>
-        </sc-for>
-        <div style="font-size:13px;color:#7d7979;padding:4px 0">{{ vacioDia }}</div>
-      </div>
-    </section>
-  </sc-if>
+        </sc-if>
 
-  <sc-if value="{{ esPaso2 }}" hint-placeholder-val="{{ true }}">
-    <section style="padding-top:32px">
-      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ draftFecha }}</div>
-      <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">DATOS DEL EVENTO</h2>
-
-      <div class="field-grid-2" style="margin-top:24px">
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Hora</span>
-          <input value="{{ dHora }}" onChange="{{ onHora }}" placeholder="8:00 am" style="font-size:16px;padding:10px 12px;border:2px solid var(--ink);background:#fff">
-        </label>
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tipo de Evento</span>
-          <select value="{{ dServicio }}" onChange="{{ onServicio }}" style="font-size:16px;padding:10px 12px;border:2px solid var(--ink);background:#fff;appearance:none">
-            <sc-for list="{{ servicios }}" as="s" hint-placeholder-count="5">
-              <option value="{{ s.label }}">{{ s.label }}</option>
-            </sc-for>
-          </select>
-        </label>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px;padding-bottom:20px">
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Tema</span>
-          <input value="{{ dTema }}" onChange="{{ onTema }}" placeholder="Agregar el tema del evento" style="font-size:18px;font-weight:600;padding:10px 12px;border:2px solid var(--ink);background:#fff">
-        </label>
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Objetivo/Cita bíblica</span>
-          <textarea value="{{ dCita }}" onChange="{{ onCita }}" rows="2" placeholder="Colocar objetivo del evento o cita bíblica" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
-        </label>
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Aviso importante</span>
-          <textarea value="{{ dAviso }}" onChange="{{ onAviso }}" rows="2" placeholder="Agregar cualquier aviso importante que necesites anunciar. Aparecerá como encabezado de la semana correspondiente, junto con cualquier otro aviso de eventos de la misma semana." style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid #b00020;background:#fff;color:#b00020;resize:vertical"></textarea>
-        </label>
-      </div>
-    </section>
-  </sc-if>
-
-  <sc-if value="{{ esPaso3Banda }}" hint-placeholder-val="{{ true }}">
-    <section style="padding-top:32px">
-      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ draftFecha }}</div>
-      <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">Integrantes de la Banda</h2>
-
-      <p style="font-size:13px;color:#6b6866;margin:20px 0 0">Selecciona a la persona para cada puesto; deja "— Sin asignar —" lo que no se use. Usa "+" para agregar otro del mismo tipo.</p>
-
-      <div style="display:flex;flex-direction:column;gap:20px;margin-top:24px">
-        <sc-for list="{{ bandaGrupos }}" as="bg" hint-placeholder-count="7">
-          <div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase">{{ bg.tipo }}</span>
-              <span style="flex:1;height:2px;background:var(--ink)"></span>
-              <button onClick="{{ bg.addSlot }}" style="font-size:12px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:3px 10px;cursor:pointer">+</button>
+        <sc-if value="{{ viendoDia }}" hint-placeholder-val="{{ true }}">
+          <div class="dia-cab">
+            <div style="min-width:0">
+              <div class="rotulo" style="margin-bottom:4px">{{ diaKicker }}</div>
+              <h3 class="dia-t">{{ fechaTitulo }}</h3>
             </div>
-            <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
-              <sc-for list="{{ bg.slots }}" as="sl" hint-placeholder-count="2">
-                <div style="display:flex;flex-direction:column;gap:8px;background:#fff;outline:2px solid #eae9e9;padding:10px">
-                  <div class="slot-grid">
-                    <span style="font-size:12px;font-weight:800;letter-spacing:.04em;color:var(--ac-dk);background:var(--ac-lt);padding:6px 8px;text-align:center">{{ sl.label }}</span>
-                    <select value="{{ sl.nombre }}" onChange="{{ sl.onNombre }}" style="width:100%;font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px;appearance:none">
+            <sc-if value="{{ puedeCrearEvento }}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="btn-pri btn-ac" onClick="{{ nuevoEvento }}" disabled="{{ sinFecha }}">+ Nuevo evento</button>
+            </sc-if>
+          </div>
+          <sc-for list="{{ eventosDelDia }}" as="ev" hint-placeholder-count="2">
+            <article class="evc">
+              <div class="evc-top">
+                <span class="evc-hora">{{ ev.hora }}</span>
+                <span class="evc-tipo">{{ ev.servicio }}</span>
+                <span class="badge" style="{{ ev.estadoStyle }};margin-left:auto">{{ ev.estadoLabel }}</span>
+              </div>
+              <div class="evc-tema">{{ ev.resumen }}</div>
+              <sc-if value="{{ ev.tieneDeclinados }}" hint-placeholder-val="{{ false }}">
+                <div class="evc-dec">
+                  <span style="font-weight:800;color:var(--red)">Declinaron y siguen programados</span>
+                  <sc-for list="{{ ev.declinados }}" as="dc" hint-placeholder-count="1">
+                    <span><b>{{ dc.nombre }}</b> · {{ dc.rol }}{{ dc.motivo }}</span>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div class="evc-acc">
+                <sc-if value="{{ ev.puedeEditar }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" class="btn-pri" onClick="{{ ev.editar }}" style="min-height:36px;padding:0 14px">Editar</button>
+                </sc-if>
+                <span style="flex:1"></span>
+                <sc-if value="{{ ev.puedeMover }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" class="ico" onClick="{{ ev.mover }}" title="Mover de fecha" aria-label="Mover de fecha">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg>
+                  </button>
+                </sc-if>
+                <sc-if value="{{ ev.puedeEstado }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" class="ico peligro" onClick="{{ ev.cancelar }}" title="Marcar como cancelado" aria-label="Marcar como cancelado">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="5.5" y1="18.5" x2="18.5" y2="5.5"></line></svg>
+                  </button>
+                  <button type="button" class="ico" onClick="{{ ev.borrar }}" title="Archivar" aria-label="Archivar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1"></rect><path d="M5 9v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"></path></svg>
+                  </button>
+                </sc-if>
+                <button type="button" class="ico" onClick="{{ ev.ver }}" title="Ver en calendario" aria-label="Ver en calendario">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+              </div>
+            </article>
+          </sc-for>
+          <sc-if value="{{ vacioDia }}" hint-placeholder-val="{{ false }}">
+            <div class="vacio-caja">{{ vacioDia }}</div>
+          </sc-if>
+        </sc-if>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ esPaso2 }}" hint-placeholder-val="{{ false }}">
+    <section class="p2">
+      <div class="p2-cab">
+        <div style="min-width:0">
+          <div class="kicker">{{ draftFecha }}</div>
+          <h2 class="mes-titulo" style="font-size:32px">{{ dServicio }}</h2>
+        </div>
+        <sc-if value="{{ usaBanda }}" hint-placeholder-val="{{ false }}">
+          <div class="seg">
+            <sc-for list="{{ subTabs }}" as="st" hint-placeholder-count="3">
+              <button type="button" class="{{ st.clase }}" onClick="{{ st.onClick }}">{{ st.label }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ esSubDetalles }}" hint-placeholder-val="{{ true }}">
+        <div class="panel">
+          <div class="panel-cuerpo form-col">
+            <div class="form-grid">
+              <label class="campo">
+                <span class="campo-l">Hora *</span>
+                <input class="inp" value="{{ dHora }}" onChange="{{ onHora }}" placeholder="8:00 am">
+              </label>
+              <label class="campo">
+                <span class="campo-l">Tema</span>
+                <input class="inp" value="{{ dTema }}" onChange="{{ onTema }}" placeholder="Tema del evento" style="font-weight:600">
+              </label>
+            </div>
+            <label class="campo">
+              <span class="campo-l">Objetivo / cita bíblica</span>
+              <textarea class="inp" value="{{ dCita }}" onChange="{{ onCita }}" rows="2" placeholder="Objetivo del evento o cita bíblica"></textarea>
+            </label>
+            <sc-if value="{{ noUsaBanda }}" hint-placeholder-val="{{ false }}">
+              <label class="campo">
+                <span class="campo-l">Detalles del evento y responsable</span>
+                <textarea class="inp" value="{{ dDetalles }}" onChange="{{ onDetalles }}" rows="4" placeholder="Describe el evento y quién es la persona responsable"></textarea>
+              </label>
+              <label class="campo">
+                <span class="campo-l">Personas requeridas</span>
+                <textarea class="inp" value="{{ dPersonas }}" onChange="{{ onPersonas }}" rows="3" placeholder="Quiénes se necesitan y para qué"></textarea>
+              </label>
+            </sc-if>
+            <sc-if value="{{ usaBanda }}" hint-placeholder-val="{{ false }}">
+              <label class="campo">
+                <span class="campo-l">Notas del ensayo</span>
+                <textarea class="inp" value="{{ dNotas }}" onChange="{{ onNotas }}" rows="3" placeholder="Indicaciones especiales para el ensayo o el repertorio"></textarea>
+              </label>
+            </sc-if>
+            <label class="campo">
+              <span class="campo-l" style="color:var(--gold-dk)">Aviso importante</span>
+              <textarea class="inp inp-aviso" value="{{ dAviso }}" onChange="{{ onAviso }}" rows="2" placeholder="Aparecerá como encabezado de la semana, junto con otros avisos de esa semana."></textarea>
+            </label>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ esSubBanda }}" hint-placeholder-val="{{ false }}">
+        <p class="campo-ayuda" style="margin:0">Elige a la persona de cada puesto; deja “Sin asignar” lo que no se use. “+ Agregar” suma otro puesto del mismo tipo.</p>
+        <div class="parte"><span class="parte-t">Voces</span><span class="linea"></span></div>
+        <div class="banda-grid">
+          <sc-for list="{{ bandaVoces }}" as="bg" hint-placeholder-count="2">
+            <div class="rol">
+              <div class="rol-cab">
+                <span class="rol-t">{{ bg.tipo }}</span>
+                <button type="button" class="btn-sec" onClick="{{ bg.addSlot }}">+ Agregar</button>
+              </div>
+              <sc-for list="{{ bg.slots }}" as="sl" hint-placeholder-count="1">
+                <div class="slot">
+                  <div class="slot-fila">
+                    <span class="slot-l">{{ sl.label }}</span>
+                    <select class="inp" value="{{ sl.nombre }}" onChange="{{ sl.onNombre }}">
                       <sc-for list="{{ sl.opciones }}" as="op" hint-placeholder-count="4">
                         <option value="{{ op.value }}">{{ op.label }}</option>
                       </sc-for>
                     </select>
-                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#6b6866;cursor:pointer;white-space:nowrap">
-                      <input type="checkbox" checked="{{ sl.resaltado }}" onChange="{{ sl.onResaltado }}" style="width:16px;height:16px;cursor:pointer">
-                      Resaltado
+                    <label class="check" style="font-size:12.5px;font-weight:600;color:var(--muted)">
+                      <input type="checkbox" checked="{{ sl.resaltado }}" onChange="{{ sl.onResaltado }}">
+                      Resaltar
                     </label>
-                    <button onClick="{{ sl.remove }}" title="Quitar" style="font-size:13px;border:0;background:transparent;color:#bab6b6;cursor:pointer;padding:0">−</button>
+                    <button type="button" class="btn-quitar" onClick="{{ sl.remove }}" title="Quitar" aria-label="Quitar">✕</button>
                   </div>
                   <sc-if value="{{ sl.declinado }}" hint-placeholder-val="{{ false }}">
-                    <span style="font-size:11px;font-weight:700;letter-spacing:.02em;color:#fff;background:#b00020;padding:4px 8px;display:inline-block;align-self:flex-start">⚠️ Declinó su participación{{ sl.motivoDeclinacion }}</span>
+                    <span class="warn">Declinó su participación{{ sl.motivoDeclinacion }}</span>
                   </sc-if>
                   <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
-                    <span style="font-size:11px;font-weight:700;letter-spacing:.02em;color:#fff;background:#b00020;padding:4px 8px;display:inline-block;align-self:flex-start">⚠ Marcado como no disponible esta fecha</span>
+                    <span class="warn">Marcado como no disponible esta fecha</span>
                   </sc-if>
-                  <sc-if value="{{ sl.resaltado }}" hint-placeholder-val="{{ true }}">
-                    <input value="{{ sl.tarea }}" onChange="{{ sl.onTarea }}" placeholder="Encomienda: preparar reflexión, orar…" style="font-size:13px;padding:8px 10px;border:0;background:var(--ac-lt);color:var(--ac-dk)">
+                  <sc-if value="{{ sl.resaltado }}" hint-placeholder-val="{{ false }}">
+                    <input class="inp" value="{{ sl.tarea }}" onChange="{{ sl.onTarea }}" placeholder="Encomienda: preparar reflexión, orar…" style="background:var(--ac-lt);border-color:transparent;color:var(--ac-dk)">
                   </sc-if>
                 </div>
               </sc-for>
             </div>
-          </div>
-        </sc-for>
-      </div>
-    </section>
-  </sc-if>
+          </sc-for>
+        </div>
+        <div class="parte"><span class="parte-t">Músicos</span><span class="linea"></span></div>
+        <div class="banda-grid">
+          <sc-for list="{{ bandaMusicos }}" as="bg" hint-placeholder-count="5">
+            <div class="rol">
+              <div class="rol-cab">
+                <span class="rol-t">{{ bg.tipo }}</span>
+                <button type="button" class="btn-sec" onClick="{{ bg.addSlot }}">+ Agregar</button>
+              </div>
+              <sc-for list="{{ bg.slots }}" as="sl" hint-placeholder-count="1">
+                <div class="slot">
+                  <div class="slot-fila">
+                    <span class="slot-l">{{ sl.label }}</span>
+                    <select class="inp" value="{{ sl.nombre }}" onChange="{{ sl.onNombre }}">
+                      <sc-for list="{{ sl.opciones }}" as="op" hint-placeholder-count="4">
+                        <option value="{{ op.value }}">{{ op.label }}</option>
+                      </sc-for>
+                    </select>
+                    <label class="check" style="font-size:12.5px;font-weight:600;color:var(--muted)">
+                      <input type="checkbox" checked="{{ sl.resaltado }}" onChange="{{ sl.onResaltado }}">
+                      Resaltar
+                    </label>
+                    <button type="button" class="btn-quitar" onClick="{{ sl.remove }}" title="Quitar" aria-label="Quitar">✕</button>
+                  </div>
+                  <sc-if value="{{ sl.declinado }}" hint-placeholder-val="{{ false }}">
+                    <span class="warn">Declinó su participación{{ sl.motivoDeclinacion }}</span>
+                  </sc-if>
+                  <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
+                    <span class="warn">Marcado como no disponible esta fecha</span>
+                  </sc-if>
+                  <sc-if value="{{ sl.resaltado }}" hint-placeholder-val="{{ false }}">
+                    <input class="inp" value="{{ sl.tarea }}" onChange="{{ sl.onTarea }}" placeholder="Encomienda: preparar reflexión, orar…" style="background:var(--ac-lt);border-color:transparent;color:var(--ac-dk)">
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
 
-  <sc-if value="{{ esPaso4Repertorio }}" hint-placeholder-val="{{ true }}">
-    <section style="padding-top:32px">
-      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ draftFecha }}</div>
-      <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">Repertorio del Evento</h2>
-
-      <p style="font-size:13px;color:#6b6866;margin:20px 0 0">Deja en blanco lo que no se use: solo se publica lo que tenga nombre.</p>
-      <label style="display:flex;flex-direction:column;gap:6px;margin-top:24px">
-        <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Notas del ensayo</span>
-        <textarea value="{{ dNotas }}" onChange="{{ onNotas }}" rows="3" placeholder="Indicaciones especiales para el ensayo o del repertorio" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
-      </label>      
-
-      <div style="display:flex;flex-direction:column;gap:20px;margin-top:24px">
-        <sc-for list="{{ bloques }}" as="bl" hint-placeholder-count="5">
-          <div>
+      <sc-if value="{{ esSubRepertorio }}" hint-placeholder-val="{{ false }}">
+        <p class="campo-ayuda" style="margin:0">Deja en blanco lo que no se use: solo se publica lo que tenga nombre.</p>
+        <sc-for list="{{ bloques }}" as="bl" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:10px">
             <sc-if value="{{ bl.mostrarParte }}" hint-placeholder-val="{{ false }}">
-              <div style="{{ bl.parteStyle }}">
-                <span style="flex:1;height:2px;background:var(--ac)"></span>
-                <span style="font-size:14px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk);text-align:center">{{ bl.parteTitulo }}</span>
-                <span style="flex:1;height:2px;background:var(--ac)"></span>
+              <div class="parte">
+                <span class="parte-t">{{ bl.parteTitulo }}</span>
+                <span class="linea"></span>
                 <sc-if value="{{ bl.puedeQuitarParte }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" onClick="{{ bl.quitarParte }}" title="Quitar este bloque y sus canciones" style="position:absolute;right:0;top:50%;transform:translateY(-50%);font-size:11px;font-weight:800;border:1.5px solid #bab6b6;color:#7d7979;background:var(--bg);padding:2px 8px;cursor:pointer">Quitar</button>
+                  <button type="button" class="btn-sec" onClick="{{ bl.quitarParte }}">Quitar bloque</button>
                 </sc-if>
               </div>
             </sc-if>
-            <div style="display:flex;align-items:center;gap:8px">
-              <input value="{{ bl.titulo }}" onChange="{{ bl.onTitulo }}" style="font-size:12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;border:0;border-bottom:2px solid var(--ink);background:transparent;padding:3px 0;width:190px">
-              <span style="flex:1;height:2px;background:var(--ink)"></span>
-              <button onClick="{{ bl.addCancion }}" style="font-size:12px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:3px 10px;cursor:pointer">+</button>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px">
+            <div class="seccion">
+              <div class="seccion-cab">
+                <input class="seccion-inp" value="{{ bl.titulo }}" onChange="{{ bl.onTitulo }}" aria-label="Nombre de la sección">
+                <button type="button" class="btn-sec" onClick="{{ bl.addCancion }}">+ Canción</button>
+              </div>
               <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
-                <div style="display:flex;flex-direction:column;gap:8px;background:#fff;outline:2px solid #eae9e9;padding:10px">
-                  <div class="cancion-grid-2">
+                <div class="can">
+                  <div class="can-g1">
                     <div style="position:relative">
-                      <textarea value="{{ cn.t }}" onChange="{{ cn.onT }}" onFocus="{{ cn.onFocusT }}" onBlur="{{ cn.onBlurT }}" placeholder="Nombre de la canción" autoComplete="off" rows="3" style="width:100%;font-size:15px;font-weight:600;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:8px 0;resize:vertical;font-family:inherit"></textarea>
-                      <sc-if value="{{ cn.autocompleteAbierto }}" hint-placeholder-val="{{ true }}">
-                        <div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--ink);z-index:20;max-height:180px;overflow-y:auto;box-shadow:0 8px 16px rgba(0,0,0,.14)">
+                      <textarea class="inp" value="{{ cn.t }}" onChange="{{ cn.onT }}" onFocus="{{ cn.onFocusT }}" onBlur="{{ cn.onBlurT }}" placeholder="Nombre de la canción" autoComplete="off" rows="1" style="font-weight:600"></textarea>
+                      <sc-if value="{{ cn.autocompleteAbierto }}" hint-placeholder-val="{{ false }}">
+                        <div class="sugerencias">
                           <sc-for list="{{ cn.sugerencias }}" as="sug" hint-placeholder-count="3">
-                            <button type="button" onMouseDown="{{ sug.onPick }}" style="display:block;width:100%;text-align:left;font-size:13px;padding:8px 10px;border:0;border-bottom:1px solid #eae9e9;background:#fff;cursor:pointer">{{ sug.nombre }}</button>
+                            <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
                           </sc-for>
                         </div>
                       </sc-if>
                     </div>
                     <div style="position:relative">
-                      <input value="{{ cn.sm }}" onChange="{{ cn.onSm }}" onFocus="{{ cn.onFocusSm }}" onBlur="{{ cn.onBlurSm }}" placeholder="Salmista / artista original" autoComplete="off" style="width:100%;font-size:15px;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
-                      <sc-if value="{{ cn.salmistaAbierto }}" hint-placeholder-val="{{ true }}">
-                        <div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--ink);z-index:20;max-height:180px;overflow-y:auto;box-shadow:0 8px 16px rgba(0,0,0,.14)">
+                      <input class="inp" value="{{ cn.sm }}" onChange="{{ cn.onSm }}" onFocus="{{ cn.onFocusSm }}" onBlur="{{ cn.onBlurSm }}" placeholder="Salmista / artista original" autoComplete="off">
+                      <sc-if value="{{ cn.salmistaAbierto }}" hint-placeholder-val="{{ false }}">
+                        <div class="sugerencias">
                           <sc-for list="{{ cn.sugerenciasSm }}" as="sug" hint-placeholder-count="3">
-                            <button type="button" onMouseDown="{{ sug.onPick }}" style="display:block;width:100%;text-align:left;font-size:13px;padding:8px 10px;border:0;border-bottom:1px solid #eae9e9;background:#fff;cursor:pointer">{{ sug.nombre }}</button>
+                            <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
                           </sc-for>
                         </div>
                       </sc-if>
                     </div>
                   </div>
-                  <div class="cancion-grid-4">
-                    <input value="{{ cn.u }}" onChange="{{ cn.onU }}" onBlur="{{ cn.onBlurU }}" placeholder="https://… enlace de la pista" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#7d7979;border:0;border-bottom:1px solid #eae9e9;background:transparent;padding:5px 2px">
-                    <input value="{{ cn.k }}" onChange="{{ cn.onK }}" placeholder="Tono" style="font-size:13px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);border:0;padding:5px;text-align:center">
-                    <button type="button" onClick="{{ cn.onCifrado }}" aria-label="{{ cn.cifradoTitle }}" title="{{ cn.cifradoTitle }}" style="{{ cn.cifradoBtnStyle }}">♪</button>
-                    <button onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}" style="{{ cn.playBtnStyle }}">{{ cn.playIcon }}</button>
-                    <button onClick="{{ cn.remove }}" title="Quitar" style="font-size:13px;border:0;background:transparent;color:#bab6b6;cursor:pointer;padding:0">−</button>
+                  <div class="can-g2">
+                    <input class="inp inp-mono" value="{{ cn.u }}" onChange="{{ cn.onU }}" onBlur="{{ cn.onBlurU }}" placeholder="https://… enlace de la pista">
+                    <input class="inp inp-tono" value="{{ cn.k }}" onChange="{{ cn.onK }}" placeholder="Tono" aria-label="Tono">
+                    <button type="button" class="{{ cn.cifClase }}" onClick="{{ cn.onCifrado }}" aria-label="{{ cn.cifradoTitle }}" title="{{ cn.cifradoTitle }}"><span style="font-size:14px">♪</span><span>{{ cn.cifradoTitle }}</span></button>
+                    <button type="button" class="{{ cn.playClase }}" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}">{{ cn.playIcon }}</button>
+                    <button type="button" class="btn-quitar" onClick="{{ cn.remove }}" title="Quitar canción" aria-label="Quitar canción">✕</button>
                   </div>
                   <div style="position:relative">
-                    <input value="{{ cn.d }}" onChange="{{ cn.onD }}" onFocus="{{ cn.onFocusD }}" onBlur="{{ cn.onBlurD }}" placeholder="Nombre de quien dirige" autoComplete="off" style="width:100%;font-size:13px;border:0;border-bottom:1px solid #d7d3d3;background:transparent;padding:5px 2px">
-                    <sc-if value="{{ cn.dirigeAbierto }}" hint-placeholder-val="{{ true }}">
-                      <div style="position:absolute;top:100%;left:0;right:0;background:#fff;border:2px solid var(--ink);z-index:20;max-height:180px;overflow-y:auto;box-shadow:0 8px 16px rgba(0,0,0,.14)">
+                    <input class="inp" value="{{ cn.d }}" onChange="{{ cn.onD }}" onFocus="{{ cn.onFocusD }}" onBlur="{{ cn.onBlurD }}" placeholder="Quién dirige" autoComplete="off">
+                    <sc-if value="{{ cn.dirigeAbierto }}" hint-placeholder-val="{{ false }}">
+                      <div class="sugerencias">
                         <sc-for list="{{ cn.sugerenciasD }}" as="sug" hint-placeholder-count="3">
-                          <button type="button" onMouseDown="{{ sug.onPick }}" style="display:block;width:100%;text-align:left;font-size:13px;padding:8px 10px;border:0;border-bottom:1px solid #eae9e9;background:#fff;cursor:pointer">{{ sug.nombre }}</button>
+                          <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
                         </sc-for>
                       </div>
                     </sc-if>
@@ -441,158 +782,198 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
             </div>
           </div>
         </sc-for>
-      </div>
-      <div style="display:flex;justify-content:center;margin-top:28px">
-        <button type="button" onClick="{{ agregarParte }}" style="font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:2px solid var(--ac);color:var(--ac-dk);background:var(--ac-lt);padding:10px 18px;cursor:pointer">+ Agregar Bloque</button>
-      </div>
+        <div style="display:flex;justify-content:center">
+          <button type="button" class="btn-sec" onClick="{{ agregarParte }}" style="border-color:var(--ac);color:var(--ac-dk);padding:10px 18px;font-size:13px">+ Agregar bloque</button>
+        </div>
+      </sc-if>
     </section>
   </sc-if>
 
-  <sc-if value="{{ esPaso4Otro }}" hint-placeholder-val="{{ true }}">
-    <section style="padding-top:32px">
-      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ draftFecha }}</div>
-      <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">Detalles del Evento</h2>
-
-      <div style="display:flex;flex-direction:column;gap:20px;margin-top:24px">
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Detalles del evento y responsable</span>
-          <textarea value="{{ dDetalles }}" onChange="{{ onDetalles }}" rows="4" placeholder="Describe el evento y quién es la persona responsable" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
-        </label>
-        <label style="display:flex;flex-direction:column;gap:6px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Personas requeridas</span>
-          <textarea value="{{ dPersonas }}" onChange="{{ onPersonas }}" rows="3" placeholder="Quiénes se necesitan y para qué" style="font-size:14px;line-height:1.5;padding:10px 12px;border:2px solid var(--ink);background:#fff;resize:vertical"></textarea>
-        </label>
-      </div>
-    </section>
-  </sc-if>
-
-  <sc-if value="{{ esPaso5 }}" hint-placeholder-val="{{ true }}">
-    <section style="padding-top:32px">
-      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">{{ draftFecha }}</div>
-      <h2 style="font-size:36px;font-weight:800;letter-spacing:-.02em;margin:8px 0 0;text-transform:uppercase">Notas y revisión</h2>
-
-      <div style="background:var(--sf);outline:2px solid var(--ink);padding:20px;margin-top:24px">
-        <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">Resumen</div>
-        <div style="font-size:26px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;margin-top:8px">{{ resumenTitulo }}</div>
-        <div style="font-size:14px;color:#54514f;margin-top:6px">{{ resumenTema }}</div>
-        <sc-if value="{{ resumenTieneBanda }}" hint-placeholder-val="{{ true }}">
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:16px">
-            <sc-for list="{{ resumenBanda }}" as="bg" hint-placeholder-count="3">
-              <span style="font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--ac-dk);background:var(--ac-lt);padding:5px 9px;white-space:nowrap">{{ bg.tipo }}: {{ bg.nombres }}</span>
-            </sc-for>
+  <sc-if value="{{ esPaso3 }}" hint-placeholder-val="{{ false }}">
+    <section class="p3">
+      <div class="panel" style="min-width:0">
+        <div class="rev-cab">
+          <div class="chips">
+            <span class="tag">{{ dServicio }}</span>
+            <sc-if value="{{ resumenEstado }}" hint-placeholder-val="{{ false }}"><span class="badge b-gris" style="align-self:center">{{ resumenEstado }}</span></sc-if>
           </div>
-        </sc-if>
-        <sc-if value="{{ resumenEsRepertorio }}" hint-placeholder-val="{{ true }}">
-          <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+          <h2 class="rev-dia">{{ resumenDia }}</h2>
+          <div style="font-size:15px;color:var(--muted)"><strong style="color:var(--ink)">{{ resumenFecha }}</strong> · {{ resumenHora }}</div>
+        </div>
+        <div class="rev-cuerpo">
+          <div class="rev-tema">{{ resumenTema }}</div>
+          <sc-if value="{{ resumenCita }}" hint-placeholder-val="{{ false }}"><div class="cita">{{ resumenCita }}</div></sc-if>
+          <sc-if value="{{ resumenAviso }}" hint-placeholder-val="{{ false }}">
+            <div class="callout"><span class="callout-t">Aviso importante</span><p>{{ resumenAviso }}</p></div>
+          </sc-if>
+
+          <sc-if value="{{ resumenEsRepertorio }}" hint-placeholder-val="{{ false }}">
+            <div class="sec-t" style="margin:8px 0 0">Repertorio <span class="linea"></span></div>
             <sc-for list="{{ resumenSecciones }}" as="sec" hint-placeholder-count="3">
-              <div>
+              <div style="display:flex;flex-direction:column;gap:8px">
                 <sc-if value="{{ sec.mostrarParte }}" hint-placeholder-val="{{ false }}">
-                  <div style="{{ sec.parteStyle }}">
-                    <span style="flex:1;height:2px;background:var(--ac)"></span>
-                    <span style="font-size:13px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk);text-align:center">{{ sec.parteTitulo }}</span>
-                    <span style="flex:1;height:2px;background:var(--ac)"></span>
-                  </div>
+                  <div class="parte"><span class="parte-t">{{ sec.parteTitulo }}</span><span class="linea"></span></div>
                 </sc-if>
                 <div style="display:flex;align-items:center;gap:8px">
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#54514f">{{ sec.titulo }}</span>
-                  <span style="flex:1;height:2px;background:var(--ink)"></span>
-                  <button type="button" onClick="{{ sec.onSubir }}" aria-label="Subir sección" title="Subir sección (en el borde pasa al bloque anterior)" style="{{ sec.subirStyle }}">▲</button>
-                  <button type="button" onClick="{{ sec.onBajar }}" aria-label="Bajar sección" title="Bajar sección (en el borde pasa al bloque siguiente)" style="{{ sec.bajarStyle }}">▼</button>
+                  <span class="rotulo" style="color:var(--ink)">{{ sec.titulo }}</span>
+                  <span style="flex:1;height:1px;background:rgba(0,0,0,.12)"></span>
+                  <div class="orden">
+                    <button type="button" class="{{ sec.subirClase }}" onClick="{{ sec.onSubir }}" aria-label="Subir sección" title="Subir sección (en el borde pasa al bloque anterior)">▲</button>
+                    <button type="button" class="{{ sec.bajarClase }}" onClick="{{ sec.onBajar }}" aria-label="Bajar sección" title="Bajar sección (en el borde pasa al bloque siguiente)">▼</button>
+                  </div>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:2px;margin-top:6px">
+                <div class="sec-lista">
                   <sc-for list="{{ sec.canciones }}" as="r" hint-placeholder-count="2">
-                    <div style="display:flex;gap:12px;background:#fff;padding:8px 12px;align-items:center">
-                      <div style="flex:1">
-                        <sc-if value="{{ r.tieneLineas }}" hint-placeholder-val="{{ false }}">
-                          <span style="font-size:15px;font-weight:600">{{ r.lineaPrimera }}</span>
-                          <sc-for list="{{ r.lineasResto }}" as="linea" hint-placeholder-count="1">
-                            <span style="display:block;font-size:12px;color:#6b6866;margin-top:2px">{{ linea }}</span>
-                          </sc-for>
-                        </sc-if>
-                        <sc-if value="{{ r.sinLineas }}" hint-placeholder-val="{{ true }}">
-                          <span style="font-size:15px;font-weight:600">{{ r.lineaPrimera }}</span>
-                        </sc-if>
+                    <div class="rcan">
+                      <div style="min-width:0">
+                        <div style="font-size:15px;font-weight:600;overflow-wrap:anywhere">{{ r.lineaPrimera }}</div>
+                        <sc-for list="{{ r.lineasResto }}" as="linea" hint-placeholder-count="1">
+                          <div style="font-size:12.5px;color:var(--muted);margin-top:2px">{{ linea }}</div>
+                        </sc-for>
                       </div>
-                      <span style="font-size:12px;font-weight:800;color:var(--ac-dk);background:var(--ac-lt);padding:2px 6px;flex:none">{{ r.tono }}</span>
-                      <div style="display:flex;flex-direction:column;gap:3px;flex:none">
-                        <button type="button" onClick="{{ r.onSubir }}" aria-label="Subir canción" title="Subir" style="{{ r.subirStyle }}">▲</button>
-                        <button type="button" onClick="{{ r.onBajar }}" aria-label="Bajar canción" title="Bajar" style="{{ r.bajarStyle }}">▼</button>
+                      <span class="tono">{{ r.tono }}</span>
+                      <div class="orden">
+                        <button type="button" class="{{ r.subirClase }}" onClick="{{ r.onSubir }}" aria-label="Subir canción" title="Subir">▲</button>
+                        <button type="button" class="{{ r.bajarClase }}" onClick="{{ r.onBajar }}" aria-label="Bajar canción" title="Bajar">▼</button>
                       </div>
                     </div>
                   </sc-for>
                 </div>
               </div>
             </sc-for>
-          </div>
-          <div style="font-size:13px;color:#7d7979;margin-top:10px">{{ resumenVacio }}</div>
-        </sc-if>
-        <sc-if value="{{ resumenEsOtro }}" hint-placeholder-val="{{ true }}">
-          <div style="display:flex;flex-direction:column;gap:2px;margin-top:16px">
-            <div style="background:#fff;padding:8px 12px">
-              <span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979">Detalles y responsable</span>
-              <div style="font-size:14px;margin-top:4px">{{ resumenDetalles }}</div>
+            <sc-if value="{{ resumenVacio }}" hint-placeholder-val="{{ false }}"><div class="vacio-caja">{{ resumenVacio }}</div></sc-if>
+          </sc-if>
+
+          <sc-if value="{{ resumenEsOtro }}" hint-placeholder-val="{{ false }}">
+            <div class="caja" style="background:var(--soft);border:0">
+              <span class="rotulo">Detalles y responsable</span>
+              <div style="font-size:14px;line-height:1.5;margin-top:6px;white-space:pre-line">{{ resumenDetalles }}</div>
             </div>
-            <div style="background:#fff;padding:8px 12px">
-              <span style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7d7979">Personas requeridas</span>
-              <div style="font-size:14px;margin-top:4px">{{ resumenPersonas }}</div>
+            <div class="caja" style="background:var(--soft);border:0">
+              <span class="rotulo">Personas requeridas</span>
+              <div style="font-size:14px;line-height:1.5;margin-top:6px;white-space:pre-line">{{ resumenPersonas }}</div>
             </div>
-          </div>
-        </sc-if>
+          </sc-if>
+        </div>
       </div>
+
+      <aside style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <sc-if value="{{ resumenEsRepertorio }}" hint-placeholder-val="{{ false }}">
+          <div class="caja">
+            <span class="rotulo" style="display:block;margin-bottom:8px">Banda</span>
+            <sc-if value="{{ resumenHayVoces }}" hint-placeholder-val="{{ false }}">
+              <div class="banda-sub">Voces</div>
+              <sc-for list="{{ resumenVoces }}" as="bg" hint-placeholder-count="2">
+                <div class="banda-fila"><span style="color:var(--muted)">{{ bg.tipo }}</span><span style="font-weight:600;text-align:right">{{ bg.nombres }}</span></div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ resumenHayMusicos }}" hint-placeholder-val="{{ false }}">
+              <div class="banda-sub">Músicos</div>
+              <sc-for list="{{ resumenMusicos }}" as="bg" hint-placeholder-count="3">
+                <div class="banda-fila"><span style="color:var(--muted)">{{ bg.tipo }}</span><span style="font-weight:600;text-align:right">{{ bg.nombres }}</span></div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ resumenSinBanda }}" hint-placeholder-val="{{ false }}"><p style="font-size:13px;color:var(--muted2);margin:0">Sin integrantes asignados.</p></sc-if>
+          </div>
+          <sc-if value="{{ resumenNotas }}" hint-placeholder-val="{{ false }}">
+            <div class="caja"><span class="rotulo">Notas del ensayo</span><p style="margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted);white-space:pre-line">{{ resumenNotas }}</p></div>
+          </sc-if>
+        </sc-if>
+        <div class="caja" style="background:var(--ac-lt);border:0">
+          <span class="rotulo" style="color:var(--ac-dk)">Antes de guardar</span>
+          <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--ac-dk)">“Publicar” lo muestra de inmediato en el calendario. “Borrador” lo guarda sin que el equipo lo vea.</p>
+        </div>
+      </aside>
     </section>
   </sc-if>
 
-  <sc-if value="{{ enWizard }}" hint-placeholder-val="{{ true }}">
-    <div style="display:flex;gap:8px;align-items:center;margin-top:32px;padding-top:20px;border-top:2px solid var(--ink);flex-wrap:wrap">
-      <button onClick="{{ cancelar }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;border:2px solid transparent;background:transparent;color:#7d7979;padding:10px 12px;cursor:pointer">Cancelar</button>
-      <span style="flex:1"></span>
-      <button onClick="{{ atras }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;padding:10px 18px;cursor:pointer">Atrás</button>
-      <sc-if value="{{ esPaso5SinEstado }}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{ guardarCambios }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 18px;cursor:pointer">Guardar cambios</button>
+  <sc-if value="{{ enWizard }}" hint-placeholder-val="{{ false }}">
+    <div class="wiz-barra">
+      <sc-if value="{{ mostrarCancelar }}" hint-placeholder-val="{{ false }}"><button type="button" class="btn-texto wiz-cancelar" onClick="{{ cancelar }}" aria-label="Cancelar">Cancelar</button></sc-if>
+      <span style="flex:1" class="solo-desk"></span>
+      <button type="button" class="btn-sec" onClick="{{ atras }}" style="min-height:40px;padding:0 16px;font-size:13px">{{ atrasLabel }}</button>
+      <sc-if value="{{ esPasoFinalSinEstado }}" hint-placeholder-val="{{ false }}">
+        <button type="button" class="btn-pri btn-ac" onClick="{{ guardarCambios }}">Guardar cambios</button>
       </sc-if>
-      <sc-if value="{{ esPaso5ConEstado }}" hint-placeholder-val="{{ false }}">
-        <button onClick="{{ guardarBorrador }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid #9a9694;background:#c7cad0;color:#3a3f47;padding:10px 18px;cursor:pointer">Borrador</button>
-        <button onClick="{{ guardarPublicar }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 18px;cursor:pointer">Publicar</button>
+      <sc-if value="{{ esPasoFinalConEstado }}" hint-placeholder-val="{{ false }}">
+        <button type="button" class="btn-sec" onClick="{{ guardarBorrador }}" style="min-height:40px;padding:0 16px;font-size:13px">Borrador</button>
+        <button type="button" class="btn-pri btn-ac" onClick="{{ guardarPublicar }}">Publicar</button>
       </sc-if>
-      <sc-if value="{{ noEsPaso5 }}" hint-placeholder-val="{{ true }}">
-        <button onClick="{{ siguiente }}" style="font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 18px;cursor:pointer">{{ siguienteLabel }}</button>
+      <sc-if value="{{ noEsPasoFinal }}" hint-placeholder-val="{{ true }}">
+        <button type="button" class="btn-pri" onClick="{{ siguiente }}">{{ siguienteLabel }}</button>
       </sc-if>
     </div>
   </sc-if>
 
-  <footer style="padding:32px 0 0;font-size:12px;letter-spacing:.06em;color:#6b6866">
-    Los cambios se publican de inmediato para todos.
-  </footer>
-    </div>
-  </div>
+  <sc-if value="{{ noEnWizard }}" hint-placeholder-val="{{ true }}">
+    <footer style="padding:28px 0 0;font-size:12px;letter-spacing:.06em;color:var(--muted)">Los cambios se publican de inmediato para todos.</footer>
+  </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ estado }}" hint-placeholder-val="{{ false }}">
+    <div class="toast" role="status">{{ estado }}</div>
   </sc-if>
 
   <sc-if value="{{ moverAbierto }}" hint-placeholder-val="{{ false }}">
-    <div style="position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ cerrarMover }}">
-      <div style="width:min(100%,360px);background:#fff;border:2px solid var(--ink);padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.28)" onClick="{{ detenerPropagacion }}">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <span style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">Mover evento</span>
-          <button type="button" onClick="{{ cerrarMover }}" aria-label="Cerrar" style="font-size:14px;border:0;background:transparent;color:#7d7979;cursor:pointer;padding:2px">✕</button>
+    <div class="velo" onClick="{{ cerrarMover }}">
+      <div class="modal" onClick="{{ detenerPropagacion }}" style="width:min(100%,380px)">
+        <div class="modal-cab">
+          <span class="kicker" style="margin:0">Mover evento</span>
+          <button type="button" class="btn-quitar" onClick="{{ cerrarMover }}" aria-label="Cerrar">✕</button>
         </div>
-        <p style="font-size:13px;color:#54514f;margin:8px 0 0">{{ moverResumen }}</p>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:16px">
-          <button type="button" onClick="{{ moverMesAnterior }}" style="font-size:14px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:5px 10px;cursor:pointer">←</button>
-          <span style="font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase">{{ moverMesLabel }}</span>
-          <button type="button" onClick="{{ moverMesSiguiente }}" style="font-size:14px;font-weight:800;border:2px solid var(--ink);background:transparent;padding:5px 10px;cursor:pointer">→</button>
+        <p style="font-size:14px;font-weight:600;margin:6px 0 0;line-height:1.4">{{ moverResumen }}</p>
+        <div class="cal-nav" style="margin:16px 0 10px">
+          <button type="button" class="flecha-nav" onClick="{{ moverMesAnterior }}" aria-label="Mes anterior">‹</button>
+          <span style="font-size:15px;font-weight:800;text-transform:uppercase">{{ moverMesLabel }}</span>
+          <button type="button" class="flecha-nav" onClick="{{ moverMesSiguiente }}" aria-label="Mes siguiente">›</button>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:14px">
+        <div class="mov-grid">
           <sc-for list="{{ moverCabeceras }}" as="h" hint-placeholder-count="7">
-            <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7d7979;text-align:center">{{ h }}</div>
+            <div class="cal-dow">{{ h }}</div>
+          </sc-for>
+          <sc-for list="{{ moverCeldas }}" as="c" hint-placeholder-count="35">
+            <button type="button" class="{{ c.clase }}" onClick="{{ c.onClick }}">{{ c.dia }}</button>
           </sc-for>
         </div>
-        <div style="display:flex;flex-direction:column;gap:2px;margin-top:2px">
-          <sc-for list="{{ moverFilas }}" as="fila" hint-placeholder-count="5">
-            <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">
-              <sc-for list="{{ fila.celdas }}" as="c" hint-placeholder-count="7">
-                <button type="button" onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.dia }}</button>
-              </sc-for>
-            </div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ tabbarVisible }}" hint-placeholder-val="{{ true }}">
+  <nav class="tabbar" aria-label="Navegación principal">
+    <sc-for list="{{ tabsMovil }}" as="t" hint-placeholder-count="3">
+      <a class="{{ t.clase }}" href="{{ t.href }}" onClick="{{ t.onClick }}">
+        <span class="tab-ico">
+          <sc-if value="{{ t.icoEventos }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg></sc-if>
+          <sc-if value="{{ t.icoUsuarios }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.6 3 5.2"></path></svg></sc-if>
+          <sc-if value="{{ t.icoRepertorio }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></sc-if>
+          <sc-if value="{{ t.icoInicio }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg></sc-if>
+          <sc-if value="{{ t.icoCalendario }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></sc-if>
+        </span>
+        <span>{{ t.label }}</span>
+      </a>
+    </sc-for>
+    <button type="button" class="{{ masClase }}" onClick="{{ toggleMas }}">
+      <span class="tab-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></span>
+      <span>Más</span>
+    </button>
+  </nav>
+  </sc-if>
+  <sc-if value="{{ masAbierto }}" hint-placeholder-val="{{ false }}">
+    <div class="velo" onClick="{{ toggleMas }}">
+      <div class="modal" onClick="{{ detenerMas }}">
+        <div class="agarre"></div>
+        <div class="mas-cab">
+          <span class="avatar" style="width:40px;height:40px;font-size:14px">{{ usuarioIniciales }}</span>
+          <div style="min-width:0">
+            <div style="font-size:15px;font-weight:700">{{ usuarioNombre }}</div>
+            <div style="font-size:12.5px;color:var(--muted)">{{ masSub }}</div>
+          </div>
+        </div>
+        <div class="mas-lista">
+          <sc-for list="{{ masItems }}" as="mi" hint-placeholder-count="2">
+            <a class="mas-fila" href="{{ mi.href }}" onClick="{{ mi.onClick }}"><span>{{ mi.label }}</span><span style="color:var(--muted3);font-size:18px">›</span></a>
           </sc-for>
+          <button type="button" class="mas-fila peligro" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
         </div>
       </div>
     </div>
@@ -651,7 +1032,7 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
             <div style="display:flex;flex-direction:column;gap:18px">
               <div>
                 <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">1 · Enlace de la fuente <span style="font-weight:600;letter-spacing:.04em;text-transform:none">(opcional)</span></div>
-                <input value="{{ cifUrl }}" onChange="{{ onCifUrl }}" placeholder="https://acordes.lacuerda.net/… u otra fuente" autoComplete="off" style="width:100%;margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:0;border-bottom:2px solid var(--ink);background:transparent;padding:6px 2px">
+                <input value="{{ cifUrl }}" onChange="{{ onCifUrl }}" placeholder="https://acordes.lacuerda.net/… u otra fuente" autoComplete="off" style="width:100%;margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:0;border-bottom:1px solid rgba(0,0,0,.18);background:transparent;padding:6px 2px">
                 <sc-if value="{{ cifUrlInvalida }}" hint-placeholder-val="{{ false }}">
                   <div style="font-size:12px;color:#b00020;margin-top:4px">Debe ser un enlace completo que empiece con https://, o déjalo vacío.</div>
                 </sc-if>
@@ -665,7 +1046,7 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
               <div>
                 <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">2 · Copia y pega la letra con acordes</div>
                 <p style="font-size:13px;color:#54514f;margin:6px 0 0;line-height:1.5">Desde LaCuerda u otra fuente, selecciona desde el primer acorde hasta el final de la canción, cópiala (Ctrl+C) y pégala aquí (Ctrl+V). También puedes escribirla: cada línea de acordes encima de su letra. Con un enlace de LaCuerda se usan sus marcas de acordes; si no, los acordes se detectan en el texto. Lo que no sea parte de la canción, como notas del autor, puedes borrarlo aquí.</p>
-                <textarea id="cifrado-pegado" value="{{ cifTexto }}" onChange="{{ onCifTexto }}" rows="6" placeholder="Pega aquí el cifrado…" spellCheck="false" style="width:100%;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.4;padding:10px;border:2px solid var(--ink);background:#fff;resize:vertical;white-space:pre;overflow-x:auto"></textarea>
+                <textarea id="cifrado-pegado" value="{{ cifTexto }}" onChange="{{ onCifTexto }}" rows="6" placeholder="Pega aquí el cifrado…" spellCheck="false" style="width:100%;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.4;padding:10px;border:1px solid rgba(0,0,0,.18);border-radius:8px;background:#fff;resize:vertical;white-space:pre;overflow-x:auto"></textarea>
               </div>
               <sc-if value="{{ cifHayPegado }}" hint-placeholder-val="{{ false }}">
                 <div>
@@ -763,7 +1144,7 @@ class Component extends DCLogic {
     reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null, musicos: [],
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false,
-    moverEventoId: null, moverMes: '', userDoc: null,
+    moverEventoId: null, moverMes: '', userDoc: null, sub: 'detalles', masAbierto: false,
     /* Modal "Cifrado" del paso 4 (null = cerrado), ver abrirCifrado. */
     cifrado: null
   };
@@ -861,6 +1242,24 @@ class Component extends DCLogic {
     const org = this.state.organizacion;
     if (!org || !org.slug) return;
     window.location.href = 'index.html?group=' + encodeURIComponent(org.slug) + '&eventid=' + encodeURIComponent(ev.id);
+  }
+
+  /* Paso 1: con un evento nuevo abierto, tocar otro día le cambia la fecha;
+     al editar uno existente la fecha se cambia con "Mover". */
+  elegirFecha(iso) {
+    const s = this.state;
+    if (s.draft && s.paso === 1) {
+      if (s.editId) { this.avisar(false, '', 'Para cambiar la fecha, cancela y usa “Mover” en la lista del día'); return; }
+      this.setState({ fecha: iso });
+      this.setDraft((x) => { x.fecha = iso; });
+      return;
+    }
+    this.setState({ fecha: iso });
+  }
+
+  irA(patch) {
+    this.setState(Object.assign({ estado: '' }, patch));
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   cerrarSidebarSiMovil() {
@@ -1133,17 +1532,14 @@ class Component extends DCLogic {
     const R = D();
     const s = this.state;
 
-    const tabStyle = (activo) => 'display:block;width:100%;text-align:left;padding:10px 12px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border:0;cursor:pointer;margin-bottom:2px;background:' +
-      (activo ? 'var(--ink)' : 'transparent') + ';color:' + (activo ? '#fff' : 'var(--ink)');
     const q = (s.orgSwitcherBusqueda || '').trim().toLowerCase();
     const orgsFiltradas = q ? (s.orgs || []).filter((o) => o.name.toLowerCase().indexOf(q) >= 0) : (s.orgs || []);
     const orgsSidebar = orgsFiltradas.map((o) => ({
       id: o.id, nombre: o.name,
-      style: 'display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;cursor:pointer;background:' +
-        (o.id === s.organizationId ? 'var(--ac)' : 'transparent') + ';color:' + (o.id === s.organizationId ? '#fff' : 'var(--ink)'),
+      clase: 'dropdown-item' + (o.id === s.organizationId ? ' on' : ''),
       onClick: () => this.irOrg(o.id)
     }));
-    const orgSwitcherVacioStyle = orgsFiltradas.length === 0 ? 'font-size:13px;color:#9a9694;padding:10px' : 'display:none';
+    const modulosMenu = window.RepertorioMenu.modulos('eventos', s.organizacion, s.userDoc);
     const orgActualEncontrada = (s.orgs || []).find((o) => o.id === s.organizationId);
     const orgActualNombre = orgActualEncontrada ? orgActualEncontrada.name : (s.organizacion ? s.organizacion.name : 'Seleccionar organización');
 
@@ -1151,26 +1547,42 @@ class Component extends DCLogic {
     const primerDeclinado = ((s.data && s.data.eventos) || [])
       .filter((ev) => D().monthKey(ev.fecha) === mesEnCurso && D().declinadosEvento(ev).length > 0)
       .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))[0] || null;
+    const tabIco = (id) => ({ icoEventos: id === 'eventos', icoUsuarios: id === 'usuarios', icoRepertorio: id === 'repertorio', icoInicio: id === 'inicio', icoCalendario: id === 'publicado' });
+    const accionesMenu = window.RepertorioMenu.acciones(s.organizacion, s.userDoc);
     const base = {
       cargando: s.estadoAcceso === 'cargando',
       denegado: s.estadoAcceso === 'denegado',
       denegadoMotivo: s.denegadoMotivo,
       permitido: s.estadoAcceso === 'permitido',
       noEmbebido: !s.embed,
-      containerStyle: s.embed ? 'max-width:none;margin:0;padding:0' : 'max-width:1100px;margin:0 auto;padding:0 20px 96px',
-      shellExtraStyle: s.embed ? 'border:0;margin-top:0;min-height:0' : '',
-      mainExtraStyle: s.embed ? 'padding:0' : '',
+      tabbarVisible: s.estadoAcceso === 'permitido' && !s.embed && !s.draft,
+      pagClase: 'pag' + (s.embed ? ' embed' : ''),
+      tabsMovil: modulosMenu.filter((m) => m.id !== 'organizaciones').slice(0, 3).map((m) => Object.assign({
+        label: m.label, href: m.deshabilitado ? '#' : m.href,
+        clase: 'tab' + (m.activo ? ' on' : '') + (m.deshabilitado ? ' off' : ''),
+        onClick: () => this.setState({ masAbierto: false })
+      }, tabIco(m.id))),
+      masAbierto: s.masAbierto,
+      masClase: 'tab' + (s.masAbierto ? ' on' : ''),
+      toggleMas: () => this.setState((st) => ({ masAbierto: !st.masAbierto })),
+      detenerMas: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      masSub: s.organizacion ? s.organizacion.name : '',
+      masItems: modulosMenu.filter((m) => m.id === 'organizaciones').map((m) => ({ label: m.label, href: m.href, onClick: () => {} }))
+        .concat(accionesMenu.map((a) => ({ label: a.label, href: a.href, onClick: () => {} }))),
       usuarioNombre: s.usuarioNombre || '',
+      usuarioIniciales: ((s.usuarioNombre || '').trim().split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('') || '?').toUpperCase(),
       cerrarSesion: () => D().signOutUser(),
       /* Orden y contenido del menú: menu-config.js (compartido con
          admin.html). Aquí todo navega a otra página salvo Eventos, que es
          esta misma. */
       menuAcciones: window.RepertorioMenu.acciones(s.organizacion, s.userDoc),
-      menuModulos: window.RepertorioMenu.modulos('eventos', s.organizacion, s.userDoc).map((m) => ({
-        label: m.label,
-        deshabilitado: m.deshabilitado,
-        style: tabStyle(m.activo) + (m.deshabilitado ? ';opacity:.4;cursor:default' : ''),
-        onClick: () => { if (!m.activo && !m.deshabilitado) window.location.href = m.href; }
+      menuModulos: modulosMenu.map((m) => ({
+        label: m.label, href: m.deshabilitado ? '#' : m.href,
+        clase: 'nav-link' + (m.activo ? ' on' : '') + (m.deshabilitado ? ' off' : '')
+      })),
+      menuModulosMovil: modulosMenu.map((m) => ({
+        label: m.label, href: m.deshabilitado ? '#' : m.href,
+        clase: 'chip' + (m.activo ? ' on' : '') + (m.deshabilitado ? ' off' : '')
       })),
       sidebarClase: 'admin-side' + (s.sidebarAbierto ? ' abierto' : ''),
       backdropClase: 'admin-backdrop' + (s.sidebarAbierto ? ' abierto' : ''),
@@ -1182,14 +1594,14 @@ class Component extends DCLogic {
       orgSwitcherBusqueda: s.orgSwitcherBusqueda,
       onOrgSwitcherBusqueda: (e) => this.setState({ orgSwitcherBusqueda: e.target.value }),
       toggleOrgSwitcher: () => this.toggleOrgSwitcher(),
-      orgSwitcherVacioStyle: orgSwitcherVacioStyle,
+      orgSwitcherVacio: orgsFiltradas.length === 0,
       /* Solo evalúa el mes en curso; se apaga sola en cuanto no queda
          ningún puesto declinado sin resolver (ver R.declinadosEvento). */
-      hayAlertaDeclinados: !!primerDeclinado,
+      hayAlertaDeclinados: !!primerDeclinado && !s.draft,
       alertaDeclinadosTexto: 'Existen personas que han declinado su participación que debes revisar para ' + D().monthLabel(D().hoyKey()),
       revisarDeclinados: () => this.revisarDeclinados(primerDeclinado ? primerDeclinado.fecha : '')
     };
-    if (s.estadoAcceso !== 'permitido') return Object.assign(base, { estado: 'Cargando…' });
+    if (s.estadoAcceso !== 'permitido') return Object.assign(base, { estado: '' });
 
     const [year, month] = s.mes.split('-').map(Number);
     const enWizard = !!s.draft;
@@ -1199,52 +1611,40 @@ class Component extends DCLogic {
        el resto salta directo del paso 2 al 4 (ver siguiente/atras). */
     const usaBanda = dr ? R.usaRepertorio(dr.servicio) : false;
 
-    const pasoStyle = (n) => {
-      const on = enWizard ? paso === n : n === 1;
-      const done = enWizard ? paso > n : false;
-      return 'flex:1;min-width:0;text-align:center;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:10px 6px;background:' +
-        (on ? 'var(--ac)' : (done ? '#605d5d' : 'var(--bg)')) + ';color:' + (on || done ? '#fff' : '#7d7979');
-    };
-    const pasosDef = [{ n: 1, texto: 'Fecha' }, { n: 2, texto: 'Evento' }];
-    if (usaBanda) pasosDef.push({ n: 3, texto: 'Banda' });
-    pasosDef.push({ n: 4, texto: usaBanda ? 'Repertorio' : 'Detalles' });
-    pasosDef.push({ n: 5, texto: 'Revisión Final' });
-    const pasos = pasosDef.map((p, i) => ({ label: (i + 1) + '. ' + p.texto, style: pasoStyle(p.n) }));
+    /* Asistente de 3 pasos: 1) fecha + tipo, 2) detalles (y, si el tipo
+       lleva repertorio, banda y canciones como sub-pestañas), 3) revisión. */
+    const subsDef = usaBanda
+      ? [{ id: 'banda', label: 'Banda' }, { id: 'repertorio', label: 'Canciones' }, { id: 'detalles', label: 'Detalles' }]
+      : [{ id: 'detalles', label: 'Detalles' }];
+    const subIdx = Math.max(0, subsDef.findIndex((x) => x.id === s.sub));
+    const subActual = subsDef[subIdx].id;
+    const pasoN = enWizard ? paso : 1;
+    const pasosDef = ['Fecha y tipo', dr ? (usaBanda ? 'Banda y repertorio' : 'Detalles') : 'Detalles', 'Revisión final'];
+    const pasos = pasosDef.map((t, i) => ({
+      n: pasoN > i + 1 ? '✓' : String(i + 1), label: t, conLinea: i > 0,
+      clase: 'paso' + (pasoN === i + 1 ? ' on' : (pasoN > i + 1 ? ' done' : ''))
+    }));
 
     // ---- calendario
     const delDia = (iso) => s.data.eventos.filter((e) => e.fecha === iso).sort((a, b) => this.ordenFechaHora(a, b));
     const hoyDate = new Date();
     const hoyIso = R.iso(hoyDate.getFullYear(), hoyDate.getMonth(), hoyDate.getDate());
-    const filas = R.calendario(year, month - 1).map((fila, fi) => ({
-      celdas: fila.map((c, ci) => {
-        if (!c) return { dia: '', marcaNum: '', marcaTxt: '', titulo: '', marcaStyle: 'display:none', diaStyle: '', alertaStyle: 'display:none', alertaTitulo: '', style: 'border:0;background:var(--bg);min-height:64px;cursor:default', onClick: () => {} };
-        const evsDia = delDia(c.iso);
-        const n = evsDia.length;
-        const nDeclinados = evsDia.reduce((acc, ev) => acc + R.declinadosEvento(ev).length, 0);
-        const sel = s.fecha === c.iso;
-        const esHoy = c.iso === hoyIso;
-        return {
-          dia: String(c.dia),
-          /* El círculo verde de "hoy" ayuda a ubicarse en el mes; si además
-             es el día seleccionado (fondo ya verde con texto blanco), se
-             marca con un aro blanco en vez de repetir el mismo verde. */
-          diaStyle: 'display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:15px;font-weight:600' +
-            (esHoy ? (sel ? ';border:2px solid #fff' : ';background:var(--ac);color:#fff') : ''),
-          alertaStyle: nDeclinados ? 'font-size:13px;line-height:1' : 'display:none',
-          alertaTitulo: nDeclinados ? (nDeclinados + (nDeclinados > 1 ? ' personas declinaron' : ' persona declinó') + ' y siguen programadas') : '',
-          /* En móvil solo se ve el número (.cal-marca-txt se oculta); el
-             texto completo queda en el title de la celda. */
-          marcaNum: n ? String(n) : '',
-          marcaTxt: n ? (n > 1 ? ' eventos' : ' evento') : '',
-          titulo: n ? (n + (n > 1 ? ' eventos' : ' evento')) : '',
-          marcaStyle: n
-            ? ('display:block;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-top:4px;color:' + (sel ? '#fff' : 'var(--ac-dk)'))
-            : 'display:none',
-          style: 'display:flex;flex-direction:column;align-items:flex-start;gap:0;border:0;min-height:64px;padding:8px;cursor:pointer;text-align:left;background:' +
-            (sel ? 'var(--ac)' : (n ? 'var(--ac-lt)' : '#fff')) + ';color:' + (sel ? '#fff' : 'var(--ink)'),
-          onClick: () => this.setState({ fecha: c.iso })
-        };
-      })
+    const celdas = [];
+    R.calendario(year, month - 1).forEach((fila) => fila.forEach((c) => {
+      if (!c) { celdas.push({ clase: 'cal-celda vacia', dia: '', dots: [], alerta: false, alertaTitulo: '', titulo: '', onClick: () => {} }); return; }
+      const evsDia = delDia(c.iso);
+      const n = evsDia.length;
+      const nDeclinados = evsDia.reduce((acc, ev) => acc + R.declinadosEvento(ev).length, 0);
+      const sel = s.fecha === c.iso;
+      celdas.push({
+        clase: 'cal-celda' + (n ? ' ev' : '') + (c.iso === hoyIso ? ' hoy' : '') + (sel ? ' sel' : ''),
+        dia: String(c.dia),
+        dots: evsDia.slice(0, 3).map((x) => x.id),
+        alerta: nDeclinados > 0,
+        alertaTitulo: nDeclinados ? (nDeclinados + (nDeclinados > 1 ? ' personas declinaron' : ' persona declinó') + ' y siguen programadas') : '',
+        titulo: n ? (n + (n > 1 ? ' eventos' : ' evento')) : '',
+        onClick: () => this.elegirFecha(c.iso)
+      });
     }));
 
     const eventosDelDia = (s.fecha ? delDia(s.fecha) : []).map((ev) => {
@@ -1266,7 +1666,7 @@ class Component extends DCLogic {
            los campos que no existían cuando se creó (banda, detalles, etc.). */
         editar: () => {
           if (!R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev)) return;
-          this.setState({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: 2 });
+          this.irA({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: 1, sub: 'detalles', fecha: ev.fecha });
         },
         puedeEditar: R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev),
         puedeMover: R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev),
@@ -1284,6 +1684,8 @@ class Component extends DCLogic {
     // dr.banda puede faltar en registros guardados antes de esta función.
     const drBanda = dr ? (dr.banda || []) : [];
 
+    /* Paso 2 · Banda: los puestos se agrupan en Voces y Músicos. */
+    const VOCES = ['Director de Alabanza', 'Corista'];
     const bandaGrupos = dr ? R.BANDA_ROLES.map((r) => {
       /* Personas seleccionables para este rol: quienes tienen ese rol entre
          sus rolesBanda, más quienes todavía no tienen ningún rol asignado
@@ -1505,21 +1907,16 @@ class Component extends DCLogic {
           /* El botón siempre se renderiza (nunca sc-if) para no romper las
              columnas del grid; sin video válido se oculta con
              visibility:hidden en vez de display:none. */
-          playBtnStyle: 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
-            'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
-            (activa ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
-                    : 'border:1.5px solid var(--ac);background:#fff;color:var(--ac)') +
-            (videoId ? '' : ';visibility:hidden;pointer-events:none'),
+          playClase: 'redondo' + (activa ? ' on' : '') + (videoId ? '' : ' oculto'),
           onPlay: () => this.togglePlay(rowKey, videoId),
           /* ♪ Cifrado: relleno si la canción ya tiene (propio o del catálogo),
              contorno si todavía no. Igual que ▶, siempre ocupa su columna. */
           cifradoTitle: cid ? 'Ver cifrado' : 'Agregar cifrado',
-          cifradoBtnStyle: 'width:22px;height:22px;border-radius:50%;padding:0;font-size:12px;' +
-            'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
-            (cid ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
-                 : 'border:1.5px dashed #9a9694;background:#fff;color:#7d7979') +
-            (tieneTitulo && (cid || puedeCifrar) ? '' : ';visibility:hidden;pointer-events:none'),
-          onCifrado: () => { if (tieneTitulo && (cid || puedeCifrar)) this.abrirCifrado(bi, ci, cid); },
+          cifClase: 'cif-btn' + (cid ? ' on' : ' vacio') + (!cid && !puedeCifrar ? ' oculto' : (tieneTitulo ? '' : ' inactivo')),
+          onCifrado: () => {
+            if (!tieneTitulo) { this.avisar(false, '', 'Escribe primero el nombre de la canción'); return; }
+            if (cid || puedeCifrar) this.abrirCifrado(bi, ci, cid);
+          },
           remove: () => this.setDraft((x) => {
             const arr = x.bloques[bi].canciones;
             if (arr.length > 1) arr.splice(ci, 1); else arr[ci] = R.song();
@@ -1535,6 +1932,7 @@ class Component extends DCLogic {
        (bi, ci) real para escribir con setDraft, pero sube/baja contra la
        siguiente/anterior canción CON NOMBRE de la misma sección, saltando
        espacios en blanco intermedios sin tocar su posición. */
+    const arrowClase = (activo) => 'flecha' + (activo ? '' : ' oculto');
     const arrowStyle = (activo) => 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
       'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;' +
       'border:1.5px solid var(--ac);background:#fff;color:var(--ac)' +
@@ -1584,8 +1982,8 @@ class Component extends DCLogic {
           tieneLineas: lineasResto.length > 0,
           sinLineas: lineasResto.length === 0,
           tono: c.k || '—',
-          subirStyle: arrowStyle(puedeSubir),
-          bajarStyle: arrowStyle(puedeBajar),
+          subirClase: arrowClase(puedeSubir),
+          bajarClase: arrowClase(puedeBajar),
           onSubir: puedeSubir ? () => this.moverCancionResumen(bi, ci, conNombre[pos - 1].ci) : () => {},
           onBajar: puedeBajar ? () => this.moverCancionResumen(bi, ci, conNombre[pos + 1].ci) : () => {}
         };
@@ -1597,8 +1995,8 @@ class Component extends DCLogic {
         mostrarParte: partesResumen.length > 1 && (!prev || prev.parte !== sec.parte),
         parteTitulo: 'Bloque ' + (partesResumen.indexOf(sec.parte) + 1),
         parteStyle: 'display:flex;align-items:center;gap:12px;margin:' + (si === 0 ? '0' : '10px') + ' 0 12px',
-        subirStyle: arrowStyle(puedeSubirSec),
-        bajarStyle: arrowStyle(puedeBajarSec),
+        subirClase: arrowClase(puedeSubirSec),
+        bajarClase: arrowClase(puedeBajarSec),
         onSubir: onSubirSec,
         onBajar: onBajarSec,
         canciones: canciones
@@ -1613,44 +2011,59 @@ class Component extends DCLogic {
     // ---- modal "Mover evento": mini-calendario acotado a hoy en adelante
     const moverEvento = s.moverEventoId ? s.data.eventos.find((e) => e.id === s.moverEventoId) : null;
     const moverAbierto = !!moverEvento;
-    let moverMesLabel = '', moverFilas = [];
+    let moverMesLabel = '';
+    const moverCeldas = [];
     if (moverAbierto) {
       const [my, mm] = s.moverMes.split('-').map(Number);
       moverMesLabel = R.monthLabel(s.moverMes);
-      moverFilas = R.calendario(my, mm - 1).map((fila) => ({
-        celdas: fila.map((c) => {
-          if (!c) return { dia: '', style: 'visibility:hidden;border:0;background:transparent;padding:8px 4px', onClick: () => {} };
-          const pasado = c.iso < hoyIso;
-          const esFechaActual = c.iso === moverEvento.fecha;
-          return {
-            dia: String(c.dia),
-            style: 'padding:8px 4px;border:0;font-size:13px;font-weight:600;background:' +
-              (esFechaActual ? 'var(--ac-lt)' : '#fff') + ';color:' + (pasado ? '#bab6b6' : 'var(--ink)') +
-              ';cursor:' + (pasado ? 'default' : 'pointer'),
-            onClick: pasado ? () => {} : () => this.confirmarMover(c.iso)
-          };
-        })
+      R.calendario(my, mm - 1).forEach((fila) => fila.forEach((c) => {
+        if (!c) { moverCeldas.push({ dia: '', clase: 'mov-celda vacia', onClick: () => {} }); return; }
+        const pasado = c.iso < hoyIso;
+        moverCeldas.push({
+          dia: String(c.dia),
+          clase: 'mov-celda' + (c.iso === moverEvento.fecha ? ' actual' : '') + (pasado ? ' pasado' : ''),
+          onClick: pasado ? () => {} : () => this.confirmarMover(c.iso)
+        });
       }));
     }
+
+    const ultimoSub = subIdx >= subsDef.length - 1;
+    const estadoOriginal = s.editId ? (s.data.eventos || []).find((e) => e.id === s.editId) : null;
 
     return Object.assign(base, {
       estado: s.estado,
       pasos: pasos,
-      esPaso1: !enWizard,
+      esPaso1: !enWizard || paso === 1,
       esPaso2: enWizard && paso === 2,
-      esPaso3Banda: enWizard && paso === 3 && usaBanda,
-      esPaso4Repertorio: enWizard && paso === 4 && usaBanda,
-      esPaso4Otro: enWizard && paso === 4 && !usaBanda,
-      esPaso5: enWizard && paso === 5,
+      esPaso3: enWizard && paso === 3,
+      esSubDetalles: subActual === 'detalles',
+      esSubBanda: usaBanda && subActual === 'banda',
+      esSubRepertorio: usaBanda && subActual === 'repertorio',
+      subTabs: subsDef.map((x) => ({ label: x.label, clase: x.id === subActual ? 'on' : '', onClick: () => this.setState({ sub: x.id }) })),
+      usaBanda: usaBanda,
+      noUsaBanda: !!dr && !usaBanda,
       enWizard: enWizard,
+      noEnWizard: !enWizard,
+      mostrarTitulo: !enWizard && !s.embed,
+      eligiendoTipo: enWizard && paso === 1,
+      viendoDia: !enWizard,
+      tipoKicker: s.editId ? 'Editando evento' : 'Nuevo evento',
+      tiposEvento: dr ? (dr.servicio && R.SERVICIOS.indexOf(dr.servicio) < 0 ? [dr.servicio].concat(R.SERVICIOS) : R.SERVICIOS).map((label) => ({
+        label: label,
+        sub: R.usaRepertorio(label) ? 'Banda y repertorio' : 'Solo detalles',
+        clase: 'tipo' + (dr.servicio === label ? ' on' : ''),
+        onClick: () => this.setDraft((x) => { x.servicio = label; })
+      })) : [],
+      diaKicker: s.fecha ? (s.fecha === hoyIso ? 'Hoy' : 'Día seleccionado') : 'Calendario',
+      sinFecha: !s.fecha,
 
       mesLabel: R.monthLabel(s.mes),
       cabeceras: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
-      filas: filas,
+      celdas: celdas,
       mesAnterior: () => this.shiftMonth(-1),
       mesSiguiente: () => this.shiftMonth(1),
 
-      fechaTitulo: s.fecha ? (R.diaNombre(s.fecha) + ' ' + R.fechaLarga(s.fecha)) : 'Elige un día en el calendario',
+      fechaTitulo: (dr && dr.fecha) ? (R.diaNombre(dr.fecha) + ' ' + R.fechaLarga(dr.fecha)) : (s.fecha ? (R.diaNombre(s.fecha) + ' ' + R.fechaLarga(s.fecha)) : 'Elige un día'),
       eventosDelDia: eventosDelDia,
       vacioDia: s.fecha
         ? (eventosDelDia.length ? '' : 'Sin participaciones en esta fecha todavía.')
@@ -1659,7 +2072,7 @@ class Component extends DCLogic {
       nuevoEvento: () => {
         if (!R.puede(s.userDoc, 'eventos.crear')) return;
         if (!s.fecha) { this.setState({ estado: 'Primero elige una fecha' }); return; }
-        this.setState({ draft: R.newEvento({ fecha: s.fecha }), editId: null, paso: 2, estado: '' });
+        this.irA({ draft: R.newEvento({ fecha: s.fecha }), editId: null, paso: 1, sub: 'detalles' });
       },
 
       draftFecha: dr ? (R.diaNombre(dr.fecha) + ' · ' + R.fechaLarga(dr.fecha) + ' · Semana ' + R.semanaDelMes(dr.fecha)) : '',
@@ -1677,6 +2090,12 @@ class Component extends DCLogic {
       servicios: (dr && dr.servicio && R.SERVICIOS.indexOf(dr.servicio) < 0
         ? [dr.servicio].concat(R.SERVICIOS) : R.SERVICIOS).map((label) => ({ label: label })),
       bandaGrupos: bandaGrupos,
+      bandaVoces: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) >= 0),
+      bandaMusicos: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) < 0),
+      resumenVoces: resumenBanda.filter((g) => VOCES.indexOf(g.tipo) >= 0),
+      resumenMusicos: resumenBanda.filter((g) => VOCES.indexOf(g.tipo) < 0),
+      resumenHayVoces: resumenBanda.some((g) => VOCES.indexOf(g.tipo) >= 0),
+      resumenHayMusicos: resumenBanda.some((g) => VOCES.indexOf(g.tipo) < 0),
       bloques: bloques,
       agregarParte: () => this.agregarParte(),
       resumen: resumen,
@@ -1686,26 +2105,45 @@ class Component extends DCLogic {
       resumenTema: dr ? (dr.tema || 'Sin tema') : '',
       resumenBanda: resumenBanda,
       resumenTieneBanda: resumenBanda.length > 0,
+      resumenSinBanda: resumenBanda.length === 0,
+      resumenDia: dr ? R.diaNombre(dr.fecha) : '',
+      resumenFecha: dr ? (R.fechaLarga(dr.fecha) + ' · Semana ' + R.semanaDelMes(dr.fecha)) : '',
+      resumenHora: dr && dr.hora ? dr.hora : 'Sin hora',
+      resumenCita: dr ? (dr.cita || '') : '',
+      resumenAviso: dr ? (dr.avisoImportante || '') : '',
+      resumenNotas: dr ? (dr.notas || '') : '',
+      resumenEstado: estadoOriginal ? ('Actual: ' + R.estadoInfo(estadoOriginal).label) : '',
       resumenEsRepertorio: dr ? R.usaRepertorio(dr.servicio) : false,
       resumenEsOtro: dr ? !R.usaRepertorio(dr.servicio) : false,
       resumenDetalles: dr && dr.detalles ? dr.detalles : 'Sin detalles aún',
       resumenPersonas: dr && dr.personas ? dr.personas : 'Sin personas asignadas aún',
 
-      noEsPaso5: enWizard && paso !== 5,
-      siguienteLabel: 'Siguiente',
+      noEsPasoFinal: enWizard && paso !== 3,
+      siguienteLabel: (paso === 2 && !ultimoSub) ? ('Siguiente: ' + subsDef[subIdx + 1].label) : 'Siguiente',
+      atrasLabel: paso === 1 ? 'Cancelar' : 'Atrás',
+      mostrarCancelar: enWizard && paso !== 1,
       siguiente: () => {
-        if (!validar()) return;
-        const next = (paso === 2 && !usaBanda) ? 4 : paso + 1;
-        this.setState({ paso: next, estado: '' });
+        if (!dr) return;
+        if (paso === 1) {
+          if (!dr.servicio) { this.avisar(false, '', 'Elige el tipo de evento'); return; }
+          this.irA({ paso: 2, sub: subsDef[0].id });
+          return;
+        }
+        if (paso === 2) {
+          const faltaHora = !(dr.hora || '').trim();
+          if (faltaHora && (subActual === 'detalles' || ultimoSub)) { this.setState({ sub: 'detalles' }); this.avisar(false, '', 'Falta la hora'); return; }
+          if (!ultimoSub) { this.irA({ sub: subsDef[subIdx + 1].id }); return; }
+          this.irA({ paso: 3 });
+        }
       },
       atras: () => {
-        if (paso === 2) { this.setState({ draft: null, editId: null, paso: 1 }); return; }
-        const prev = (paso === 4 && !usaBanda) ? 2 : paso - 1;
-        this.setState({ paso: prev });
+        if (paso === 1) { this.setState({ draft: null, editId: null, paso: 1, estado: '' }); return; }
+        if (paso === 2) { if (subIdx > 0) this.irA({ sub: subsDef[subIdx - 1].id }); else this.irA({ paso: 1 }); return; }
+        this.irA({ paso: 2, sub: subsDef[subsDef.length - 1].id });
       },
       cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '' }),
-      esPaso5ConEstado: paso === 5 && R.puede(s.userDoc, 'eventos.estado'),
-      esPaso5SinEstado: paso === 5 && !R.puede(s.userDoc, 'eventos.estado'),
+      esPasoFinalConEstado: paso === 3 && R.puede(s.userDoc, 'eventos.estado'),
+      esPasoFinalSinEstado: paso === 3 && !R.puede(s.userDoc, 'eventos.estado'),
       guardarCambios: () => this.guardarConEstado(undefined),
       guardarBorrador: () => this.guardarConEstado('BORRADOR'),
       guardarPublicar: () => this.guardarConEstado('PUBLICADO'),
@@ -1714,7 +2152,7 @@ class Component extends DCLogic {
       moverResumen: moverEvento ? (R.diaNombre(moverEvento.fecha) + ' ' + R.fechaLarga(moverEvento.fecha) + ' · ' + moverEvento.hora + ' · ' + moverEvento.servicio) : '',
       moverMesLabel: moverMesLabel,
       moverCabeceras: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
-      moverFilas: moverFilas,
+      moverCeldas: moverCeldas,
       moverMesAnterior: () => this.moverShiftMonth(-1),
       moverMesSiguiente: () => this.moverShiftMonth(1),
       cerrarMover: () => this.cerrarMover(),

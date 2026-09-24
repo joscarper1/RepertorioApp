@@ -7,15 +7,15 @@
 <script src="./support.js"></script>
 </head>
 <body>
-<div id="repertorio-checking" style="position:fixed;inset:0;background:var(--bg,#f3f2f2);display:flex;align-items:center;justify-content:center;z-index:2147483647">
-  <p style="font-size:14px;color:#7d7979;font-family:Archivo,sans-serif">Cargando…</p>
+<div id="repertorio-checking" style="position:fixed;inset:0;background:#efeeeb;display:flex;align-items:center;justify-content:center;z-index:2147483647">
+  <p style="font-size:14px;color:#8a867f;font-family:Archivo,sans-serif">Cargando…</p>
 </div>
-<div id="repertorio-gate" style="position:fixed;inset:0;background:rgba(243,242,242,.97);display:none;align-items:center;justify-content:center;z-index:2147483647;padding:20px">
-  <div style="width:min(100%,420px);background:#fff;border:2px solid var(--ink,#201e1d);padding:24px 24px 20px;box-shadow:0 16px 40px rgba(0,0,0,.12)">
-    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk,#08512c)">Acceso restringido</div>
-    <h2 style="font-size:28px;font-weight:800;margin:10px 0 0;text-transform:uppercase">Inicia sesión</h2>
-    <p style="font-size:14px;line-height:1.5;color:#54514f;margin:10px 0 0">El panel de administración es solo para administradores. Entra con tu cuenta de Google.</p>
-    <button id="repertorio-gate-signin" type="button" style="width:100%;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ac,#0f7d45);background:var(--ac,#0f7d45);color:#fff;padding:10px 14px;cursor:pointer;margin-top:18px">Iniciar sesión con Google</button>
+<div id="repertorio-gate" style="position:fixed;inset:0;background:#efeeeb;display:none;align-items:center;justify-content:center;z-index:2147483647;padding:20px;font-family:Archivo,system-ui,sans-serif;color:#1d1b19">
+  <div style="width:min(100%,420px);background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,.08);padding:28px 24px 22px;box-shadow:0 16px 40px rgba(0,0,0,.10)">
+    <div style="display:flex;align-items:center;gap:10px"><span style="width:14px;height:14px;background:#0e7a3c;flex:none"></span><span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#0e7a3c">Acceso restringido</span></div>
+    <h2 style="font-size:30px;font-weight:900;margin:12px 0 0;text-transform:uppercase;line-height:1">Inicia sesión</h2>
+    <p style="font-size:14px;line-height:1.5;color:#5d5a55;margin:10px 0 0">El panel de administración es solo para administradores. Entra con tu cuenta de Google.</p>
+    <button id="repertorio-gate-signin" type="button" style="width:100%;min-height:46px;font-size:14px;font-weight:700;border:0;border-radius:10px;background:#1d1b19;color:#fff;padding:0 16px;cursor:pointer;margin-top:20px">Iniciar sesión con Google</button>
     <div id="repertorio-gate-error" style="min-height:18px;font-size:13px;color:#b00020;margin-top:8px"></div>
   </div>
 </div>
@@ -24,7 +24,7 @@
 <helmet>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/styles.css">
 <script src="_ds/modernist-8ce812fe-181b-46f2-8552-61747ca56346/_ds_bundle.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -37,565 +37,852 @@
 <script src="cifrado.js?v=20260923e"></script>
 <script src="repertorio-data.js?v=20260923e"></script>
 <style>
-:root{--ac:#0f7d45;--ac-dk:#08512c;--ac-lt:#e3efe8;--bg:var(--color-bg,#f3f2f2);--sf:var(--color-surface,#eae9e9);--ink:var(--color-text,#201e1d)}
+:root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body,Archivo),Archivo,sans-serif;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:'Archivo',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:clip}
+button,input,select,textarea{font-family:inherit;color:inherit}
 a{color:var(--ac-dk);text-decoration:none;border-bottom:1px solid var(--ac)}
 a:hover{color:#fff;background:var(--ac)}
-input,textarea,button,select{font-family:inherit;color:inherit;border-radius:0}
-input:focus-visible,textarea:focus-visible,button:focus-visible,select:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
-input::placeholder,textarea::placeholder{color:#bab6b6}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+input::placeholder,textarea::placeholder{color:var(--muted3)}
 ::selection{background:var(--ac-lt)}
-.admin-shell{display:flex;align-items:stretch;margin-top:24px;min-height:60vh;border:2px solid var(--ink);position:relative}
-.admin-side{width:240px;flex:0 0 240px;border-right:2px solid var(--ink);background:#fff;display:flex;flex-direction:column;transition:transform .25s ease}
-.admin-main{flex:1;min-width:0;padding:28px 32px;background:#fff}
-.side-group{padding:16px 14px;border-bottom:1px solid #eae9e9}
-.side-kicker{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#9a9694;padding:0 2px 8px}
-.admin-burger{display:none;width:38px;height:38px;align-items:center;justify-content:center;border:2px solid var(--ink);background:transparent;cursor:pointer;font-size:16px;flex:0 0 auto}
-.admin-backdrop{display:none}
+
+/* ---- Estructura / barra superior (igual que index) ---- */
+.pag{max-width:1320px;margin:0 auto;padding:0 32px 64px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px;border-bottom:1px solid rgba(0,0,0,.12)}
+.top-org{display:flex;align-items:center;gap:10px;min-width:0}
+.top-cuadro{width:14px;height:14px;background:var(--ac);flex:none}
+.top-nombre{font-weight:800;font-size:14px;letter-spacing:.14em;font-stretch:112%;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top-der{display:flex;align-items:center;gap:18px;flex:none}
+.top-org{position:relative;min-width:150px;flex:0 1 auto}
+.nav-movil{display:flex;gap:6px;overflow-x:auto;margin:0 -32px;padding:10px 32px 0;scrollbar-width:none}
+.nav-movil::-webkit-scrollbar{display:none}
+.nav-movil a{flex:none}
+@media (min-width:1141px){ .nav-angosto{display:none !important} }
+@media (max-width:1140px){ .nav-ancho{display:none !important} .usuario-nombre{display:none} .top-der{gap:10px} }
+.top-switch{display:flex;align-items:center;gap:8px;background:transparent;border:0;padding:0;cursor:pointer;color:inherit;min-width:0}
+.dropdown{position:absolute;top:100%;left:0;z-index:40;min-width:260px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:10px;margin-top:8px;box-shadow:0 16px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;color:var(--ink)}
+.dropdown input{border:0;border-bottom:1px solid var(--line);padding:12px;font-size:14px;outline:none}
+.dropdown-lista{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;padding:4px}
+.dropdown-item{display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;border-radius:6px;cursor:pointer;background:transparent;color:var(--ink)}
+.dropdown-item:hover{background:var(--soft)}
+.dropdown-item.on{background:var(--ac);color:#fff}
+.sugerencias{position:absolute;top:100%;left:0;right:0;z-index:30;margin-top:4px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.16);max-height:200px;overflow-y:auto;padding:4px}
+.sugerencias button{display:block;width:100%;text-align:left;font-size:13px;padding:9px 10px;border:0;border-radius:6px;background:transparent;cursor:pointer}
+.sugerencias button:hover{background:var(--soft)}
+.nav-mod{display:flex;align-items:center;gap:2px}
+.top-nav{display:flex;align-items:center;gap:6px}
+.nav-link{font-size:13px;font-weight:600;color:var(--muted);border:0;background:transparent;cursor:pointer;padding:8px 10px;border-radius:6px;white-space:nowrap}
+.nav-link:hover{background:var(--sf);color:var(--ink)}
+.nav-link.on{background:var(--ink);color:#fff}
+.nav-link.off,.chip.off,.nav-link:disabled,.chip:disabled{opacity:.4;pointer-events:none}
+a.chip{border-bottom:1px solid rgba(0,0,0,.14)}
+a.chip:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
+a.chip.on,a.chip.on:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:6000;background:var(--ink);color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.25);white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.sep-v{width:1px;height:20px;background:rgba(0,0,0,.15);flex:none}
+.usuario{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.btn-sec{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#fff;border:1px solid rgba(0,0,0,.18);border-radius:6px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn-sec:hover{border-color:var(--ink)}
+.btn-sec.on{background:var(--ink);border-color:var(--ink);color:#fff}
+a.btn-sec{border-bottom:1px solid rgba(0,0,0,.18)}
+a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
+.btn-pri{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-pri:hover{background:var(--ac);border-color:var(--ac)}
+.btn-pri:disabled{opacity:.4;cursor:not-allowed;background:var(--ink);border-color:var(--ink)}
+.btn-ac{background:var(--ac);border-color:var(--ac)}
+.btn-ac:hover{background:var(--ac-dk);border-color:var(--ac-dk)}
+.btn-peligro{background:var(--red);border-color:var(--red)}
+.btn-peligro:hover{background:#8a0019;border-color:#8a0019}
+.btn-texto{background:none;border:0;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;padding:6px 0}
+.btn-texto:hover{color:var(--ink)}
+.btn-quitar{background:none;border:0;width:32px;height:32px;border-radius:8px;color:var(--muted2);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.btn-quitar:hover{background:var(--red-lt);color:var(--red)}
+
+.titulo-fila{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:22px 0 16px;flex-wrap:wrap}
+.kicker{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac);margin-bottom:6px}
+.mes-titulo{margin:0;font-size:42px;line-height:1;font-weight:900;font-stretch:115%;letter-spacing:-.01em;text-transform:uppercase;overflow-wrap:break-word}
+.rotulo{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2)}
+.sec-t{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.sec-t .linea{flex:1;height:1px;background:rgba(0,0,0,.12)}
+.sec-t .cuenta{font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.08em}
+.vacio-caja{padding:28px 20px;border:1px dashed rgba(0,0,0,.2);border-radius:12px;text-align:center;font-size:14px;color:var(--muted);text-wrap:pretty}
+.seg{display:flex;padding:4px;background:var(--sf);border-radius:9px;gap:2px}
+.seg button{border:0;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted);white-space:nowrap}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.seg button:disabled{cursor:not-allowed;opacity:.5}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;border:1px solid rgba(0,0,0,.14);background:#fff;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tag{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--ac-lt);color:var(--ac-dk);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+.badge{font-size:9.5px;font-weight:800;letter-spacing:.08em;padding:3px 6px;border-radius:4px;white-space:nowrap;text-transform:uppercase}
+.b-hoy{background:var(--gold);color:var(--ink)}
+.b-ok{background:var(--ac-lt);color:var(--ac)}
+.b-pend{background:var(--gold-lt);color:var(--gold-dk)}
+.b-no{background:var(--red-lt);color:var(--red)}
+.b-gris{background:#ecebe8;color:var(--muted)}
+.b-azul{background:var(--blue-lt);color:var(--blue)}
+
+/* ---- Tarjetas / cajas ---- */
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px}
+.panel-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(0,0,0,.08);flex-wrap:wrap}
+.panel-cuerpo{padding:18px 20px}
+.caja{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.card{display:grid;grid-template-columns:60px minmax(0,1fr);gap:14px;padding:14px;border-radius:12px;background:#fff;border:2px solid transparent;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:border-color .15s,box-shadow .15s}
+.card.clic{cursor:pointer}
+.card.clic:hover{box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.card.sel{border-color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.card-fecha{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:8px;padding:8px 0;background:var(--soft);color:var(--ink);align-self:start;min-height:64px}
+.card.hoy .card-fecha{background:var(--gold)}
+.card-dow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.card-dia{font-size:28px;font-weight:900;font-stretch:112%;line-height:1}
+.card-cuerpo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.card-tipo{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;min-width:0;flex-wrap:wrap}
+.card-hora{margin-left:auto;font-weight:600;color:var(--muted);white-space:nowrap}
+.card-tema{font-size:16px;font-weight:600;line-height:1.3;text-wrap:pretty;overflow-wrap:anywhere}
+.card-sub{font-size:13px;color:var(--muted)}
+.card-pie{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fila{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid rgba(0,0,0,.07)}
+.fila:first-child{border-top:0}
+
+/* ---- Formularios ---- */
+.campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.campo-l{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.campo-ayuda{font-size:12px;color:var(--muted2);line-height:1.4}
+.inp{width:100%;min-height:42px;font-size:14px;padding:9px 12px;border:1px solid rgba(0,0,0,.18);border-radius:8px;background:#fff;color:var(--ink);outline:none;transition:border-color .15s}
+.inp:hover{border-color:rgba(0,0,0,.35)}
+.inp:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+textarea.inp{line-height:1.5;resize:vertical}
+select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235d5a55' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center;cursor:pointer}
+.inp:disabled{background:var(--soft);color:var(--muted2);cursor:not-allowed}
+.check{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;min-height:36px}
+.check input{width:18px;height:18px;accent-color:var(--ac);flex:none}
+
+/* ---- Modales ---- */
+.velo{position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{width:min(100%,440px);max-height:90vh;overflow-y:auto;background:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.modal-cab{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.modal-acc{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.aviso{padding:12px 16px;border-radius:12px;background:var(--ac-lt);color:var(--ac-dk);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+@media (min-width:861px){ .solo-movil{display:none !important} }
+@media (max-width:860px){
+  .solo-desk{display:none !important}
+  .pag{padding:0 16px 40px}
+  .top{min-height:52px;gap:10px}
+  .top-der{gap:10px}
+  .avatar{width:32px;height:32px}
+  .titulo-fila{padding:16px 0 10px}
+  .kicker{font-size:10px;margin-bottom:4px}
+  .mes-titulo{font-size:min(31px,7.2vw)}
+  .nav-movil{margin:0 -16px;padding:10px 16px 0}
+  .card{grid-template-columns:54px minmax(0,1fr);gap:12px;padding:12px;border-radius:14px;border:1px solid rgba(0,0,0,.07);box-shadow:none}
+  .card-dow{font-size:10px}
+  .card-dia{font-size:24px}
+  .card-tema{font-size:15px}
+  .panel{border-radius:14px;border:0}
+  .panel-cab,.panel-cuerpo{padding:14px 16px}
+  .caja{border:0;border-radius:14px}
+  .inp{font-size:16px;min-height:46px}
+  .btn-pri{min-height:46px;border-radius:10px;font-size:14px}
+  .velo{padding:0;align-items:flex-end}
+  .modal{width:100%;border-radius:20px 20px 0 0;padding:18px 16px 24px}
+  .modal-acc .btn-pri,.modal-acc .btn-sec{flex:1;min-height:46px}
+}
+
+.ico{width:36px;height:36px;border-radius:8px;border:1px solid rgba(0,0,0,.14);background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;flex:none}
+.ico:hover{border-color:var(--ink)}
+.ico.peligro:hover{border-color:var(--red);color:var(--red)}
+@media (max-width:860px){ .ico{width:44px;height:44px} }
+
+/* ---- Administración ---- */
+.adm{display:flex;flex-direction:column;gap:16px}
+.barra-acc{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.buscar{position:relative;flex:1;min-width:200px}
+.buscar .inp{padding-left:38px}
+.buscar-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted2);pointer-events:none;display:flex}
+.lista{display:flex;flex-direction:column}
+.item{display:flex;flex-direction:column;gap:12px;padding:16px 20px;border-top:1px solid rgba(0,0,0,.07)}
+.item:first-child{border-top:0}
+.item-fila{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.item-t{font-size:15px;font-weight:700;overflow-wrap:anywhere}
+.item-s{font-size:12.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.item-acc{display:flex;align-items:center;gap:8px}
+.item-sub{display:flex;flex-wrap:wrap;gap:8px;align-items:center;position:relative}
+.ini{width:36px;height:36px;border-radius:50%;background:var(--soft);color:var(--ink);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
+.form-panel{background:#fff;border-radius:14px;border:1px solid var(--line);padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.form-fila{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.form-fila > .campo{flex:1;min-width:200px}
+.form-acc{display:flex;gap:8px;flex-wrap:wrap}
+.pend{border:1.5px dashed rgba(0,0,0,.2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid rgba(0,0,0,.07)}
+.pager .btn-sec:disabled{opacity:.4;cursor:not-allowed}
+.rol-tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:4px 4px 4px 10px;border-radius:999px;background:var(--ac-lt);color:var(--ac-dk)}
+.rol-tag button{border:0;background:transparent;color:var(--ac-dk);font-size:14px;line-height:1;cursor:pointer;width:20px;height:20px;border-radius:50%}
+.rol-tag button:hover{background:rgba(0,0,0,.08)}
+.sel-mini{min-height:32px;font-size:12px;font-weight:700;padding:5px 30px 5px 10px;border-radius:999px;width:auto}
+.orgs-pop{position:absolute;top:100%;left:0;width:100%;max-width:360px;z-index:30;margin-top:6px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden}
+.orgs-pop input.buscador{border:0;border-bottom:1px solid var(--line);padding:12px;font-size:14px;outline:none}
+.can-fila{display:grid;grid-template-columns:minmax(0,1fr) 36px 36px;gap:10px;align-items:center;cursor:pointer;padding:12px 20px;border-top:1px solid rgba(0,0,0,.07);transition:background .15s}
+.can-fila:hover{background:var(--soft)}
+.can-fila:first-child{border-top:0}
+.redondo{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--ac);background:#fff;color:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;font-size:13px}
+.redondo.on{background:var(--ac);color:#fff}
+.redondo.vacio{border-style:dashed;border-color:var(--muted3);color:var(--muted2)}
+.redondo.oculto{visibility:hidden;pointer-events:none}
+.cif-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:1.5px solid var(--ac);background:#fff;color:var(--ac-dk);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.cif-btn:hover{background:var(--ac-lt)}
+.cif-btn.on{background:var(--ac);color:#fff}
+.cif-btn.vacio{border-style:dashed}
+.cif-btn.oculto{display:none}
+.cif-btn.inactivo{border-color:rgba(0,0,0,.18);color:var(--muted2);cursor:not-allowed;background:#fff}
+.herr{background:var(--soft);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.herr-item{background:#fff;border-radius:10px;border:1px solid var(--line);padding:12px 14px}
 .cifrado-overlay{position:fixed;inset:0;z-index:5000;background:rgba(20,18,17,.4);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px}
-.cifrado-modal{width:min(100%,760px);max-height:90vh;display:flex;flex-direction:column;background:#fff;border:2px solid var(--ink);box-shadow:0 20px 50px rgba(0,0,0,.28)}
+.cifrado-modal{width:min(100%,760px);max-height:90vh;display:flex;flex-direction:column;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.28)}
 .cifrado-head{padding:16px 20px 12px;border-bottom:1px solid #eae9e9;flex:none}
 .cifrado-body{padding:16px 20px 20px;overflow-y:auto;flex:1 1 auto;min-height:0}
-.cifrado-hoja{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;line-height:1.4;overflow-x:auto;border:1px solid #eae9e9;padding:12px;background:#fff}
+.cifrado-hoja{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;line-height:1.4;overflow-x:auto;border:1px solid #eae9e9;border-radius:10px;padding:12px;background:#fff}
 .cifrado-linea{white-space:pre;min-height:1.4em}
-.cifrado-btn{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:6px 12px;cursor:pointer;text-decoration:none;display:inline-block}
-a.cifrado-btn:hover{background:var(--ink);color:#fff}
+.cifrado-btn{display:inline-flex;align-items:center;font-size:12px;font-weight:600;border:1px solid rgba(0,0,0,.18);border-radius:6px;background:#fff;color:var(--ink);padding:7px 12px;cursor:pointer;text-decoration:none}
+a.cifrado-btn{border-bottom:1px solid rgba(0,0,0,.18)}
+a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
 @media (max-width:860px){
-  .admin-burger{display:inline-flex}
-  .admin-shell{border:0;display:block}
-  .admin-side{position:fixed;top:0;left:0;bottom:0;width:270px;z-index:1000;transform:translateX(-100%);box-shadow:6px 0 28px rgba(0,0,0,.2)}
-  .admin-side.abierto{transform:translateX(0)}
-  .admin-main{border:2px solid var(--ink);padding:20px}
-  .admin-backdrop.abierto{display:block;position:fixed;inset:0;background:rgba(20,18,17,.45);z-index:999}
-}
-@media (max-width:640px){
-  /* Encabezado: en móvil dos filas — ☰ + título + sesión arriba y los
-     botones (Dashboard, Ver publicado) debajo, del mismo ancho. Los
-     contenedores intermedios se "disuelven" (display:contents) para que
-     cada pieza caiga en su celda. */
-  .top-bar{display:grid !important;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"burger titulo der" "acciones acciones acciones";column-gap:12px !important;row-gap:14px;align-items:center !important}
-  .top-izq,.top-col{display:contents !important}
-  .top-bar .admin-burger{grid-area:burger}
-  .top-titulo{grid-area:titulo;align-items:center !important;gap:8px !important;min-width:0}
-  .top-nombre{font-size:12px !important;letter-spacing:.06em !important}
-  .top-der{grid-area:der}
-  .top-salir{font-size:12px !important;padding:6px 10px !important}
-  .top-acciones{grid-area:acciones;margin-top:0 !important;gap:8px !important}
-  .top-acciones a{flex:1 1 0;text-align:center}
+  .item,.can-fila,.pager{padding-left:16px;padding-right:16px}
+  .item-acc{width:100%}
+  .item-acc .inp{flex:1}
+  .form-panel{border:0;padding:16px}
+  .barra-acc > .btn-pri{flex:1}
+  .redondo{width:44px;height:44px}
+  .can-fila{grid-template-columns:minmax(0,1fr) 44px 44px}
   .cifrado-overlay{padding:0}
-  .cifrado-modal{width:100%;height:100%;max-height:none;border:0}
+  .cifrado-modal{width:100%;height:100%;max-height:none;border-radius:0}
   .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
+}
+
+/* ---- Barra de pestañas (teléfono) ---- */
+.tabbar{display:none}
+.mas-cab{display:flex;align-items:center;gap:12px;padding:0 0 14px;border-bottom:1px solid rgba(0,0,0,.08)}
+.mas-lista{display:flex;flex-direction:column;padding-top:4px}
+a.mas-fila,.mas-fila{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:0 4px;border:0;border-bottom:1px solid rgba(0,0,0,.06);background:none;font-size:15px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;width:100%;font-family:inherit}
+a.mas-fila:hover{background:none;color:var(--ink)}
+.mas-fila.peligro{color:var(--red);border-bottom:0}
+.agarre{width:40px;height:4px;border-radius:2px;background:#d4d1cb;margin:0 auto 14px}
+@media (max-width:860px){
+  .nav-movil{display:none !important}
+  .pag{padding-bottom:104px}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:200;display:flex;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(0,0,0,.1);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;border:0;background:none;color:var(--muted2);font-size:10.5px;font-weight:700;letter-spacing:.02em;cursor:pointer;padding:0;font-family:inherit}
+  a.tab{border-bottom:0}
+  a.tab:hover{background:none;color:var(--ink)}
+  .tab-ico{width:48px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+  .tab.on{color:var(--ink)}
+  .tab.on .tab-ico{background:var(--ink);color:#fff}
+  .tab.off{opacity:.4;pointer-events:none}
+  .toast{bottom:92px}
 }
 </style>
 </helmet>
-<div style="max-width:1100px;margin:0 auto;padding:0 20px 96px">
+<div class="pag">
 
-  <div class="top-bar" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 0;border-bottom:2px solid var(--ink)">
-    <div class="top-izq" style="display:flex;align-items:flex-start;gap:12px;min-width:0;flex:1 1 auto">
-      <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ true }}">
-        <button type="button" class="admin-burger" onClick="{{ toggleSidebar }}" aria-label="Abrir menú">☰</button>
-      </sc-if>
-      <div class="top-col" style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;min-width:0;flex:1 1 auto">
-        <div class="top-titulo" style="display:flex;align-items:baseline;gap:12px;min-width:0">
-          <span style="width:14px;height:14px;background:var(--ac);display:inline-block;flex:0 0 auto"></span>
-          <span class="top-nombre" style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;min-width:0">Panel de Administración</span>
-        </div>
-          <div class="top-acciones" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px">
-            <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
-              <a href="{{ ma.href }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid var(--ink);color:var(--ink)">{{ ma.label }}</a>
-            </sc-for>
+  <header class="top">
+    <div class="top-org">
+      <span class="top-cuadro"></span>
+      <sc-if value="{{ hayOrgs }}" hint-placeholder-val="{{ true }}">
+        <button type="button" class="top-switch" onClick="{{ toggleOrgSwitcher }}" title="Organización activa">
+          <span class="top-nombre">{{ orgActualNombre }}</span>
+          <span style="font-size:11px">▾</span>
+        </button>
+        <sc-if value="{{ orgSwitcherAbierto }}" hint-placeholder-val="{{ false }}">
+          <div class="dropdown">
+            <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off">
+            <div class="dropdown-lista">
+              <sc-for list="{{ orgsSidebar }}" as="o" hint-placeholder-count="2">
+                <button type="button" class="{{ o.clase }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
+              </sc-for>
+              <p style="{{ orgSwitcherVacioStyle }}">Sin resultados.</p>
+            </div>
           </div>
-        </div>
+        </sc-if>
+      </sc-if>
+      <sc-if value="{{ sinOrgs }}" hint-placeholder-val="{{ false }}">
+        <span class="top-nombre">Administración</span>
+      </sc-if>
     </div>
-    <div class="top-der" style="display:flex;align-items:center;gap:12px;flex:0 0 auto">
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-        <span style="font-size:12px;letter-spacing:.02em;color:#7d7979">{{ usuarioNombre }}</span>
-        <button class="top-salir" onClick="{{ cerrarSesion }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;padding:8px 14px;border:2px solid #bab6b6;background:transparent;color:#7d7979;cursor:pointer">Cerrar sesión</button>
+    <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ true }}">
+      <nav class="nav-mod nav-ancho">
+        <sc-for list="{{ menuModulos }}" as="mm" hint-placeholder-count="4">
+          <button type="button" class="{{ mm.clase }}" onClick="{{ mm.onClick }}" disabled="{{ mm.deshabilitado }}">{{ mm.label }}</button>
+        </sc-for>
+      </nav>
+    </sc-if>
+    <div class="top-der">
+      <nav class="top-nav nav-ancho">
+        <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
+          <a class="nav-link" href="{{ ma.href }}">{{ ma.label }}</a>
+        </sc-for>
+      </nav>
+      <span class="sep-v nav-ancho"></span>
+      <div class="usuario">
+        <span class="avatar" title="{{ usuarioNombre }}">{{ usuarioIniciales }}</span>
+        <span class="usuario-nombre">{{ usuarioNombre }}</span>
       </div>
+      <button type="button" class="btn-sec solo-desk" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
     </div>
-  </div>
+  </header>
+  <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ true }}">
+    <nav class="nav-movil nav-angosto">
+      <sc-for list="{{ menuModulosMovil }}" as="mm" hint-placeholder-count="4">
+        <button type="button" class="{{ mm.clase }}" onClick="{{ mm.onClick }}" disabled="{{ mm.deshabilitado }}">{{ mm.label }}</button>
+      </sc-for>
+      <sc-for list="{{ menuAcciones }}" as="ma" hint-placeholder-count="2">
+        <a class="chip" href="{{ ma.href }}">{{ ma.label }}</a>
+      </sc-for>
+    </nav>
+  </sc-if>
 
   <sc-if value="{{ cargando }}" hint-placeholder-val="{{ false }}">
-    <p style="padding:40px 0;font-size:14px;color:#7d7979">Cargando…</p>
+    <p style="padding:48px 0;font-size:14px;color:var(--muted2);text-align:center">Cargando…</p>
   </sc-if>
 
   <sc-if value="{{ denegado }}" hint-placeholder-val="{{ false }}">
-    <div style="max-width:480px;margin:60px auto;text-align:center;border:2px solid var(--ink);padding:32px 24px">
-      <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Acceso denegado</div>
-      <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:10px">Tu cuenta no tiene permisos de administrador. Te llevaremos a tu página correspondiente…</p>
+    <div class="panel" style="max-width:480px;margin:60px auto;text-align:center;padding:32px 24px">
+      <div class="kicker" style="color:var(--red)">Acceso denegado</div>
+      <p style="font-size:14px;line-height:1.5;color:var(--muted);margin:10px 0 0">Tu cuenta no tiene permisos de administrador. Te llevaremos a tu página correspondiente…</p>
     </div>
   </sc-if>
 
   <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ true }}">
-    <div class="{{ backdropClase }}" onClick="{{ cerrarSidebarMovil }}"></div>
-    <div class="admin-shell">
-      <div class="{{ sidebarClase }}">
-        <div class="side-group" style="flex:1">
-          <div class="side-kicker">Módulos</div>
-          <sc-for list="{{ menuModulos }}" as="mm" hint-placeholder-count="4">
-            <button type="button" style="{{ mm.style }}" onClick="{{ mm.onClick }}" disabled="{{ mm.deshabilitado }}">{{ mm.label }}</button>
+    <div class="titulo-fila">
+      <div style="min-width:0">
+        <div class="kicker">{{ tabKicker }}</div>
+        <h1 class="mes-titulo">{{ tabTitulo }}</h1>
+      </div>
+      <sc-if value="{{ tabUsuarios }}" hint-placeholder-val="{{ false }}">
+        <div class="seg">
+          <button type="button" class="{{ subUsuariosClase }}" onClick="{{ verSubUsuarios }}">Cuentas</button>
+          <button type="button" class="{{ subPersonasClase }}" onClick="{{ verSubPersonas }}">Personas</button>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ sinOrgsYNoEsOrgs }}" hint-placeholder-val="{{ false }}">
+      <div class="vacio-caja" style="margin-bottom:16px">Todavía no tienes organizaciones asignadas.</div>
+    </sc-if>
+
+    <sc-if value="{{ mensaje }}" hint-placeholder-val="{{ false }}">
+      <div class="aviso" style="margin-bottom:16px">
+        <span>{{ mensaje }}</span>
+        <button type="button" class="btn-quitar" onClick="{{ cerrarMensaje }}" aria-label="Cerrar aviso" style="color:var(--ac-dk)">✕</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ tabOrganizaciones }}" hint-placeholder-val="{{ true }}">
+      <section class="adm">
+        <div class="form-panel">
+          <div class="form-fila">
+            <label class="campo">
+              <span class="campo-l">Nueva organización</span>
+              <input class="inp" value="{{ nuevoOrgNombre }}" onChange="{{ onNuevoOrgNombre }}" placeholder="Nombre de la organización">
+              <span class="campo-ayuda">Enlace público: /{{ slugPreview }}</span>
+            </label>
+            <button type="button" class="btn-pri btn-ac" onClick="{{ crearOrganizacion }}" style="margin-bottom:22px">+ Crear</button>
+          </div>
+        </div>
+
+        <div class="panel lista">
+          <sc-for list="{{ orgsLista }}" as="o" hint-placeholder-count="2">
+            <div class="item">
+              <sc-if value="{{ o.editando }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <div class="form-fila">
+                    <label class="campo">
+                      <span class="campo-l">Nombre</span>
+                      <input class="inp" value="{{ orgEditNombre }}" onChange="{{ onOrgEditNombre }}">
+                    </label>
+                    <label class="campo">
+                      <span class="campo-l">Encabezado (kicker)</span>
+                      <input class="inp" value="{{ orgEditKicker }}" onChange="{{ onOrgEditKicker }}">
+                    </label>
+                  </div>
+                  <label class="campo">
+                    <span class="campo-l">Nota / versículo</span>
+                    <textarea class="inp" value="{{ orgEditNota }}" onChange="{{ onOrgEditNota }}" rows="2"></textarea>
+                  </label>
+                  <label class="campo">
+                    <span class="campo-l">URL de imagen banner</span>
+                    <input class="inp" value="{{ orgEditBannerUrl }}" onChange="{{ onOrgEditBannerUrl }}" placeholder="https://…jpg" style="font-family:ui-monospace,Menlo,monospace;font-size:13px">
+                  </label>
+                  <sc-if value="{{ orgEditBannerMostrarPreview }}" hint-placeholder-val="{{ false }}">
+                    <img src="{{ orgEditBannerUrl }}" alt="" style="display:block;width:100%;max-height:160px;object-fit:cover;border-radius:10px">
+                  </sc-if>
+                  <span style="{{ orgEditBannerEstadoStyle }}">{{ orgEditBannerEstado }}</span>
+                  <div class="form-acc">
+                    <button type="button" class="btn-pri btn-ac" onClick="{{ guardarEdicionOrg }}">Guardar</button>
+                    <button type="button" class="btn-sec" onClick="{{ cancelarEdicionOrg }}" style="min-height:40px;padding:0 16px">Cancelar</button>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ o.noEditando }}" hint-placeholder-val="{{ true }}">
+                <div class="item-fila">
+                  <div style="min-width:0">
+                    <div class="item-t">{{ o.nombre }}</div>
+                    <div class="item-s">/{{ o.slug }} · creada {{ o.fecha }}</div>
+                  </div>
+                  <div class="item-acc" style="width:auto">
+                    <button type="button" class="btn-sec" onClick="{{ o.editar }}">Editar</button>
+                    <button type="button" class="ico peligro" onClick="{{ o.borrar }}" aria-label="Eliminar organización" title="Eliminar organización">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>
+                    </button>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
           </sc-for>
         </div>
-      </div>
+      </section>
+    </sc-if>
 
-      <div class="admin-main">
-        <sc-if value="{{ mostrarOrgActiva }}" hint-placeholder-val="{{ false }}">
-          <div style="display:flex;justify-content:flex-end;margin-bottom:16px;position:relative">
-            <div style="width:min(100%,280px)">
-              <div class="side-kicker" style="padding:0 2px 6px;text-align:right">Organización activa</div>
-              <sc-if value="{{ hayOrgs }}" hint-placeholder-val="{{ true }}">
-                <button type="button" onClick="{{ toggleOrgSwitcher }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;font-size:13px;font-weight:700;padding:8px 10px;border:2px solid var(--ink);background:#fff;cursor:pointer;text-align:left">
-                  <span>{{ orgActualNombre }}</span>
-                  <span>▾</span>
-                </button>
-                <sc-if value="{{ orgSwitcherAbierto }}" hint-placeholder-val="{{ false }}">
-                  <div style="position:absolute;top:100%;left:0;right:0;z-index:30;background:#fff;border:2px solid var(--ink);margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column">
-                    <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
-                    <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column">
-                      <sc-for list="{{ orgsSidebar }}" as="o" hint-placeholder-count="2">
-                        <button type="button" style="{{ o.style }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
-                      </sc-for>
-                      <p style="{{ orgSwitcherVacioStyle }}">Sin resultados.</p>
-                    </div>
-                  </div>
-                </sc-if>
+    <sc-if value="{{ tabUsuariosCuentas }}" hint-placeholder-val="{{ false }}">
+      <section class="adm">
+        <p class="campo-ayuda" style="margin:0">Cuentas con acceso al sistema. Una cuenta no tiene que ser integrante: la persona vinculada es opcional.</p>
+        <div class="barra-acc">
+          <div class="buscar">
+            <span class="buscar-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></span>
+            <input class="inp" value="{{ usuariosBusquedaNombre }}" onChange="{{ onUsuariosBusquedaNombre }}" placeholder="Buscar por nombre…" autoComplete="off">
+          </div>
+          <button type="button" class="btn-pri btn-ac" onClick="{{ toggleAgregarUsuario }}">+ Agregar usuario</button>
+        </div>
+
+        <sc-if value="{{ agregarUsuarioAbierto }}" hint-placeholder-val="{{ false }}">
+          <div class="form-panel">
+            <div class="rotulo">Nuevo acceso</div>
+            <div class="form-fila">
+              <label class="campo" style="flex:2">
+                <span class="campo-l">Correo (cuenta de Google)</span>
+                <input class="inp" type="email" value="{{ nuevoUsuarioEmail }}" onChange="{{ onNuevoUsuarioEmail }}" placeholder="correo@gmail.com" autoComplete="off">
+              </label>
+              <label class="campo" style="min-width:140px">
+                <span class="campo-l">Rol</span>
+                <select class="inp" value="{{ nuevoUsuarioRol }}" onChange="{{ onNuevoUsuarioRol }}">
+                  <option value="normal">Normal</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+            </div>
+            <div class="campo">
+              <span class="campo-l">Organizaciones</span>
+              <div style="display:flex;flex-wrap:wrap;gap:4px 18px">
+                <sc-for list="{{ nuevoUsuarioOrgsChips }}" as="c" hint-placeholder-count="2">
+                  <label class="check">
+                    <input type="checkbox" checked="{{ c.marcada }}" onChange="{{ c.onChange }}">
+                    {{ c.nombre }}
+                  </label>
+                </sc-for>
+              </div>
+            </div>
+            <div class="form-fila">
+              <label class="campo">
+                <span class="campo-l">{{ nuevoUsuarioPersonaLabel }}</span>
+                <select class="inp" value="{{ nuevoUsuarioPersona }}" onChange="{{ onNuevoUsuarioPersona }}">
+                  <sc-for list="{{ nuevoUsuarioPersonaOpciones }}" as="po" hint-placeholder-count="3">
+                    <option value="{{ po.value }}">{{ po.label }}</option>
+                  </sc-for>
+                </select>
+              </label>
+              <sc-if value="{{ nuevoUsuarioPersonaNueva }}" hint-placeholder-val="{{ false }}">
+                <label class="campo">
+                  <span class="campo-l">Nombre de la persona nueva</span>
+                  <input class="inp" value="{{ nuevoUsuarioPersonaNombre }}" onChange="{{ onNuevoUsuarioPersonaNombre }}" placeholder="Nombre completo">
+                </label>
               </sc-if>
-              <p style="{{ sinOrgsStyle }}">Todavía no tienes organizaciones asignadas.</p>
+            </div>
+            <p class="campo-ayuda" style="margin:0">No se envía ningún correo: el acceso se activa la primera vez que esa persona inicie sesión con Google usando este correo.</p>
+            <div class="form-acc">
+              <button type="button" class="btn-pri btn-ac" onClick="{{ guardarNuevoUsuario }}">Guardar</button>
+              <button type="button" class="btn-sec" onClick="{{ toggleAgregarUsuario }}" style="min-height:40px;padding:0 16px">Cancelar</button>
             </div>
           </div>
         </sc-if>
 
-        <p style="{{ mensajeStyle }}">{{ mensaje }}</p>
-
-        <sc-if value="{{ tabOrganizaciones }}" hint-placeholder-val="{{ true }}">
-          <section>
-            <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0 0 16px">Organizaciones</h2>
-
-            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:16px;background:var(--bg);margin-bottom:20px">
-              <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:200px">
-                <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nueva organización</span>
-                <input value="{{ nuevoOrgNombre }}" onChange="{{ onNuevoOrgNombre }}" placeholder="Nombre de la organización" style="font-size:15px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
-              </label>
-              <span style="font-size:12px;color:#7d7979;padding-bottom:10px">/{{ slugPreview }}</span>
-              <button type="button" onClick="{{ crearOrganizacion }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 16px;cursor:pointer">+ Crear</button>
-            </div>
-
-            <sc-for list="{{ orgsLista }}" as="o" hint-placeholder-count="2">
-              <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px">
-                <sc-if value="{{ o.editando }}" hint-placeholder-val="{{ false }}">
-                  <div style="display:flex;flex-direction:column;gap:10px">
-                    <label style="display:flex;flex-direction:column;gap:4px">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nombre</span>
-                      <input value="{{ orgEditNombre }}" onChange="{{ onOrgEditNombre }}" style="font-size:15px;padding:8px 10px;border:2px solid var(--ink)">
-                    </label>
-                    <label style="display:flex;flex-direction:column;gap:4px">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Encabezado (kicker)</span>
-                      <input value="{{ orgEditKicker }}" onChange="{{ onOrgEditKicker }}" style="font-size:14px;padding:8px 10px;border:2px solid var(--ink)">
-                    </label>
-                    <label style="display:flex;flex-direction:column;gap:4px">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nota / versículo</span>
-                      <textarea value="{{ orgEditNota }}" onChange="{{ onOrgEditNota }}" rows="2" style="font-size:13px;padding:8px 10px;border:2px solid var(--ink);resize:vertical"></textarea>
-                    </label>
-                    <label style="display:flex;flex-direction:column;gap:4px">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">URL de imagen banner</span>
-                      <input value="{{ orgEditBannerUrl }}" onChange="{{ onOrgEditBannerUrl }}" placeholder="https://…jpg" style="font-size:13px;font-family:ui-monospace,Menlo,monospace;padding:8px 10px;border:2px solid var(--ink)">
-                    </label>
-                    <sc-if value="{{ orgEditBannerMostrarPreview }}" hint-placeholder-val="{{ false }}">
-                      <img src="{{ orgEditBannerUrl }}" alt="" style="display:block;width:100%;max-height:140px;object-fit:cover;border:2px solid var(--ink)">
-                    </sc-if>
-                    <span style="{{ orgEditBannerEstadoStyle }}">{{ orgEditBannerEstado }}</span>
-                    <div style="display:flex;gap:8px">
-                      <button type="button" onClick="{{ guardarEdicionOrg }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Guardar</button>
-                      <button type="button" onClick="{{ cancelarEdicionOrg }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cancelar</button>
-                    </div>
+        <sc-if value="{{ hayAccesosPendientes }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="rotulo">Pendientes de primer inicio de sesión</div>
+            <sc-for list="{{ accesosPendientesLista }}" as="ap" hint-placeholder-count="1">
+              <div class="pend">
+                <div style="min-width:0">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <span class="item-t" style="word-break:break-all">{{ ap.email }}</span>
+                    <span class="badge b-pend">Pendiente</span>
                   </div>
-                </sc-if>
-                <sc-if value="{{ o.noEditando }}" hint-placeholder-val="{{ true }}">
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-                    <div>
-                      <div style="font-size:16px;font-weight:800">{{ o.nombre }}</div>
-                      <div style="font-size:12px;color:#7d7979">/{{ o.slug }} · creada {{ o.fecha }}</div>
-                    </div>
-                    <div style="display:flex;gap:8px">
-                      <button type="button" onClick="{{ o.editar }}" style="font-size:12px;font-weight:600;letter-spacing:.04em;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:7px 12px;cursor:pointer">Editar</button>
-                      <button type="button" onClick="{{ o.borrar }}" aria-label="Eliminar organización" title="Eliminar organización" style="font-size:14px;border:2px solid #b00020;background:transparent;color:#b00020;padding:7px 10px;cursor:pointer">🗑</button>
-                    </div>
-                  </div>
-                </sc-if>
+                  <div class="item-s">{{ ap.detalle }}</div>
+                </div>
+                <button type="button" class="btn-sec" onClick="{{ ap.cancelar }}" style="color:var(--red)">Cancelar acceso</button>
               </div>
             </sc-for>
-          </section>
+          </div>
         </sc-if>
 
-        <sc-if value="{{ tabUsuarios }}" hint-placeholder-val="{{ false }}">
-          <section>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-              <div>
-                <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0">Usuarios</h2>
-                <p style="font-size:12px;color:#7d7979;margin:4px 0 0">Cuentas con acceso al sistema. Un usuario no tiene que ser integrante: la persona vinculada es opcional.</p>
-              </div>
-              <button type="button" onClick="{{ toggleAgregarUsuario }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 16px;cursor:pointer">+ Agregar usuario</button>
-            </div>
-
-            <sc-if value="{{ agregarUsuarioAbierto }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;flex-direction:column;gap:14px;padding:16px;background:var(--bg);margin-bottom:20px">
-                <div style="display:flex;gap:12px;flex-wrap:wrap">
-                  <label style="display:flex;flex-direction:column;gap:6px;flex:2;min-width:220px">
-                    <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Correo (cuenta de Google)</span>
-                    <input type="email" value="{{ nuevoUsuarioEmail }}" onChange="{{ onNuevoUsuarioEmail }}" placeholder="correo@gmail.com" autoComplete="off" style="font-size:15px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
-                  </label>
-                  <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px">
-                    <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Rol</span>
-                    <select value="{{ nuevoUsuarioRol }}" onChange="{{ onNuevoUsuarioRol }}" style="font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:9px 10px;border:2px solid var(--ink);background:#fff;appearance:none">
-                      <option value="normal">Normal</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </label>
-                </div>
-                <div style="display:flex;flex-direction:column;gap:6px">
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Organizaciones</span>
-                  <div style="display:flex;flex-wrap:wrap;gap:8px 16px">
-                    <sc-for list="{{ nuevoUsuarioOrgsChips }}" as="c" hint-placeholder-count="2">
-                      <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-                        <input type="checkbox" checked="{{ c.marcada }}" onChange="{{ c.onChange }}" style="width:15px;height:15px;cursor:pointer">
-                        {{ c.nombre }}
-                      </label>
-                    </sc-for>
+        <div class="panel lista">
+          <sc-for list="{{ usuariosLista }}" as="u" hint-placeholder-count="3">
+            <div class="item">
+              <div class="item-fila">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0">
+                  <span class="ini">{{ u.inicial }}</span>
+                  <div style="min-width:0">
+                    <div class="item-t">{{ u.nombre }}</div>
+                    <div class="item-s">{{ u.email }}</div>
                   </div>
                 </div>
-                <div style="display:flex;gap:12px;flex-wrap:wrap">
-                  <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:220px">
-                    <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">{{ nuevoUsuarioPersonaLabel }}</span>
-                    <select value="{{ nuevoUsuarioPersona }}" onChange="{{ onNuevoUsuarioPersona }}" style="font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff;appearance:none">
-                      <sc-for list="{{ nuevoUsuarioPersonaOpciones }}" as="po" hint-placeholder-count="3">
-                        <option value="{{ po.value }}">{{ po.label }}</option>
-                      </sc-for>
-                    </select>
-                  </label>
-                  <sc-if value="{{ nuevoUsuarioPersonaNueva }}" hint-placeholder-val="{{ false }}">
-                    <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:220px">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nombre de la persona nueva</span>
-                      <input value="{{ nuevoUsuarioPersonaNombre }}" onChange="{{ onNuevoUsuarioPersonaNombre }}" placeholder="Nombre completo" style="font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
-                    </label>
-                  </sc-if>
-                </div>
-                <p style="font-size:12px;color:#7d7979;margin:0">No se envía ningún correo: el acceso se activa la primera vez que esa persona inicie sesión con Google usando este correo.</p>
-                <div style="display:flex;gap:8px">
-                  <button type="button" onClick="{{ guardarNuevoUsuario }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:9px 16px;cursor:pointer">Guardar</button>
-                  <button type="button" onClick="{{ toggleAgregarUsuario }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:9px 16px;cursor:pointer">Cancelar</button>
+                <div class="item-acc" style="width:auto">
+                  <select class="inp sel-mini" value="{{ u.role }}" onChange="{{ u.onRole }}" aria-label="Rol">
+                    <option value="normal">Normal</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  <button type="button" class="ico peligro" onClick="{{ u.borrar }}" style="{{ u.borrarStyle }}" aria-label="Eliminar usuario" title="Eliminar usuario">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>
+                  </button>
                 </div>
               </div>
+              <div class="item-sub">
+                <select class="inp" value="{{ u.personaId }}" onChange="{{ u.onPersona }}" aria-label="Persona vinculada" style="max-width:320px;flex:1;min-width:180px">
+                  <option value="">Sin persona vinculada</option>
+                  <sc-for list="{{ u.personaOpciones }}" as="po" hint-placeholder-count="2">
+                    <option value="{{ po.id }}">{{ po.nombre }}</option>
+                  </sc-for>
+                </select>
+                <button type="button" class="inp" onClick="{{ u.toggleOrgsDropdown }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;text-align:left;max-width:320px;flex:1;min-width:180px">
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ u.orgsResumen }}</span>
+                  <span style="font-size:11px">▾</span>
+                </button>
+                <sc-if value="{{ u.orgsAbierto }}" hint-placeholder-val="{{ false }}">
+                  <div class="orgs-pop">
+                    <input class="buscador" value="{{ u.orgsBusqueda }}" onChange="{{ u.onOrgsBusqueda }}" placeholder="Buscar organización…" autoComplete="off">
+                    <div style="max-height:220px;overflow-y:auto;padding:6px 12px;display:flex;flex-direction:column">
+                      <sc-for list="{{ u.orgsChips }}" as="c" hint-placeholder-count="2">
+                        <label class="check">
+                          <input type="checkbox" checked="{{ c.marcada }}" onChange="{{ c.onChange }}">
+                          {{ c.nombre }}
+                        </label>
+                      </sc-for>
+                      <p style="{{ u.orgsVacioStyle }}">Sin resultados.</p>
+                    </div>
+                    <button type="button" class="btn-pri" onClick="{{ u.toggleOrgsDropdown }}" style="border-radius:0">Listo</button>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+          <p style="{{ sinUsuariosStyle }}">{{ sinUsuariosTexto }}</p>
+          <sc-if value="{{ hayUsuarios }}" hint-placeholder-val="{{ false }}">
+            <div class="pager">
+              <button type="button" class="btn-sec" onClick="{{ usuariosPaginaAnterior }}" disabled="{{ usuariosEnPrimeraPagina }}">‹ Anterior</button>
+              <span class="campo-ayuda">Página {{ usuariosPaginaActual }} de {{ usuariosTotalPaginas }}</span>
+              <button type="button" class="btn-sec" onClick="{{ usuariosPaginaSiguiente }}" disabled="{{ usuariosEnUltimaPagina }}">Siguiente ›</button>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ tabUsuariosPersonas }}" hint-placeholder-val="{{ false }}">
+      <section class="adm">
+        <p class="campo-ayuda" style="margin:0">Identidad y roles de banda de cada integrante, con o sin cuenta todavía.</p>
+        <div class="barra-acc">
+          <div class="buscar">
+            <span class="buscar-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></span>
+            <input class="inp" value="{{ musicosBusquedaNombre }}" onChange="{{ onMusicosBusquedaNombre }}" placeholder="Buscar por nombre…" autoComplete="off">
+          </div>
+          <button type="button" class="btn-pri btn-ac" onClick="{{ toggleNuevoMusico }}">+ Nueva persona</button>
+        </div>
+        <div class="chips">
+          <sc-if value="{{ migracionDisponible }}" hint-placeholder-val="{{ false }}">
+            <button type="button" class="btn-sec" onClick="{{ abrirMigracion }}">Revisar migración de músicos</button>
+          </sc-if>
+          <button type="button" class="btn-sec" onClick="{{ abrirSync }}">Sincronizar nombres en eventos</button>
+        </div>
+
+        <sc-if value="{{ nuevoMusicoAbierto }}" hint-placeholder-val="{{ false }}">
+          <div class="form-panel">
+            <div class="form-fila">
+              <label class="campo">
+                <span class="campo-l">Nombre</span>
+                <input class="inp" value="{{ nuevoMusicoNombre }}" onChange="{{ onNuevoMusicoNombre }}" placeholder="Nombre completo">
+              </label>
+              <button type="button" class="btn-pri btn-ac" onClick="{{ crearMusico }}">Guardar</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ migracionAbierta }}" hint-placeholder-val="{{ false }}">
+          <div class="herr">
+            <div class="rotulo" style="color:var(--ink)">Migración de músicos</div>
+            <p class="campo-ayuda" style="margin:0;font-size:13px;color:var(--muted)">Se agrupan los nombres ya escritos en el campo “banda” de todos los eventos por coincidencia (sin acentos/mayúsculas/espacios). Revisa los grupos, corrige el nombre canónico si hace falta y fusiona los que sean la misma persona antes de confirmar: nada se escribe hasta que confirmes.</p>
+            <sc-if value="{{ migracionCargando }}" hint-placeholder-val="{{ false }}">
+              <p class="campo-ayuda" style="margin:0">Cargando…</p>
+            </sc-if>
+            <sc-for list="{{ migracionGruposLista }}" as="g" hint-placeholder-count="2">
+              <div class="herr-item" style="display:flex;align-items:flex-start;gap:12px">
+                <input type="checkbox" checked="{{ g.seleccionado }}" onChange="{{ g.onSeleccionar }}" style="width:18px;height:18px;margin-top:12px;accent-color:var(--ac);cursor:pointer">
+                <div style="flex:1;min-width:0">
+                  <input class="inp" value="{{ g.nombreCanonico }}" onChange="{{ g.onNombreCanonico }}" style="font-weight:700;max-width:320px">
+                  <div class="item-s" style="margin-top:6px">Variantes: {{ g.aliasesTexto }} · {{ g.count }} puesto(s) en eventos</div>
+                </div>
+              </div>
+            </sc-for>
+            <p style="{{ migracionResultadoStyle }}">{{ migracionResultado }}</p>
+            <div class="form-acc">
+              <button type="button" class="btn-sec" onClick="{{ fusionarSeleccionMigracion }}" disabled="{{ migracionFusionarDisabled }}" style="min-height:40px;padding:0 14px">Fusionar seleccionados ({{ migracionSeleccionCount }})</button>
+              <button type="button" class="btn-pri btn-ac" onClick="{{ confirmarMigracion }}" disabled="{{ migracionCargando }}">Confirmar migración</button>
+              <button type="button" class="btn-texto" onClick="{{ cerrarMigracion }}">Cerrar</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ syncAbierto }}" hint-placeholder-val="{{ false }}">
+          <div class="herr">
+            <div class="rotulo" style="color:var(--ink)">Sincronizar nombres en eventos</div>
+            <p class="campo-ayuda" style="margin:0;font-size:13px;color:var(--muted)">Corrige de una vez los nombres que hoy aparecen distintos en los eventos (pasados y futuros) de esta organización, según el catálogo de Personas.</p>
+            <sc-if value="{{ syncCargando }}" hint-placeholder-val="{{ false }}">
+              <p class="campo-ayuda" style="margin:0">Cargando eventos…</p>
             </sc-if>
 
-            <sc-if value="{{ hayAccesosPendientes }}" hint-placeholder-val="{{ false }}">
-              <div style="margin-bottom:20px">
-                <div class="side-kicker" style="padding:0 0 8px">Pendientes de primer inicio de sesión</div>
-                <sc-for list="{{ accesosPendientesLista }}" as="ap" hint-placeholder-count="1">
-                  <div style="border:2px dashed #9a9694;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-                    <div style="min-width:0">
-                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                        <span style="font-size:15px;font-weight:800;word-break:break-all">{{ ap.email }}</span>
-                        <span style="font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;background:#c7cad0;color:#3a3f47">Pendiente</span>
-                      </div>
-                      <div style="font-size:12px;color:#7d7979;margin-top:4px">{{ ap.detalle }}</div>
+            <sc-if value="{{ haySyncDuplicados }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="rotulo" style="color:var(--ac-dk)">Posibles duplicados ({{ syncDuplicadosCount }})</div>
+                <sc-for list="{{ syncDuplicadosLista }}" as="dg" hint-placeholder-count="1">
+                  <div class="herr-item" style="display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ dg.personas }}" as="p" hint-placeholder-count="2">
+                      <label class="check">
+                        <input type="checkbox" checked="{{ p.seleccionado }}" onChange="{{ p.onToggle }}">
+                        {{ p.nombre }}
+                      </label>
+                    </sc-for>
+                    <div class="form-fila">
+                      <input class="inp" value="{{ dg.nombreCanonico }}" onChange="{{ dg.onNombreCanonico }}" style="font-weight:700;flex:1;min-width:180px">
+                      <button type="button" class="btn-pri btn-ac" onClick="{{ dg.fusionar }}" disabled="{{ dg.fusionarDisabled }}">Fusionar en este nombre</button>
                     </div>
-                    <button type="button" onClick="{{ ap.cancelar }}" style="font-size:12px;font-weight:700;border:2px solid #b00020;background:transparent;color:#b00020;padding:7px 12px;cursor:pointer">Cancelar acceso</button>
                   </div>
                 </sc-for>
               </div>
             </sc-if>
 
-            <input value="{{ usuariosBusquedaNombre }}" onChange="{{ onUsuariosBusquedaNombre }}" placeholder="Buscar por nombre…" autoComplete="off" style="width:100%;font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff;margin-bottom:14px">
-
-            <sc-for list="{{ usuariosLista }}" as="u" hint-placeholder-count="2">
-              <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-                  <div>
-                    <div style="font-size:15px;font-weight:800">{{ u.nombre }}</div>
-                    <div style="font-size:12px;color:#7d7979">{{ u.email }}</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div class="rotulo" style="color:var(--ac-dk)">Cambios a aplicar en eventos ({{ syncFixesCount }})</div>
+              <div style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
+                <sc-for list="{{ syncFixesLista }}" as="f" hint-placeholder-count="2">
+                  <div class="herr-item" style="font-size:13px;display:flex;flex-direction:column;gap:2px;padding:10px 12px">
+                    <span style="color:var(--muted)">{{ f.fechaLabel }} · {{ f.servicio }} · {{ f.tipo }}</span>
+                    <span><strong>{{ f.nombreActual }}</strong> → <strong style="color:var(--ac-dk)">{{ f.nombreNuevo }}</strong></span>
                   </div>
-                  <div style="display:flex;align-items:center;gap:8px">
-                    <select value="{{ u.role }}" onChange="{{ u.onRole }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 10px;border:2px solid var(--ink);background:#fff;appearance:none">
-                      <option value="normal">Normal</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                    <button type="button" onClick="{{ u.borrar }}" style="{{ u.borrarStyle }};font-size:14px;border:2px solid #b00020;background:transparent;color:#b00020;padding:8px 10px;cursor:pointer" aria-label="Eliminar usuario" title="Eliminar usuario">🗑</button>
-                  </div>
-                </div>
-                <div style="position:relative;margin-top:12px;padding-top:12px;border-top:1px solid #eae9e9;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-                  <select value="{{ u.personaId }}" onChange="{{ u.onPersona }}" aria-label="Persona vinculada" style="font-size:13px;padding:8px 10px;border:2px solid var(--ink);background:#fff;appearance:none;width:100%;max-width:360px">
-                    <option value="">Sin persona vinculada</option>
-                    <sc-for list="{{ u.personaOpciones }}" as="po" hint-placeholder-count="2">
-                      <option value="{{ po.id }}">{{ po.nombre }}</option>
-                    </sc-for>
-                  </select>
-                  <button type="button" onClick="{{ u.toggleOrgsDropdown }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;padding:8px 10px;border:2px solid var(--ink);background:#fff;cursor:pointer;text-align:left;width:100%;max-width:360px">
-                    <span>{{ u.orgsResumen }}</span>
-                    <span>▾</span>
-                  </button>
-                  <sc-if value="{{ u.orgsAbierto }}" hint-placeholder-val="{{ false }}">
-                    <div style="position:absolute;top:100%;left:0;width:100%;max-width:360px;z-index:30;background:#fff;border:2px solid var(--ink);margin-top:4px;box-shadow:0 8px 24px rgba(0,0,0,.15);display:flex;flex-direction:column">
-                      <input value="{{ u.orgsBusqueda }}" onChange="{{ u.onOrgsBusqueda }}" placeholder="Buscar organización…" autoComplete="off" style="border:0;border-bottom:2px solid var(--ink);padding:10px;font-size:14px">
-                      <div style="max-height:220px;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:8px">
-                        <sc-for list="{{ u.orgsChips }}" as="c" hint-placeholder-count="2">
-                          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer">
-                            <input type="checkbox" checked="{{ c.marcada }}" onChange="{{ c.onChange }}" style="width:15px;height:15px;cursor:pointer">
-                            {{ c.nombre }}
-                          </label>
-                        </sc-for>
-                        <p style="{{ u.orgsVacioStyle }}">Sin resultados.</p>
-                      </div>
-                      <button type="button" onClick="{{ u.toggleOrgsDropdown }}" style="border:0;border-top:2px solid var(--ink);padding:9px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:var(--ink);color:#fff">Listo</button>
-                    </div>
-                  </sc-if>
-                </div>
+                </sc-for>
               </div>
-            </sc-for>
-            <p style="{{ sinUsuariosStyle }}">{{ sinUsuariosTexto }}</p>
+              <p style="{{ sinSyncFixesStyle }}">No hay cambios pendientes de nombre en eventos.</p>
+            </div>
 
-            <sc-if value="{{ hayUsuarios }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px">
-                <button type="button" onClick="{{ usuariosPaginaAnterior }}" disabled="{{ usuariosEnPrimeraPagina }}" style="font-size:13px;font-weight:700;border:2px solid var(--ink);background:transparent;padding:8px 14px;cursor:pointer">‹ Anterior</button>
-                <span style="font-size:12px;color:#7d7979">Página {{ usuariosPaginaActual }} de {{ usuariosTotalPaginas }}</span>
-                <button type="button" onClick="{{ usuariosPaginaSiguiente }}" disabled="{{ usuariosEnUltimaPagina }}" style="font-size:13px;font-weight:700;border:2px solid var(--ink);background:transparent;padding:8px 14px;cursor:pointer">Siguiente ›</button>
-              </div>
-            </sc-if>
-
-            <div style="margin-top:32px;padding-top:20px;border-top:2px solid var(--ink)">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-                <div>
-                  <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0">Personas</h2>
-                  <p style="font-size:12px;color:#7d7979;margin:4px 0 0">Identidad y roles de banda de cada integrante — con o sin cuenta todavía.</p>
-                </div>
-                <div style="display:flex;gap:8px">
-                  <sc-if value="{{ migracionDisponible }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" onClick="{{ abrirMigracion }}" style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:10px 14px;cursor:pointer">Revisar migración de músicos</button>
-                  </sc-if>
-                  <button type="button" onClick="{{ abrirSync }}" style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:10px 14px;cursor:pointer">Sincronizar nombres en eventos</button>
-                  <button type="button" onClick="{{ toggleNuevoMusico }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 16px;cursor:pointer">+ Nueva persona</button>
-                </div>
-              </div>
-
-              <input value="{{ musicosBusquedaNombre }}" onChange="{{ onMusicosBusquedaNombre }}" placeholder="Buscar por nombre…" autoComplete="off" style="width:100%;font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff;margin-bottom:14px">
-
-              <sc-if value="{{ migracionAbierta }}" hint-placeholder-val="{{ false }}">
-                <div style="padding:16px;background:var(--bg);margin-bottom:20px;display:flex;flex-direction:column;gap:12px">
-                  <p style="font-size:13px;line-height:1.5;color:#54514f;margin:0">Se agrupan los nombres ya escritos en el campo "banda" de todos los eventos por coincidencia (sin acentos/mayúsculas/espacios). Revisa los grupos, corrige el nombre canónico si hace falta, y fusiona los que en realidad sean la misma persona antes de confirmar — nada se escribe hasta que confirmes.</p>
-                  <sc-if value="{{ migracionCargando }}" hint-placeholder-val="{{ false }}">
-                    <p style="font-size:13px;color:#7d7979;margin:0">Cargando…</p>
-                  </sc-if>
-                  <sc-for list="{{ migracionGruposLista }}" as="g" hint-placeholder-count="2">
-                    <div style="border:2px solid var(--ink);background:#fff;padding:12px 14px;display:flex;align-items:flex-start;gap:12px">
-                      <input type="checkbox" checked="{{ g.seleccionado }}" onChange="{{ g.onSeleccionar }}" style="width:16px;height:16px;margin-top:10px;cursor:pointer">
-                      <div style="flex:1;min-width:0">
-                        <input value="{{ g.nombreCanonico }}" onChange="{{ g.onNombreCanonico }}" style="font-size:15px;font-weight:800;padding:6px 8px;border:2px solid var(--ink);width:100%;max-width:320px">
-                        <div style="font-size:12px;color:#7d7979;margin-top:4px">Variantes detectadas: {{ g.aliasesTexto }} · {{ g.count }} puesto(s) en eventos</div>
-                      </div>
-                    </div>
+            <sc-if value="{{ haySyncSinCoincidencia }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="rotulo">Sin coincidencia en Personas ({{ syncSinCoincidenciaCount }})</div>
+                <p class="campo-ayuda" style="margin:0">Estos nombres aparecen en eventos pero no corresponden a nadie del catálogo: créalos como persona nueva o corrígelos a mano si son un error de tipeo.</p>
+                <div class="chips">
+                  <sc-for list="{{ syncSinCoincidenciaLista }}" as="nc" hint-placeholder-count="2">
+                    <span class="tag" style="background:#fff;color:var(--muted)">{{ nc.nombre }} · {{ nc.count }}</span>
                   </sc-for>
-                  <p style="{{ migracionResultadoStyle }}">{{ migracionResultado }}</p>
-                  <div style="display:flex;gap:8px;flex-wrap:wrap">
-                    <button type="button" onClick="{{ fusionarSeleccionMigracion }}" disabled="{{ migracionFusionarDisabled }}" style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:8px 14px;cursor:pointer">Fusionar seleccionados ({{ migracionSeleccionCount }})</button>
-                    <button type="button" onClick="{{ confirmarMigracion }}" disabled="{{ migracionCargando }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 16px;cursor:pointer">Confirmar migración</button>
-                    <button type="button" onClick="{{ cerrarMigracion }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cerrar</button>
+                </div>
+              </div>
+            </sc-if>
+
+            <p style="{{ syncResultadoStyle }}">{{ syncResultado }}</p>
+            <div class="form-acc">
+              <button type="button" class="btn-pri btn-ac" onClick="{{ aplicarCambiosEventos }}" disabled="{{ aplicarSyncDisabled }}">{{ aplicarSyncLabel }}</button>
+              <button type="button" class="btn-texto" onClick="{{ cerrarSync }}">Cerrar</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <div class="panel lista">
+          <sc-for list="{{ musicosLista }}" as="m" hint-placeholder-count="3">
+            <div class="item">
+              <div class="item-fila">
+                <div style="display:flex;align-items:center;gap:12px;min-width:0">
+                  <span class="ini">{{ m.inicial }}</span>
+                  <div style="min-width:0">
+                    <div class="item-t">{{ m.nombre }}</div>
+                    <div style="{{ m.vinculoStyle }}">{{ m.vinculoTexto }}</div>
                   </div>
                 </div>
-              </sc-if>
-
-              <sc-if value="{{ syncAbierto }}" hint-placeholder-val="{{ false }}">
-                <div style="padding:16px;background:var(--bg);margin-bottom:20px;display:flex;flex-direction:column;gap:16px">
-                  <p style="font-size:13px;line-height:1.5;color:#54514f;margin:0">Revisa y corrige de una vez los nombres que hoy aparecen distintos en los eventos (pasados y futuros) de esta organización, según el catálogo de Personas — la migración original solo vinculó el identificador de cada puesto, sin corregir el texto ya guardado en cada evento.</p>
-                  <sc-if value="{{ syncCargando }}" hint-placeholder-val="{{ false }}">
-                    <p style="font-size:13px;color:#7d7979;margin:0">Cargando eventos…</p>
-                  </sc-if>
-
-                  <sc-if value="{{ haySyncDuplicados }}" hint-placeholder-val="{{ false }}">
-                    <div>
-                      <div style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac-dk);margin-bottom:8px">Posibles duplicados ({{ syncDuplicadosCount }})</div>
-                      <sc-for list="{{ syncDuplicadosLista }}" as="dg" hint-placeholder-count="1">
-                        <div style="border:2px solid var(--ink);background:#fff;padding:12px 14px;margin-bottom:10px;display:flex;flex-direction:column;gap:10px">
-                          <sc-for list="{{ dg.personas }}" as="p" hint-placeholder-count="2">
-                            <label style="display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer">
-                              <input type="checkbox" checked="{{ p.seleccionado }}" onChange="{{ p.onToggle }}" style="width:15px;height:15px;cursor:pointer">
-                              {{ p.nombre }}
-                            </label>
-                          </sc-for>
-                          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                            <input value="{{ dg.nombreCanonico }}" onChange="{{ dg.onNombreCanonico }}" style="font-size:14px;font-weight:700;padding:7px 9px;border:2px solid var(--ink);flex:1;min-width:180px">
-                            <button type="button" onClick="{{ dg.fusionar }}" disabled="{{ dg.fusionarDisabled }}" style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Fusionar en este nombre</button>
-                          </div>
-                        </div>
-                      </sc-for>
-                    </div>
-                  </sc-if>
-
-                  <div>
-                    <div style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac-dk);margin-bottom:8px">Cambios a aplicar en eventos ({{ syncFixesCount }})</div>
-                    <div style="max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:6px">
-                      <sc-for list="{{ syncFixesLista }}" as="f" hint-placeholder-count="2">
-                        <div style="border:1px solid #eae9e9;background:#fff;padding:8px 10px;font-size:13px;display:flex;flex-direction:column;gap:2px">
-                          <span style="color:#7d7979">{{ f.fechaLabel }} · {{ f.servicio }} · {{ f.tipo }}</span>
-                          <span><strong>{{ f.nombreActual }}</strong> → <strong style="color:var(--ac-dk)">{{ f.nombreNuevo }}</strong></span>
-                        </div>
-                      </sc-for>
-                    </div>
-                    <p style="{{ sinSyncFixesStyle }}">No hay cambios pendientes de nombre en eventos.</p>
-                  </div>
-
-                  <sc-if value="{{ haySyncSinCoincidencia }}" hint-placeholder-val="{{ false }}">
-                    <div>
-                      <div style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9a9694;margin-bottom:6px">Sin coincidencia en Personas ({{ syncSinCoincidenciaCount }})</div>
-                      <p style="font-size:12px;color:#7d7979;line-height:1.5;margin:0">Estos nombres aparecen en eventos pero no corresponden a nadie en el catálogo — créalos como persona nueva arriba, o corrígelos a mano si son un error de tipeo puntual.</p>
-                      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
-                        <sc-for list="{{ syncSinCoincidenciaLista }}" as="nc" hint-placeholder-count="2">
-                          <span style="font-size:12px;font-weight:700;border:2px solid #bab6b6;color:#7d7979;padding:5px 9px">{{ nc.nombre }} · {{ nc.count }}</span>
-                        </sc-for>
-                      </div>
-                    </div>
-                  </sc-if>
-
-                  <p style="{{ syncResultadoStyle }}">{{ syncResultado }}</p>
-                  <div style="display:flex;gap:8px;flex-wrap:wrap">
-                    <button type="button" onClick="{{ aplicarCambiosEventos }}" disabled="{{ aplicarSyncDisabled }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 16px;cursor:pointer">{{ aplicarSyncLabel }}</button>
-                    <button type="button" onClick="{{ cerrarSync }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cerrar</button>
-                  </div>
+                <div class="item-acc" style="width:auto">
+                  <button type="button" class="btn-sec" onClick="{{ m.verDashboard }}">Ver dashboard</button>
+                  <button type="button" class="ico peligro" onClick="{{ m.eliminar }}" aria-label="Eliminar persona" title="Eliminar persona">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>
+                  </button>
                 </div>
-              </sc-if>
+              </div>
+              <div class="item-sub">
+                <sc-for list="{{ m.roles }}" as="r" hint-placeholder-count="2">
+                  <span class="rol-tag">{{ r.tipo }}<button type="button" onClick="{{ r.quitar }}" aria-label="Quitar rol" title="Quitar rol">×</button></span>
+                </sc-for>
+                <select class="inp sel-mini" value="{{ m.rolAgregarValue }}" onChange="{{ m.onRolAgregarChange }}" aria-label="Agregar rol">
+                  <option value="">+ Agregar rol</option>
+                  <sc-for list="{{ m.rolAgregarOpciones }}" as="ro" hint-placeholder-count="2">
+                    <option value="{{ ro }}">{{ ro }}</option>
+                  </sc-for>
+                </select>
+              </div>
+            </div>
+          </sc-for>
+          <p style="{{ sinMusicosStyle }}">{{ sinMusicosTexto }}</p>
+          <sc-if value="{{ hayMusicos }}" hint-placeholder-val="{{ false }}">
+            <div class="pager">
+              <button type="button" class="btn-sec" onClick="{{ musicosPaginaAnterior }}" disabled="{{ musicosEnPrimeraPagina }}">‹ Anterior</button>
+              <span class="campo-ayuda">Página {{ musicosPaginaActual }} de {{ musicosTotalPaginas }}</span>
+              <button type="button" class="btn-sec" onClick="{{ musicosPaginaSiguiente }}" disabled="{{ musicosEnUltimaPagina }}">Siguiente ›</button>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+    </sc-if>
 
-              <sc-if value="{{ nuevoMusicoAbierto }}" hint-placeholder-val="{{ false }}">
-                <div style="padding:16px;background:var(--bg);margin-bottom:20px;display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-                  <label style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:200px">
-                    <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Nombre</span>
-                    <input value="{{ nuevoMusicoNombre }}" onChange="{{ onNuevoMusicoNombre }}" placeholder="Nombre completo" style="font-size:15px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
+    <sc-if value="{{ tabRepertorio }}" hint-placeholder-val="{{ false }}">
+      <section class="adm">
+        <div class="barra-acc">
+          <div class="buscar">
+            <span class="buscar-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></span>
+            <input class="inp" value="{{ repertorioBusqueda }}" onChange="{{ onRepertorioBusqueda }}" placeholder="Buscar por título o artista…" autoComplete="off" style="padding-right:40px">
+            <button type="button" onClick="{{ limpiarRepertorioBusqueda }}" aria-label="Limpiar búsqueda" title="Limpiar búsqueda" style="{{ repertorioBusquedaLimpiarStyle }}">×</button>
+          </div>
+          <button type="button" class="btn-pri btn-ac" onClick="{{ toggleAgregarCancion }}">+ Agregar canción</button>
+        </div>
+
+        <sc-if value="{{ agregarCancionAbierto }}" hint-placeholder-val="{{ false }}">
+          <div class="form-panel">
+            <div class="rotulo">Nueva canción</div>
+            <div class="form-fila">
+              <label class="campo">
+                <span class="campo-l">Título</span>
+                <input class="inp" value="{{ nuevaCancionTitulo }}" onChange="{{ onNuevaCancionTitulo }}" placeholder="Nombre de la canción">
+              </label>
+              <label class="campo">
+                <span class="campo-l">Artista</span>
+                <input class="inp" value="{{ nuevaCancionArtista }}" onChange="{{ onNuevaCancionArtista }}" placeholder="Sin especificar">
+              </label>
+            </div>
+            <label class="campo">
+              <span class="campo-l">Link (YouTube)</span>
+              <input class="inp" value="{{ nuevaCancionUrl }}" onChange="{{ onNuevaCancionUrl }}" placeholder="https://…" style="font-family:ui-monospace,Menlo,monospace;font-size:13px">
+            </label>
+            <sc-if value="{{ puedeCifrarNueva }}" hint-placeholder-val="{{ true }}">
+              <div class="campo">
+                <span class="campo-l">Cifrado</span>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                  <button type="button" class="{{ nuevaCifClase }}" onClick="{{ abrirCifradoNueva }}"><span style="font-size:14px">♪</span><span>{{ nuevaCifLabel }}</span></button>
+                  <span class="campo-ayuda">Opcional. Escribe primero el título.</span>
+                </div>
+              </div>
+            </sc-if>
+            <div class="form-acc">
+              <button type="button" class="btn-pri btn-ac" onClick="{{ guardarCancionNueva }}">Guardar</button>
+              <button type="button" class="btn-sec" onClick="{{ toggleAgregarCancion }}" style="min-height:40px;padding:0 16px">Cancelar</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <div class="panel lista">
+          <sc-for list="{{ cancionesLista }}" as="c" hint-placeholder-count="4">
+            <div style="display:contents">
+              <sc-if value="{{ c.editando }}" hint-placeholder-val="{{ false }}">
+                <div class="item" style="background:var(--soft)">
+                  <div class="form-fila">
+                    <label class="campo">
+                      <span class="campo-l">Título</span>
+                      <input class="inp" value="{{ songEditTitulo }}" onChange="{{ onSongEditTitulo }}">
+                    </label>
+                    <label class="campo">
+                      <span class="campo-l">Artista</span>
+                      <input class="inp" value="{{ songEditArtista }}" onChange="{{ onSongEditArtista }}" placeholder="Sin especificar">
+                    </label>
+                  </div>
+                  <label class="campo">
+                    <span class="campo-l">Link (YouTube)</span>
+                    <input class="inp" value="{{ songEditUrl }}" onChange="{{ onSongEditUrl }}" placeholder="https://…" style="font-family:ui-monospace,Menlo,monospace;font-size:13px">
                   </label>
-                  <button type="button" onClick="{{ crearMusico }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:10px 16px;cursor:pointer">Guardar</button>
+                  <div class="form-acc">
+                    <button type="button" class="btn-pri btn-ac" onClick="{{ guardarEdicionSong }}">Guardar</button>
+                    <button type="button" class="btn-sec" onClick="{{ cancelarEdicionSong }}" style="min-height:40px;padding:0 16px">Cancelar</button>
+                    <button type="button" class="{{ c.cifEditClase }}" onClick="{{ c.onCifrado }}"><span style="font-size:14px">♪</span><span>{{ c.cifradoTitle }}</span></button>
+                    <span style="flex:1"></span>
+                    <button type="button" class="btn-sec" onClick="{{ c.eliminar }}" style="min-height:40px;padding:0 16px;color:var(--red)">Eliminar</button>
+                  </div>
                 </div>
               </sc-if>
-
-              <sc-for list="{{ musicosLista }}" as="m" hint-placeholder-count="2">
-                <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px">
-                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-                    <div style="flex:1;min-width:220px;max-width:420px">
-                      <div style="font-size:15px;font-weight:800">{{ m.nombre }}</div>
-                      <div style="{{ m.vinculoStyle }}">{{ m.vinculoTexto }}</div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px">
-                      <button type="button" onClick="{{ m.verDashboard }}" style="font-size:12px;font-weight:700;letter-spacing:.04em;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:7px 12px;cursor:pointer">Ver dashboard</button>
-                      <button type="button" onClick="{{ m.eliminar }}" style="font-size:14px;border:2px solid #b00020;background:transparent;color:#b00020;padding:7px 10px;cursor:pointer" aria-label="Eliminar persona" title="Eliminar persona">🗑</button>
-                    </div>
+              <sc-if value="{{ c.noEditando }}" hint-placeholder-val="{{ true }}">
+                <div class="can-fila" onClick="{{ c.onClick }}" title="Editar canción">
+                  <div style="min-width:0">
+                    <div class="item-t">{{ c.nombre }}</div>
+                    <div class="item-s">{{ c.artista }}</div>
                   </div>
-                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #eae9e9">
-                    <sc-for list="{{ m.roles }}" as="r" hint-placeholder-count="2">
-                      <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.02em;border:2px solid var(--ac);background:var(--ac-lt);color:var(--ac-dk);padding:5px 6px 5px 10px">
-                        {{ r.tipo }}
-                        <button type="button" onClick="{{ r.quitar }}" aria-label="Quitar rol" title="Quitar rol" style="border:0;background:transparent;color:var(--ac-dk);font-size:13px;line-height:1;cursor:pointer;padding:0 2px">×</button>
-                      </span>
-                    </sc-for>
-                    <select value="{{ m.rolAgregarValue }}" onChange="{{ m.onRolAgregarChange }}" style="font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:6px 8px;border:2px solid var(--ink);background:#fff;appearance:none">
-                      <option value="">+ Agregar rol…</option>
-                      <sc-for list="{{ m.rolAgregarOpciones }}" as="ro" hint-placeholder-count="2">
-                        <option value="{{ ro }}">{{ ro }}</option>
-                      </sc-for>
-                    </select>
-                  </div>
-                </div>
-              </sc-for>
-              <p style="{{ sinMusicosStyle }}">{{ sinMusicosTexto }}</p>
-
-              <sc-if value="{{ hayMusicos }}" hint-placeholder-val="{{ false }}">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px">
-                  <button type="button" onClick="{{ musicosPaginaAnterior }}" disabled="{{ musicosEnPrimeraPagina }}" style="font-size:13px;font-weight:700;border:2px solid var(--ink);background:transparent;padding:8px 14px;cursor:pointer">‹ Anterior</button>
-                  <span style="font-size:12px;color:#7d7979">Página {{ musicosPaginaActual }} de {{ musicosTotalPaginas }}</span>
-                  <button type="button" onClick="{{ musicosPaginaSiguiente }}" disabled="{{ musicosEnUltimaPagina }}" style="font-size:13px;font-weight:700;border:2px solid var(--ink);background:transparent;padding:8px 14px;cursor:pointer">Siguiente ›</button>
+                  <button type="button" class="{{ c.cifClase }}" onClick="{{ c.onCifrado }}" aria-label="{{ c.cifradoTitle }}" title="{{ c.cifradoTitle }}">♪</button>
+                  <button type="button" class="{{ c.playClase }}" onClick="{{ c.onPlay }}" aria-label="{{ c.playLabel }}" title="{{ c.playLabel }}">{{ c.playIcon }}</button>
                 </div>
               </sc-if>
             </div>
-          </section>
-        </sc-if>
-
-        <sc-if value="{{ tabRepertorio }}" hint-placeholder-val="{{ false }}">
-          <section>
-            <h2 style="font-size:22px;font-weight:800;text-transform:uppercase;margin:0 0 16px">Repertorio</h2>
-
-            <div style="display:flex;gap:10px;margin-bottom:16px">
-              <div style="position:relative;flex:1">
-                <input value="{{ repertorioBusqueda }}" onChange="{{ onRepertorioBusqueda }}" placeholder="Buscar por título o artista…" autoComplete="off" style="width:100%;font-size:15px;padding:10px 36px 10px 12px;border:2px solid var(--ink);background:#fff">
-                <button type="button" onClick="{{ limpiarRepertorioBusqueda }}" aria-label="Limpiar búsqueda" title="Limpiar búsqueda" style="{{ repertorioBusquedaLimpiarStyle }}">×</button>
-              </div>
-              <button type="button" onClick="{{ toggleAgregarCancion }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:0 16px;cursor:pointer;white-space:nowrap">+ Agregar</button>
+          </sc-for>
+          <p style="{{ sinCancionesStyle }}">{{ sinCancionesTexto }}</p>
+          <sc-if value="{{ hayCanciones }}" hint-placeholder-val="{{ false }}">
+            <div class="pager">
+              <button type="button" class="btn-sec" onClick="{{ paginaAnterior }}" disabled="{{ enPrimeraPagina }}">‹ Anterior</button>
+              <span class="campo-ayuda">Página {{ paginaActual }} de {{ totalPaginas }}</span>
+              <button type="button" class="btn-sec" onClick="{{ paginaSiguiente }}" disabled="{{ enUltimaPagina }}">Siguiente ›</button>
             </div>
+          </sc-if>
+        </div>
+      </section>
+    </sc-if>
+  </sc-if>
 
-            <sc-if value="{{ agregarCancionAbierto }}" hint-placeholder-val="{{ false }}">
-              <div style="padding:16px;background:var(--bg);margin-bottom:20px;display:flex;flex-direction:column;gap:12px">
-                <label style="display:flex;flex-direction:column;gap:6px">
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Título</span>
-                  <input value="{{ nuevaCancionTitulo }}" onChange="{{ onNuevaCancionTitulo }}" placeholder="Nombre de la canción" style="font-size:15px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
-                </label>
-                <label style="display:flex;flex-direction:column;gap:6px">
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Artista</span>
-                  <input value="{{ nuevaCancionArtista }}" onChange="{{ onNuevaCancionArtista }}" placeholder="Sin especificar" style="font-size:14px;padding:9px 10px;border:2px solid var(--ink);background:#fff">
-                </label>
-                <label style="display:flex;flex-direction:column;gap:6px">
-                  <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Link (YouTube)</span>
-                  <input value="{{ nuevaCancionUrl }}" onChange="{{ onNuevaCancionUrl }}" placeholder="https://…" style="font-size:13px;font-family:ui-monospace,Menlo,monospace;padding:9px 10px;border:2px solid var(--ink);background:#fff">
-                </label>
-                <div style="display:flex;gap:8px">
-                  <button type="button" onClick="{{ guardarCancionNueva }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Guardar</button>
-                  <button type="button" onClick="{{ toggleAgregarCancion }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cancelar</button>
-                </div>
-              </div>
-            </sc-if>
+  <sc-if value="{{ esAdmin }}" hint-placeholder-val="{{ true }}">
+  <nav class="tabbar" aria-label="Navegación principal">
+    <sc-for list="{{ tabsMovil }}" as="t" hint-placeholder-count="3">
+      <a class="{{ t.clase }}" href="{{ t.href }}" onClick="{{ t.onClick }}">
+        <span class="tab-ico">
+          <sc-if value="{{ t.icoEventos }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 11h18"></path></svg></sc-if>
+          <sc-if value="{{ t.icoUsuarios }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.6 3 5.2"></path></svg></sc-if>
+          <sc-if value="{{ t.icoRepertorio }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></sc-if>
+          <sc-if value="{{ t.icoInicio }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg></sc-if>
+          <sc-if value="{{ t.icoCalendario }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></sc-if>
+        </span>
+        <span>{{ t.label }}</span>
+      </a>
+    </sc-for>
+    <button type="button" class="{{ masClase }}" onClick="{{ toggleMas }}">
+      <span class="tab-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></span>
+      <span>Más</span>
+    </button>
+  </nav>
 
-            <sc-for list="{{ cancionesLista }}" as="c" hint-placeholder-count="3">
-              <div style="border:2px solid var(--ink);padding:14px 16px;margin-bottom:10px">
-                <sc-if value="{{ c.editando }}" hint-placeholder-val="{{ false }}">
-                  <div style="display:flex;flex-direction:column;gap:10px">
-                    <label style="display:flex;flex-direction:column;gap:4px">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Título</span>
-                      <input value="{{ songEditTitulo }}" onChange="{{ onSongEditTitulo }}" style="font-size:15px;padding:8px 10px;border:2px solid var(--ink)">
-                    </label>
-                    <label style="display:flex;flex-direction:column;gap:4px">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Artista</span>
-                      <input value="{{ songEditArtista }}" onChange="{{ onSongEditArtista }}" placeholder="Sin especificar" style="font-size:14px;padding:8px 10px;border:2px solid var(--ink)">
-                    </label>
-                    <label style="display:flex;flex-direction:column;gap:4px">
-                      <span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#6b6866">Link (YouTube)</span>
-                      <input value="{{ songEditUrl }}" onChange="{{ onSongEditUrl }}" placeholder="https://…" style="font-size:13px;font-family:ui-monospace,Menlo,monospace;padding:8px 10px;border:2px solid var(--ink)">
-                    </label>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap">
-                      <button type="button" onClick="{{ guardarEdicionSong }}" style="font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:8px 14px;cursor:pointer">Guardar</button>
-                      <button type="button" onClick="{{ cancelarEdicionSong }}" style="font-size:13px;font-weight:600;border:2px solid #bab6b6;background:transparent;color:#7d7979;padding:8px 14px;cursor:pointer">Cancelar</button>
-                      <button type="button" onClick="{{ c.eliminar }}" style="font-size:13px;font-weight:600;letter-spacing:.04em;border:2px solid #b00020;background:transparent;color:#b00020;padding:8px 14px;cursor:pointer;margin-left:auto">Eliminar</button>
-                    </div>
-                  </div>
-                </sc-if>
-                <sc-if value="{{ c.noEditando }}" hint-placeholder-val="{{ true }}">
-                  <div onClick="{{ c.onClick }}" style="display:grid;grid-template-columns:1fr 22px 22px;gap:10px;align-items:center;cursor:pointer">
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0">
-                      <span style="font-size:16px;font-weight:800">{{ c.nombre }}</span>
-                      <span style="font-size:13px;color:#7d7979;white-space:nowrap">{{ c.artista }}</span>
-                    </div>
-                    <button type="button" onClick="{{ c.onCifrado }}" aria-label="{{ c.cifradoTitle }}" title="{{ c.cifradoTitle }}" style="{{ c.cifradoBtnStyle }}">♪</button>
-                    <button type="button" onClick="{{ c.onPlay }}" aria-label="{{ c.playLabel }}" title="{{ c.playLabel }}" style="{{ c.playBtnStyle }}">{{ c.playIcon }}</button>
-                  </div>
-                </sc-if>
-              </div>
-            </sc-for>
-            <p style="{{ sinCancionesStyle }}">{{ sinCancionesTexto }}</p>
-
-            <sc-if value="{{ hayCanciones }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px">
-                <button type="button" onClick="{{ paginaAnterior }}" disabled="{{ enPrimeraPagina }}" style="font-size:13px;font-weight:700;border:2px solid var(--ink);background:transparent;padding:8px 14px;cursor:pointer">‹ Anterior</button>
-                <span style="font-size:12px;color:#7d7979">Página {{ paginaActual }} de {{ totalPaginas }}</span>
-                <button type="button" onClick="{{ paginaSiguiente }}" disabled="{{ enUltimaPagina }}" style="font-size:13px;font-weight:700;border:2px solid var(--ink);background:transparent;padding:8px 14px;cursor:pointer">Siguiente ›</button>
-              </div>
-            </sc-if>
-          </section>
-        </sc-if>
+  <sc-if value="{{ masAbierto }}" hint-placeholder-val="{{ false }}">
+    <div class="velo" onClick="{{ toggleMas }}">
+      <div class="modal" onClick="{{ detenerMas }}">
+        <div class="agarre"></div>
+        <div class="mas-cab">
+          <span class="avatar" style="width:40px;height:40px;font-size:14px">{{ usuarioIniciales }}</span>
+          <div style="min-width:0">
+            <div style="font-size:15px;font-weight:700">{{ usuarioNombre }}</div>
+            <div style="font-size:12.5px;color:var(--muted)">{{ masSub }}</div>
+          </div>
+        </div>
+        <div class="mas-lista">
+          <sc-for list="{{ masItems }}" as="mi" hint-placeholder-count="2">
+            <a class="mas-fila" href="{{ mi.href }}" onClick="{{ mi.onClick }}"><span>{{ mi.label }}</span><span style="color:var(--muted3);font-size:18px">›</span></a>
+          </sc-for>
+          <button type="button" class="mas-fila peligro" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
+        </div>
       </div>
     </div>
+  </sc-if>
   </sc-if>
 
   <sc-if value="{{ cifAbierto }}" hint-placeholder-val="{{ false }}">
@@ -651,7 +938,7 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
             <div style="display:flex;flex-direction:column;gap:18px">
               <div>
                 <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">1 · Enlace de la fuente <span style="font-weight:600;letter-spacing:.04em;text-transform:none">(opcional)</span></div>
-                <input value="{{ cifUrl }}" onChange="{{ onCifUrl }}" placeholder="https://acordes.lacuerda.net/… u otra fuente" autoComplete="off" style="width:100%;margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:0;border-bottom:2px solid var(--ink);background:transparent;padding:6px 2px">
+                <input value="{{ cifUrl }}" onChange="{{ onCifUrl }}" placeholder="https://acordes.lacuerda.net/… u otra fuente" autoComplete="off" style="width:100%;margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:13px;border:0;border-bottom:1px solid rgba(0,0,0,.18);background:transparent;padding:6px 2px">
                 <sc-if value="{{ cifUrlInvalida }}" hint-placeholder-val="{{ false }}">
                   <div style="font-size:12px;color:#b00020;margin-top:4px">Debe ser un enlace completo que empiece con https://, o déjalo vacío.</div>
                 </sc-if>
@@ -665,7 +952,7 @@ a.cifrado-btn:hover{background:var(--ink);color:#fff}
               <div>
                 <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#6b6866">2 · Copia y pega la letra con acordes</div>
                 <p style="font-size:13px;color:#54514f;margin:6px 0 0;line-height:1.5">Desde LaCuerda u otra fuente, selecciona desde el primer acorde hasta el final de la canción, cópiala (Ctrl+C) y pégala aquí (Ctrl+V). También puedes escribirla: cada línea de acordes encima de su letra. Con un enlace de LaCuerda se usan sus marcas de acordes; si no, los acordes se detectan en el texto. Lo que no sea parte de la canción, como notas del autor, puedes borrarlo aquí.</p>
-                <textarea id="cifrado-pegado" value="{{ cifTexto }}" onChange="{{ onCifTexto }}" rows="6" placeholder="Pega aquí el cifrado…" spellCheck="false" style="width:100%;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.4;padding:10px;border:2px solid var(--ink);background:#fff;resize:vertical;white-space:pre;overflow-x:auto"></textarea>
+                <textarea id="cifrado-pegado" value="{{ cifTexto }}" onChange="{{ onCifTexto }}" rows="6" placeholder="Pega aquí el cifrado…" spellCheck="false" style="width:100%;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.4;padding:10px;border:1px solid rgba(0,0,0,.18);border-radius:8px;background:#fff;resize:vertical;white-space:pre;overflow-x:auto"></textarea>
               </div>
               <sc-if value="{{ cifHayPegado }}" hint-placeholder-val="{{ false }}">
                 <div>
@@ -756,7 +1043,7 @@ const D = () => window.RepertorioData;
 class Component extends DCLogic {
   state = {
     estadoAuth: 'cargando', usuarioNombre: null, userDoc: null,
-    todasOrgs: [], currentOrgId: null, activeTab: 'organizaciones',
+    todasOrgs: [], currentOrgId: null, activeTab: 'organizaciones', subUsuarios: 'usuarios', masAbierto: false,
     nuevoOrgNombre: '', editandoOrgId: null,
     orgEditNombre: '', orgEditKicker: '', orgEditNota: '',
     /* orgEditBannerValido: null mientras no se ha validado (o el campo está
@@ -783,7 +1070,7 @@ class Component extends DCLogic {
     repertorioEventos: [], songOverrides: {}, repertorioPagina: 1, repertorioBusqueda: '',
     editandoSongKey: null, songEditTitulo: '', songEditArtista: '', songEditUrl: '',
     reproduciendoKey: null, reproduciendoPausado: false,
-    agregarCancionAbierto: false, nuevaCancionTitulo: '', nuevaCancionArtista: '', nuevaCancionUrl: '',
+    agregarCancionAbierto: false, nuevaCancionTitulo: '', nuevaCancionArtista: '', nuevaCancionUrl: '', nuevaCancionCifradoId: '',
     /* Modal "Cifrado" de una canción del catálogo (null = cerrado), ver
        modalCifrado. */
     cifrado: null
@@ -948,7 +1235,7 @@ class Component extends DCLogic {
   toggleAgregarCancion() {
     this.setState((s) => ({
       agregarCancionAbierto: !s.agregarCancionAbierto,
-      nuevaCancionTitulo: '', nuevaCancionArtista: '', nuevaCancionUrl: ''
+      nuevaCancionTitulo: '', nuevaCancionArtista: '', nuevaCancionUrl: '', nuevaCancionCifradoId: ''
     }));
   }
 
@@ -966,8 +1253,11 @@ class Component extends DCLogic {
     const artista = (s.nuevaCancionArtista || '').trim();
     const url = (s.nuevaCancionUrl || '').trim();
     const key = D().songKey(titulo, artista, url);
-    D().saveSongOverride(s.currentOrgId, key, { titulo: titulo, artista: artista, url: url, archivado: false }, (ok) => {
+    const datos = { titulo: titulo, artista: artista, url: url, archivado: false };
+    if (s.nuevaCancionCifradoId) datos.cifradoId = s.nuevaCancionCifradoId;
+    D().saveSongOverride(s.currentOrgId, key, datos, (ok) => {
       this.setState({
+        nuevaCancionCifradoId: ok ? '' : s.nuevaCancionCifradoId,
         agregarCancionAbierto: !ok, mensaje: ok ? 'Canción agregada al repertorio.' : 'No se pudo agregar la canción.',
         nuevaCancionTitulo: ok ? '' : s.nuevaCancionTitulo, nuevaCancionArtista: ok ? '' : s.nuevaCancionArtista, nuevaCancionUrl: ok ? '' : s.nuevaCancionUrl
       });
@@ -990,12 +1280,26 @@ class Component extends DCLogic {
       orgId: () => this.state.currentOrgId,
       puedeEditar: () => R.puede(this.state.userDoc, 'cifrados.editar'),
       alGuardar: (id, c, listo) => {
+        /* Canción nueva (aún no guardada): el cifrado queda pendiente y se
+           vincula al guardar la canción (ver guardarCancionNueva). */
+        if (c.nueva) {
+          this.setState({ nuevaCancionCifradoId: id });
+          listo('Cifrado listo. Se vinculará a la canción al guardarla.');
+          return;
+        }
         R.saveSongOverride(this.state.currentOrgId, c.songKey, { cifradoId: id }, (ok) => {
           listo(ok ? 'Cifrado guardado en el repertorio.' : 'El cifrado se guardó, pero no se pudo vincular a la canción: revisa tu sesión o conexión.');
         });
       }
     });
     return this._cif;
+  }
+
+  abrirCifradoNueva() {
+    const s = this.state;
+    const t = (s.nuevaCancionTitulo || '').trim();
+    if (!t) { this.setState({ mensaje: 'Escribe primero el título de la canción.' }); return; }
+    this.modalCifrado().abrir({ nueva: true, t: t, sm: (s.nuevaCancionArtista || '').trim(), k: null }, s.nuevaCancionCifradoId || '');
   }
 
   abrirCifradoSong(entry) {
@@ -1547,8 +1851,7 @@ class Component extends DCLogic {
     const orgsSidebarFiltradas = filtrarOrgs(s.orgSwitcherBusqueda);
     const orgsSidebar = orgsSidebarFiltradas.map((o) => ({
       id: o.id, nombre: o.name,
-      style: 'display:block;width:100%;text-align:left;padding:9px 10px;font-size:13px;font-weight:600;border:0;cursor:pointer;background:' +
-        (o.id === s.currentOrgId ? 'var(--ac)' : 'transparent') + ';color:' + (o.id === s.currentOrgId ? '#fff' : 'var(--ink)'),
+      clase: 'dropdown-item' + (o.id === s.currentOrgId ? ' on' : ''),
       onClick: () => this.seleccionarOrg(o.id)
     }));
     const orgSwitcherVacioStyle = orgsSidebarFiltradas.length === 0 ? 'font-size:13px;color:#9a9694;padding:10px' : 'display:none';
@@ -1585,6 +1888,7 @@ class Component extends DCLogic {
       const esUnoMismo = !!s.userDoc && u.uid === s.userDoc.uid;
       return {
         uid: u.uid, email: u.email, nombre: u.displayName || u.email,
+        inicial: ((u.displayName || u.email || '?').trim().charAt(0) || '?').toUpperCase(),
         role: u.role || 'normal',
         personaId: R.userMusicianLinks(u)[s.currentOrgId] || '',
         personaOpciones: personaOpciones,
@@ -1655,9 +1959,10 @@ class Component extends DCLogic {
       const cuenta = m.userId ? (s.usuarios || []).find((u) => u.uid === m.userId) : null;
       return {
         id: m.id, nombre: m.nombre,
+        inicial: ((m.nombre || '?').trim().charAt(0) || '?').toUpperCase(),
         vinculoTexto: m.userId ? ('Usuario: ' + (cuenta ? cuenta.email : 'cuenta vinculada'))
           : (personasReservadas[m.id] ? ('Acceso pendiente: ' + personasReservadas[m.id]) : 'Sin usuario'),
-        vinculoStyle: 'font-size:11px;margin-top:4px;color:' + (m.userId ? '#2e7d32' : '#9a9694'),
+        vinculoStyle: 'font-size:12px;margin-top:2px;color:' + (m.userId ? 'var(--ac)' : 'var(--muted2)'),
         roles: rolesActuales.map((tipo) => ({ tipo: tipo, quitar: () => this.quitarRolMusico(m, tipo) })),
         rolAgregarValue: rolAgregarValue,
         rolAgregarOpciones: R.BANDA_ROLES.map((r) => r.tipo).filter((t) => rolesActuales.indexOf(t) < 0),
@@ -1724,6 +2029,7 @@ class Component extends DCLogic {
     const totalPaginas = Math.max(1, Math.ceil(catalogoFiltrado.length / REPERTORIO_PAGE_SIZE));
     const paginaActual = Math.min(Math.max(1, s.repertorioPagina || 1), totalPaginas);
     const inicioPagina = (paginaActual - 1) * REPERTORIO_PAGE_SIZE;
+    const puedeCifrar = R.puede(s.userDoc, 'cifrados.editar');
     const cancionesLista = catalogoFiltrado.slice(inicioPagina, inicioPagina + REPERTORIO_PAGE_SIZE).map((e) => {
       const videoId = R.youtubeId(e.u);
       const activa = s.reproduciendoKey === e.key;
@@ -1741,22 +2047,16 @@ class Component extends DCLogic {
         /* El botón siempre se renderiza (nunca sc-if) para no romper la
            columna del grid; sin video válido se oculta con visibility:hidden
            en vez de display:none — mismo criterio que index.html/Formulario. */
-        playBtnStyle: 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
-          'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
-          (activa ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
-                  : 'border:1.5px solid var(--ac);background:#fff;color:var(--ac)') +
-          (videoId ? '' : ';visibility:hidden;pointer-events:none'),
+        playClase: 'redondo' + (activa ? ' on' : '') + (videoId ? '' : ' oculto'),
         /* stopPropagation para que tocar el botón de play no abra también la
            edición de la fila (comparten la misma fila clicable). */
         onPlay: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.togglePlayRepertorio(e.key, videoId); },
         /* ♪ Cifrado: relleno si la canción ya tiene, punteado si no (igual
            que en el paso 4 de eventos.html). Tampoco abre la edición. */
         cifradoTitle: e.cifradoId ? 'Ver cifrado' : 'Agregar cifrado',
-        cifradoBtnStyle: 'width:22px;height:22px;border-radius:50%;padding:0;font-size:12px;' +
-          'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
-          (e.cifradoId ? 'border:1.5px solid var(--ac);background:var(--ac);color:#fff'
-                       : 'border:1.5px dashed #9a9694;background:#fff;color:#7d7979'),
-        onCifrado: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.abrirCifradoSong(e); }
+        cifClase: 'redondo' + (e.cifradoId ? ' on' : (puedeCifrar ? ' vacio' : ' oculto')),
+        cifEditClase: 'cif-btn' + (e.cifradoId ? ' on' : (puedeCifrar ? ' vacio' : ' oculto')),
+        onCifrado: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); if (e.cifradoId || puedeCifrar) this.abrirCifradoSong(e); }
       };
     });
 
@@ -1773,13 +2073,59 @@ class Component extends DCLogic {
       menuModulos: window.RepertorioMenu.modulos(s.activeTab, orgActual, s.userDoc).map((m) => ({
         label: m.label,
         deshabilitado: m.deshabilitado,
-        style: tabStyle(m.activo) + (m.deshabilitado ? ';opacity:.4;cursor:default' : ''),
+        clase: 'nav-link' + (m.activo ? ' on' : ''),
         onClick: () => {
           if (m.deshabilitado) return;
           if (m.id === 'eventos') location.href = m.href;
           else this.cambiarTab(m.id);
         }
       })),
+      menuModulosMovil: window.RepertorioMenu.modulos(s.activeTab, orgActual, s.userDoc).map((m) => ({
+        label: m.label,
+        deshabilitado: m.deshabilitado,
+        clase: 'chip' + (m.activo ? ' on' : ''),
+        onClick: () => {
+          if (m.deshabilitado) return;
+          if (m.id === 'eventos') location.href = m.href;
+          else this.cambiarTab(m.id);
+        }
+      })),
+      tabsMovil: window.RepertorioMenu.modulos(s.activeTab, orgActual, s.userDoc).filter((m) => m.id !== 'organizaciones').slice(0, 3).map((m) => Object.assign({
+        label: m.label, href: m.href,
+        clase: 'tab' + (m.activo ? ' on' : '') + (m.deshabilitado ? ' off' : ''),
+        onClick: (e) => {
+          if (e && e.preventDefault) e.preventDefault();
+          if (m.deshabilitado) return;
+          this.setState({ masAbierto: false });
+          if (m.id === 'eventos') location.href = m.href; else this.cambiarTab(m.id);
+        }
+      }, ({ icoEventos: m.id === 'eventos', icoUsuarios: m.id === 'usuarios', icoRepertorio: m.id === 'repertorio', icoInicio: false, icoCalendario: false }))),
+      masAbierto: s.masAbierto,
+      masClase: 'tab' + (s.masAbierto || s.activeTab === 'organizaciones' ? ' on' : ''),
+      toggleMas: () => this.setState((st) => ({ masAbierto: !st.masAbierto })),
+      detenerMas: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      masSub: orgActual ? orgActual.name : 'Administración',
+      masItems: window.RepertorioMenu.modulos(s.activeTab, orgActual, s.userDoc).filter((m) => m.id === 'organizaciones').map((m) => ({
+        label: m.label, href: m.href,
+        onClick: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ masAbierto: false }); this.cambiarTab(m.id); }
+      })).concat(window.RepertorioMenu.acciones(orgActual, s.userDoc).map((a) => ({ label: a.label, href: a.href, onClick: () => {} }))),
+      usuarioIniciales: ((s.usuarioNombre || '').trim().split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('') || '?').toUpperCase(),
+      tabKicker: s.activeTab === 'organizaciones' ? 'Administración' : ((orgActual ? orgActual.name + ' · ' : '') + (s.activeTab === 'usuarios' ? 'Usuarios' : 'Administración')),
+      tabTitulo: s.activeTab === 'usuarios' ? (s.subUsuarios === 'personas' ? 'Personas' : 'Cuentas')
+        : (({ organizaciones: 'Organizaciones', repertorio: 'Repertorio' })[s.activeTab] || 'Administración'),
+      nuevaCifClase: 'cif-btn' + (s.nuevaCancionCifradoId ? ' on' : ' vacio') + ((s.nuevaCancionTitulo || '').trim() ? '' : ' inactivo'),
+      nuevaCifLabel: s.nuevaCancionCifradoId ? 'Ver cifrado' : 'Agregar cifrado',
+      puedeCifrarNueva: R.puede(s.userDoc, 'cifrados.editar'),
+      abrirCifradoNueva: () => this.abrirCifradoNueva(),
+      subUsuariosClase: s.subUsuarios !== 'personas' ? 'on' : '',
+      subPersonasClase: s.subUsuarios === 'personas' ? 'on' : '',
+      verSubUsuarios: () => this.setState({ subUsuarios: 'usuarios' }),
+      verSubPersonas: () => this.setState({ subUsuarios: 'personas' }),
+      tabUsuariosCuentas: s.activeTab === 'usuarios' && s.subUsuarios !== 'personas',
+      tabUsuariosPersonas: s.activeTab === 'usuarios' && s.subUsuarios === 'personas',
+      cerrarMensaje: () => this.setState({ mensaje: '' }),
+      sinOrgs: orgs.length === 0,
+      sinOrgsYNoEsOrgs: orgs.length === 0 && s.activeTab !== 'organizaciones',
       mensaje: s.mensaje || '',
       mensajeStyle: s.mensaje ? 'font-size:13px;color:var(--ac-dk);margin:0 0 16px' : 'display:none',
 
@@ -1845,7 +2191,7 @@ class Component extends DCLogic {
       usuariosBusquedaNombre: s.usuariosBusquedaNombre,
       onUsuariosBusquedaNombre: (e) => this.onUsuariosBusquedaNombre(e),
       usuariosLista: usuariosLista,
-      sinUsuariosStyle: usuariosFiltrados.length === 0 ? 'font-size:13px;color:#9a9694;padding:8px 2px' : 'display:none',
+      sinUsuariosStyle: usuariosFiltrados.length === 0 ? 'font-size:13px;color:var(--muted2);padding:18px 20px;margin:0' : 'display:none',
       sinUsuariosTexto: usuariosBusquedaQ ? ('Sin resultados para "' + s.usuariosBusquedaNombre.trim() + '".') : 'No existen usuarios registrados para la organización seleccionada.',
       hayUsuarios: usuariosFiltrados.length > 0,
       usuariosPaginaActual: usuariosPaginaActual,
@@ -1858,7 +2204,7 @@ class Component extends DCLogic {
       musicosBusquedaNombre: s.musicosBusquedaNombre,
       onMusicosBusquedaNombre: (e) => this.onMusicosBusquedaNombre(e),
       musicosLista: musicosLista,
-      sinMusicosStyle: musicosFiltrados.length === 0 ? 'font-size:13px;color:#9a9694;padding:8px 2px' : 'display:none',
+      sinMusicosStyle: musicosFiltrados.length === 0 ? 'font-size:13px;color:var(--muted2);padding:18px 20px;margin:0' : 'display:none',
       sinMusicosTexto: musicosBusquedaQ ? ('Sin resultados para "' + s.musicosBusquedaNombre.trim() + '".') : 'No hay personas registradas para esta organización todavía.',
       hayMusicos: musicosFiltrados.length > 0,
       musicosPaginaActual: musicosPaginaActual,
@@ -1896,7 +2242,7 @@ class Component extends DCLogic {
       syncDuplicadosCount: syncDuplicadosLista.length,
       syncFixesLista: syncFixesListaConLabel,
       syncFixesCount: syncFixesListaConLabel.length,
-      sinSyncFixesStyle: syncFixesListaConLabel.length === 0 ? 'font-size:13px;color:#9a9694;padding:8px 2px' : 'display:none',
+      sinSyncFixesStyle: syncFixesListaConLabel.length === 0 ? 'font-size:13px;color:var(--muted2);padding:18px 20px;margin:0' : 'display:none',
       syncSinCoincidenciaLista: syncSinCoincidenciaLista,
       haySyncSinCoincidencia: syncSinCoincidenciaLista.length > 0,
       syncSinCoincidenciaCount: syncSinCoincidenciaLista.length,
@@ -1909,7 +2255,7 @@ class Component extends DCLogic {
       repertorioBusqueda: s.repertorioBusqueda,
       onRepertorioBusqueda: (e) => this.onRepertorioBusqueda(e),
       limpiarRepertorioBusqueda: () => this.limpiarRepertorioBusqueda(),
-      repertorioBusquedaLimpiarStyle: 'position:absolute;right:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;border:0;background:transparent;color:#7d7979;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center' +
+      repertorioBusquedaLimpiarStyle: 'position:absolute;right:8px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:0;background:var(--soft);color:var(--muted);cursor:pointer;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center' +
         ((s.repertorioBusqueda || '').trim() ? '' : ';visibility:hidden;pointer-events:none'),
       toggleAgregarCancion: () => this.toggleAgregarCancion(),
       agregarCancionAbierto: s.agregarCancionAbierto,
@@ -1921,7 +2267,7 @@ class Component extends DCLogic {
       onNuevaCancionUrl: (e) => this.setState({ nuevaCancionUrl: e.target.value }),
       guardarCancionNueva: () => this.guardarCancionNueva(),
       cancionesLista: cancionesLista,
-      sinCancionesStyle: cancionesLista.length === 0 ? 'font-size:13px;color:#9a9694;padding:8px 2px' : 'display:none',
+      sinCancionesStyle: cancionesLista.length === 0 ? 'font-size:13px;color:var(--muted2);padding:18px 20px;margin:0' : 'display:none',
       sinCancionesTexto: busquedaSong ? 'Sin resultados para "' + s.repertorioBusqueda.trim() + '".' : 'No hay canciones registradas para esta organización.',
       hayCanciones: catalogoFiltrado.length > 0,
       paginaActual: paginaActual,
