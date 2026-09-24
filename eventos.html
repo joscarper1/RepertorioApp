@@ -34,7 +34,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260924c"></script>
+<script src="repertorio-data.js?v=20260924d"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -250,6 +250,24 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .p2-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .form-grid{display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px}
 .form-col{display:flex;flex-direction:column;gap:16px}
+/* Selector de hora en rueda: tres columnas con scroll-snap (hora, minutos,
+   am/pm); la franja del centro marca el valor elegido. */
+.rueda{position:relative;height:42px;border:1px solid rgba(0,0,0,.18);border-radius:8px;background:#fff;overflow:hidden;user-select:none;transition:height .22s ease,border-color .15s}
+.rueda.abierta{height:162px;border-color:var(--ink)}
+.rueda-valor{position:absolute;inset:0;width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 12px;border:0;background:none;font:inherit;font-size:14px;color:var(--ink);text-align:left;cursor:pointer;transition:opacity .15s}
+.rueda-valor:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;border-radius:8px}
+.rueda-valor-vacio{color:var(--muted3)}
+.rueda-chev{flex:none;color:var(--muted2);transition:transform .22s ease}
+.rueda-cuerpo{position:absolute;left:0;right:0;top:0;height:160px;display:flex;align-items:stretch;justify-content:center;gap:2px;visibility:hidden;opacity:0;transition:opacity .18s ease,visibility 0s .22s}
+.rueda.abierta .rueda-valor{opacity:0;pointer-events:none}
+.rueda.abierta .rueda-cuerpo{visibility:visible;opacity:1;transition:opacity .18s ease .06s,visibility 0s}
+.rueda-franja{position:absolute;left:6px;right:6px;top:64px;height:32px;border-radius:6px;background:var(--soft);pointer-events:none}
+.rueda-col{position:relative;flex:1;max-width:64px;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;overscroll-behavior:contain;outline:none;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 35%,#000 65%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 35%,#000 65%,transparent)}
+.rueda-col::-webkit-scrollbar{display:none}
+.rueda-pad{height:64px}
+.rueda-it{height:32px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:14px;font-weight:500;color:var(--muted2);cursor:pointer;font-variant-numeric:tabular-nums}
+.rueda-it.on{color:var(--ink);font-weight:700}
+.rueda-sep{position:relative;display:flex;align-items:center;font-size:14px;font-weight:700;color:var(--ink)}
 .inp-aviso{border-color:var(--gold)!important;background:var(--gold-lt)!important}
 .rol{background:#fff;border-radius:12px;border:1px solid var(--line);padding:14px 16px}
 .rol-cab{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
@@ -587,8 +605,8 @@ a.mas-fila:hover{background:none;color:var(--ink)}
     <section class="p2">
       <div class="p2-cab">
         <div style="min-width:0">
-          <div class="kicker">{{ draftFecha }}</div>
-          <h2 class="mes-titulo" style="font-size:32px">{{ dServicio }}</h2>
+          <div class="kicker">{{ p2Kicker }}</div>
+          <h2 class="mes-titulo" style="font-size:32px">{{ p2Titulo }}</h2>
         </div>
         <sc-if value="{{ usaBanda }}" hint-placeholder-val="{{ false }}">
           <div class="seg">
@@ -600,13 +618,37 @@ a.mas-fila:hover{background:none;color:var(--ink)}
       </div>
 
       <sc-if value="{{ esSubDetalles }}" hint-placeholder-val="{{ true }}">
+        <p class="campo-ayuda" style="margin:0">Establece el horario del evento, la temática y agrega notas adicionales. Solo la hora es obligatoria.</p>
         <div class="panel">
           <div class="panel-cuerpo form-col">
             <div class="form-grid">
-              <label class="campo">
+              <div class="campo">
                 <span class="campo-l">Hora *</span>
-                <input class="inp" value="{{ dHora }}" onChange="{{ onHora }}" placeholder="8:00 am">
-              </label>
+                <div class="{{ ruedaClase }}" role="group" aria-label="Hora del evento" onBlur="{{ ruedaBlur }}">
+                  <button type="button" class="rueda-valor" onClick="{{ abrirRueda }}" aria-expanded="{{ ruedaAbierta }}">
+                    <span class="{{ ruedaValorClase }}">{{ ruedaValor }}</span>
+                    <svg class="rueda-chev" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                  </button>
+                  <div class="rueda-cuerpo">
+                  <div class="rueda-franja"></div>
+                  <sc-for list="{{ ruedaCols }}" as="rc" hint-placeholder-count="3">
+                    <div style="display:contents">
+                      <sc-if value="{{ rc.conSep }}" hint-placeholder-val="{{ false }}"><span class="rueda-sep">:</span></sc-if>
+                      <div class="rueda-col" tabindex="0" role="listbox" aria-label="{{ rc.label }}" data-idx="{{ rc.idx }}" onScroll="{{ rc.onScroll }}" onKeyDown="{{ rc.onKeyDown }}">
+                        <div class="rueda-pad"></div>
+                        <sc-for list="{{ rc.items }}" as="it" hint-placeholder-count="5">
+                          <div class="{{ it.clase }}" role="option" aria-selected="{{ it.sel }}" onClick="{{ it.onClick }}">{{ it.label }}</div>
+                        </sc-for>
+                        <div class="rueda-pad"></div>
+                      </div>
+                    </div>
+                  </sc-for>
+                  </div>
+                </div>
+                <sc-if value="{{ horaAnterior }}" hint-placeholder-val="{{ false }}">
+                  <span class="campo-ayuda">Hora guardada: “{{ horaAnterior }}”. Gira la rueda para reemplazarla.</span>
+                </sc-if>
+              </div>
               <label class="campo">
                 <span class="campo-l">Tema</span>
                 <input class="inp" value="{{ dTema }}" onChange="{{ onTema }}" placeholder="Tema del evento" style="font-weight:600">
@@ -634,7 +676,8 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             </sc-if>
             <label class="campo">
               <span class="campo-l" style="color:var(--gold-dk)">Aviso importante</span>
-              <textarea class="inp inp-aviso" value="{{ dAviso }}" onChange="{{ onAviso }}" rows="2" placeholder="Aparecerá como encabezado de la semana, junto con otros avisos de esa semana."></textarea>
+              <textarea class="inp inp-aviso" value="{{ dAviso }}" onChange="{{ onAviso }}" rows="2" placeholder="Ej.: Hoy el ensayo empieza 30 minutos antes."></textarea>
+              <span class="campo-ayuda">Úsalo solo para algo que todos deben saber. En el calendario público aparece en el recuadro “Importante” de esa semana, junto con los avisos de los otros eventos, y también al abrir el evento. Déjalo vacío si no hay nada urgente.</span>
             </label>
           </div>
         </div>
@@ -1137,6 +1180,18 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 <script type="text/x-dc" data-dc-script data-props="{}">
 const D = () => window.RepertorioData;
 
+/* Selector de hora en rueda: alto de cada fila (igual que .rueda-it) y valores. */
+const RUEDA_ALTO = 32;
+const RUEDA_HORAS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+const RUEDA_MINUTOS = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
+
+/* "6:30 pm" → { h: '6', m: '30', p: 'pm' }; null si no tiene ese formato. */
+function partesHora(hora) {
+  const m = /^(\d{1,2}):(\d{2})\s*([ap])\.?\s*m\.?$/i.exec(String(hora || '').trim());
+  if (!m || Number(m[1]) < 1 || Number(m[1]) > 12 || Number(m[2]) > 59) return null;
+  return { h: String(Number(m[1])), m: m[2], p: m[3].toLowerCase() + 'm' };
+}
+
 class Component extends DCLogic {
   state = {
     estadoAcceso: 'cargando', denegadoMotivo: '', organizationId: null, organizacion: null, orgs: [],
@@ -1206,6 +1261,44 @@ class Component extends DCLogic {
 
   componentDidUpdate() {
     this.modalCifrado().enganchar();
+    this.sincronizarRueda();
+  }
+
+  /* --- Selector de hora en rueda ---
+     Cada columna se desplaza hasta su valor (data-idx) salvo mientras la
+     persona la está girando; al detenerse se toma la fila centrada. */
+  sincronizarRueda() {
+    if (typeof document === 'undefined') return;
+    document.querySelectorAll('.rueda-col').forEach((col) => {
+      if (col._girando) return;
+      const top = Number(col.dataset.idx || 0) * RUEDA_ALTO;
+      if (Math.abs(col.scrollTop - top) > 1) col.scrollTop = top;
+    });
+  }
+
+  /* Cerrada se ve como un campo normal con la hora; al tocarla se ensancha
+     y enfoca la columna de la hora. Se cierra al salir de ella (clic fuera
+     o Tab), con Enter o con Escape. */
+  abrirRueda() {
+    this.setState({ ruedaAbierta: true }, () => {
+      const col = typeof document !== 'undefined' && document.querySelector('.rueda-col');
+      if (col) col.focus({ preventScroll: true });
+    });
+  }
+
+  cerrarRueda(devolverFoco) {
+    this.setState({ ruedaAbierta: false }, () => {
+      const btn = devolverFoco && typeof document !== 'undefined' && document.querySelector('.rueda-valor');
+      if (btn) btn.focus({ preventScroll: true });
+    });
+  }
+
+  setHoraParte(parte, valor) {
+    this.setDraft((x) => {
+      const p = partesHora(x.hora) || { h: '8', m: '00', p: 'am' };
+      p[parte] = valor;
+      x.hora = p.h + ':' + p.m + ' ' + p.p;
+    });
   }
 
   componentWillUnmount() {
@@ -1715,6 +1808,44 @@ class Component extends DCLogic {
     // ---- borrador
     const field = (campo) => (e) => { const v = e.target.value; this.setDraft((x) => { x[campo] = v; }); };
 
+    /* Columnas del selector de hora. Una hora vieja en texto libre que no se
+       entiende ("Por confirmar") se muestra aparte hasta que se gire la rueda. */
+    const horaPartes = dr ? partesHora(dr.hora) : null;
+    const horaSel = horaPartes || { h: '8', m: '00', p: 'am' };
+    const minutos = RUEDA_MINUTOS.indexOf(horaSel.m) >= 0 ? RUEDA_MINUTOS : RUEDA_MINUTOS.concat([horaSel.m]).sort();
+    const ruedaCol = (parte, label, valores) => {
+      const idx = Math.max(0, valores.indexOf(horaSel[parte]));
+      const elegir = (i) => {
+        const v = valores[Math.min(valores.length - 1, Math.max(0, i))];
+        if (v !== horaSel[parte] || !horaPartes) this.setHoraParte(parte, v);
+      };
+      return {
+        label: label, idx: idx, conSep: parte === 'm',
+        items: valores.map((v, i) => ({ label: v, sel: i === idx, clase: 'rueda-it' + (i === idx ? ' on' : ''), onClick: () => elegir(i) })),
+        onScroll: (e) => {
+          const col = e.currentTarget;
+          col._girando = true;
+          clearTimeout(col._t);
+          col._t = setTimeout(() => {
+            col._girando = false;
+            const i = Math.round(col.scrollTop / RUEDA_ALTO);
+            if (i !== idx) elegir(i);
+          }, 140);
+        },
+        onKeyDown: (e) => {
+          if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); this.cerrarRueda(true); return; }
+          if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+          e.preventDefault();
+          elegir(idx + (e.key === 'ArrowDown' ? 1 : -1));
+        }
+      };
+    };
+    const ruedaCols = [
+      ruedaCol('h', 'Hora', RUEDA_HORAS),
+      ruedaCol('m', 'Minutos', minutos),
+      ruedaCol('p', 'am o pm', ['am', 'pm'])
+    ];
+
     // dr.banda puede faltar en registros guardados antes de esta función.
     const drBanda = dr ? (dr.banda || []) : [];
 
@@ -2090,7 +2221,7 @@ class Component extends DCLogic {
         label: label,
         sub: R.usaRepertorio(label) ? 'Banda y repertorio' : 'Solo detalles',
         clase: 'tipo' + (dr.servicio === label ? ' on' : ''),
-        onClick: () => this.setDraft((x) => { x.servicio = label; })
+        onClick: () => this.setDraft((x) => { x.hora = R.horaAlCambiarServicio(x.hora, label); x.servicio = label; })
       })) : [],
       diaKicker: s.fecha ? (s.fecha === hoyIso ? 'Hoy' : 'Día seleccionado') : 'Calendario',
       sinFecha: !s.fecha,
@@ -2113,8 +2244,21 @@ class Component extends DCLogic {
         this.irA({ draft: R.newEvento({ fecha: s.fecha }), editId: null, paso: 1, sub: 'detalles' });
       },
 
-      draftFecha: dr ? (R.diaNombre(dr.fecha) + ' · ' + R.fechaLarga(dr.fecha) + ' · Semana ' + R.semanaDelMes(dr.fecha)) : '',
+      /* Con sub-pestañas, el título es el de la sub-pestaña activa y el tipo
+         de evento pasa al kicker junto a la fecha. */
+      p2Titulo: dr ? (usaBanda ? subsDef[subIdx].label : dr.servicio) : '',
+      p2Kicker: dr ? ((usaBanda ? dr.servicio + ' · ' : '') + R.diaNombre(dr.fecha) + ' · ' + R.fechaLarga(dr.fecha) + ' · Semana ' + R.semanaDelMes(dr.fecha)) : '',
       dHora: dr ? dr.hora : '',
+      ruedaCols: ruedaCols,
+      ruedaAbierta: !!s.ruedaAbierta,
+      ruedaClase: 'rueda' + (s.ruedaAbierta ? ' abierta' : ''),
+      ruedaValor: horaPartes ? (horaSel.h + ':' + horaSel.m + ' ' + horaSel.p) : 'Elige la hora',
+      ruedaValorClase: horaPartes ? '' : 'rueda-valor-vacio',
+      abrirRueda: () => this.abrirRueda(),
+      ruedaBlur: (e) => {
+        if (s.ruedaAbierta && !e.currentTarget.contains(e.relatedTarget)) this.cerrarRueda(false);
+      },
+      horaAnterior: dr && !horaPartes && (dr.hora || '').trim() ? dr.hora.trim() : '',
       dServicio: dr ? dr.servicio : '',
       dTema: dr ? dr.tema : '',
       dCita: dr ? dr.cita : '',
@@ -2122,7 +2266,7 @@ class Component extends DCLogic {
       dNotas: dr ? dr.notas : '',
       dDetalles: dr ? dr.detalles : '',
       dPersonas: dr ? dr.personas : '',
-      onHora: field('hora'), onServicio: field('servicio'), onTema: field('tema'),
+      onServicio: field('servicio'), onTema: field('tema'),
       onCita: field('cita'), onAviso: field('avisoImportante'), onNotas: field('notas'),
       onDetalles: field('detalles'), onPersonas: field('personas'),
       servicios: (dr && dr.servicio && R.SERVICIOS.indexOf(dr.servicio) < 0

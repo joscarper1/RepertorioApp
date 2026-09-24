@@ -21,7 +21,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260924c"></script>
+<script src="repertorio-data.js?v=20260924d"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -225,6 +225,13 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .callout-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dk)}
 .callout p{margin:8px 0 0;font-size:14px;line-height:1.55;text-wrap:pretty;white-space:pre-line}
 .callout-aviso{border:1.5px solid var(--gold)}
+/* Banner "Importante" de la semana elegida: junta los avisos de sus eventos. */
+.avisos-sem{margin-top:12px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.avisos-sem-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dk)}
+.aviso-sem{display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;padding:0;cursor:pointer;color:var(--gold-dk);font:inherit}
+.aviso-sem-meta{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+.aviso-sem-txt{font-size:15px;font-weight:700;line-height:1.4;white-space:pre-line;text-wrap:pretty}
+.aviso-sem:hover .aviso-sem-txt{text-decoration:underline}
 .caja{border:1px solid var(--line);border-radius:12px;padding:16px 18px}
 .caja p{margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted);white-space:pre-line}
 .caja-banda{padding-bottom:8px}
@@ -501,6 +508,18 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
         </div>
       </sc-for>
     </div>
+
+    <sc-if value="{{ hayAvisosSemana }}" hint-placeholder-val="{{ false }}">
+      <div class="avisos-sem" role="note">
+        <span class="avisos-sem-t">{{ avisosSemanaTitulo }}</span>
+        <sc-for list="{{ avisosSemana }}" as="av" hint-placeholder-count="1">
+          <button type="button" class="aviso-sem" onClick="{{ av.onClick }}">
+            <span class="aviso-sem-meta">{{ av.meta }}</span>
+            <span class="aviso-sem-txt">{{ av.texto }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
 
     <div class="barra">
       <div class="barra-izq">
@@ -1487,6 +1506,16 @@ class Component extends DCLogic {
 
     const ctx = { hoyISO: hoyISO, sel: sel, miMusico: miMusico };
 
+    /* Banner "Importante" de la semana elegida: el aviso de cada evento que
+       aún no pasa y no está cancelado; tocarlo abre ese evento. */
+    const avisosSemana = (grupos[semana] || [])
+      .filter((ev) => (ev.avisoImportante || '').trim() && ev.fecha >= hoyISO && R.estadoEvento(ev) !== 'CANCELADO')
+      .map((ev) => ({
+        meta: R.diaNombre(ev.fecha) + ' ' + R.parse(ev.fecha).getDate() + ' · ' + (ev.servicio || 'Evento'),
+        texto: ev.avisoImportante.trim(),
+        onClick: () => this.seleccionarEvento(ev, { semanaSel: semana, diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all' })
+      }));
+
     const mesNum = Number((s.mes || '').slice(5, 7)) - 1;
     const mesCorto = (R.MESES[mesNum] || '').slice(0, 3);
     const semanas = numsSemana.map((n) => {
@@ -1678,6 +1707,9 @@ class Component extends DCLogic {
       participacionesVacia: !participacionesLista.length,
       cerrarParticipaciones: () => this.cerrarParticipaciones(),
 
+      avisosSemana: avisosSemana,
+      hayAvisosSemana: avisosSemana.length > 0,
+      avisosSemanaTitulo: 'Importante · Semana ' + semana,
       listaTitulo: diaFiltro ? 'Día seleccionado' : 'Toda la semana',
       hayDiaFiltro: !!diaFiltro,
       diaFiltroLabel: diaFiltro ? R.diaNombre(diaFiltro) + ' ' + R.fechaLarga(diaFiltro) : '',

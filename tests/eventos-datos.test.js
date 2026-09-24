@@ -88,3 +88,26 @@ test('saveEventSinBanda no escribe nada sin id de evento', async () => {
   assert.equal(await guardar(R, { tema: 'x' }, null), false);
   assert.equal(escrito.length, 0);
 });
+
+test('horaPorServicio da la hora predefinida de cada tipo de evento', () => {
+  const R = cargar(firebaseFalso().fb);
+  assert.equal(R.horaPorServicio('Cultos Dominicales'), '8:00 am');
+  assert.equal(R.horaPorServicio('Culto Familiar'), '6:30 pm');
+  assert.equal(R.horaPorServicio('Vigilia General'), '7:00 pm');
+  assert.equal(R.horaPorServicio('Vigilia Juvenil'), '7:00 pm');
+  assert.equal(R.horaPorServicio('Capacitación'), '');
+  assert.equal(R.newEvento({ servicio: 'Culto Familiar' }).hora, '6:30 pm');
+  assert.equal(R.newEvento({ servicio: 'Culto Familiar', hora: '5:00 pm' }).hora, '5:00 pm');
+});
+
+test('horaAlCambiarServicio respeta la hora ajustada a mano', () => {
+  const R = cargar(firebaseFalso().fb);
+  // Hora predefinida (de cualquier tipo) → se cambia a la del nuevo
+  assert.equal(R.horaAlCambiarServicio('8:00 am', 'Culto Familiar'), '6:30 pm');
+  assert.equal(R.horaAlCambiarServicio('7:00 pm', 'Cultos Dominicales'), '8:00 am');
+  assert.equal(R.horaAlCambiarServicio('', 'Vigilia General'), '7:00 pm');
+  // Hora ajustada a mano → se conserva
+  assert.equal(R.horaAlCambiarServicio('9:30 am', 'Culto Familiar'), '9:30 am');
+  // Tipo nuevo sin hora predefinida → se conserva la actual
+  assert.equal(R.horaAlCambiarServicio('6:30 pm', 'Capacitación'), '6:30 pm');
+});

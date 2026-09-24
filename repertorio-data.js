@@ -55,6 +55,29 @@
 
   function usaRepertorio(servicio) { return SERVICIOS_CON_REPERTORIO.indexOf(servicio) >= 0; }
 
+  /* Hora con la que se precarga un evento al elegir su tipo; los tipos que
+     no están aquí conservan la hora que ya tenía el borrador. */
+  var HORA_POR_SERVICIO = {
+    'Cultos Dominicales': '8:00 am',
+    'Culto Familiar': '6:30 pm',
+    'Vigilia General': '7:00 pm',
+    'Vigilia Juvenil': '7:00 pm'
+  };
+
+  function horaPorServicio(servicio) { return HORA_POR_SERVICIO[servicio] || ''; }
+
+  /* Al cambiar el tipo de evento: se usa la hora predefinida del tipo nuevo
+     solo si la hora actual está vacía o es una de las predefinidas (vino de
+     elegir otro tipo, nadie la ajustó a mano). */
+  function horaAlCambiarServicio(horaActual, servicioNuevo) {
+    var nueva = horaPorServicio(servicioNuevo);
+    var actual = String(horaActual || '').trim();
+    if (!nueva) return actual;
+    var predefinidas = Object.keys(HORA_POR_SERVICIO).map(function (k) { return HORA_POR_SERVICIO[k]; });
+    if (!actual || predefinidas.indexOf(actual) >= 0) return nueva;
+    return actual;
+  }
+
   function song(t, d, k, u, sm) { return { t: t || '', d: d || '', k: k || '', u: u || '', sm: sm || '' }; }
 
   /* Parte de la llave que representa "el mismo link": dos URLs de YouTube
@@ -477,7 +500,7 @@
     return {
       id: o.id || uid(),
       fecha: o.fecha || '',
-      hora: o.hora || '8:00 am',
+      hora: o.hora || horaPorServicio(o.servicio || SERVICIOS[0]) || '8:00 am',
       servicio: o.servicio || SERVICIOS[0],
       tema: o.tema || '',
       cita: o.cita || '',
@@ -1931,7 +1954,7 @@
     signInWithGoogle: signInWithGoogle, signOutUser: signOutUser, onAuthChange: onAuthChange,
     eventoTitulo: eventoTitulo, eventoDescripcion: eventoDescripcion,
     icsDataHref: icsDataHref, icsFilename: icsFilename, googleCalendarUrl: googleCalendarUrl,
-    horaMinutos: horaMinutos,
+    horaMinutos: horaMinutos, horaPorServicio: horaPorServicio, horaAlCambiarServicio: horaAlCambiarServicio,
     slugify: slugify,
     ESTADOS_EVENTO: ESTADOS_EVENTO, estadoEvento: estadoEvento, esVisiblePublico: esVisiblePublico, estadoInfo: estadoInfo,
     watchAllOrganizations: watchAllOrganizations, getOrganizationBySlug: getOrganizationBySlug, getOrganization: getOrganization,
