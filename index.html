@@ -302,6 +302,9 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
      línea) ensanchan la página entera. */
   .barra-izq,.chips,.buscar-wrap{min-width:0;max-width:100%}
   .part-modal{width:100%;height:100%;max-height:none;border-radius:0}
+  /* Debajo del detalle (z-index 100), que se abre encima y al cerrarse la
+     deja a la vista; el cifrado (5000) sigue por encima de todo. */
+  .part-overlay{z-index:70}
   .buscar-velo{background:rgba(0,0,0,.35);z-index:60}
   .buscar-panel{position:fixed;left:0;right:0;bottom:0;top:110px;width:auto;max-width:none;z-index:61;border-radius:22px 22px 0 0;border:0;padding:10px 16px 20px;gap:10px}
   .buscar-input input{font-size:16px}
@@ -327,7 +330,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .card-pie{min-height:0}
   /* El detalle se vuelve una pantalla que entra deslizándose desde la
      derecha; visibility evita que, cerrado, sea alcanzable con el teclado. */
-  .detalle{position:fixed;inset:0;z-index:50;border:0;border-radius:0;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);visibility:hidden;transition:transform .32s cubic-bezier(.2,.8,.2,1),visibility 0s linear .32s}
+  .detalle{position:fixed;inset:0;z-index:100;border:0;border-radius:0;background:var(--bg);display:flex;flex-direction:column;transform:translateX(100%);visibility:hidden;transition:transform .32s cubic-bezier(.2,.8,.2,1),visibility 0s linear .32s}
   .detalle.abierto{transform:none;visibility:visible;transition:transform .32s cubic-bezier(.2,.8,.2,1)}
   /* Barra de abajo, al alcance del pulgar: volver a la semana y pasar al
      evento anterior/siguiente de esa misma lista. */
@@ -796,7 +799,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
     </div>
   </footer>
   <sc-if value="{{ participacionesModalAbierto }}" hint-placeholder-val="{{ false }}">
-    <div class="cifrado-overlay" onClick="{{ cerrarParticipaciones }}">
+    <div class="cifrado-overlay part-overlay" onClick="{{ cerrarParticipaciones }}">
       <div class="part-modal" role="dialog" aria-modal="true" aria-label="Participaciones" onClick="{{ detenerPropagacion }}">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
           <span class="kicker" style="margin:0">Participaciones de {{ participacionesNombre }}</span>
@@ -1651,9 +1654,15 @@ class Component extends DCLogic {
           tema: ev.tema || 'Sin tema',
           colorStyle: 'color:' + color, dotStyle: 'background:' + color,
           clase: 'res' + (sel && ev.id === sel.id ? ' sel' : '') + (ev.fecha < hoyISO ? ' pasado' : ''),
-          onClick: () => this.seleccionarEvento(ev, { semanaSel: R.semanaDelMes(ev.fecha), diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all', buscarAbierto: false, buscarTexto: '' })
+          onClick: () => this.seleccionarEvento(ev, Object.assign({ semanaSel: R.semanaDelMes(ev.fecha), diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all' },
+            this._esTelefono() ? {} : { buscarAbierto: false, buscarTexto: '' }))
         };
       });
+
+    /* En el teléfono, elegir un evento aquí o en "Ver participaciones" deja
+       el panel/modal abierto debajo del detalle: al volver sigue ahí, y solo
+       se cierra con "Cerrar". En escritorio se cierra, como antes, porque
+       el detalle se ve al lado y el panel lo taparía. */
 
     /* "Ver participaciones": integrantes de banda del mes mostrado; al
        elegir uno se abre el modal con sus eventos PUBLICADO de ese mes y el
@@ -1686,7 +1695,8 @@ class Component extends DCLogic {
           tema: ev.tema || 'Por confirmar',
           tipo: R.bandaLabel(slot),
           colorStyle: 'color:' + color, dotStyle: 'background:' + color,
-          onClick: () => this.seleccionarEvento(ev, { semanaSel: R.semanaDelMes(ev.fecha), diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all', personaSeleccionada: null })
+          onClick: () => this.seleccionarEvento(ev, Object.assign({ semanaSel: R.semanaDelMes(ev.fecha), diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all' },
+            this._esTelefono() ? {} : { personaSeleccionada: null }))
         };
       }).filter(Boolean);
     }
