@@ -30,12 +30,12 @@
   ];
 
   var ACCIONES_DASHBOARD = [
-    { id: 'publicado', label: 'Ir al calendario' },
-    { id: 'eventos', label: 'Panel de administración', permiso: 'eventos.ver' }
+    { id: 'eventos', label: 'Panel de administración', permiso: 'eventos.ver' },
+    { id: 'publicado', label: 'Ver publicado' }
   ];
 
   var ACCIONES_CALENDARIO = [
-    { id: 'eventos', label: 'Gestionar Eventos' },
+    { id: 'eventos', label: 'Panel de Eventos' },
     { id: 'whatsapp', label: 'Copiar para WhatsApp', tipo: 'accion' }
   ];
 
