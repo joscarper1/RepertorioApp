@@ -54,13 +54,14 @@ test('saveEventSinBanda escribe solo los campos editables del evento', async () 
   evento.estado = 'BORRADOR';
   evento.fecha = '2026-10-01';
   evento.organizationId = 'o2';
+  evento.servicio = 'Otro tipo';
   delete evento.aviso;
 
   assert.equal(await guardar(R, evento, ORIGINAL), true);
   assert.equal(escrito.length, 1);
   assert.equal(escrito[0].ruta, 'events/e1');
   const v = escrito[0].v;
-  for (const k of ['id', 'organizationId', 'estado', 'integrantes', 'banda', 'fecha']) assert.ok(!(k in v), k + ' no debe escribirse');
+  for (const k of ['id', 'organizationId', 'estado', 'integrantes', 'banda', 'fecha', 'servicio']) assert.ok(!(k in v), k + ' no debe escribirse');
   assert.equal(v.tema, 'Tema nuevo');
   assert.equal(v.bloques[0].canciones[0].t, 'Nueva');
   assert.equal(v.hora, '9:00 am');

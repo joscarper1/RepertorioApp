@@ -728,7 +728,9 @@
      cifrado de las canciones de los eventos que puede editar),
      canciones.editar (sub-pestaña Canciones y el orden en la revisión),
      banda.editar (sub-pestaña Banda: asignar integrantes; sin él la banda
-     solo se consulta en la revisión y se guarda tal como está en la nube). */
+     solo se consulta en la revisión y se guarda tal como está en la nube),
+     eventos.tipo (cambiar el tipo de evento de uno existente; sin él, al
+     editar se entra directo al paso 2 y se conserva el tipo de la nube). */
   var PERMISOS_POR_ROL = {
     admin: ['*'],
     normal: ['eventos.ver', 'eventos.editar', 'canciones.editar', 'cifrados.editar']
@@ -1080,12 +1082,12 @@
   }
 
   /* Guardado de quien no tiene 'banda.editar': escribe campo por campo
-     (update) sin tocar banda, integrantes, estado, fecha, organizationId
-     ni id. Las reglas de la base solo le permiten escribir esos otros
+     (update) sin tocar banda, integrantes, estado, fecha, servicio (tipo
+     de evento), organizationId ni id. Las reglas de la base solo le permiten escribir esos otros
      campos (ver events/$eventId/$campo), así que un set() del evento
      completo sería rechazado. `original` es el evento como está en la
      nube: los campos que ya no vienen en `evento` se borran (null). */
-  var CAMPOS_EVENTO_PROTEGIDOS = ['id', 'organizationId', 'estado', 'integrantes', 'banda', 'fecha'];
+  var CAMPOS_EVENTO_PROTEGIDOS = ['id', 'organizationId', 'estado', 'integrantes', 'banda', 'fecha', 'servicio'];
 
   function saveEventSinBanda(evento, original, cb) {
     var root = dbRoot();

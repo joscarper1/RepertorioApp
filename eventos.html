@@ -34,7 +34,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260924b"></script>
+<script src="repertorio-data.js?v=20260924c"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -1450,6 +1450,8 @@ class Component extends DCLogic {
       ? ((this._eventosVivos || this.state.data.eventos || []).find((e) => e.id === this.state.editId) || null)
       : null;
     const puedeBanda = R.puede(this.state.userDoc, 'banda.editar');
+    /* Sin 'eventos.tipo' el tipo de evento se conserva tal como está en la nube. */
+    if (!R.puede(this.state.userDoc, 'eventos.tipo') && enNube) dr.servicio = enNube.servicio;
     if (!R.puede(this.state.userDoc, 'canciones.editar') && enNube) dr.bloques = JSON.parse(JSON.stringify(enNube.bloques || []));
     if (!puedeBanda && enNube) {
       /* Sin 'banda.editar' la banda no se toca: se guarda la que está en la
@@ -1637,6 +1639,10 @@ class Component extends DCLogic {
        la ve en la revisión final. Igual con 'canciones.editar'. */
     const puedeBanda = R.puede(s.userDoc, 'banda.editar');
     const puedeCanciones = R.puede(s.userDoc, 'canciones.editar');
+    /* Sin 'eventos.tipo' (admin) no se cambia el tipo de un evento existente:
+       al editar se entra directo al paso 2 y "Atrás" desde ahí cierra. */
+    const puedeTipo = R.puede(s.userDoc, 'eventos.tipo');
+    const sinPaso1 = !!s.editId && !puedeTipo;
     const subsDef = (usaBanda && puedeBanda ? [{ id: 'banda', label: 'Banda' }] : [])
       .concat(usaBanda && puedeCanciones ? [{ id: 'repertorio', label: 'Canciones' }] : [])
       .concat([{ id: 'detalles', label: 'Detalles' }]);
@@ -1692,7 +1698,9 @@ class Component extends DCLogic {
            los campos que no existían cuando se creó (banda, detalles, etc.). */
         editar: () => {
           if (!R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev)) return;
-          this.irA({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: 1, sub: 'detalles', fecha: ev.fecha });
+          /* Sin 'eventos.tipo' se salta el paso 1; sub '' = primera sub-pestaña. */
+          const conTipo = R.puede(s.userDoc, 'eventos.tipo');
+          this.irA({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: conTipo ? 1 : 2, sub: conTipo ? 'detalles' : '', fecha: ev.fecha });
         },
         puedeEditar: R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev),
         puedeMover: R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev),
@@ -2150,8 +2158,8 @@ class Component extends DCLogic {
 
       noEsPasoFinal: enWizard && paso !== 3,
       siguienteLabel: (paso === 2 && !ultimoSub) ? ('Siguiente: ' + subsDef[subIdx + 1].label) : 'Siguiente',
-      atrasLabel: paso === 1 ? 'Cancelar' : 'Atrás',
-      mostrarCancelar: enWizard && paso !== 1,
+      atrasLabel: (paso === 1 || (sinPaso1 && paso === 2 && subIdx === 0)) ? 'Cancelar' : 'Atrás',
+      mostrarCancelar: enWizard && paso !== 1 && !(sinPaso1 && paso === 2 && subIdx === 0),
       siguiente: () => {
         if (!dr) return;
         if (paso === 1) {
@@ -2168,7 +2176,12 @@ class Component extends DCLogic {
       },
       atras: () => {
         if (paso === 1) { this.setState({ draft: null, editId: null, paso: 1, estado: '' }); return; }
-        if (paso === 2) { if (subIdx > 0) this.irA({ sub: subsDef[subIdx - 1].id }); else this.irA({ paso: 1 }); return; }
+        if (paso === 2) {
+          if (subIdx > 0) this.irA({ sub: subsDef[subIdx - 1].id });
+          else if (sinPaso1) this.setState({ draft: null, editId: null, paso: 1, estado: '' });
+          else this.irA({ paso: 1 });
+          return;
+        }
         this.irA({ paso: 2, sub: subsDef[subsDef.length - 1].id });
       },
       cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '' }),
