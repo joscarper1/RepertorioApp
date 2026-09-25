@@ -35,7 +35,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260924d"></script>
+<script src="repertorio-data.js?v=20260925a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -80,7 +80,9 @@ input::placeholder,textarea::placeholder{color:var(--muted3)}
 a.chip{border-bottom:1px solid rgba(0,0,0,.14)}
 a.chip:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
 a.chip.on,a.chip.on:hover{background:var(--ink);border-color:var(--ink);color:#fff}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:6000;background:var(--ink);color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.25);white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.toast-link{color:#fff;border-bottom:1px solid rgba(255,255,255,.6);white-space:nowrap;margin-left:4px}
+.toast-link:hover{color:#fff;background:none;border-bottom-color:#fff}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:6000;background:var(--ink);color:#fff;font-size:13px;font-weight:600;line-height:1.35;text-align:center;padding:10px 16px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);width:max-content;max-width:calc(100vw - 32px)}
 .sep-v{width:1px;height:20px;background:rgba(0,0,0,.15);flex:none}
 .usuario{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
 .avatar{width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none}
@@ -375,11 +377,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
     <sc-if value="{{ mensaje }}" hint-placeholder-val="{{ false }}">
       <div class="aviso" style="margin-bottom:16px">
-        <span>{{ mensaje }}
-          <sc-if value="{{ mensajeUrl }}" hint-placeholder-val="{{ false }}">
-            <a href="{{ mensajeUrl }}" target="_blank" rel="noopener" style="margin-left:4px;white-space:nowrap">Ábrelo en YouTube ↗</a>
-          </sc-if>
-        </span>
+        <span>{{ mensaje }}</span>
         <button type="button" class="btn-quitar" onClick="{{ cerrarMensaje }}" aria-label="Cerrar aviso" style="color:var(--ac-dk)">✕</button>
       </div>
     </sc-if>
@@ -988,6 +986,15 @@ a.mas-fila:hover{background:none;color:var(--ink)}
   </sc-if>
 
 </div>
+
+<sc-if value="{{ avisoAudio }}" hint-placeholder-val="{{ false }}">
+  <div class="toast" role="status">
+    {{ avisoAudio }}
+    <sc-if value="{{ avisoAudioUrl }}" hint-placeholder-val="{{ true }}">
+      <a class="toast-link" href="{{ avisoAudioUrl }}" target="_blank" rel="noopener">Ábrelo en YouTube ↗</a>
+    </sc-if>
+  </div>
+</sc-if>
 </x-dc>
 <div id="admin-yt-audio-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
 </div>
@@ -1054,7 +1061,7 @@ class Component extends DCLogic {
        vacío), true/false según el resultado de intentar cargar la URL como
        imagen (ver validarOrgEditBanner). */
     orgEditBannerUrl: '', orgEditBannerValido: null, orgEditBannerValidando: false,
-    usuarios: [], mensaje: '', avisoAudioMsg: '', avisoAudioUrl: '',
+    usuarios: [], mensaje: '', avisoAudio: '', avisoAudioUrl: '',
     /* "+ Agregar usuario": acceso por correo que se aplica en el primer
        inicio de sesión (ver R.crearAccesoPendiente). nuevoUsuarioPersona:
        '' = sin persona, '__nueva__' = crear una, o el id de una existente. */
@@ -1082,20 +1089,13 @@ class Component extends DCLogic {
 
   componentDidMount() {
     const R = D();
-    /* Aviso del reproductor en el banner de mensajes; el de "tardando" se
-       quita solo cuando el video suena, se pausa o se cambia de canción.
-       avisoAudioMsg/Url muestran "Ábrelo en YouTube ↗" sólo mientras el
-       banner siga mostrando ese aviso. */
+    /* Aviso del reproductor en un toast (como en index/eventos), no en el
+       banner de arriba, que en el teléfono queda fuera de vista: el de
+       "tardando" dura hasta que suena o se pausa; el de error se quita solo. */
     this._yt = R.youtubeController('admin-yt-audio-player', (key, paused, aviso) => {
-      const patch = { reproduciendoKey: key, reproduciendoPausado: paused };
-      if (aviso) {
-        Object.assign(patch, { mensaje: aviso.mensaje, avisoAudioMsg: aviso.mensaje, avisoAudioUrl: aviso.url || '' });
-        this._avisoLento = aviso.tipo === 'lento';
-      } else if (this._avisoLento && this.state.mensaje === this.state.avisoAudioMsg) {
-        Object.assign(patch, { mensaje: '', avisoAudioMsg: '', avisoAudioUrl: '' });
-        this._avisoLento = false;
-      }
-      this.setState(patch);
+      clearTimeout(this._tAudio);
+      this.setState({ reproduciendoKey: key, reproduciendoPausado: paused, avisoAudio: aviso ? aviso.mensaje : '', avisoAudioUrl: (aviso && aviso.url) || '' });
+      if (aviso && aviso.tipo === 'error') this._tAudio = setTimeout(() => this.setState({ avisoAudio: '', avisoAudioUrl: '' }), aviso.url ? 8000 : 5000);
     });
     this._unauth = R.onAuthChange((user) => {
       if (this._unorgs) { this._unorgs(); this._unorgs = null; }
@@ -2145,7 +2145,8 @@ class Component extends DCLogic {
       sinOrgs: orgs.length === 0,
       sinOrgsYNoEsOrgs: orgs.length === 0 && s.activeTab !== 'organizaciones',
       mensaje: s.mensaje || '',
-      mensajeUrl: s.mensaje && s.mensaje === s.avisoAudioMsg ? (s.avisoAudioUrl || '') : '',
+      avisoAudio: s.avisoAudio || '',
+      avisoAudioUrl: s.avisoAudioUrl || '',
       mensajeStyle: s.mensaje ? 'font-size:13px;color:var(--ac-dk);margin:0 0 16px' : 'display:none',
 
       orgsSidebar: orgsSidebar,
