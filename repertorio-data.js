@@ -549,8 +549,11 @@
 
   /* Estados del ciclo de vida de un evento. BORRADOR/PUBLICADO se controlan
      desde el paso final del asistente; CANCELADO/ARCHIVADO se marcan con
-     acciones rápidas desde el listado del día, sin pasar por el asistente. */
-  var ESTADOS_EVENTO = ['BORRADOR', 'PUBLICADO', 'CANCELADO', 'ARCHIVADO'];
+     acciones rápidas desde el listado del día, sin pasar por el asistente.
+     ELIMINADO es un borrado lógico que solo aplica a borradores: el registro
+     se queda en la base pero watchEventsForOrg lo descarta, así que
+     desaparece de todas las vistas. */
+  var ESTADOS_EVENTO = ['BORRADOR', 'PUBLICADO', 'CANCELADO', 'ARCHIVADO', 'ELIMINADO'];
   var ESTADOS_VISIBLES_PUBLICO = ['PUBLICADO', 'CANCELADO'];
 
   /* Los eventos guardados antes de que existiera este campo no tienen
@@ -565,7 +568,8 @@
       BORRADOR: { label: 'Borrador', bg: '#c7cad0', color: '#3a3f47' },
       PUBLICADO: { label: 'Publicado', bg: 'var(--ac)', color: '#fff' },
       CANCELADO: { label: 'Cancelado', bg: '#b00020', color: '#fff' },
-      ARCHIVADO: { label: 'Archivado', bg: '#6b6866', color: '#fff' }
+      ARCHIVADO: { label: 'Archivado', bg: '#6b6866', color: '#fff' },
+      ELIMINADO: { label: 'Eliminado', bg: '#6b6866', color: '#fff' }
     };
     return map[estadoEvento(ev)] || map.PUBLICADO;
   }
@@ -1141,7 +1145,9 @@
     var root = dbRoot();
     if (!root) return function () {};
     var ref = root.child(EVENTS_PATH).orderByChild('organizationId').equalTo(orgId);
-    var handler = function (snap) { cb(snapshotToArray(snap)); };
+    var handler = function (snap) {
+      cb(snapshotToArray(snap).filter(function (ev) { return estadoEvento(ev) !== 'ELIMINADO'; }));
+    };
     ref.on('value', handler);
     return function () { ref.off('value', handler); };
   }

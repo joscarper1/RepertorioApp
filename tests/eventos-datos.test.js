@@ -131,3 +131,14 @@ test('cancionesEvento cuenta solo las canciones con título', () => {
   assert.equal(R.cancionesEvento({ bloques: [{ canciones: [{ t: ' ' }, { t: 'Santo' }] }, { canciones: [{ t: 'Digno' }] }] }), 2);
   assert.equal(R.cancionesEvento(null), 0);
 });
+
+test('watchEventsForOrg descarta los eventos ELIMINADO', () => {
+  const eventos = { a: { id: 'a', estado: 'BORRADOR' }, b: { id: 'b', estado: 'ELIMINADO' }, c: { id: 'c' } };
+  const snap = { forEach: (fn) => Object.keys(eventos).forEach((k) => fn({ key: k, val: () => eventos[k] })) };
+  const consulta = { orderByChild: () => consulta, equalTo: () => consulta, on: (_t, h) => h(snap), off() {} };
+  const database = () => ({ ref: () => ({ child: () => consulta }) });
+  const R = cargar({ apps: [1], initializeApp() {}, database, auth: () => ({ currentUser: null }) });
+  let ids = null;
+  R.watchEventsForOrg('o1', (evs) => { ids = evs.map((e) => e.id); });
+  assert.deepEqual([...ids], ['a', 'c']);
+});
