@@ -1238,6 +1238,30 @@
     });
   }
 
+  /* Publica de una sola vez varios eventos (botón "Publicar todos" del
+     Dashboard): una única escritura multi-ruta, así o se publican todos o
+     ninguno. */
+  function publicarEventos(ids, cb) {
+    var root = dbRoot();
+    if (!root || !ids || !ids.length) { cb && cb(false); return; }
+    var patch = {};
+    ids.forEach(function (id) { patch[id + '/estado'] = 'PUBLICADO'; });
+    root.child(EVENTS_PATH).update(patch).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase publicarEventos rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
+  /* Cuántas canciones con título tiene listadas un evento (las filas vacías
+     de los bloques por defecto no cuentan). */
+  function cancionesEvento(ev) {
+    var n = 0;
+    ((ev && ev.bloques) || []).forEach(function (bl) {
+      (bl.canciones || []).forEach(function (c) { if (c && (c.t || '').trim()) n++; });
+    });
+    return n;
+  }
+
   /* --- Catálogo de canciones (overrides de renombre/archivado) --- */
 
   /* cb(map) con el contenido crudo de /songCatalog/{orgId} ({} si aún no
@@ -2054,6 +2078,7 @@
     horaMinutos: horaMinutos, horaPorServicio: horaPorServicio, horaAlCambiarServicio: horaAlCambiarServicio,
     slugify: slugify,
     ESTADOS_EVENTO: ESTADOS_EVENTO, estadoEvento: estadoEvento, esVisiblePublico: esVisiblePublico, estadoInfo: estadoInfo,
+    publicarEventos: publicarEventos, cancionesEvento: cancionesEvento,
     watchAllOrganizations: watchAllOrganizations, getOrganizationBySlug: getOrganizationBySlug, getOrganization: getOrganization,
     createOrganization: createOrganization, updateOrganization: updateOrganization, deleteOrganization: deleteOrganization,
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,

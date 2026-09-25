@@ -34,7 +34,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260925a"></script>
+<script src="repertorio-data.js?v=20260925b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -577,6 +577,9 @@ a.mas-fila:hover{background:none;color:var(--ink)}
               <div class="evc-acc">
                 <sc-if value="{{ ev.puedeEditar }}" hint-placeholder-val="{{ false }}">
                   <button type="button" class="btn-pri" onClick="{{ ev.editar }}" style="min-height:36px;padding:0 14px">Editar</button>
+                </sc-if>
+                <sc-if value="{{ ev.puedePublicar }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" class="btn-pri btn-ac" onClick="{{ ev.publicar }}" style="min-height:36px;padding:0 14px">Publicar</button>
                 </sc-if>
                 <span style="flex:1"></span>
                 <sc-if value="{{ ev.puedeMover }}" hint-placeholder-val="{{ false }}">
@@ -1603,6 +1606,10 @@ class Component extends DCLogic {
 
   /* Acciones rápidas del listado del día: no abren el asistente, solo
      cambian el estado del evento ya guardado. */
+  publicarEvento(ev) {
+    D().setEventEstado(ev.id, 'PUBLICADO', (ok) => this.avisar(ok, 'Evento publicado', 'No se pudo publicar: revisa tu sesión o conexión'));
+  }
+
   cancelarEvento(ev) {
     if (!confirm('¿Marcar este evento como cancelado? Seguirá visible en el calendario público, tachado y con la etiqueta "Cancelado".')) return;
     D().setEventEstado(ev.id, 'CANCELADO', (ok) => this.avisar(ok, 'Evento cancelado', 'No se pudo cancelar: revisa tu sesión o conexión'));
@@ -1835,6 +1842,9 @@ class Component extends DCLogic {
         puedeEditar: R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev),
         puedeMover: R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev),
         puedeEstado: R.puede(s.userDoc, 'eventos.estado'),
+        /* "Publicar" solo para el admin y mientras el evento sea borrador. */
+        puedePublicar: R.puede(s.userDoc, 'eventos.estado') && R.estadoEvento(ev) === 'BORRADOR',
+        publicar: () => { if (R.puede(s.userDoc, 'eventos.estado') && R.estadoEvento(ev) === 'BORRADOR') this.publicarEvento(ev); },
         mover: () => { if (R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev)) this.abrirMover(ev); },
         cancelar: () => { if (R.puede(s.userDoc, 'eventos.estado')) this.cancelarEvento(ev); },
         borrar: () => { if (R.puede(s.userDoc, 'eventos.estado')) this.archivarEvento(ev); },

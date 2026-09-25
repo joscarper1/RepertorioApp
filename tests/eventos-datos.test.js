@@ -111,3 +111,23 @@ test('horaAlCambiarServicio respeta la hora ajustada a mano', () => {
   // Tipo nuevo sin hora predefinida → se conserva la actual
   assert.equal(R.horaAlCambiarServicio('6:30 pm', 'Capacitación'), '6:30 pm');
 });
+
+test('publicarEventos marca todos como PUBLICADO en una sola escritura', async () => {
+  const { fb, escrito } = firebaseFalso();
+  const R = cargar(fb);
+  const ok = await new Promise((fin) => R.publicarEventos(['e1', 'e2'], fin));
+  assert.equal(ok, true);
+  assert.equal(escrito.length, 1);
+  assert.equal(escrito[0].ruta, 'events');
+  assert.deepEqual({ ...escrito[0].v }, { 'e1/estado': 'PUBLICADO', 'e2/estado': 'PUBLICADO' });
+  // Sin ids no escribe nada
+  assert.equal(await new Promise((fin) => R.publicarEventos([], fin)), false);
+  assert.equal(escrito.length, 1);
+});
+
+test('cancionesEvento cuenta solo las canciones con título', () => {
+  const R = cargar(firebaseFalso().fb);
+  assert.equal(R.cancionesEvento(R.newEvento({ servicio: 'Cultos Dominicales' })), 0);
+  assert.equal(R.cancionesEvento({ bloques: [{ canciones: [{ t: ' ' }, { t: 'Santo' }] }, { canciones: [{ t: 'Digno' }] }] }), 2);
+  assert.equal(R.cancionesEvento(null), 0);
+});
