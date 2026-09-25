@@ -1679,8 +1679,11 @@ class Component extends DCLogic {
     const orgActualEncontrada = (s.orgs || []).find((o) => o.id === s.organizationId);
     const orgActualNombre = orgActualEncontrada ? orgActualEncontrada.name : (s.organizacion ? s.organizacion.name : 'Seleccionar organización');
 
+    /* Los avisos de declinados solo le competen a quien puede reasignar la
+       banda (admin); el rol normal no los ve en banner, calendario ni tarjetas. */
+    const veDeclinados = D().puede(s.userDoc, 'banda.editar');
     const mesEnCurso = D().hoyKey();
-    const primerDeclinado = ((s.data && s.data.eventos) || [])
+    const primerDeclinado = !veDeclinados ? null : ((s.data && s.data.eventos) || [])
       .filter((ev) => D().monthKey(ev.fecha) === mesEnCurso && D().declinadosEvento(ev).length > 0)
       .sort((a, b) => (a.fecha || '').localeCompare(b.fecha || ''))[0] || null;
     const tabIco = (id) => ({ icoEventos: id === 'eventos', icoUsuarios: id === 'usuarios', icoRepertorio: id === 'repertorio', icoInicio: id === 'inicio', icoCalendario: id === 'publicado' });
@@ -1780,7 +1783,7 @@ class Component extends DCLogic {
       if (!c) { celdas.push({ clase: 'cal-celda vacia', dia: '', dots: [], alerta: false, alertaTitulo: '', titulo: '', onClick: () => {} }); return; }
       const evsDia = delDia(c.iso);
       const n = evsDia.length;
-      const nDeclinados = evsDia.reduce((acc, ev) => acc + R.declinadosEvento(ev).length, 0);
+      const nDeclinados = veDeclinados ? evsDia.reduce((acc, ev) => acc + R.declinadosEvento(ev).length, 0) : 0;
       const sel = s.fecha === c.iso;
       celdas.push({
         clase: 'cal-celda' + (n ? ' ev' : '') + (c.iso === hoyIso ? ' hoy' : '') + (sel ? ' sel' : ''),
@@ -1795,7 +1798,7 @@ class Component extends DCLogic {
 
     const eventosDelDia = (s.fecha ? delDia(s.fecha) : []).map((ev) => {
       const info = R.estadoInfo(ev);
-      const declinados = R.declinadosEvento(ev).map((sl) => ({
+      const declinados = (veDeclinados ? R.declinadosEvento(ev) : []).map((sl) => ({
         nombre: (sl.nombre || '').trim(),
         rol: R.bandaLabel(sl),
         motivo: sl.motivoDeclinacion ? (' — ' + sl.motivoDeclinacion) : ''
