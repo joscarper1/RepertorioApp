@@ -211,7 +211,7 @@
      reporta como error: se queda en -1/3 hasta que empieza el video). Si tras
      este tiempo no ha empezado a sonar, se avisa para que no parezca trabado. */
   var YT_ESPERA_LENTO_MS = 6000;
-  var YT_MSG_LENTO = 'YouTube está tardando en empezar, espera un momento...';
+  var YT_MSG_LENTO = 'YouTube está tardando, espera un momento e intenta probar nuevamente...';
 
   /* Link para que la página ofrezca "Ábrelo en YouTube ↗" junto al aviso
      (allá el anuncio se ve y se puede saltar con el botón de YouTube). Sin
