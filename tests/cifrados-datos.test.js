@@ -223,9 +223,9 @@ test('modalCifrado: sin permiso no guarda; inexistente pasa a importar', async (
   assert.ok(/ya no existe/.test(h.cifrado.aviso));
 });
 
-test('permisos: normal y admin pueden editar cifrados', () => {
+test('permisos: solo admin edita cifrados por su rol (normal lo recibe como Director, ver permisos.test.js)', () => {
   const R = cargar(firebaseFalso().fb);
-  assert.equal(R.puede({ role: 'normal' }, 'cifrados.editar'), true);
+  assert.equal(R.puede({ role: 'normal' }, 'cifrados.editar'), false);
   assert.equal(R.puede({ role: 'admin' }, 'cifrados.editar'), true);
   assert.equal(R.puede(null, 'cifrados.editar'), false);
 });

@@ -1566,7 +1566,10 @@ class Component extends DCLogic {
     const puedeBanda = R.puede(this.state.userDoc, 'banda.editar');
     /* Sin 'eventos.tipo' el tipo de evento se conserva tal como está en la nube. */
     if (!R.puede(this.state.userDoc, 'eventos.tipo') && enNube) dr.servicio = enNube.servicio;
-    if (!R.puede(this.state.userDoc, 'canciones.editar') && enNube) dr.bloques = JSON.parse(JSON.stringify(enNube.bloques || []));
+    /* Canciones solo las edita admin o quien está asignado como Director de
+       Alabanza en el evento (ver R.puedeSobreEvento); se juzga con la banda
+       de la nube. */
+    if (enNube && !R.puedeSobreEvento(this.state.userDoc, 'canciones.editar', enNube)) dr.bloques = JSON.parse(JSON.stringify(enNube.bloques || []));
     if (!puedeBanda && enNube) {
       /* Sin 'banda.editar' la banda no se toca: se guarda la que está en la
          nube ahora mismo (con sus confirmaciones y musicianId). */
@@ -1641,7 +1644,7 @@ class Component extends DCLogic {
       poner: (v) => this.setState({ cifrado: v }),
       parchar: (patch) => this.setState((s) => (s.cifrado ? { cifrado: Object.assign({}, s.cifrado, patch) } : null)),
       orgId: () => this.state.organizationId,
-      puedeEditar: () => !!this.state.draft && R.puede(this.state.userDoc, 'cifrados.editar'),
+      puedeEditar: () => !!this.state.draft && R.puedeSobreEvento(this.state.userDoc, 'cifrados.editar', this.state.draft),
       alGuardar: (id, c, listo) => {
         const s = this.state;
         const cn = s.draft && s.draft.bloques[c.bi] && s.draft.bloques[c.bi].canciones[c.ci];
@@ -1753,9 +1756,10 @@ class Component extends DCLogic {
     /* Asistente de 3 pasos: 1) fecha + tipo, 2) detalles (y, si el tipo
        lleva repertorio, banda y canciones como sub-pestañas), 3) revisión. */
     /* La banda solo la edita quien tiene 'banda.editar' (admin); el resto
-       la ve en la revisión final. Igual con 'canciones.editar'. */
+       la ve en la revisión final. 'canciones.editar' además lo da estar
+       asignado como Director de Alabanza en este evento. */
     const puedeBanda = R.puede(s.userDoc, 'banda.editar');
-    const puedeCanciones = R.puede(s.userDoc, 'canciones.editar');
+    const puedeCanciones = R.puedeSobreEvento(s.userDoc, 'canciones.editar', dr);
     /* Sin 'eventos.tipo' (admin) no se cambia el tipo de un evento existente:
        al editar se entra directo al paso 2 y "Atrás" desde ahí cierra. */
     const puedeTipo = R.puede(s.userDoc, 'eventos.tipo');
@@ -1975,7 +1979,7 @@ class Component extends DCLogic {
        que dejen de sugerirse aquí sin tocar el texto ya guardado en los
        eventos históricos que las usan). */
     const catalogo = R.buildSongCatalog(s.data.eventos, s.songOverrides).filter((so) => !so.archivado);
-    const puedeCifrar = R.puede(s.userDoc, 'cifrados.editar');
+    const puedeCifrar = R.puedeSobreEvento(s.userDoc, 'cifrados.editar', s.draft);
 
     /* Catálogo de salmistas: también es una llave (identifica versiones), así
        que necesita su propio autocomplete para no fragmentarse en variantes

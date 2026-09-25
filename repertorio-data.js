@@ -824,14 +824,24 @@
      persona es integrante), usuarios.gestionar, repertorio.gestionar,
      organizaciones.gestionar, cifrados.editar (importar/reemplazar el
      cifrado de las canciones de los eventos que puede editar),
-     canciones.editar (sub-pestaña Canciones y el orden en la revisión),
+     canciones.editar (sub-pestaña Canciones y el orden en la revisión;
+     eventos.editar y estos dos, fuera de admin, solo los da el puesto en
+     el evento: PERMISOS_POR_ROL_BANDA),
      banda.editar (sub-pestaña Banda: asignar integrantes; sin él la banda
      solo se consulta en la revisión y se guarda tal como está en la nube),
      eventos.tipo (cambiar el tipo de evento de uno existente; sin él, al
      editar se entra directo al paso 2 y se conserva el tipo de la nube). */
   var PERMISOS_POR_ROL = {
     admin: ['*'],
-    normal: ['eventos.ver', 'eventos.editar', 'canciones.editar', 'cifrados.editar']
+    normal: ['eventos.ver']
+  };
+
+  /* Permisos que da el PUESTO que la persona ocupa en un evento concreto
+     (banda[].tipo), solo para ese evento. Un Director de Alabanza asignado
+     como tal edita el evento y sus canciones; si ese día va de Corista, no.
+     Coristas y músicos no reciben permisos de edición. Ver puedeSobreEvento. */
+  var PERMISOS_POR_ROL_BANDA = {
+    'Director de Alabanza': ['eventos.editar', 'canciones.editar', 'cifrados.editar']
   };
 
   function puede(userDoc, permiso) {
@@ -840,14 +850,26 @@
     return lista.indexOf('*') >= 0 || lista.indexOf(permiso) >= 0;
   }
 
-  /* permiso: 'eventos.editar' o 'eventos.mover'. Sin 'eventos.todos', solo
-     vale para eventos donde la persona vinculada a la cuenta (en la
-     organización del evento) ocupa un puesto de banda. */
+  /* Permiso sobre un evento concreto (eventos.editar, eventos.mover,
+     canciones.editar, cifrados.editar…). Lo da:
+     - el rol de la cuenta junto con 'eventos.todos' (admin), o
+     - el rol de la cuenta, si su persona vinculada es integrante del evento, o
+     - el puesto de banda que esa persona ocupa en el evento
+       (PERMISOS_POR_ROL_BANDA). */
   function puedeSobreEvento(userDoc, permiso, ev) {
-    if (!puede(userDoc, permiso) || !ev) return false;
-    if (puede(userDoc, 'eventos.todos')) return true;
+    if (!userDoc || !ev) return false;
+    var porCuenta = puede(userDoc, permiso);
+    if (porCuenta && puede(userDoc, 'eventos.todos')) return true;
     var miPersona = userMusicianLinks(userDoc)[ev.organizationId];
-    return !!miPersona && !!integrantesEvento(ev)[miPersona];
+    if (!miPersona) return false;
+    if (porCuenta && integrantesEvento(ev)[miPersona]) return true;
+    var clave = function (t) { return String(t || '').trim().toLowerCase(); };
+    return (ev.banda || []).some(function (slot) {
+      if (!slot || slot.musicianId !== miPersona || !(slot.nombre || '').trim()) return false;
+      return Object.keys(PERMISOS_POR_ROL_BANDA).some(function (r) {
+        return clave(r) === clave(slot.tipo) && PERMISOS_POR_ROL_BANDA[r].indexOf(permiso) >= 0;
+      });
+    });
   }
 
   /* --- Usuarios --- */
@@ -2038,7 +2060,7 @@
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
     setUserRole: setUserRole, setUserOrgs: setUserOrgs, deleteUser: deleteUser, userOrgIds: userOrgIds,
     userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
-    normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL,
+    normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
     integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,
     watchAccesosPendientes: watchAccesosPendientes, crearAccesoPendiente: crearAccesoPendiente, borrarAccesoPendiente: borrarAccesoPendiente,
     watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, saveEventSinBanda: saveEventSinBanda, setEventEstado: setEventEstado, moveEvent: moveEvent,
