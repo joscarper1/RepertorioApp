@@ -279,6 +279,9 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .slot-fila{display:grid;grid-template-columns:minmax(0,1fr) auto 32px;gap:6px 10px;align-items:center}
 .slot-l{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--ac-dk)}
 .warn{font-size:11.5px;font-weight:700;color:var(--red);background:var(--red-lt);padding:5px 9px;border-radius:6px;align-self:flex-start}
+/* Aviso discreto (no bloquea): la misma persona ocupa otro puesto de la banda. */
+.aviso-dup{font-size:11.5px;font-weight:600;color:var(--muted);line-height:1.35;align-self:flex-start}
+.aviso-dup::before{content:"ⓘ ";color:var(--ac-dk)}
 .banda-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .parte{display:flex;align-items:center;gap:12px;margin:8px 0 4px}
 .parte .linea{flex:1;height:2px;background:var(--ac)}
@@ -716,6 +719,9 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
                     <span class="warn">Marcado como no disponible esta fecha</span>
                   </sc-if>
+                  <sc-if value="{{ sl.duplicado }}" hint-placeholder-val="{{ false }}">
+                    <span class="aviso-dup">{{ sl.avisoDuplicado }}</span>
+                  </sc-if>
                   <sc-if value="{{ sl.resaltado }}" hint-placeholder-val="{{ false }}">
                     <input class="inp" value="{{ sl.tarea }}" onChange="{{ sl.onTarea }}" placeholder="Encomienda: preparar reflexión, orar…" style="background:var(--ac-lt);border-color:transparent;color:var(--ac-dk)">
                   </sc-if>
@@ -752,6 +758,9 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   </sc-if>
                   <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
                     <span class="warn">Marcado como no disponible esta fecha</span>
+                  </sc-if>
+                  <sc-if value="{{ sl.duplicado }}" hint-placeholder-val="{{ false }}">
+                    <span class="aviso-dup">{{ sl.avisoDuplicado }}</span>
                   </sc-if>
                   <sc-if value="{{ sl.resaltado }}" hint-placeholder-val="{{ false }}">
                     <input class="inp" value="{{ sl.tarea }}" onChange="{{ sl.onTarea }}" placeholder="Encomienda: preparar reflexión, orar…" style="background:var(--ac-lt);border-color:transparent;color:var(--ac-dk)">
@@ -1911,6 +1920,13 @@ class Component extends DCLogic {
         /* Advertencia no bloqueante: si la persona seleccionada tiene esa
            fecha marcada como no disponible, se avisa aquí mismo — el admin
            puede igual guardar, es una señal, no un bloqueo. */
+        /* Aviso no bloqueante: la misma persona ya ocupa otro puesto de la
+           banda (p. ej. Director y Guitarra). Puede ser intencional; solo se
+           informa para que el admin lo note. */
+        const nombreClave = nombreActual.toLowerCase();
+        const otrosPuestos = nombreActual ? drBanda
+          .filter((o) => o.id !== b.id && (o.nombre || '').trim().toLowerCase() === nombreClave)
+          .map((o) => R.bandaLabel(o)) : [];
         const musicoSlot = nombreActual ? R.matchMusicianByNombre(s.musicos, nombreActual) : null;
         const noDisponible = !!(musicoSlot && dr && dr.fecha &&
           R.fechaNoDisponible(Object.values(musicoSlot.unavailableDates || {}), dr.fecha));
@@ -1961,7 +1977,9 @@ class Component extends DCLogic {
         }),
         declinado: !!nombreActual && R.estadoConfirmacionSlot(b) === 'rechazado',
         motivoDeclinacion: b.motivoDeclinacion ? (' — ' + b.motivoDeclinacion) : '',
-        noDisponible: noDisponible
+        noDisponible: noDisponible,
+        duplicado: otrosPuestos.length > 0,
+        avisoDuplicado: otrosPuestos.length ? ('También asignado como ' + otrosPuestos.join(', ')) : ''
         };
       })
       };
