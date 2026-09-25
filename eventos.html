@@ -79,6 +79,8 @@ a.nav-link.off,a.chip.off{opacity:.4;pointer-events:none}
 a.chip{border-bottom:1px solid rgba(0,0,0,.14)}
 a.chip:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
 a.chip.on,a.chip.on:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+.toast-link{color:#fff;border-bottom:1px solid rgba(255,255,255,.6);white-space:nowrap;margin-left:4px}
+.toast-link:hover{color:#fff;background:none;border-bottom-color:#fff}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:6000;background:var(--ink);color:#fff;font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.25);white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
 .sep-v{width:1px;height:20px;background:rgba(0,0,0,.15);flex:none}
 .usuario{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
@@ -955,7 +957,12 @@ a.mas-fila:hover{background:none;color:var(--ink)}
   </sc-if>
 
   <sc-if value="{{ estado }}" hint-placeholder-val="{{ false }}">
-    <div class="toast" role="status">{{ estado }}</div>
+    <div class="toast" role="status">
+      {{ estado }}
+      <sc-if value="{{ estadoUrl }}" hint-placeholder-val="{{ false }}">
+        <a class="toast-link" href="{{ estadoUrl }}" target="_blank" rel="noopener">Ábrelo en YouTube ↗</a>
+      </sc-if>
+    </div>
   </sc-if>
 
   <sc-if value="{{ moverAbierto }}" hint-placeholder-val="{{ false }}">
@@ -1195,7 +1202,7 @@ function partesHora(hora) {
 class Component extends DCLogic {
   state = {
     estadoAcceso: 'cargando', denegadoMotivo: '', organizationId: null, organizacion: null, orgs: [],
-    data: { eventos: [] }, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '',
+    data: { eventos: [] }, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '', avisoAudioMsg: '', avisoAudioUrl: '',
     autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, songOverrides: {},
     reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null, musicos: [],
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
@@ -1209,7 +1216,21 @@ class Component extends DCLogic {
     const R = D();
     const hoy = R.hoyKey();
     this.setState({ mes: hoy, fecha: '' });
-    this._yt = R.youtubeController('yt-audio-player', (key, paused) => this.setState({ reproduciendoKey: key, reproduciendoPausado: paused }));
+    /* Aviso del reproductor en el mismo toast de estado: el de "tardando"
+       se queda hasta que suena o se pausa; el de error se quita solo.
+       avisoAudioMsg/Url permiten mostrar "Ábrelo en YouTube ↗" sólo
+       mientras el toast siga mostrando ese aviso. */
+    this._yt = R.youtubeController('yt-audio-player', (key, paused, aviso) => {
+      const patch = { reproduciendoKey: key, reproduciendoPausado: paused };
+      if (aviso) {
+        clearTimeout(this._t);
+        Object.assign(patch, { estado: aviso.mensaje, avisoAudioMsg: aviso.mensaje, avisoAudioUrl: aviso.url || '' });
+        if (aviso.tipo === 'error') this._t = setTimeout(() => this.setState({ estado: '' }), aviso.url ? 8000 : 5000);
+      } else if (this.state.avisoAudioMsg && this.state.estado === this.state.avisoAudioMsg) {
+        Object.assign(patch, { estado: '', avisoAudioMsg: '', avisoAudioUrl: '' });
+      }
+      this.setState(patch);
+    });
 
     const params = new URLSearchParams(location.search);
     this.setState({ embed: params.get('embed') === '1' });
@@ -2200,6 +2221,7 @@ class Component extends DCLogic {
 
     return Object.assign(base, {
       estado: s.estado,
+      estadoUrl: s.estado && s.estado === s.avisoAudioMsg ? (s.avisoAudioUrl || '') : '',
       pasos: pasos,
       esPaso1: !enWizard || paso === 1,
       esPaso2: enWizard && paso === 2,

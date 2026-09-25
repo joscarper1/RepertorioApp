@@ -245,6 +245,9 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .det-barra{display:none}
 .pie{display:flex;justify-content:space-between;gap:20px;padding:32px 0 0;font-size:12px;letter-spacing:.06em;color:var(--muted);flex-wrap:wrap}
 .pie-acc{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toast-link{color:#fff;border-bottom:1px solid rgba(255,255,255,.6);white-space:nowrap;margin-left:4px}
+.toast-link:hover{color:#fff;background:none;border-bottom-color:#fff}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:6000;background:var(--ink);color:#fff;font-size:13px;font-weight:600;line-height:1.35;text-align:center;padding:10px 16px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25);width:max-content;max-width:calc(100vw - 32px)}
 .pie a.btn-sec{border-bottom:1px solid rgba(0,0,0,.18)}
 .pie a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
 
@@ -334,6 +337,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .detalle.abierto{transform:none;visibility:visible;transition:transform .32s cubic-bezier(.2,.8,.2,1)}
   /* Barra de abajo, al alcance del pulgar: volver a la semana y pasar al
      evento anterior/siguiente de esa misma lista. */
+  .toast{bottom:calc(76px + env(safe-area-inset-bottom))}
   .det-barra{display:flex;align-items:center;justify-content:space-between;padding:6px 12px calc(6px + env(safe-area-inset-bottom));flex:none;border-top:1px solid rgba(0,0,0,.08);background:#fff}
   .det-volver{display:flex;align-items:center;gap:4px;min-height:44px;padding:0 8px;background:none;border:0;font-size:15px;font-weight:600;color:var(--ac);cursor:pointer}
   .det-volver span{font-size:24px;line-height:1}
@@ -880,13 +884,22 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
 </div>
 </sc-if>
 
+<sc-if value="{{ avisoAudio }}" hint-placeholder-val="{{ false }}">
+  <div class="toast" role="status">
+    {{ avisoAudio }}
+    <sc-if value="{{ avisoAudioUrl }}" hint-placeholder-val="{{ true }}">
+      <a class="toast-link" href="{{ avisoAudioUrl }}" target="_blank" rel="noopener">Ábrelo en YouTube ↗</a>
+    </sc-if>
+  </div>
+</sc-if>
+
 </x-dc>
 <div id="yt-audio-player" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden"></div>
 <script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
   state = {
     modo: 'cargando', org: null, eventos: [], mes: new URLSearchParams(location.search).get('month') || '', estado: '', errorLogin: '', usuarioNombre: null,
-    mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false,
+    mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false, avisoAudio: '', avisoAudioUrl: '',
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
     /* Vista de eventos: 'mes' (calendario, la inicial) o 'semana' (tarjetas
        de la semana elegida; en el teléfono siempre es esta). eventoSel viene de ?eventid= para abrir un enlace
@@ -906,7 +919,15 @@ class Component extends DCLogic {
 
   componentDidMount() {
     const R = window.RepertorioData;
-    this._yt = R.youtubeController('yt-audio-player', (key, paused) => this.setState({ reproduciendoKey: key, reproduciendoPausado: paused }));
+    /* avisoAudio va en un toast propio (no en el pie, que en el teléfono
+       queda fuera de vista): el de "tardando" dura hasta que suena o se
+       pausa; el de error se quita solo. avisoAudioUrl ofrece abrirlo en
+       YouTube cuando el aviso trae link. */
+    this._yt = R.youtubeController('yt-audio-player', (key, paused, aviso) => {
+      clearTimeout(this._tAudio);
+      this.setState({ reproduciendoKey: key, reproduciendoPausado: paused, avisoAudio: aviso ? aviso.mensaje : '', avisoAudioUrl: (aviso && aviso.url) || '' });
+      if (aviso && aviso.tipo === 'error') this._tAudio = setTimeout(() => this.setState({ avisoAudio: '', avisoAudioUrl: '' }), aviso.url ? 8000 : 5000);
+    });
 
     const slug = new URLSearchParams(location.search).get('group');
 
@@ -1490,6 +1511,8 @@ class Component extends DCLogic {
       usuarioIniciales: this.iniciales(s.usuarioNombre || ''),
       sesionActiva: !!s.usuarioNombre,
       sesionInactiva: !s.usuarioNombre,
+      avisoAudio: s.avisoAudio || '',
+      avisoAudioUrl: s.avisoAudioUrl || '',
       irABienvenida: () => { window.location.href = 'index.html?bienvenida=1'; }
     };
     if (s.modo !== 'calendario' || !s.org) return Object.assign(base, { estado: 'Cargando…' });

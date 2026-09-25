@@ -188,13 +188,68 @@
     return m ? m[1] : '';
   }
 
+  /* Códigos de error de la IFrame Player API (evento onError). 101 y 150 son
+     el mismo caso: el dueño no permite reproducirlo fuera de YouTube. 153
+     aparece cuando el reproductor no se identifica bien (p. ej. la página no
+     envía Referer). */
+  var YT_ERRORES = {
+    2:   { nombre: 'parametro-invalido', mensaje: 'El link de YouTube no es válido.' },
+    5:   { nombre: 'error-html5',        mensaje: 'El navegador no pudo reproducir este video.' },
+    100: { nombre: 'no-encontrado',      mensaje: 'Este video ya no está disponible (se eliminó o es privado).' },
+    101: { nombre: 'embed-no-permitido', mensaje: 'El dueño del video no permite reproducirlo fuera de YouTube.' },
+    150: { nombre: 'embed-no-permitido', mensaje: 'El dueño del video no permite reproducirlo fuera de YouTube.' },
+    153: { nombre: 'config-reproductor', mensaje: 'YouTube rechazó el reproductor de esta página.' }
+  };
+
+  function youtubeErrorMessage(code) {
+    var e = YT_ERRORES[code];
+    return e ? e.mensaje : 'No se pudo reproducir este video de YouTube (código ' + code + ').';
+  }
+
+  /* Los videos monetizados pueden traer un anuncio antes: en el reproductor
+     oculto no se ve, así que sólo se percibe silencio (y la IFrame API no lo
+     reporta como error: se queda en -1/3 hasta que empieza el video). Si tras
+     este tiempo no ha empezado a sonar, se avisa para que no parezca trabado. */
+  var YT_ESPERA_LENTO_MS = 6000;
+  var YT_MSG_LENTO = 'YouTube está tardando en empezar, espera un momento...';
+
+  /* Link para que la página ofrezca "Ábrelo en YouTube ↗" junto al aviso
+     (allá el anuncio se ve y se puede saltar con el botón de YouTube). Sin
+     link cuando no hay nada que abrir: link inválido o video eliminado. */
+  function youtubeWatchUrl(videoId, code) {
+    if (!videoId || code === 2 || code === 100) return '';
+    return 'https://www.youtube.com/watch?v=' + videoId;
+  }
+
   /* Controlador de un único reproductor de YouTube oculto, compartido por
      todas las filas de canciones de una página (evita crear un iframe por
      fila). onChange(key|null, paused) se llama con la llave de la fila que
      quedó cargada (o null cuando se termina) y si está en pausa, para que el
-     componente sólo tenga que reflejar esos valores en su estado. */
+     componente sólo tenga que reflejar esos valores en su estado.
+     Un tercer argumento opcional trae un aviso para mostrar al usuario:
+       - { tipo: 'error', code, videoId, key, mensaje, url } cuando YouTube
+         no puede reproducir el video (llega con key null: la fila se libera).
+       - { tipo: 'lento', videoId, key, mensaje, url } cuando el video tarda en
+         empezar (la fila sigue cargada). Cuando por fin suena llega un
+         onChange(key, false) sin aviso, señal para quitar el mensaje.
+       `url` (puede venir vacío) es el video en YouTube, ver youtubeWatchUrl. */
   function youtubeController(elementId, onChange) {
     var player = null, ready = false, pending = null, current = null, currentVideoId = null, paused = false;
+    var lentoTimer = null, lentoAvisado = false;
+
+    function cancelarLento() { clearTimeout(lentoTimer); lentoTimer = null; lentoAvisado = false; }
+
+    function vigilarInicio() {
+      cancelarLento();
+      lentoTimer = setTimeout(function () {
+        lentoTimer = null;
+        if (!current || paused) return;
+        lentoAvisado = true;
+        console.info('[YouTube] El video ' + currentVideoId + ' (fila ' + current + ') no ha empezado tras ' +
+          (YT_ESPERA_LENTO_MS / 1000) + ' s (posible anuncio).');
+        if (onChange) onChange(current, false, { tipo: 'lento', videoId: currentVideoId, key: current, mensaje: YT_MSG_LENTO, url: youtubeWatchUrl(currentVideoId) });
+      }, YT_ESPERA_LENTO_MS);
+    }
 
     function start() {
       if (player || !w.YT || !w.YT.Player) return;
@@ -207,7 +262,26 @@
             if (pending) { var p = pending; pending = null; toggle(p.key, p.videoId); }
           },
           onStateChange: function (e) {
-            if (e.data === w.YT.PlayerState.ENDED) { current = null; currentVideoId = null; paused = false; if (onChange) onChange(null, false); }
+            if (e.data === w.YT.PlayerState.PLAYING) {
+              var avisado = lentoAvisado;
+              cancelarLento();
+              if (avisado && onChange) onChange(current, paused);
+            }
+            if (e.data === w.YT.PlayerState.ENDED) { cancelarLento(); current = null; currentVideoId = null; paused = false; if (onChange) onChange(null, false); }
+          },
+          /* Sin esto la fila quedaba marcada como sonando aunque YouTube
+             rechazara el video. Se detiene el reproductor y se libera la
+             fila; volver a tocarla reintenta la carga desde cero. */
+          onError: function (e) {
+            var code = e && e.data;
+            var info = YT_ERRORES[code];
+            var err = { tipo: 'error', code: code, videoId: currentVideoId, key: current, mensaje: youtubeErrorMessage(code), url: youtubeWatchUrl(currentVideoId, code) };
+            cancelarLento();
+            console.warn('[YouTube] Error ' + code + (info ? ' (' + info.nombre + ')' : '') +
+              ' con el video ' + err.videoId + ' (fila ' + err.key + '): https://www.youtube.com/watch?v=' + err.videoId);
+            try { if (player && player.stopVideo) player.stopVideo(); } catch (x) {}
+            current = null; currentVideoId = null; paused = false; pending = null;
+            if (onChange) onChange(null, false, err);
           }
         }
       });
@@ -234,7 +308,7 @@
       if (!videoId) return;
       if (!ready) { pending = { key: key, videoId: videoId }; return; }
       if (current === key && currentVideoId === videoId) {
-        if (paused) { player.playVideo(); paused = false; } else { player.pauseVideo(); paused = true; }
+        if (paused) { player.playVideo(); paused = false; } else { player.pauseVideo(); paused = true; cancelarLento(); }
         if (onChange) onChange(key, paused);
       } else {
         player.loadVideoById(videoId);
@@ -242,11 +316,12 @@
         current = key;
         currentVideoId = videoId;
         paused = false;
+        vigilarInicio();
         if (onChange) onChange(key, false);
       }
     }
 
-    function destroy() { if (player && player.destroy) player.destroy(); }
+    function destroy() { cancelarLento(); if (player && player.destroy) player.destroy(); }
 
     return { toggle: toggle, destroy: destroy };
   }
@@ -1945,7 +2020,7 @@
     MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
     song: song, songLabel: songLabel, songLabelParts: songLabelParts, songKey: songKey, buildSongCatalog: buildSongCatalog,
-    youtubeId: youtubeId, youtubeController: youtubeController, defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
+    youtubeId: youtubeId, youtubeController: youtubeController, youtubeErrorMessage: youtubeErrorMessage,defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,

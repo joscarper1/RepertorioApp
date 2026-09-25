@@ -375,7 +375,11 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
     <sc-if value="{{ mensaje }}" hint-placeholder-val="{{ false }}">
       <div class="aviso" style="margin-bottom:16px">
-        <span>{{ mensaje }}</span>
+        <span>{{ mensaje }}
+          <sc-if value="{{ mensajeUrl }}" hint-placeholder-val="{{ false }}">
+            <a href="{{ mensajeUrl }}" target="_blank" rel="noopener" style="margin-left:4px;white-space:nowrap">Ábrelo en YouTube ↗</a>
+          </sc-if>
+        </span>
         <button type="button" class="btn-quitar" onClick="{{ cerrarMensaje }}" aria-label="Cerrar aviso" style="color:var(--ac-dk)">✕</button>
       </div>
     </sc-if>
@@ -1050,7 +1054,7 @@ class Component extends DCLogic {
        vacío), true/false según el resultado de intentar cargar la URL como
        imagen (ver validarOrgEditBanner). */
     orgEditBannerUrl: '', orgEditBannerValido: null, orgEditBannerValidando: false,
-    usuarios: [], mensaje: '',
+    usuarios: [], mensaje: '', avisoAudioMsg: '', avisoAudioUrl: '',
     /* "+ Agregar usuario": acceso por correo que se aplica en el primer
        inicio de sesión (ver R.crearAccesoPendiente). nuevoUsuarioPersona:
        '' = sin persona, '__nueva__' = crear una, o el id de una existente. */
@@ -1078,7 +1082,21 @@ class Component extends DCLogic {
 
   componentDidMount() {
     const R = D();
-    this._yt = R.youtubeController('admin-yt-audio-player', (key, paused) => this.setState({ reproduciendoKey: key, reproduciendoPausado: paused }));
+    /* Aviso del reproductor en el banner de mensajes; el de "tardando" se
+       quita solo cuando el video suena, se pausa o se cambia de canción.
+       avisoAudioMsg/Url muestran "Ábrelo en YouTube ↗" sólo mientras el
+       banner siga mostrando ese aviso. */
+    this._yt = R.youtubeController('admin-yt-audio-player', (key, paused, aviso) => {
+      const patch = { reproduciendoKey: key, reproduciendoPausado: paused };
+      if (aviso) {
+        Object.assign(patch, { mensaje: aviso.mensaje, avisoAudioMsg: aviso.mensaje, avisoAudioUrl: aviso.url || '' });
+        this._avisoLento = aviso.tipo === 'lento';
+      } else if (this._avisoLento && this.state.mensaje === this.state.avisoAudioMsg) {
+        Object.assign(patch, { mensaje: '', avisoAudioMsg: '', avisoAudioUrl: '' });
+        this._avisoLento = false;
+      }
+      this.setState(patch);
+    });
     this._unauth = R.onAuthChange((user) => {
       if (this._unorgs) { this._unorgs(); this._unorgs = null; }
       if (this._unusers) { this._unusers(); this._unusers = null; }
@@ -2127,6 +2145,7 @@ class Component extends DCLogic {
       sinOrgs: orgs.length === 0,
       sinOrgsYNoEsOrgs: orgs.length === 0 && s.activeTab !== 'organizaciones',
       mensaje: s.mensaje || '',
+      mensajeUrl: s.mensaje && s.mensaje === s.avisoAudioMsg ? (s.avisoAudioUrl || '') : '',
       mensajeStyle: s.mensaje ? 'font-size:13px;color:var(--ac-dk);margin:0 0 16px' : 'display:none',
 
       orgsSidebar: orgsSidebar,
