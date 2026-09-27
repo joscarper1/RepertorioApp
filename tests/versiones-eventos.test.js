@@ -133,3 +133,24 @@ test('eventoDesdeVersion conserva fecha, estado y confirmaciones del evento actu
   assert.equal(ev.id, 'e1');
   assert.equal(ev.banda[0].estadoConfirmacion, 'aceptado');
 });
+
+test('regresar a una versión anterior no crea copia: el evento vuelve a ese número', async () => {
+  const { fb, arbol } = firebaseFalso();
+  const R = cargar(fb);
+  assert.equal(await versionar(R, null, PUBLICADO), 1);
+  const v1 = Object.assign(copia(PUBLICADO), { version: 1 });
+  const v2 = Object.assign(copia(PUBLICADO), { tema: 'Fe', version: 2 });
+  assert.equal(await versionar(R, v1, v2), 2);
+  // Se carga la v1 desde el menú y se guarda tal cual
+  const restaurado = R.eventoDesdeVersion(arbol.eventVersions.e1.v1, v2);
+  const r = await new Promise((ok) => R.versionarEvento(v2, restaurado, 'o1', {}, (n, creada) => ok({ n, creada })));
+  assert.equal(r.n, 1);
+  assert.equal(r.creada, false);
+  assert.deepEqual(Object.keys(arbol.eventVersions.e1).sort(), ['v1', 'v2']);
+  // Editar después de regresar crea la siguiente a la más alta (v3), sin pisar la v2
+  const editado = Object.assign(copia(restaurado), { tema: 'Esperanza', version: 1 });
+  const r2 = await new Promise((ok) => R.versionarEvento(Object.assign(copia(restaurado), { version: 1 }), editado, 'o1', {}, (n, creada) => ok({ n, creada })));
+  assert.equal(r2.n, 3);
+  assert.equal(r2.creada, true);
+  assert.equal(arbol.eventVersions.e1.v2.evento.tema, 'Fe');
+});

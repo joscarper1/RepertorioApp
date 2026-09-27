@@ -1384,26 +1384,32 @@
   /* Qué versiones hay que escribir al guardar `nuevo` sobre `anterior` (el
      evento como está en la nube, o null si es nuevo), dada la lista de
      versiones ya guardadas (más reciente primero). Devuelve
-     { version, entradas: [{ n, evento }] } o null si no aplica versionar.
+     { version, creada, entradas: [{ n, evento }] } o null si no aplica
+     versionar (creada: si `nuevo` estrena un número de versión).
      - Si el resultado no es PUBLICADO, no hay versión.
      - Un evento publicado antes de que existieran las versiones estrena la
        v1 con su contenido previo a esta edición.
-     - Si el contenido no cambió respecto a la última versión, no se crea
-       otra (pero el evento conserva su número). */
+     - Si el contenido es igual al de una versión ya guardada (la vigente
+       primero), el evento queda en esa versión sin crear otra: así
+       regresar a una versión anterior desde el menú no crea copias.
+     - Si no, es la versión siguiente a la más alta que exista. */
   function planVersionEvento(anterior, nuevo, versiones) {
     if (!eventoVersionable(nuevo)) return null;
-    var ultima = (versiones || [])[0] || null;
-    var n = Math.max(ultima ? ultima.n : 0, (anterior && anterior.version) || 0);
-    var base = ultima ? ultima.evento : null;
+    var lista = (versiones || []).slice();
+    var vigente = (anterior && anterior.version) || 0;
     var entradas = [];
-    if (!n && anterior && eventoVersionable(anterior)) {
-      n = 1;
-      base = contenidoVersion(anterior);
-      entradas.push({ n: 1, evento: base, previa: true });
+    if (!lista.length && !vigente && anterior && eventoVersionable(anterior)) {
+      var previa = { n: 1, evento: contenidoVersion(anterior), previa: true };
+      entradas.push(previa);
+      lista.push(previa);
+      vigente = 1;
     }
-    if (n && base && mismoContenidoEvento(base, nuevo)) return { version: n, entradas: entradas };
+    lista.sort(function (a, b) { return (b.n === vigente) - (a.n === vigente) || b.n - a.n; });
+    var igual = lista.find(function (v) { return mismoContenidoEvento(v.evento, nuevo); });
+    if (igual) return { version: igual.n, creada: false, entradas: entradas };
+    var n = lista.reduce(function (m, v) { return Math.max(m, v.n); }, vigente);
     entradas.push({ n: n + 1, evento: contenidoVersion(nuevo) });
-    return { version: n + 1, entradas: entradas };
+    return { version: n + 1, creada: true, entradas: entradas };
   }
 
   function watchEventVersions(eventId, cb) {
@@ -1417,8 +1423,9 @@
   }
 
   /* Escribe las versiones que tocan al guardar `nuevo` (ver
-     planVersionEvento) y llama cb(version): el número que debe llevar
-     ev.version, o el que ya tenía si no se pudo versionar (por ejemplo, si
+     planVersionEvento) y llama cb(version, creada): el número que debe
+     llevar ev.version (creada = es una versión nueva, no un regreso a una
+     que ya existía), o el que ya tenía si no se pudo versionar (por ejemplo, si
      las reglas aún no permiten escribir eventVersions): el guardado del
      evento no se bloquea por eso. autor = { uid, nombre }. */
   function versionarEvento(anterior, nuevo, orgId, autor, cb) {
@@ -1429,7 +1436,7 @@
     ref.once('value').then(function (snap) {
       var plan = planVersionEvento(anterior, nuevo, listaVersiones(snap.val()));
       if (!plan) { cb && cb(previa); return; }
-      if (!plan.entradas.length) { cb && cb(plan.version); return; }
+      if (!plan.entradas.length) { cb && cb(plan.version, false); return; }
       var patch = {};
       plan.entradas.forEach(function (e) {
         patch['v' + e.n] = {
@@ -1441,7 +1448,7 @@
           evento: e.evento
         };
       });
-      return ref.update(patch).then(function () { cb && cb(plan.version); });
+      return ref.update(patch).then(function () { cb && cb(plan.version, plan.creada); });
     }).then(null, function (err) {
       console.error('Firebase versionarEvento rechazado:', err && err.code, err && err.message, err);
       cb && cb(previa);
