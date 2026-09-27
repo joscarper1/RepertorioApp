@@ -8,6 +8,7 @@
   var ORGS_PATH = 'organizations';
   var USERS_PATH = 'users';
   var EVENTS_PATH = 'events';
+  var EVENT_VERSIONS_PATH = 'eventVersions';
   /* Índice heredado {emailKey: {musicianId: organizationId}}: se llenaba al
      escribir el correo en una Persona (ese campo ya no existe). Solo se sigue
      leyendo al iniciar sesión, para no perder vínculos que quedaron
@@ -1331,6 +1332,145 @@
     return n;
   }
 
+  /* --- Versiones de eventos ---
+     Un evento PUBLICADO (de cualquier tipo) guarda cada edición como una versión
+     numerada en eventVersions/{eventId}/v{n} = { n, organizationId,
+     guardadoEn, autorUid, autorNombre, evento }. `evento` es el contenido
+     editable del evento: sin id/organizationId/estado/fecha/integrantes/
+     version, ni las confirmaciones de asistencia de la banda (eso no es
+     parte del contenido; restaurar una versión no mueve ni despublica el
+     evento). ev.version guarda el número de la versión vigente. Las
+     versiones viven fuera de /events para no engordar lo que carga el
+     calendario público. */
+  var CAMPOS_NO_VERSIONADOS = ['id', 'organizationId', 'estado', 'fecha', 'integrantes', 'version'];
+
+  function eventoVersionable(ev) {
+    return !!ev && estadoEvento(ev) === 'PUBLICADO';
+  }
+
+  function contenidoVersion(ev) {
+    var c = clone(ev || {});
+    CAMPOS_NO_VERSIONADOS.forEach(function (k) { delete c[k]; });
+    (c.banda || []).forEach(function (slot) {
+      if (!slot) return;
+      delete slot.estadoConfirmacion;
+      delete slot.motivoDeclinacion;
+    });
+    return c;
+  }
+
+  /* Texto canónico para comparar contenidos: claves ordenadas y sin campos
+     vacíos (el asistente completa con '' campos que en la nube no existen). */
+  function canonico(x) {
+    if (Array.isArray(x)) return '[' + x.map(canonico).join(',') + ']';
+    if (x && typeof x === 'object') {
+      return '{' + Object.keys(x).sort().filter(function (k) {
+        return x[k] !== '' && x[k] !== null && x[k] !== undefined;
+      }).map(function (k) { return JSON.stringify(k) + ':' + canonico(x[k]); }).join(',') + '}';
+    }
+    return JSON.stringify(x);
+  }
+
+  function mismoContenidoEvento(a, b) {
+    return canonico(contenidoVersion(a)) === canonico(contenidoVersion(b));
+  }
+
+  function listaVersiones(map) {
+    return Object.keys(map || {}).map(function (k) { return map[k]; })
+      .filter(function (v) { return v && v.n; })
+      .sort(function (a, b) { return b.n - a.n; });
+  }
+
+  /* Qué versiones hay que escribir al guardar `nuevo` sobre `anterior` (el
+     evento como está en la nube, o null si es nuevo), dada la lista de
+     versiones ya guardadas (más reciente primero). Devuelve
+     { version, entradas: [{ n, evento }] } o null si no aplica versionar.
+     - Si el resultado no es PUBLICADO, no hay versión.
+     - Un evento publicado antes de que existieran las versiones estrena la
+       v1 con su contenido previo a esta edición.
+     - Si el contenido no cambió respecto a la última versión, no se crea
+       otra (pero el evento conserva su número). */
+  function planVersionEvento(anterior, nuevo, versiones) {
+    if (!eventoVersionable(nuevo)) return null;
+    var ultima = (versiones || [])[0] || null;
+    var n = Math.max(ultima ? ultima.n : 0, (anterior && anterior.version) || 0);
+    var base = ultima ? ultima.evento : null;
+    var entradas = [];
+    if (!n && anterior && eventoVersionable(anterior)) {
+      n = 1;
+      base = contenidoVersion(anterior);
+      entradas.push({ n: 1, evento: base, previa: true });
+    }
+    if (n && base && mismoContenidoEvento(base, nuevo)) return { version: n, entradas: entradas };
+    entradas.push({ n: n + 1, evento: contenidoVersion(nuevo) });
+    return { version: n + 1, entradas: entradas };
+  }
+
+  function watchEventVersions(eventId, cb) {
+    var root = dbRoot();
+    if (!root || !eventId) { cb([]); return function () {}; }
+    var ref = root.child(EVENT_VERSIONS_PATH).child(eventId);
+    var handler = function (snap) { cb(listaVersiones(snap.val())); };
+    var fallo = function (err) { console.warn('No se pudieron leer las versiones del evento:', err && err.code); cb([]); };
+    ref.on('value', handler, fallo);
+    return function () { ref.off('value', handler); };
+  }
+
+  /* Escribe las versiones que tocan al guardar `nuevo` (ver
+     planVersionEvento) y llama cb(version): el número que debe llevar
+     ev.version, o el que ya tenía si no se pudo versionar (por ejemplo, si
+     las reglas aún no permiten escribir eventVersions): el guardado del
+     evento no se bloquea por eso. autor = { uid, nombre }. */
+  function versionarEvento(anterior, nuevo, orgId, autor, cb) {
+    var root = dbRoot();
+    var previa = (anterior && anterior.version) || null;
+    if (!root || !nuevo || !nuevo.id || !eventoVersionable(nuevo)) { cb && cb(previa); return; }
+    var ref = root.child(EVENT_VERSIONS_PATH).child(nuevo.id);
+    ref.once('value').then(function (snap) {
+      var plan = planVersionEvento(anterior, nuevo, listaVersiones(snap.val()));
+      if (!plan) { cb && cb(previa); return; }
+      if (!plan.entradas.length) { cb && cb(plan.version); return; }
+      var patch = {};
+      plan.entradas.forEach(function (e) {
+        patch['v' + e.n] = {
+          n: e.n,
+          organizationId: orgId || nuevo.organizationId || '',
+          guardadoEn: e.previa ? null : Date.now(),
+          autorUid: e.previa ? null : ((autor && autor.uid) || null),
+          autorNombre: e.previa ? null : ((autor && autor.nombre) || null),
+          evento: e.evento
+        };
+      });
+      return ref.update(patch).then(function () { cb && cb(plan.version); });
+    }).then(null, function (err) {
+      console.error('Firebase versionarEvento rechazado:', err && err.code, err && err.message, err);
+      cb && cb(previa);
+    });
+  }
+
+  /* Borrador listo para el asistente a partir de una versión guardada:
+     toma su contenido y conserva de `actual` lo que no se versiona (id,
+     fecha, estado, organización) y las confirmaciones de asistencia de
+     quienes siguen en el mismo puesto. */
+  function eventoDesdeVersion(version, actual) {
+    var ev = clone((version && version.evento) || {});
+    actual = actual || {};
+    ev.id = actual.id;
+    ev.fecha = actual.fecha;
+    ev.estado = actual.estado;
+    ev.organizationId = actual.organizationId;
+    var previos = actual.banda || [];
+    (ev.banda || []).forEach(function (slot) {
+      if (!slot || !slot.musicianId) return;
+      var igual = previos.find(function (p) { return p && p.musicianId === slot.musicianId && p.tipo === slot.tipo; });
+      if (igual && igual.estadoConfirmacion) {
+        slot.estadoConfirmacion = igual.estadoConfirmacion;
+        if (igual.motivoDeclinacion) slot.motivoDeclinacion = igual.motivoDeclinacion;
+      }
+    });
+    return ev;
+  }
+
   /* --- Catálogo de canciones (overrides de renombre/archivado) --- */
 
   /* cb(map) con el contenido crudo de /songCatalog/{orgId} ({} si aún no
@@ -2148,6 +2288,8 @@
     slugify: slugify,
     ESTADOS_EVENTO: ESTADOS_EVENTO, estadoEvento: estadoEvento, esVisiblePublico: esVisiblePublico, estadoInfo: estadoInfo,
     publicarEventos: publicarEventos, cancionesEvento: cancionesEvento,
+    eventoVersionable: eventoVersionable, mismoContenidoEvento: mismoContenidoEvento, planVersionEvento: planVersionEvento,
+    watchEventVersions: watchEventVersions, versionarEvento: versionarEvento, eventoDesdeVersion: eventoDesdeVersion,
     watchAllOrganizations: watchAllOrganizations, getOrganizationBySlug: getOrganizationBySlug, getOrganization: getOrganization,
     createOrganization: createOrganization, updateOrganization: updateOrganization, deleteOrganization: deleteOrganization,
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,

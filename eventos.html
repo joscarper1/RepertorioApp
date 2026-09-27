@@ -34,7 +34,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260925c"></script>
+<script src="repertorio-data.js?v=20260927a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -125,6 +125,8 @@ a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
 .b-pend{background:var(--gold-lt);color:var(--gold-dk)}
 .b-no{background:var(--red-lt);color:var(--red)}
 .b-gris{background:#ecebe8;color:var(--muted)}
+.version-sel{display:inline-flex;align-items:center;gap:8px;margin-left:auto}
+.version-sel .inp{min-height:34px;padding:4px 10px;font-size:13px;width:auto;max-width:260px}
 .b-azul{background:var(--blue-lt);color:var(--blue)}
 
 /* ---- Tarjetas / cajas ---- */
@@ -581,6 +583,9 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 <span class="evc-hora">{{ ev.hora }}</span>
                 <span class="evc-tipo">{{ ev.servicio }}</span>
                 <span class="badge" style="{{ ev.estadoStyle }};margin-left:auto">{{ ev.estadoLabel }}</span>
+                <sc-if value="{{ ev.tieneVersion }}" hint-placeholder-val="{{ false }}">
+                  <span class="badge b-gris" title="{{ ev.versionTitulo }}">{{ ev.versionLabel }}</span>
+                </sc-if>
               </div>
               <div class="evc-tema">{{ ev.resumen }}</div>
               <sc-if value="{{ ev.tieneDeclinados }}" hint-placeholder-val="{{ false }}">
@@ -884,7 +889,21 @@ a.mas-fila:hover{background:none;color:var(--ink)}
           <div class="chips">
             <span class="tag">{{ dServicio }}</span>
             <sc-if value="{{ resumenEstado }}" hint-placeholder-val="{{ false }}"><span class="badge b-gris" style="align-self:center">{{ resumenEstado }}</span></sc-if>
+            <sc-if value="{{ resumenVersion }}" hint-placeholder-val="{{ false }}"><span class="badge b-gris" style="align-self:center">{{ resumenVersion }}</span></sc-if>
+            <sc-if value="{{ hayVersionesAnteriores }}" hint-placeholder-val="{{ false }}">
+              <label class="version-sel">
+                <span class="campo-l">Versión</span>
+                <select class="inp" value="{{ versionSeleccionada }}" onChange="{{ onVersion }}">
+                  <sc-for list="{{ opcionesVersion }}" as="ov" hint-placeholder-count="2">
+                    <option value="{{ ov.valor }}">{{ ov.label }}</option>
+                  </sc-for>
+                </select>
+              </label>
+            </sc-if>
           </div>
+          <sc-if value="{{ avisoVersionCargada }}" hint-placeholder-val="{{ false }}">
+            <div class="callout" style="margin-top:4px"><span class="callout-t">Versión anterior cargada</span><p>{{ avisoVersionCargada }}</p></div>
+          </sc-if>
           <h2 class="rev-dia">{{ resumenDia }}</h2>
           <div style="font-size:15px;color:var(--muted)"><strong style="color:var(--ink)">{{ resumenFecha }}</strong> · {{ resumenHora }}</div>
         </div>
@@ -1252,7 +1271,10 @@ class Component extends DCLogic {
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false,
     moverEventoId: null, moverMes: '', userDoc: null, sub: 'detalles', masAbierto: false,
     /* Modal "Cifrado" del paso 4 (null = cerrado), ver abrirCifrado. */
-    cifrado: null
+    cifrado: null,
+    /* Versiones del evento en edición (más reciente primero) y la versión
+       cargada en el borrador desde el menú "Versión" (null = la vigente). */
+    versiones: [], versionCargada: null
   };
 
   componentDidMount() {
@@ -1326,6 +1348,33 @@ class Component extends DCLogic {
   componentDidUpdate() {
     this.modalCifrado().enganchar();
     this.sincronizarRueda();
+    this.sincronizarVersiones();
+  }
+
+  /* Escucha eventVersions del evento abierto en el asistente, y deja de
+     escuchar al salir de él. */
+  sincronizarVersiones() {
+    const id = this.state.editId || null;
+    if (id === this._versionesDe) return;
+    if (this._unversiones) this._unversiones();
+    this._unversiones = null;
+    this._versionesDe = id;
+    this.setState({ versiones: [], versionCargada: null });
+    if (id) this._unversiones = D().watchEventVersions(id, (lista) => { if (this._versionesDe === id) this.setState({ versiones: lista }); });
+  }
+
+  /* Menú "Versión" del paso 3: carga en el borrador el contenido de una
+     versión anterior (o vuelve a la vigente). Se restaura al guardar, y
+     queda como una versión nueva. */
+  cargarVersion(n) {
+    const R = D();
+    const s = this.state;
+    const enNube = (this._eventosVivos || s.data.eventos || []).find((e) => e.id === s.editId);
+    if (!enNube || !s.draft) return;
+    const v = s.versiones.find((x) => x.n === n);
+    const vigente = !v || n === enNube.version;
+    const base = vigente ? JSON.parse(JSON.stringify(enNube)) : R.eventoDesdeVersion(v, enNube);
+    this.setState({ draft: R.newEvento(base), versionCargada: vigente ? null : n });
   }
 
   /* --- Selector de hora en rueda ---
@@ -1370,6 +1419,7 @@ class Component extends DCLogic {
     if (this._unorgs) this._unorgs();
     if (this._unSongOverrides) this._unSongOverrides();
     if (this._unmusicos) this._unmusicos();
+    if (this._unversiones) this._unversiones();
     if (this._yt) this._yt.destroy();
     clearTimeout(this._tSeek);
     if (this._unauth) this._unauth();
@@ -1646,14 +1696,22 @@ class Component extends DCLogic {
       });
     }
     const orgId = this.state.organizationId;
+    const userDoc = this.state.userDoc || {};
+    const autor = { uid: userDoc.uid || null, nombre: this.state.usuarioNombre || userDoc.displayName || userDoc.email || null };
     this.setState({ draft: null, editId: null, paso: 1 });
-    const avisarGuardado = (ok) => this.avisar(ok,
-      estado === undefined ? 'Cambios guardados' : (estado === 'PUBLICADO' ? 'Evento publicado' : 'Guardado como borrador'),
-      'No se guardó en la nube: revisa tu sesión o conexión');
-    /* Sin 'banda.editar' se guarda campo por campo: las reglas de la base
-       no le permiten reescribir el evento completo (banda incluida). */
-    if (!puedeBanda && enNube) D().saveEventSinBanda(dr, enNube, avisarGuardado);
-    else D().saveEvent(dr, orgId, avisarGuardado);
+    /* Un evento publicado guarda cada edición como versión nueva (ver
+       R.versionarEvento); ev.version queda con el número vigente. */
+    R.versionarEvento(enNube, dr, orgId, autor, (version) => {
+      if (version) dr.version = version; else delete dr.version;
+      const cambioVersion = !!version && version !== (enNube && enNube.version);
+      const msg = (estado === undefined ? 'Cambios guardados' : (estado === 'PUBLICADO' ? 'Evento publicado' : 'Guardado como borrador'))
+        + (cambioVersion ? ' · versión ' + version : '');
+      const avisarGuardado = (ok) => this.avisar(ok, msg, 'No se guardó en la nube: revisa tu sesión o conexión');
+      /* Sin 'banda.editar' se guarda campo por campo: las reglas de la base
+         no le permiten reescribir el evento completo (banda incluida). */
+      if (!puedeBanda && enNube) R.saveEventSinBanda(dr, enNube, avisarGuardado);
+      else R.saveEvent(dr, orgId, avisarGuardado);
+    });
   }
 
   /* Acciones rápidas del listado del día: no abren el asistente, solo
@@ -1884,6 +1942,9 @@ class Component extends DCLogic {
       }));
       return {
         tieneDeclinados: declinados.length > 0,
+        tieneVersion: !!ev.version,
+        versionLabel: ev.version ? 'v' + ev.version : '',
+        versionTitulo: ev.version ? 'Versión ' + ev.version + ' del evento' : '',
         declinados: declinados,
         hora: ev.hora,
         servicio: ev.servicio,
@@ -2318,6 +2379,18 @@ class Component extends DCLogic {
 
     const ultimoSub = subIdx >= subsDef.length - 1;
     const estadoOriginal = s.editId ? (s.data.eventos || []).find((e) => e.id === s.editId) : null;
+    /* Menú "Versión" del paso 3 (solo quien puede editar este evento llega
+       al asistente: admin o el Director asignado). */
+    const versionVigente = estadoOriginal && estadoOriginal.version ? estadoOriginal.version : 0;
+    const fechaVersion = (v) => {
+      if (!v.guardadoEn) return 'publicada antes del versionado';
+      const d = new Date(v.guardadoEn);
+      return d.getDate() + '/' + (d.getMonth() + 1) + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + (v.autorNombre ? ' · ' + v.autorNombre : '');
+    };
+    const opcionesVersion = (s.versiones || []).map((v) => ({
+      valor: String(v.n),
+      label: 'v' + v.n + (v.n === versionVigente ? ' (vigente)' : '') + ' — ' + fechaVersion(v)
+    }));
 
     return Object.assign(base, {
       estado: s.estado,
@@ -2369,7 +2442,8 @@ class Component extends DCLogic {
       /* Con sub-pestañas, el título es el de la sub-pestaña activa y el tipo
          de evento pasa al kicker junto a la fecha. */
       p2Titulo: dr ? (usaBanda ? subsDef[subIdx].label : dr.servicio) : '',
-      p2Kicker: dr ? ((usaBanda ? dr.servicio + ' · ' : '') + R.diaNombre(dr.fecha) + ' · ' + R.fechaLarga(dr.fecha) + ' · Semana ' + R.semanaDelMes(dr.fecha)) : '',
+      p2Kicker: dr ? ((usaBanda ? dr.servicio + ' · ' : '') + R.diaNombre(dr.fecha) + ' · ' + R.fechaLarga(dr.fecha) + ' · Semana ' + R.semanaDelMes(dr.fecha)
+        + (s.editId && estadoOriginal && estadoOriginal.version ? ' · v' + estadoOriginal.version : '')) : '',
       dHora: dr ? dr.hora : '',
       ruedaCols: ruedaCols,
       ruedaAbierta: !!s.ruedaAbierta,
@@ -2417,6 +2491,14 @@ class Component extends DCLogic {
       resumenAviso: dr ? (dr.avisoImportante || '') : '',
       resumenNotas: dr ? (dr.notas || '') : '',
       resumenEstado: estadoOriginal ? ('Actual: ' + R.estadoInfo(estadoOriginal).label) : '',
+      resumenVersion: versionVigente ? ('Versión ' + versionVigente) : '',
+      hayVersionesAnteriores: !!versionVigente && opcionesVersion.length > 1,
+      opcionesVersion: opcionesVersion,
+      versionSeleccionada: String(s.versionCargada || versionVigente),
+      onVersion: (e) => this.cargarVersion(Number(e.target.value)),
+      avisoVersionCargada: s.versionCargada
+        ? ('Estás viendo el contenido de la versión ' + s.versionCargada + '. Al guardar se restaura como una versión nueva; la fecha y el estado del evento no cambian.')
+        : '',
       resumenEsRepertorio: dr ? R.usaRepertorio(dr.servicio) : false,
       resumenEsOtro: dr ? !R.usaRepertorio(dr.servicio) : false,
       resumenDetalles: dr && dr.detalles ? dr.detalles : 'Sin detalles aún',
