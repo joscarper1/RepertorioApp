@@ -221,6 +221,30 @@
     return 'https://www.youtube.com/watch?v=' + videoId;
   }
 
+  /* Segundos a "m:ss" (o "h:mm:ss") para la línea de tiempo del audio. */
+  function formatoTiempo(seg) {
+    seg = Math.max(0, Math.floor(seg || 0));
+    var h = Math.floor(seg / 3600), m = Math.floor(seg / 60) % 60, s = seg % 60;
+    var ss = (s < 10 ? '0' : '') + s;
+    return h ? h + ':' + (m < 10 ? '0' : '') + m + ':' + ss : m + ':' + ss;
+  }
+
+  /* Valores que pinta la línea de tiempo de la fila que suena (misma forma en
+     index, eventos y el Repertorio del panel). `arrastre` (o null) es el
+     segundo elegido mientras se arrastra la barra y manda sobre `t`. */
+  function progresoAudio(t, d, arrastre, titulo) {
+    var pos = arrastre != null ? arrastre : (d ? Math.min(t, d) : t);
+    var pct = d ? Math.min(100, (pos / d) * 100) : 0;
+    return {
+      progActual: formatoTiempo(pos),
+      progTotal: d ? formatoTiempo(d) : '–:––',
+      progMax: d || 1, progValor: d ? pos : 0, progSinDur: !d,
+      progStyle: '--p:' + pct.toFixed(2) + '%',
+      progLabel: 'Posición en ' + (titulo || 'la canción'),
+      progTexto: formatoTiempo(pos) + ' de ' + (d ? formatoTiempo(d) : 'duración desconocida')
+    };
+  }
+
   /* Controlador de un único reproductor de YouTube oculto, compartido por
      todas las filas de canciones de una página (evita crear un iframe por
      fila). onChange(key|null, paused) se llama con la llave de la fila que
@@ -232,10 +256,37 @@
        - { tipo: 'lento', videoId, key, mensaje, url } cuando el video tarda en
          empezar (la fila sigue cargada). Cuando por fin suena llega un
          onChange(key, false) sin aviso, señal para quitar el mensaje.
-       `url` (puede venir vacío) es el video en YouTube, ver youtubeWatchUrl. */
-  function youtubeController(elementId, onChange) {
+       `url` (puede venir vacío) es el video en YouTube, ver youtubeWatchUrl.
+     onProgress(key, segundos, duracion) (opcional) alimenta la línea de tiempo
+     de la fila cargada: se consulta el reproductor cada YT_PROGRESO_MS pero
+     solo se avisa cuando cambia el segundo entero o la duración, para no
+     re-renderizar la página de más. duracion llega en 0 mientras YouTube no
+     la conoce (cargando o pasando un anuncio). */
+  var YT_PROGRESO_MS = 250;
+
+  function youtubeController(elementId, onChange, onProgress) {
     var player = null, ready = false, pending = null, current = null, currentVideoId = null, paused = false;
     var lentoTimer = null, lentoAvisado = false;
+    var progresoTimer = null, ultimoSeg = -1, ultimaDur = -1;
+
+    function avisarProgreso(forzar) {
+      if (!onProgress || !current || !player || !player.getCurrentTime) return;
+      var t = 0, d = 0;
+      try { t = player.getCurrentTime() || 0; d = player.getDuration() || 0; } catch (x) { return; }
+      var seg = Math.floor(t), dur = Math.floor(d);
+      if (!forzar && seg === ultimoSeg && dur === ultimaDur) return;
+      ultimoSeg = seg; ultimaDur = dur;
+      onProgress(current, seg, dur);
+    }
+
+    function vigilarProgreso() {
+      if (!onProgress || progresoTimer) return;
+      progresoTimer = setInterval(function () { avisarProgreso(false); }, YT_PROGRESO_MS);
+    }
+
+    function detenerProgreso() {
+      clearInterval(progresoTimer); progresoTimer = null; ultimoSeg = -1; ultimaDur = -1;
+    }
 
     function cancelarLento() { clearTimeout(lentoTimer); lentoTimer = null; lentoAvisado = false; }
 
@@ -267,7 +318,7 @@
               cancelarLento();
               if (avisado && onChange) onChange(current, paused);
             }
-            if (e.data === w.YT.PlayerState.ENDED) { cancelarLento(); current = null; currentVideoId = null; paused = false; if (onChange) onChange(null, false); }
+            if (e.data === w.YT.PlayerState.ENDED) { cancelarLento(); detenerProgreso(); current = null; currentVideoId = null; paused = false; if (onChange) onChange(null, false); }
           },
           /* Sin esto la fila quedaba marcada como sonando aunque YouTube
              rechazara el video. Se detiene el reproductor y se libera la
@@ -277,6 +328,7 @@
             var info = YT_ERRORES[code];
             var err = { tipo: 'error', code: code, videoId: currentVideoId, key: current, mensaje: youtubeErrorMessage(code), url: youtubeWatchUrl(currentVideoId, code) };
             cancelarLento();
+            detenerProgreso();
             console.warn('[YouTube] Error ' + code + (info ? ' (' + info.nombre + ')' : '') +
               ' con el video ' + err.videoId + ' (fila ' + err.key + '): https://www.youtube.com/watch?v=' + err.videoId);
             try { if (player && player.stopVideo) player.stopVideo(); } catch (x) {}
@@ -317,13 +369,24 @@
         currentVideoId = videoId;
         paused = false;
         vigilarInicio();
+        detenerProgreso();
+        if (onProgress) onProgress(key, 0, 0);
+        vigilarProgreso();
         if (onChange) onChange(key, false);
       }
     }
 
-    function destroy() { cancelarLento(); if (player && player.destroy) player.destroy(); }
+    /* Salta a `segundos` del video cargado, solo si es el de esa fila (evita
+       que un arrastre tardío mueva otra canción que ya empezó a sonar). */
+    function seek(key, segundos) {
+      if (!ready || !player || key !== current || !(segundos >= 0)) return;
+      try { player.seekTo(segundos, true); } catch (x) { return; }
+      avisarProgreso(true);
+    }
 
-    return { toggle: toggle, destroy: destroy };
+    function destroy() { cancelarLento(); detenerProgreso(); if (player && player.destroy) player.destroy(); }
+
+    return { toggle: toggle, seek: seek, destroy: destroy };
   }
 
   function defaultBlocks() {
@@ -2072,7 +2135,7 @@
     MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
     song: song, songLabel: songLabel, songLabelParts: songLabelParts, songKey: songKey, buildSongCatalog: buildSongCatalog,
-    youtubeId: youtubeId, youtubeController: youtubeController, youtubeErrorMessage: youtubeErrorMessage,defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
+    youtubeId: youtubeId, youtubeController: youtubeController, formatoTiempo: formatoTiempo, progresoAudio: progresoAudio, youtubeErrorMessage: youtubeErrorMessage,defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,

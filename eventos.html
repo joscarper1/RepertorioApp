@@ -307,6 +307,20 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .redondo.on{background:var(--ac);color:#fff}
 .redondo.vacio{border-style:dashed;border-color:var(--muted3);color:var(--muted2)}
 .redondo.oculto{visibility:hidden;pointer-events:none}
+/* Línea de tiempo de la canción que suena: solo aparece en esa fila. */
+.can-prog{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:-4px}
+.can-prog-t{font-size:11.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;min-width:32px}
+.can-prog-t:last-child{text-align:right}
+.prog-r{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:18px;margin:0;background:transparent;cursor:pointer}
+.prog-r:disabled{cursor:default}
+.prog-r::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(var(--ac),var(--ac)) 0 0/var(--p,0%) 100% no-repeat,rgba(0,0,0,.14)}
+.prog-r::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border-radius:50%;background:var(--ac)}
+.prog-r:disabled::-webkit-slider-thumb{visibility:hidden}
+.prog-r::-moz-range-track{height:4px;border-radius:2px;background:rgba(0,0,0,.14)}
+.prog-r::-moz-range-progress{height:4px;border-radius:2px;background:var(--ac)}
+.prog-r::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--ac)}
+.prog-r:disabled::-moz-range-thumb{visibility:hidden}
+.prog-r:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:4px}
 
 .p3{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
 .rev-cab{padding:24px 28px 20px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;flex-direction:column;gap:10px}
@@ -372,6 +386,9 @@ a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-c
   .cif-btn{min-height:46px}
   .can-g2 .btn-quitar{grid-column:auto}
   .redondo{width:44px;height:44px}
+  .prog-r{height:28px}
+  .prog-r::-webkit-slider-thumb{width:16px;height:16px;margin-top:-6px}
+  .prog-r::-moz-range-thumb{width:16px;height:16px}
   .p3{display:flex;flex-direction:column;gap:12px}
   .rev-cab{padding:18px 16px 14px}
   .rev-dia{font-size:34px}
@@ -831,6 +848,13 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                     <button type="button" class="{{ cn.playClase }}" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}">{{ cn.playIcon }}</button>
                     <button type="button" class="btn-quitar" onClick="{{ cn.remove }}" title="Quitar canción" aria-label="Quitar canción">✕</button>
                   </div>
+                  <sc-if value="{{ cn.muestraProg }}" hint-placeholder-val="{{ false }}">
+                    <div class="can-prog">
+                      <span class="can-prog-t">{{ cn.progActual }}</span>
+                      <input type="range" class="prog-r" min="0" max="{{ cn.progMax }}" step="1" value="{{ cn.progValor }}" style="{{ cn.progStyle }}" disabled="{{ cn.progSinDur }}" onChange="{{ cn.onSeek }}" aria-label="{{ cn.progLabel }}" aria-valuetext="{{ cn.progTexto }}">
+                      <span class="can-prog-t">{{ cn.progTotal }}</span>
+                    </div>
+                  </sc-if>
                   <div style="position:relative">
                     <input class="inp" value="{{ cn.d }}" onChange="{{ cn.onD }}" onFocus="{{ cn.onFocusD }}" onBlur="{{ cn.onBlurD }}" placeholder="Quién dirige" autoComplete="off">
                     <sc-if value="{{ cn.dirigeAbierto }}" hint-placeholder-val="{{ false }}">
@@ -1223,7 +1247,7 @@ class Component extends DCLogic {
     estadoAcceso: 'cargando', denegadoMotivo: '', organizationId: null, organizacion: null, orgs: [],
     data: { eventos: [] }, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '', avisoAudioMsg: '', avisoAudioUrl: '',
     autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, songOverrides: {},
-    reproduciendoKey: null, reproduciendoPausado: false, usuarioNombre: null, musicos: [],
+    reproduciendoKey: null, reproduciendoPausado: false, progT: 0, progD: 0, progArrastre: null, usuarioNombre: null, musicos: [],
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false,
     moverEventoId: null, moverMes: '', userDoc: null, sub: 'detalles', masAbierto: false,
@@ -1249,7 +1273,7 @@ class Component extends DCLogic {
         Object.assign(patch, { estado: '', avisoAudioMsg: '', avisoAudioUrl: '' });
       }
       this.setState(patch);
-    });
+    }, (key, t, d) => this.setState({ progT: t, progD: d }));
 
     const params = new URLSearchParams(location.search);
     this.setState({ embed: params.get('embed') === '1' });
@@ -1347,7 +1371,28 @@ class Component extends DCLogic {
     if (this._unSongOverrides) this._unSongOverrides();
     if (this._unmusicos) this._unmusicos();
     if (this._yt) this._yt.destroy();
+    clearTimeout(this._tSeek);
     if (this._unauth) this._unauth();
+  }
+
+  /* Valores de la línea de tiempo para una fila (vacía si no es la que suena). */
+  progresoFila(activa, key, titulo) {
+    if (!activa) return { muestraProg: false };
+    const s = this.state;
+    return Object.assign({ muestraProg: true, progDetener: (e) => { if (e && e.stopPropagation) e.stopPropagation(); }, onSeek: (e) => this.arrastrarProgreso(key, Number(e.target.value)) },
+      window.RepertorioData.progresoAudio(s.progT, s.progD, s.progArrastre, titulo));
+  }
+
+  /* Mientras se arrastra la barra solo se mueve el número; el salto real se
+     hace al soltar (o tras una pausa corta con el teclado), para no pedirle
+     a YouTube un seek por cada pixel. */
+  arrastrarProgreso(key, seg) {
+    this.setState({ progArrastre: seg });
+    clearTimeout(this._tSeek);
+    this._tSeek = setTimeout(() => {
+      if (this._yt) this._yt.seek(key, seg);
+      this.setState({ progArrastre: null });
+    }, 200);
   }
 
   togglePlay(key, videoId) {
@@ -2149,6 +2194,7 @@ class Component extends DCLogic {
              visibility:hidden en vez de display:none. */
           playClase: 'redondo' + (activa ? ' on' : '') + (videoId ? '' : ' oculto'),
           onPlay: () => this.togglePlay(rowKey, videoId),
+          ...this.progresoFila(activa, rowKey, (cn.t || '').trim().split(/\r?\n/)[0]),
           /* ♪ Cifrado: relleno si la canción ya tiene (propio o del catálogo),
              contorno si todavía no. Igual que ▶, siempre ocupa su columna. */
           cifradoTitle: cid ? 'Ver cifrado' : 'Agregar cifrado',

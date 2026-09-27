@@ -235,6 +235,20 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .redondo.on{background:var(--ac);color:#fff}
 .redondo.vacio{border-style:dashed;border-color:var(--muted3);color:var(--muted2)}
 .redondo.oculto{visibility:hidden;pointer-events:none}
+/* Línea de tiempo de la canción que suena: solo aparece en esa fila. */
+.can-prog{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:-2px;cursor:default}
+.can-prog-t{font-size:11.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;min-width:32px}
+.can-prog-t:last-child{text-align:right}
+.prog-r{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:18px;margin:0;background:transparent;cursor:pointer}
+.prog-r:disabled{cursor:default}
+.prog-r::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(var(--ac),var(--ac)) 0 0/var(--p,0%) 100% no-repeat,rgba(0,0,0,.14)}
+.prog-r::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border-radius:50%;background:var(--ac)}
+.prog-r:disabled::-webkit-slider-thumb{visibility:hidden}
+.prog-r::-moz-range-track{height:4px;border-radius:2px;background:rgba(0,0,0,.14)}
+.prog-r::-moz-range-progress{height:4px;border-radius:2px;background:var(--ac)}
+.prog-r::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--ac)}
+.prog-r:disabled::-moz-range-thumb{visibility:hidden}
+.prog-r:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:4px}
 .cif-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:1.5px solid var(--ac);background:#fff;color:var(--ac-dk);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
 .cif-btn:hover{background:var(--ac-lt)}
 .cif-btn.on{background:var(--ac);color:#fff}
@@ -260,6 +274,9 @@ a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-c
   .barra-acc > .btn-pri{flex:1}
   .redondo{width:44px;height:44px}
   .can-fila{grid-template-columns:minmax(0,1fr) 44px 44px}
+  .prog-r{height:28px}
+  .prog-r::-webkit-slider-thumb{width:16px;height:16px;margin-top:-6px}
+  .prog-r::-moz-range-thumb{width:16px;height:16px}
   .cifrado-overlay{padding:0}
   .cifrado-modal{width:100%;height:100%;max-height:none;border-radius:0}
   .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
@@ -828,6 +845,13 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   </div>
                   <button type="button" class="{{ c.cifClase }}" onClick="{{ c.onCifrado }}" aria-label="{{ c.cifradoTitle }}" title="{{ c.cifradoTitle }}">♪</button>
                   <button type="button" class="{{ c.playClase }}" onClick="{{ c.onPlay }}" aria-label="{{ c.playLabel }}" title="{{ c.playLabel }}">{{ c.playIcon }}</button>
+                  <sc-if value="{{ c.muestraProg }}" hint-placeholder-val="{{ false }}">
+                    <div class="can-prog" onClick="{{ c.progDetener }}">
+                      <span class="can-prog-t">{{ c.progActual }}</span>
+                      <input type="range" class="prog-r" min="0" max="{{ c.progMax }}" step="1" value="{{ c.progValor }}" style="{{ c.progStyle }}" disabled="{{ c.progSinDur }}" onChange="{{ c.onSeek }}" aria-label="{{ c.progLabel }}" aria-valuetext="{{ c.progTexto }}">
+                      <span class="can-prog-t">{{ c.progTotal }}</span>
+                    </div>
+                  </sc-if>
                 </div>
               </sc-if>
             </div>
@@ -1080,7 +1104,7 @@ class Component extends DCLogic {
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
     repertorioEventos: [], songOverrides: {}, repertorioPagina: 1, repertorioBusqueda: '',
     editandoSongKey: null, songEditTitulo: '', songEditArtista: '', songEditUrl: '',
-    reproduciendoKey: null, reproduciendoPausado: false,
+    reproduciendoKey: null, reproduciendoPausado: false, progT: 0, progD: 0, progArrastre: null,
     agregarCancionAbierto: false, nuevaCancionTitulo: '', nuevaCancionArtista: '', nuevaCancionUrl: '', nuevaCancionCifradoId: '',
     /* Modal "Cifrado" de una canción del catálogo (null = cerrado), ver
        modalCifrado. */
@@ -1096,7 +1120,7 @@ class Component extends DCLogic {
       clearTimeout(this._tAudio);
       this.setState({ reproduciendoKey: key, reproduciendoPausado: paused, avisoAudio: aviso ? aviso.mensaje : '', avisoAudioUrl: (aviso && aviso.url) || '' });
       if (aviso && aviso.tipo === 'error') this._tAudio = setTimeout(() => this.setState({ avisoAudio: '', avisoAudioUrl: '' }), aviso.url ? 8000 : 5000);
-    });
+    }, (key, t, d) => this.setState({ progT: t, progD: d }));
     this._unauth = R.onAuthChange((user) => {
       if (this._unorgs) { this._unorgs(); this._unorgs = null; }
       if (this._unusers) { this._unusers(); this._unusers = null; }
@@ -1169,6 +1193,7 @@ class Component extends DCLogic {
     if (this._unRepOverrides) this._unRepOverrides();
     if (this._unmusicos) this._unmusicos();
     if (this._yt) this._yt.destroy();
+    clearTimeout(this._tSeek);
   }
 
   cambiarTab(tab) {
@@ -1322,6 +1347,26 @@ class Component extends DCLogic {
 
   abrirCifradoSong(entry) {
     this.modalCifrado().abrir({ songKey: entry.key, t: entry.nombre, sm: entry.salmista || '', k: null }, entry.cifradoId || '');
+  }
+
+  /* Valores de la línea de tiempo para una fila (vacía si no es la que suena). */
+  progresoFila(activa, key, titulo) {
+    if (!activa) return { muestraProg: false };
+    const s = this.state;
+    return Object.assign({ muestraProg: true, progDetener: (e) => { if (e && e.stopPropagation) e.stopPropagation(); }, onSeek: (e) => this.arrastrarProgreso(key, Number(e.target.value)) },
+      window.RepertorioData.progresoAudio(s.progT, s.progD, s.progArrastre, titulo));
+  }
+
+  /* Mientras se arrastra la barra solo se mueve el número; el salto real se
+     hace al soltar (o tras una pausa corta con el teclado), para no pedirle
+     a YouTube un seek por cada pixel. */
+  arrastrarProgreso(key, seg) {
+    this.setState({ progArrastre: seg });
+    clearTimeout(this._tSeek);
+    this._tSeek = setTimeout(() => {
+      if (this._yt) this._yt.seek(key, seg);
+      this.setState({ progArrastre: null });
+    }, 200);
   }
 
   togglePlayRepertorio(key, videoId) {
@@ -2069,6 +2114,7 @@ class Component extends DCLogic {
         /* stopPropagation para que tocar el botón de play no abra también la
            edición de la fila (comparten la misma fila clicable). */
         onPlay: (ev) => { if (ev && ev.stopPropagation) ev.stopPropagation(); this.togglePlayRepertorio(e.key, videoId); },
+        ...this.progresoFila(activa, e.key, e.nombre),
         /* ♪ Cifrado: relleno si la canción ya tiene, punteado si no (igual
            que en el paso 4 de eventos.html). Tampoco abre la edición. */
         cifradoTitle: e.cifradoId ? 'Ver cifrado' : 'Agregar cifrado',

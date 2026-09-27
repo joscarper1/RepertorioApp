@@ -221,6 +221,20 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .play{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--ac);background:transparent;color:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .play.on{background:var(--ac);color:#fff}
 .play.oculto{visibility:hidden;pointer-events:none}
+/* Línea de tiempo de la canción que suena: solo aparece en esa fila. */
+.can-prog{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:-2px}
+.can-prog-t{font-size:11.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;min-width:32px}
+.can-prog-t:last-child{text-align:right}
+.prog-r{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:18px;margin:0;background:transparent;cursor:pointer}
+.prog-r:disabled{cursor:default}
+.prog-r::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(var(--ac),var(--ac)) 0 0/var(--p,0%) 100% no-repeat,rgba(0,0,0,.14)}
+.prog-r::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border-radius:50%;background:var(--ac)}
+.prog-r:disabled::-webkit-slider-thumb{visibility:hidden}
+.prog-r::-moz-range-track{height:4px;border-radius:2px;background:rgba(0,0,0,.14)}
+.prog-r::-moz-range-progress{height:4px;border-radius:2px;background:var(--ac)}
+.prog-r::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--ac)}
+.prog-r:disabled::-moz-range-thumb{visibility:hidden}
+.prog-r:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:4px}
 .callout{background:var(--gold-lt);border-radius:12px;padding:16px 18px}
 .callout-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dk)}
 .callout p{margin:8px 0 0;font-size:14px;line-height:1.55;text-wrap:pretty;white-space:pre-line}
@@ -373,6 +387,9 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .medley-chip{font-size:11px;padding:3px 7px}
   .tono{font-size:11.5px;padding:4px 7px}
   .play{width:40px;height:40px}
+  .prog-r{height:28px}
+  .prog-r::-webkit-slider-thumb{width:16px;height:16px;margin-top:-6px}
+  .prog-r::-moz-range-thumb{width:16px;height:16px}
   .cifrado-overlay{padding:0}
   .cifrado-modal{width:100%;height:100%;max-height:none;border-radius:0}
   .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
@@ -731,6 +748,13 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
                                 <sc-if value="{{ s.muestraPlay }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><polygon points="2,1 9,5 2,9" fill="currentColor"></polygon></svg></sc-if>
                                 <sc-if value="{{ s.muestraPausa }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><rect x="1.5" y="1" width="2.5" height="8" fill="currentColor"></rect><rect x="6" y="1" width="2.5" height="8" fill="currentColor"></rect></svg></sc-if>
                               </button>
+                              <sc-if value="{{ s.muestraProg }}" hint-placeholder-val="{{ false }}">
+                                <div class="can-prog" onDoubleClick="{{ s.progDetener }}">
+                                  <span class="can-prog-t">{{ s.progActual }}</span>
+                                  <input type="range" class="prog-r" min="0" max="{{ s.progMax }}" step="1" value="{{ s.progValor }}" style="{{ s.progStyle }}" disabled="{{ s.progSinDur }}" onChange="{{ s.onSeek }}" aria-label="{{ s.progLabel }}" aria-valuetext="{{ s.progTexto }}">
+                                  <span class="can-prog-t">{{ s.progTotal }}</span>
+                                </div>
+                              </sc-if>
                             </div>
                           </sc-for>
                         </div>
@@ -900,6 +924,9 @@ class Component extends DCLogic {
   state = {
     modo: 'cargando', org: null, eventos: [], mes: new URLSearchParams(location.search).get('month') || '', estado: '', errorLogin: '', usuarioNombre: null,
     mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false, avisoAudio: '', avisoAudioUrl: '',
+    /* Línea de tiempo de la fila que suena (ver R.youtubeController):
+       progArrastre guarda el segundo elegido mientras se arrastra la barra. */
+    progT: 0, progD: 0, progArrastre: null,
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
     /* Vista de eventos: 'mes' (calendario, la inicial) o 'semana' (tarjetas
        de la semana elegida; en el teléfono siempre es esta). eventoSel viene de ?eventid= para abrir un enlace
@@ -927,7 +954,7 @@ class Component extends DCLogic {
       clearTimeout(this._tAudio);
       this.setState({ reproduciendoKey: key, reproduciendoPausado: paused, avisoAudio: aviso ? aviso.mensaje : '', avisoAudioUrl: (aviso && aviso.url) || '' });
       if (aviso && aviso.tipo === 'error') this._tAudio = setTimeout(() => this.setState({ avisoAudio: '', avisoAudioUrl: '' }), aviso.url ? 8000 : 5000);
-    });
+    }, (key, t, d) => this.setState({ progT: t, progD: d }));
 
     const slug = new URLSearchParams(location.search).get('group');
 
@@ -1032,6 +1059,7 @@ class Component extends DCLogic {
     if (this._unwatchOrgsCheck) this._unwatchOrgsCheck();
     this._detenerSeguimientoMisOrgs();
     if (this._yt) this._yt.destroy();
+    clearTimeout(this._tSeek);
   }
 
   _detenerSeguimientoMisOrgs() {
@@ -1056,8 +1084,28 @@ class Component extends DCLogic {
     });
   }
 
+  /* Valores de la línea de tiempo para una fila (vacía si no es la que suena). */
+  progresoFila(activa, key, titulo) {
+    if (!activa) return { muestraProg: false };
+    const s = this.state;
+    return Object.assign({ muestraProg: true, progDetener: (e) => { if (e && e.stopPropagation) e.stopPropagation(); }, onSeek: (e) => this.arrastrarProgreso(key, Number(e.target.value)) },
+      window.RepertorioData.progresoAudio(s.progT, s.progD, s.progArrastre, titulo));
+  }
+
   togglePlay(key, videoId) {
     if (this._yt) this._yt.toggle(key, videoId);
+  }
+
+  /* Mientras se arrastra la barra solo se mueve el número; el salto real se
+     hace al soltar (o tras una pausa corta con el teclado), para no pedirle
+     a YouTube un seek por cada pixel. */
+  arrastrarProgreso(key, seg) {
+    this.setState({ progArrastre: seg });
+    clearTimeout(this._tSeek);
+    this._tSeek = setTimeout(() => {
+      if (this._yt) this._yt.seek(key, seg);
+      this.setState({ progArrastre: null });
+    }, 200);
   }
 
   toggleOrgSwitcher() {
@@ -1410,6 +1458,7 @@ class Component extends DCLogic {
           muestraPlay: !sonando, muestraPausa: sonando,
           playLabel: sonando ? 'Pausar audio' : (activa ? 'Reanudar audio' : 'Reproducir audio'),
           onPlay: () => this.togglePlay(key, videoId),
+          ...this.progresoFila(activa, key, titulo),
           tieneCifrado: !!cid, sinCifrado: !cid,
           cifradoLabel: 'Ver cifrado de ' + titulo + (c.k ? ' en ' + c.k : ''),
           onCifrado: () => this.abrirCifrado(cid, c)
