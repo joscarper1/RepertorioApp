@@ -701,19 +701,22 @@ class Component extends DCLogic {
     this._t = setTimeout(() => this.setState({ toast: '' }), 2500);
   }
 
-  /* "Publicar todos" de la tabla de borradores: solo cuando todos ya tienen
-     canciones listadas. Al publicar, el listener de eventos saca de la tabla
-     los que ya no son borrador. */
+  /* "Publicar todos" de la tabla de borradores. Si todos ya tienen canciones
+     listadas se publican directamente; si alguno no tiene, se pregunta antes
+     si se desea publicarlos así. Al publicar, el listener de eventos saca de
+     la tabla los que ya no son borrador. */
   publicarTodos(borradores) {
     const R = D();
     if (!R.puede(this.state.userDoc, 'eventos.estado') || this.state.publicando) return;
-    if (!borradores.length || !borradores.every((ev) => R.cancionesEvento(ev) > 0)) return;
+    if (!borradores.length) return;
     const n = borradores.length;
-    if (!confirm('¿Publicar ' + (n === 1 ? 'este evento' : 'los ' + n + ' eventos') + '? Se mostrarán en el calendario público.')) return;
+    const sinCanciones = borradores.filter((ev) => R.cancionesEvento(ev) === 0).length;
+    if (sinCanciones && !confirm((sinCanciones === 1 ? '1 evento no tiene' : sinCanciones + ' eventos no tienen') +
+      ' canciones listadas. ¿Deseas publicar ' + (n === 1 ? 'el evento' : 'los ' + n + ' eventos') + ' de todas formas?')) return;
     this.setState({ publicando: true });
     R.publicarEventos(borradores.map((ev) => ev.id), (ok) => {
       this.setState({ publicando: false });
-      this.avisar(ok ? (n === 1 ? 'Evento publicado' : n + ' eventos publicados') : 'No se pudo publicar: revisa tu sesión o conexión');
+      this.avisar(ok ? (n === 1 ? '1 evento ha sido publicado' : n + ' eventos han sido publicados') : 'No se pudo publicar: revisa tu sesión o conexión');
     });
   }
 
@@ -904,9 +907,9 @@ class Component extends DCLogic {
       borradoresLista: borradoresLista,
       borradoresCuenta: borradoresLista.length ? String(borradoresLista.length) : '',
       publicarTodosTexto: s.publicando ? 'Publicando…' : 'Publicar todos',
-      publicarTodosDeshabilitado: !borradoresLista.length || faltan > 0 || s.publicando,
-      publicarTodosTitulo: faltan ? 'Todos los eventos deben tener canciones listadas' : '',
-      faltanCancionesTexto: faltan ? (faltan === 1 ? 'Falta 1 evento por listar sus canciones para poder publicar todos.' : 'Faltan ' + faltan + ' eventos por listar sus canciones para poder publicar todos.') : '',
+      publicarTodosDeshabilitado: !borradoresLista.length || s.publicando,
+      publicarTodosTitulo: faltan ? 'Hay eventos sin canciones listadas: se pedirá confirmación' : '',
+      faltanCancionesTexto: faltan ? (faltan === 1 ? '1 evento aún no tiene canciones listadas.' : faltan + ' eventos aún no tienen canciones listadas.') : '',
       publicarTodos: () => this.publicarTodos(borradores),
       toast: s.toast
     };
