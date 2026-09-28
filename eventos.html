@@ -397,8 +397,8 @@ a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-c
   .rev-cuerpo{padding:16px}
   .rev-tema{font-size:19px}
   .wiz-barra{position:sticky;bottom:0;z-index:20;background:var(--bg);margin:16px -16px 0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -6px 20px rgba(0,0,0,.06);border-top:1px solid rgba(0,0,0,.08)}
-  .wiz-barra .btn-pri{flex:1}
-  .wiz-barra .wiz-cancelar{min-height:46px;padding:0 4px;flex:none}
+  .wiz-barra{flex-wrap:wrap}
+  .wiz-barra .btn-pri{flex:1 1 auto}
   .wiz-barra .btn-sec{min-height:46px;border-radius:10px;padding:0 16px;font-size:14px}
   .cifrado-overlay{padding:0}
   .cifrado-modal{width:100%;height:100%;max-height:none;border-radius:0}
@@ -989,7 +989,12 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         </sc-if>
         <div class="caja" style="background:var(--ac-lt);border:0">
           <span class="rotulo" style="color:var(--ac-dk)">Antes de guardar</span>
-          <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--ac-dk)">“Publicar” lo muestra de inmediato en el calendario. “Borrador” lo guarda sin que el equipo lo vea.</p>
+          <sc-if value="{{ publicarCompleto }}" hint-placeholder-val="{{ true }}">
+            <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--ac-dk)">“Publicar” lo muestra de inmediato en el calendario. “Borrador” lo guarda sin que el equipo lo vea.</p>
+          </sc-if>
+          <sc-if value="{{ publicarSinCanciones }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--ac-dk)">Este evento todavía no tiene lista de repertorio. “Publicar como borrador” lo guarda sin que el equipo lo vea; “Publicar” lo muestra de inmediato aunque esté incompleto.</p>
+          </sc-if>
         </div>
       </aside>
     </section>
@@ -997,15 +1002,21 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
   <sc-if value="{{ enWizard }}" hint-placeholder-val="{{ false }}">
     <div class="wiz-barra">
-      <sc-if value="{{ mostrarCancelar }}" hint-placeholder-val="{{ false }}"><button type="button" class="btn-texto wiz-cancelar" onClick="{{ cancelar }}" aria-label="Cancelar">Cancelar</button></sc-if>
       <span style="flex:1" class="solo-desk"></span>
+      <sc-if value="{{ mostrarCancelar }}" hint-placeholder-val="{{ false }}"><button type="button" class="btn-sec" onClick="{{ cancelar }}" style="min-height:40px;padding:0 16px;font-size:13px">Cancelar</button></sc-if>
       <button type="button" class="btn-sec" onClick="{{ atras }}" style="min-height:40px;padding:0 16px;font-size:13px">{{ atrasLabel }}</button>
       <sc-if value="{{ esPasoFinalSinEstado }}" hint-placeholder-val="{{ false }}">
         <button type="button" class="btn-pri btn-ac" onClick="{{ guardarCambios }}">Guardar cambios</button>
       </sc-if>
       <sc-if value="{{ esPasoFinalConEstado }}" hint-placeholder-val="{{ false }}">
-        <button type="button" class="btn-sec" onClick="{{ guardarBorrador }}" style="min-height:40px;padding:0 16px;font-size:13px">Borrador</button>
-        <button type="button" class="btn-pri btn-ac" onClick="{{ guardarPublicar }}">Publicar</button>
+        <sc-if value="{{ publicarCompleto }}" hint-placeholder-val="{{ true }}">
+          <button type="button" class="btn-sec" onClick="{{ guardarBorrador }}" style="min-height:40px;padding:0 16px;font-size:13px">Borrador</button>
+          <button type="button" class="btn-pri btn-ac" onClick="{{ guardarPublicar }}">Publicar</button>
+        </sc-if>
+        <sc-if value="{{ publicarSinCanciones }}" hint-placeholder-val="{{ false }}">
+          <button type="button" class="btn-sec" onClick="{{ guardarPublicar }}" style="min-height:40px;padding:0 16px;font-size:13px">Publicar</button>
+          <button type="button" class="btn-pri btn-ac" onClick="{{ guardarBorrador }}">Publicar como borrador</button>
+        </sc-if>
       </sc-if>
       <sc-if value="{{ noEsPasoFinal }}" hint-placeholder-val="{{ true }}">
         <button type="button" class="btn-pri" onClick="{{ siguiente }}">{{ siguienteLabel }}</button>
@@ -1890,6 +1901,7 @@ class Component extends DCLogic {
        la ve en la revisión final. 'canciones.editar' además lo da estar
        asignado como Director de Alabanza en este evento. */
     const puedeBanda = R.puede(s.userDoc, 'banda.editar');
+    const sinCanciones = usaBanda && R.cancionesEvento(dr) === 0;
     const puedeCanciones = R.puedeSobreEvento(s.userDoc, 'canciones.editar', dr);
     /* Sin 'eventos.tipo' (admin) no se cambia el tipo de un evento existente:
        al editar se entra directo al paso 2 y "Atrás" desde ahí cierra. */
@@ -2537,7 +2549,15 @@ class Component extends DCLogic {
       esPasoFinalSinEstado: paso === 3 && !R.puede(s.userDoc, 'eventos.estado'),
       guardarCambios: () => this.guardarConEstado(undefined),
       guardarBorrador: () => this.guardarConEstado('BORRADOR'),
-      guardarPublicar: () => this.guardarConEstado('PUBLICADO'),
+      /* Un evento de repertorio sin canciones está incompleto: el botón
+         principal pasa a ser "Publicar como borrador" y "Publicar" pide
+         confirmación antes de mostrarlo en el calendario. */
+      publicarCompleto: !sinCanciones,
+      publicarSinCanciones: sinCanciones,
+      guardarPublicar: () => {
+        if (sinCanciones && !confirm('El evento está incompleto: no tiene lista de repertorio.\n\n¿Deseas publicarlo sin lista de repertorio?')) return;
+        this.guardarConEstado('PUBLICADO');
+      },
 
       moverAbierto: moverAbierto,
       moverResumen: moverEvento ? (R.diaNombre(moverEvento.fecha) + ' ' + R.fechaLarga(moverEvento.fecha) + ' · ' + moverEvento.hora + ' · ' + moverEvento.servicio) : '',

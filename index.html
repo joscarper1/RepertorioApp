@@ -60,6 +60,10 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .titulo-fila{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:22px 0 16px}
 .kicker{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac);margin-bottom:6px}
 .mes-titulo{margin:0;font-size:42px;line-height:1;font-weight:900;font-stretch:115%;letter-spacing:-.01em;text-transform:uppercase}
+.mes-nav{display:flex;align-items:center;gap:10px;min-width:0}
+.mes-flecha{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid rgba(0,0,0,.18);background:#fff;color:var(--ink);font-size:24px;line-height:1;font-weight:700;padding:0 0 3px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mes-flecha:hover:not(:disabled){border-color:var(--ink)}
+.mes-flecha:disabled{opacity:.3;cursor:default}
 .titulo-acc{display:flex;align-items:center;gap:8px;flex:none}
 .seg{display:flex;padding:4px;background:var(--sf);border-radius:9px;gap:2px}
 .seg button{border:0;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--muted)}
@@ -291,6 +295,8 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .titulo-fila{padding:14px 0 4px;align-items:flex-end}
   .kicker{font-size:10px;margin-bottom:4px}
   .mes-titulo{font-size:31px}
+  .mes-nav{gap:6px}
+  .mes-flecha{width:30px;height:30px;font-size:20px}
   .semanas{display:flex !important;overflow-x:auto;padding:14px 20px 12px;margin:0 -20px;scrollbar-width:none}
   .semanas::-webkit-scrollbar{display:none}
   .sem{flex:none;gap:3px;padding:9px 12px;min-height:48px}
@@ -480,7 +486,11 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   <div class="titulo-fila">
     <div style="min-width:0">
       <div class="kicker">{{ kicker }}</div>
-      <h1 class="mes-titulo">{{ mesLabel }}</h1>
+      <div class="mes-nav">
+        <button type="button" class="mes-flecha" onClick="{{ mesAnterior }}" disabled="{{ sinMesAnterior }}" title="{{ mesAnteriorTitulo }}" aria-label="Mes anterior">‹</button>
+        <h1 class="mes-titulo">{{ mesLabel }}</h1>
+        <button type="button" class="mes-flecha" onClick="{{ mesSiguiente }}" disabled="{{ sinMesSiguiente }}" title="{{ mesSiguienteTitulo }}" aria-label="Mes siguiente">›</button>
+      </div>
     </div>
     <div class="titulo-acc">
       <sc-if value="{{ hayOtrosMeses }}" hint-placeholder-val="{{ false }}">
@@ -1586,7 +1596,12 @@ class Component extends DCLogic {
     const proximos = keys.filter((k) => k >= hoy);
     const mesesGrupos = [];
     if (proximos.length) mesesGrupos.push({ titulo: 'Mes en curso y próximos', meses: proximos.map(mesChip) });
-    if (anteriores.length) mesesGrupos.push({ titulo: 'Meses anteriores', meses: anteriores.map(mesChip) });
+    if (anteriores.length) mesesGrupos.push({ titulo: 'Otros Meses', meses: anteriores.map(mesChip) });
+
+    // ---- flechas del título: solo saltan entre meses con eventos publicados
+    const conPublicados = Array.from(new Set(s.eventos.filter((e) => R.estadoEvento(e) === 'PUBLICADO').map((e) => R.monthKey(e.fecha)))).sort();
+    const mesPrev = conPublicados.filter((k) => k < s.mes).pop() || null;
+    const mesNext = conPublicados.find((k) => k > s.mes) || null;
 
     // ---- eventos del mes, agrupados por semana (fila del calendario)
     const delMes = s.eventos.filter((e) => R.monthKey(e.fecha) === s.mes).sort((a, b) => this.ordenFechaHora(a, b));
@@ -1801,8 +1816,14 @@ class Component extends DCLogic {
 
       kicker: 'Calendario Mensual',
       mesLabel: R.monthLabel(s.mes),
+      mesAnterior: () => { if (mesPrev) this.elegirMes(mesPrev); },
+      mesSiguiente: () => { if (mesNext) this.elegirMes(mesNext); },
+      sinMesAnterior: !mesPrev,
+      sinMesSiguiente: !mesNext,
+      mesAnteriorTitulo: mesPrev ? R.monthLabel(mesPrev) : 'No hay meses anteriores con eventos publicados',
+      mesSiguienteTitulo: mesNext ? R.monthLabel(mesNext) : 'No hay meses siguientes con eventos publicados',
       hayOtrosMeses: keys.length > 1,
-      mesesBtnLabel: s.mesesAbierto ? 'Cerrar meses ✕' : (anteriores.length ? 'Meses anteriores (' + anteriores.length + ')' : 'Otros meses'),
+      mesesBtnLabel: s.mesesAbierto ? 'Cerrar meses ✕' : 'Otros meses',
       mesesBtnLabelCorto: s.mesesAbierto ? 'Cerrar ✕' : 'Meses',
       mesesAbierto: s.mesesAbierto,
       toggleMeses: () => this.setState((st) => ({ mesesAbierto: !st.mesesAbierto })),
