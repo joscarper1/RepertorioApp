@@ -618,7 +618,8 @@
      se queda en la base pero watchEventsForOrg lo descarta, así que
      desaparece de todas las vistas. */
   var ESTADOS_EVENTO = ['BORRADOR', 'PUBLICADO', 'CANCELADO', 'ARCHIVADO', 'ELIMINADO'];
-  var ESTADOS_VISIBLES_PUBLICO = ['PUBLICADO', 'CANCELADO'];
+  /* El calendario público muestra también los borradores, con su etiqueta. */
+  var ESTADOS_VISIBLES_PUBLICO = ['PUBLICADO', 'BORRADOR', 'CANCELADO'];
 
   /* Los eventos guardados antes de que existiera este campo no tienen
      `estado`: se tratan como PUBLICADO, ya que antes todo lo guardado se

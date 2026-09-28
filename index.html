@@ -161,6 +161,8 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .b-part{background:var(--ac-lt);color:var(--ac)}
 .b-fin{background:#ecebe8;color:var(--muted)}
 .b-canc{background:var(--red);color:#fff}
+.b-pub{background:var(--ac);color:#fff}
+.b-borr{background:#c7cad0;color:#3a3f47}
 .b-aviso{background:var(--gold-lt);color:var(--gold-dk)}
 .card-chev{font-size:20px;color:var(--muted3);line-height:1}
 
@@ -187,6 +189,9 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .pill-estado.fin{background:#ecebe8;color:var(--muted)}
 .pill-estado.hoy{background:var(--gold);color:var(--ink)}
 .pill-estado.canc{background:var(--red);color:#fff}
+.pill-pub{font-size:11px;font-weight:800;letter-spacing:.1em;padding:4px 8px;border-radius:5px;background:var(--ac);color:#fff}
+.pill-pub.borr{background:#c7cad0;color:#3a3f47}
+.nota-borrador{font-size:12.5px;font-style:italic;color:var(--muted2)}
 .det-dia{margin:0;font-size:50px;font-weight:900;font-stretch:115%;line-height:.95;letter-spacing:-.01em;text-transform:uppercase}
 .det-dia.tachado{text-decoration:line-through}
 .det-fecha{font-size:15px;color:var(--muted)}
@@ -368,7 +373,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .det-scroll{flex:1;overflow-y:auto;padding:18px 20px 28px}
   .det-cab{padding:0;border:0;flex-direction:column;align-items:stretch;gap:14px;margin-bottom:20px}
   .det-cab-txt{gap:8px}
-  .pill-tipo,.pill-estado{font-size:10px;padding:4px 7px}
+  .pill-tipo,.pill-estado,.pill-pub{font-size:10px;padding:4px 7px}
   .det-dia{font-size:38px}
   .det-fecha{font-size:14px}
   a.btn-cal{justify-content:center;min-height:46px;border-radius:10px;font-size:14px}
@@ -705,7 +710,9 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
                 <div class="det-pills">
                   <span class="pill-tipo" style="{{ d.colorStyle }}">{{ d.tipo }}</span>
                   <span class="{{ d.estadoClase }}">{{ d.estado }}</span>
+                  <sc-if value="{{ d.noCancelado }}" hint-placeholder-val="{{ true }}"><span class="{{ d.publicacionClase }}" title="Estado del evento">{{ d.publicacion }}</span></sc-if>
                 </div>
+                <sc-if value="{{ d.esBorrador }}" hint-placeholder-val="{{ false }}"><div class="nota-borrador">Aún en borrador: puede tener cambios antes de publicarse.</div></sc-if>
                 <h2 class="{{ d.diaClase }}">{{ d.diaNombre }}</h2>
                 <div class="det-fecha">{{ d.fechaLarga }} · <strong>{{ d.hora }}</strong></div>
               </div>
@@ -849,7 +856,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
             <div class="part-item" onClick="{{ pe.onClick }}" title="Ver este evento">
               <div class="res-meta" style="{{ pe.colorStyle }}"><span class="dot" style="{{ pe.dotStyle }}"></span>{{ pe.meta }}</div>
               <div class="res-tema">{{ pe.tema }}</div>
-              <div class="part-rol">{{ pe.tipo }}</div>
+              <div class="part-rol">{{ pe.tipo }} <span class="{{ pe.estadoClase }}">{{ pe.estado }}</span></div>
             </div>
           </sc-for>
         </div>
@@ -993,8 +1000,8 @@ class Component extends DCLogic {
         this.setState({ modo: 'calendario', org: org });
         this._unSongOverrides = R.watchSongCatalog(org.id, (map) => this.setState({ songOverrides: map }));
         this._unwatch = R.watchEventsForOrg(org.id, (evs) => {
-          /* Solo se muestran eventos Publicado/Cancelado; Borrador y
-             Archivado son de uso exclusivo del panel de administración. */
+          /* Se muestran eventos Publicado, Borrador (con su etiqueta) y
+             Cancelado; Archivado es de uso exclusivo del panel de administración. */
           const visibles = evs.filter((e) => R.esVisiblePublico(e));
           /* Un enlace con ?eventid= abre ese evento: su mes y, en el
              teléfono, directo la pantalla de detalle (solo en la primera
@@ -1347,13 +1354,13 @@ class Component extends DCLogic {
     history.replaceState(null, '', location.pathname + '?' + params.toString());
   }
 
-  /* Estado de una semana según sus eventos PUBLICADO agendados, no según el
+  /* Estado de una semana según sus eventos agendados (no cancelados), no según el
      rango domingo—sábado ni los cancelados: si el único evento de la semana
      ya pasó está Finalizada aunque hoy caiga dentro de esos siete días; y
      si lo único que queda por venir está cancelado, también. */
   estadoSemana(evs, hoyISO) {
     const R = window.RepertorioData;
-    const fechas = evs.filter((ev) => R.estadoEvento(ev) === 'PUBLICADO').map((ev) => ev.fecha);
+    const fechas = evs.filter((ev) => R.estadoEvento(ev) !== 'CANCELADO').map((ev) => ev.fecha);
     if (!fechas.length) return 'fin';
     const primera = fechas.reduce((a, b) => (a < b ? a : b));
     const ultima = fechas.reduce((a, b) => (a > b ? a : b));
@@ -1367,12 +1374,14 @@ class Component extends DCLogic {
     const R = window.RepertorioData;
     const d = R.parse(ev.fecha);
     const cancelado = R.estadoEvento(ev) === 'CANCELADO';
+    const borrador = R.estadoEvento(ev) === 'BORRADOR';
     const pasado = ev.fecha < ctx.hoyISO;
     const hoy = ev.fecha === ctx.hoyISO;
     const sel = !!ctx.sel && ev.id === ctx.sel.id;
     const canciones = this.cancionesDe(ev);
     const badges = [];
     if (cancelado) badges.push({ t: 'CANCELADO', clase: 'badge b-canc' });
+    else badges.push(borrador ? { t: 'BORRADOR', clase: 'badge b-borr' } : { t: 'PUBLICADO', clase: 'badge b-pub' });
     if (hoy && !cancelado) badges.push({ t: 'HOY', clase: 'badge b-hoy' });
     if (ctx.miMusico && (ev.banda || []).some((b) => b.musicianId === ctx.miMusico && (b.nombre || '').trim())) badges.push({ t: 'PARTICIPAS', clase: 'badge b-part' });
     if (ev.avisoImportante && ev.avisoImportante.trim() && !pasado) badges.push({ t: 'IMPORTANTE', clase: 'badge b-aviso' });
@@ -1433,6 +1442,7 @@ class Component extends DCLogic {
     const R = window.RepertorioData;
     const d = R.parse(ev.fecha);
     const cancelado = R.estadoEvento(ev) === 'CANCELADO';
+    const borrador = R.estadoEvento(ev) === 'BORRADOR';
     const dias = Math.round((d - R.parse(ctx.hoyISO)) / 86400000);
     const estado = cancelado ? ['CANCELADO', 'canc'] : dias < 0 ? ['FINALIZADO', 'fin'] : dias === 0 ? ['HOY', 'hoy']
       : [dias === 1 ? 'MAÑANA' : 'EN ' + dias + ' DÍAS', ''];
@@ -1483,6 +1493,11 @@ class Component extends DCLogic {
       colorStyle: 'color:' + color,
       estado: estado[0],
       estadoClase: 'pill-estado' + (estado[1] ? ' ' + estado[1] : ''),
+      /* Publicado / Borrador (un cancelado ya lo dice su pill de estado). */
+      noCancelado: !cancelado,
+      publicacion: borrador ? 'BORRADOR' : 'PUBLICADO',
+      publicacionClase: 'pill-pub' + (borrador ? ' borr' : ''),
+      esBorrador: borrador,
       diaNombre: R.diaNombre(ev.fecha),
       diaClase: 'det-dia' + (cancelado ? ' tachado' : ''),
       fechaLarga: R.fechaLarga(ev.fecha) + ' de ' + d.getFullYear(),
@@ -1598,8 +1613,8 @@ class Component extends DCLogic {
     if (proximos.length) mesesGrupos.push({ titulo: 'Mes en curso y próximos', meses: proximos.map(mesChip) });
     if (anteriores.length) mesesGrupos.push({ titulo: 'Otros Meses', meses: anteriores.map(mesChip) });
 
-    // ---- flechas del título: solo saltan entre meses con eventos publicados
-    const conPublicados = Array.from(new Set(s.eventos.filter((e) => R.estadoEvento(e) === 'PUBLICADO').map((e) => R.monthKey(e.fecha)))).sort();
+    // ---- flechas del título: solo saltan entre meses con eventos (publicados o borradores)
+    const conPublicados = Array.from(new Set(s.eventos.filter((e) => R.estadoEvento(e) !== 'CANCELADO').map((e) => R.monthKey(e.fecha)))).sort();
     const mesPrev = conPublicados.filter((k) => k < s.mes).pop() || null;
     const mesNext = conPublicados.find((k) => k > s.mes) || null;
 
@@ -1752,7 +1767,7 @@ class Component extends DCLogic {
        el detalle se ve al lado y el panel lo taparía. */
 
     /* "Ver participaciones": integrantes de banda del mes mostrado; al
-       elegir uno se abre el modal con sus eventos PUBLICADO de ese mes y el
+       elegir uno se abre el modal con sus eventos publicados y borradores de ese mes y el
        rol que cumple en cada uno (solo lectura: la vista es pública). */
     const nombresBanda = new Map();
     delMes.forEach((ev) => (ev.banda || []).forEach((b) => {
@@ -1760,7 +1775,7 @@ class Component extends DCLogic {
       if (!n) return;
       const k = n.toLowerCase();
       if (!nombresBanda.has(k)) nombresBanda.set(k, { nombre: n, eventos: new Set() });
-      if (R.estadoEvento(ev) === 'PUBLICADO') nombresBanda.get(k).eventos.add(ev.id);
+      if (R.estadoEvento(ev) !== 'CANCELADO') nombresBanda.get(k).eventos.add(ev.id);
     }));
     const qP = (s.participacionesBusqueda || '').trim().toLowerCase();
     const personasMesLista = Array.from(nombresBanda.values()).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
@@ -1773,7 +1788,7 @@ class Component extends DCLogic {
     let participacionesLista = [];
     if (s.personaSeleccionada) {
       const kSel = s.personaSeleccionada.toLowerCase();
-      participacionesLista = delMes.filter((ev) => R.estadoEvento(ev) === 'PUBLICADO').map((ev) => {
+      participacionesLista = delMes.filter((ev) => R.estadoEvento(ev) !== 'CANCELADO').map((ev) => {
         const slot = (ev.banda || []).find((b) => (b.nombre || '').trim().toLowerCase() === kSel);
         if (!slot) return null;
         const color = this.colorTipo(ev.servicio);
@@ -1781,6 +1796,8 @@ class Component extends DCLogic {
           meta: [R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio].filter(Boolean).join(' · '),
           tema: ev.tema || 'Por confirmar',
           tipo: R.bandaLabel(slot),
+          estado: R.estadoEvento(ev) === 'BORRADOR' ? 'BORRADOR' : 'PUBLICADO',
+          estadoClase: 'badge ' + (R.estadoEvento(ev) === 'BORRADOR' ? 'b-borr' : 'b-pub'),
           colorStyle: 'color:' + color, dotStyle: 'background:' + color,
           onClick: () => this.seleccionarEvento(ev, Object.assign({ semanaSel: R.semanaDelMes(ev.fecha), diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all' },
             this._esTelefono() ? {} : { personaSeleccionada: null }))
@@ -1820,8 +1837,8 @@ class Component extends DCLogic {
       mesSiguiente: () => { if (mesNext) this.elegirMes(mesNext); },
       sinMesAnterior: !mesPrev,
       sinMesSiguiente: !mesNext,
-      mesAnteriorTitulo: mesPrev ? R.monthLabel(mesPrev) : 'No hay meses anteriores con eventos publicados',
-      mesSiguienteTitulo: mesNext ? R.monthLabel(mesNext) : 'No hay meses siguientes con eventos publicados',
+      mesAnteriorTitulo: mesPrev ? R.monthLabel(mesPrev) : 'No hay meses anteriores con eventos',
+      mesSiguienteTitulo: mesNext ? R.monthLabel(mesNext) : 'No hay meses siguientes con eventos',
       hayOtrosMeses: keys.length > 1,
       mesesBtnLabel: s.mesesAbierto ? 'Cerrar meses ✕' : 'Otros meses',
       mesesBtnLabelCorto: s.mesesAbierto ? 'Cerrar ✕' : 'Meses',
@@ -1831,7 +1848,7 @@ class Component extends DCLogic {
 
       mesVacio: !delMes.length,
       mesConEventos: delMes.length > 0,
-      vacio: 'Todavía no hay eventos publicados para ' + R.monthLabel(s.mes) + '.',
+      vacio: 'Todavía no hay eventos para ' + R.monthLabel(s.mes) + '.',
       segSemanaClase: vista === 'semana' ? 'on' : '',
       segMesClase: vista === 'mes' ? 'on' : '',
       verSemana: () => this.setState({ vista: 'semana' }),
