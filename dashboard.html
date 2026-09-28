@@ -142,6 +142,7 @@ a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
 .card-hora{margin-left:auto;font-weight:600;color:var(--muted);white-space:nowrap}
 .card-tema{font-size:16px;font-weight:600;line-height:1.3;text-wrap:pretty;overflow-wrap:anywhere}
 .card-sub{font-size:13px;color:var(--muted)}
+.nota-borrador{font-size:12px;font-style:italic;color:var(--muted2);margin-top:4px}
 .card-pie{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .fila{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid rgba(0,0,0,.07)}
 .fila:first-child{border-top:0}
@@ -403,10 +404,14 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 <div class="card-tipo">
                   <span class="{{ ev.badgeClase }}">{{ ev.badgeTexto }}</span>
                   <sc-if value="{{ ev.esHoy }}" hint-placeholder-val="{{ false }}"><span class="badge b-hoy">Hoy</span></sc-if>
+                  <span class="{{ ev.estadoClase }}" title="Estado del evento">{{ ev.estadoTexto }}</span>
                   <span class="card-hora">{{ ev.hora }}</span>
                 </div>
                 <div class="card-tema">{{ ev.servicio }}</div>
                 <div class="card-sub">{{ ev.fechaLarga }}<sc-if value="{{ ev.miRol }}" hint-placeholder-val="{{ false }}"> · {{ ev.miRol }}</sc-if></div>
+                <sc-if value="{{ ev.esBorrador }}" hint-placeholder-val="{{ false }}">
+                  <div class="nota-borrador">Aún en borrador: puede tener cambios antes de publicarse.</div>
+                </sc-if>
                 <sc-if value="{{ ev.soloLectura }}" hint-placeholder-val="{{ false }}">
                   <div class="resp-l" style="margin-top:10px;color:var(--muted2)">Solo {{ ev.personaNombre }} puede confirmar su participación.</div>
                 </sc-if>
@@ -739,7 +744,9 @@ class Component extends DCLogic {
     const hoy = todayIso();
     const propios = [];
     (s.eventos || []).forEach((ev) => {
-      if (R.estadoEvento(ev) !== 'PUBLICADO') return;
+      /* Borradores y publicados: la tarjeta indica en qué estado está. */
+      const estadoEv = R.estadoEvento(ev);
+      if (estadoEv !== 'PUBLICADO' && estadoEv !== 'BORRADOR') return;
       if ((ev.fecha || '') < hoy) return;
       const slot = (ev.banda || []).find((b) => b.musicianId === s.effectiveMusicianId);
       if (!slot) return;
@@ -763,6 +770,9 @@ class Component extends DCLogic {
         fechaLarga: dn.charAt(0).toUpperCase() + dn.slice(1) + ', ' + R.fechaLarga(ev.fecha),
         hora: ev.hora,
         servicio: ev.servicio,
+        esBorrador: R.estadoEvento(ev) === 'BORRADOR',
+        estadoClase: 'badge ' + (R.estadoEvento(ev) === 'BORRADOR' ? 'b-gris' : 'b-azul'),
+        estadoTexto: R.estadoInfo(ev).label,
         miRol: R.bandaLabel ? R.bandaLabel(slot) : (slot.tipo || ''),
         badgeClase: badge[0], badgeTexto: badge[1],
         botonesDeshabilitados: botonesDeshabilitados,

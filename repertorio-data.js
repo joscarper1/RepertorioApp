@@ -640,7 +640,7 @@
 
   function newEvento(o) {
     o = o || {};
-    return {
+    var ev = {
       id: o.id || uid(),
       fecha: o.fecha || '',
       hora: o.hora || horaPorServicio(o.servicio || SERVICIOS[0]) || '8:00 am',
@@ -656,6 +656,9 @@
       organizationId: o.organizationId || '',
       estado: o.estado || 'BORRADOR'
     };
+    /* Solo los ensayos lo llevan (ver heredarDeEvento). */
+    if (o.eventoAsociadoId) ev.eventoAsociadoId = o.eventoAsociadoId;
+    return ev;
   }
 
   function parse(iso) {
@@ -1330,6 +1333,86 @@
       (bl.canciones || []).forEach(function (c) { if (c && (c.t || '').trim()) n++; });
     });
     return n;
+  }
+
+  /* --- Ensayos ---
+     Un Ensayo no arma su propia banda ni su lista: se asocia a un evento de
+     repertorio (ev.eventoAsociadoId) y hereda de él bloques y banda. Se
+     copian (no se resuelven al leer) para que el calendario, el Dashboard,
+     los permisos por evento (integrantes) y las declinaciones sigan
+     funcionando igual; al guardar el evento de repertorio se vuelven a
+     copiar a sus ensayos (sincronizarEnsayos). */
+  var SERVICIO_ENSAYO = 'Ensayo';
+
+  function esEnsayo(ev) { return !!ev && ev.servicio === SERVICIO_ENSAYO; }
+
+  /* Eventos a los que puede asociarse un ensayo: de repertorio (no otro
+     ensayo), de `desde` en adelante, borradores o publicados. */
+  function eventosParaEnsayo(eventos, desde, excluirId) {
+    return (eventos || []).filter(function (e) {
+      var est = estadoEvento(e);
+      return e && e.id !== excluirId && usaRepertorio(e.servicio) && !esEnsayo(e) &&
+        (e.fecha || '') >= (desde || '') && (est === 'BORRADOR' || est === 'PUBLICADO');
+    }).sort(function (a, b) {
+      return (a.fecha || '').localeCompare(b.fecha || '') ||
+        (parseHora12(a.hora).h * 60 + parseHora12(a.hora).m) - (parseHora12(b.hora).h * 60 + parseHora12(b.hora).m);
+    });
+  }
+
+  /* Banda del evento de repertorio para su ensayo. Las confirmaciones son
+     de cada evento: se conservan las que el ensayo ya tenía en el mismo
+     puesto con la misma persona, el resto se descarta. */
+  function heredarBanda(bandaPadre, bandaPropia) {
+    var propia = bandaPropia || [];
+    return clone(bandaPadre || []).map(function (slot) {
+      if (!slot) return slot;
+      delete slot.estadoConfirmacion;
+      delete slot.motivoDeclinacion;
+      var igual = propia.find(function (p) {
+        return p && p.id === slot.id && (p.nombre || '').trim() === (slot.nombre || '').trim();
+      });
+      if (igual && igual.estadoConfirmacion) {
+        slot.estadoConfirmacion = igual.estadoConfirmacion;
+        if (igual.motivoDeclinacion) slot.motivoDeclinacion = igual.motivoDeclinacion;
+      }
+      return slot;
+    });
+  }
+
+  /* Copia en `ensayo` (mutándolo) la lista y la banda de `padre`. */
+  function heredarDeEvento(ensayo, padre) {
+    if (!ensayo || !padre) return ensayo;
+    ensayo.eventoAsociadoId = padre.id;
+    ensayo.bloques = clone(padre.bloques || []);
+    ensayo.banda = heredarBanda(padre.banda, ensayo.banda);
+    return ensayo;
+  }
+
+  /* Tras guardar un evento de repertorio, vuelve a copiar su lista (y su
+     banda, si conBanda: quien no tiene 'banda.editar' no puede escribirla)
+     en los ensayos asociados, en una sola escritura multi-ruta. */
+  function sincronizarEnsayos(padre, eventos, conBanda, cb) {
+    var root = dbRoot();
+    if (!root || !padre || !padre.id || esEnsayo(padre)) { cb && cb(true, 0); return; }
+    var updates = {};
+    var n = 0;
+    (eventos || []).forEach(function (ev) {
+      if (!ev || ev.id === padre.id || !esEnsayo(ev) || ev.eventoAsociadoId !== padre.id) return;
+      var base = EVENTS_PATH + '/' + ev.id + '/';
+      updates[base + 'bloques'] = clone(padre.bloques || []);
+      if (conBanda) {
+        var banda = heredarBanda(padre.banda, ev.banda);
+        var integrantes = integrantesEvento({ banda: banda });
+        updates[base + 'banda'] = banda;
+        updates[base + 'integrantes'] = Object.keys(integrantes).length ? integrantes : null;
+      }
+      n++;
+    });
+    if (!n) { cb && cb(true, 0); return; }
+    root.update(updates).then(function () { cb && cb(true, n); }, function (err) {
+      console.error('Firebase sincronizarEnsayos rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false, 0);
+    });
   }
 
   /* --- Versiones de eventos ---
@@ -2295,6 +2378,8 @@
     slugify: slugify,
     ESTADOS_EVENTO: ESTADOS_EVENTO, estadoEvento: estadoEvento, esVisiblePublico: esVisiblePublico, estadoInfo: estadoInfo,
     publicarEventos: publicarEventos, cancionesEvento: cancionesEvento,
+    SERVICIO_ENSAYO: SERVICIO_ENSAYO, esEnsayo: esEnsayo, eventosParaEnsayo: eventosParaEnsayo,
+    heredarDeEvento: heredarDeEvento, sincronizarEnsayos: sincronizarEnsayos,
     eventoVersionable: eventoVersionable, mismoContenidoEvento: mismoContenidoEvento, planVersionEvento: planVersionEvento,
     watchEventVersions: watchEventVersions, versionarEvento: versionarEvento, eventoDesdeVersion: eventoDesdeVersion,
     watchAllOrganizations: watchAllOrganizations, getOrganizationBySlug: getOrganizationBySlug, getOrganization: getOrganization,

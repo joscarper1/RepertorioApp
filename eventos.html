@@ -34,7 +34,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260927b"></script>
+<script src="repertorio-data.js?v=20260928"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -249,6 +249,13 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .tipo-s{font-size:11px;font-weight:700;color:var(--muted2);letter-spacing:.02em}
 .tipo.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .tipo.on .tipo-s{color:rgba(255,255,255,.7)}
+.asoc-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.asoc{display:flex;flex-direction:column;align-items:stretch;gap:6px;text-align:left;padding:14px;border-radius:12px;border:1.5px solid rgba(0,0,0,.12);background:#fff;cursor:pointer;font:inherit;color:inherit}
+.asoc:hover{border-color:var(--ink)}
+.asoc.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac-lt);background:var(--ac-lt)}
+.asoc-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.asoc-fecha{font-size:13px;font-weight:700;color:var(--muted)}
+.asoc-tema{font-size:15px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
 
 .p2{display:flex;flex-direction:column;gap:16px}
 .p2-cab{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -654,6 +661,27 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         </sc-if>
       </div>
 
+      <sc-if value="{{ esSubAsociado }}" hint-placeholder-val="{{ false }}">
+        <p class="campo-ayuda" style="margin:0">Elige el evento para el que es este ensayo. La banda y la lista de canciones se toman de ese evento y se actualizan cada vez que se guarda.</p>
+        <div class="asoc-lista">
+          <sc-for list="{{ asociadoOpciones }}" as="ao" hint-placeholder-count="3">
+            <button type="button" class="{{ ao.clase }}" onClick="{{ ao.onClick }}" aria-pressed="{{ ao.sel }}">
+              <span class="asoc-top">
+                <span class="evc-hora">{{ ao.hora }}</span>
+                <span class="evc-tipo">{{ ao.servicio }}</span>
+                <sc-if value="{{ ao.estadoLabel }}" hint-placeholder-val="{{ false }}"><span class="badge b-gris" style="margin-left:auto">{{ ao.estadoLabel }}</span></sc-if>
+              </span>
+              <span class="asoc-fecha">{{ ao.fecha }}</span>
+              <span class="asoc-tema">{{ ao.tema }}</span>
+              <span class="tipo-s">{{ ao.resumen }}</span>
+            </button>
+          </sc-for>
+        </div>
+        <sc-if value="{{ asociadoVacio }}" hint-placeholder-val="{{ false }}">
+          <div class="vacio-caja">No hay eventos con repertorio de hoy en adelante. Crea primero el evento y luego su ensayo.</div>
+        </sc-if>
+      </sc-if>
+
       <sc-if value="{{ esSubDetalles }}" hint-placeholder-val="{{ true }}">
         <p class="campo-ayuda" style="margin:0">Establece el horario del evento, la temática y agrega notas adicionales. Solo la hora es obligatoria.</p>
         <div class="panel">
@@ -965,6 +993,13 @@ a.mas-fila:hover{background:none;color:var(--ink)}
       </div>
 
       <aside style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <sc-if value="{{ resumenEsEnsayo }}" hint-placeholder-val="{{ false }}">
+          <div class="caja">
+            <span class="rotulo" style="display:block;margin-bottom:6px">Ensayo para</span>
+            <div style="font-size:15px;font-weight:700">{{ resumenAsociado }}</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:2px">{{ resumenAsociadoSub }}</div>
+          </div>
+        </sc-if>
         <sc-if value="{{ resumenEsRepertorio }}" hint-placeholder-val="{{ false }}">
           <div class="caja">
             <span class="rotulo" style="display:block;margin-bottom:8px">Banda</span>
@@ -1706,6 +1741,21 @@ class Component extends DCLogic {
         slot.musicianId = m ? m.id : null;
       });
     }
+    /* Ensayo: la lista y la banda se toman de su evento tal como está en la
+       nube ahora (la banda solo si se puede escribir). */
+    const eventosNube = this._eventosVivos || this.state.data.eventos || [];
+    const padreNube = R.esEnsayo(dr) && dr.eventoAsociadoId
+      ? eventosNube.find((e) => e.id === dr.eventoAsociadoId) : null;
+    if (padreNube) {
+      const bandaPrevia = dr.banda;
+      R.heredarDeEvento(dr, padreNube);
+      if (!puedeBanda && enNube) dr.banda = bandaPrevia;
+      else (dr.banda || []).forEach((slot) => {
+        const nombre = (slot.nombre || '').trim();
+        const m = nombre ? R.matchMusicianByNombre(this.state.musicos, nombre) : null;
+        slot.musicianId = m ? m.id : (slot.musicianId || null);
+      });
+    }
     const orgId = this.state.organizationId;
     const userDoc = this.state.userDoc || {};
     const autor = { uid: userDoc.uid || null, nombre: this.state.usuarioNombre || userDoc.displayName || userDoc.email || null };
@@ -1717,7 +1767,15 @@ class Component extends DCLogic {
       const cambioVersion = !!version && version !== (enNube && enNube.version);
       const msg = (estado === undefined ? 'Cambios guardados' : (estado === 'PUBLICADO' ? 'Evento publicado' : 'Guardado como borrador'))
         + (cambioVersion ? (creada ? ' · versión ' + version : ' · regresó a la versión ' + version) : '');
-      const avisarGuardado = (ok) => this.avisar(ok, msg, 'No se guardó en la nube: revisa tu sesión o conexión');
+      const avisarGuardado = (ok) => {
+        this.avisar(ok, msg, 'No se guardó en la nube: revisa tu sesión o conexión');
+        /* Los ensayos asociados a este evento reciben su lista y banda nuevas. */
+        if (ok && R.usaRepertorio(dr.servicio) && !R.esEnsayo(dr)) {
+          R.sincronizarEnsayos(dr, this._eventosVivos || this.state.data.eventos || [], puedeBanda, (okE) => {
+            if (!okE) this.avisar(false, '', 'El evento se guardó, pero no se pudo actualizar su ensayo');
+          });
+        }
+      };
       /* Sin 'banda.editar' se guarda campo por campo: las reglas de la base
          no le permiten reescribir el evento completo (banda incluida). */
       if (!puedeBanda && enNube) R.saveEventSinBanda(dr, enNube, avisarGuardado);
@@ -1907,8 +1965,13 @@ class Component extends DCLogic {
        al editar se entra directo al paso 2 y "Atrás" desde ahí cierra. */
     const puedeTipo = R.puede(s.userDoc, 'eventos.tipo');
     const sinPaso1 = !!s.editId && !puedeTipo;
-    const subsDef = (usaBanda && puedeBanda ? [{ id: 'banda', label: 'Banda' }] : [])
-      .concat(usaBanda && puedeCanciones ? [{ id: 'repertorio', label: 'Canciones' }] : [])
+    /* Un Ensayo no arma banda ni canciones: en su lugar elige el evento de
+       repertorio del que las hereda (ver R.heredarDeEvento). */
+    const esEnsayoDr = R.esEnsayo(dr);
+    const subsDef = (esEnsayoDr
+      ? (puedeBanda ? [{ id: 'asociado', label: 'Evento asociado' }] : [])
+      : (usaBanda && puedeBanda ? [{ id: 'banda', label: 'Banda' }] : [])
+        .concat(usaBanda && puedeCanciones ? [{ id: 'repertorio', label: 'Canciones' }] : []))
       .concat([{ id: 'detalles', label: 'Detalles' }]);
     const subIdx = Math.max(0, subsDef.findIndex((x) => x.id === s.sub));
     const subActual = subsDef[subIdx].id;
@@ -1969,7 +2032,12 @@ class Component extends DCLogic {
           if (!R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev)) return;
           /* Sin 'eventos.tipo' se salta el paso 1; sub '' = primera sub-pestaña. */
           const conTipo = R.puede(s.userDoc, 'eventos.tipo');
-          this.irA({ draft: R.newEvento(JSON.parse(JSON.stringify(ev))), editId: ev.id, paso: conTipo ? 1 : 2, sub: conTipo ? 'detalles' : '', fecha: ev.fecha });
+          const draftEv = R.newEvento(JSON.parse(JSON.stringify(ev)));
+          /* Un ensayo se abre con la lista y banda actuales de su evento. */
+          const padreEv = R.esEnsayo(draftEv) && draftEv.eventoAsociadoId
+            ? s.data.eventos.find((e) => e.id === draftEv.eventoAsociadoId) : null;
+          if (padreEv) R.heredarDeEvento(draftEv, padreEv);
+          this.irA({ draft: draftEv, editId: ev.id, paso: conTipo ? 1 : 2, sub: conTipo ? 'detalles' : '', fecha: ev.fecha });
         },
         puedeEditar: R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev),
         puedeMover: R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev),
@@ -2292,7 +2360,8 @@ class Component extends DCLogic {
        siguiente/anterior canción CON NOMBRE de la misma sección, saltando
        espacios en blanco intermedios sin tocar su posición. */
     const arrowClase = (activo) => 'flecha' + (activo ? '' : ' oculto');
-    const puedeOrdenar = puedeCanciones;
+    /* El orden de un ensayo viene de su evento asociado. */
+    const puedeOrdenar = puedeCanciones && !esEnsayoDr;
     const arrowStyle = (activo) => 'width:22px;height:22px;border-radius:50%;padding:0;font-size:10px;' +
       'line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:none;' +
       'border:1.5px solid var(--ac);background:#fff;color:var(--ac)' +
@@ -2404,6 +2473,34 @@ class Component extends DCLogic {
       label: 'v' + v.n + (v.n === versionVigente ? ' (vigente)' : '') + ' — ' + fechaVersion(v)
     }));
 
+    /* Ensayo · eventos de repertorio de hoy en adelante a los que puede
+       asociarse (más el que ya tiene, aunque haya quedado en el pasado). */
+    const padreDr = esEnsayoDr && dr.eventoAsociadoId
+      ? (s.data.eventos || []).find((e) => e.id === dr.eventoAsociadoId) || null : null;
+    const candidatosEnsayo = esEnsayoDr ? R.eventosParaEnsayo(s.data.eventos, hoyIso, dr.id) : [];
+    if (padreDr && !candidatosEnsayo.some((e) => e.id === padreDr.id)) candidatosEnsayo.unshift(padreDr);
+    const fechaEv = (e) => R.diaNombre(e.fecha) + ' ' + R.fechaLarga(e.fecha);
+    const asociadoOpciones = candidatosEnsayo.map((e) => {
+      const nCanciones = R.cancionesEvento(e);
+      const nBanda = (e.banda || []).filter((b) => (b.nombre || '').trim()).length;
+      const sel = !!dr && dr.eventoAsociadoId === e.id;
+      return {
+        sel: sel,
+        clase: 'asoc' + (sel ? ' on' : ''),
+        hora: e.hora,
+        servicio: e.servicio,
+        fecha: fechaEv(e),
+        tema: e.tema || 'Sin tema aún',
+        resumen: (nCanciones ? nCanciones + (nCanciones > 1 ? ' canciones' : ' canción') : 'Sin canciones aún')
+          + ' · ' + (nBanda ? nBanda + (nBanda > 1 ? ' integrantes' : ' integrante') : 'sin banda'),
+        estadoLabel: R.estadoEvento(e) === 'BORRADOR' ? 'Borrador' : '',
+        onClick: () => this.setDraft((x) => {
+          const p = (this.state.data.eventos || []).find((ev) => ev.id === e.id);
+          if (p) R.heredarDeEvento(x, p);
+        })
+      };
+    });
+
     return Object.assign(base, {
       estado: s.estado,
       estadoUrl: s.estado && s.estado === s.avisoAudioMsg ? (s.avisoAudioUrl || '') : '',
@@ -2412,6 +2509,12 @@ class Component extends DCLogic {
       esPaso2: enWizard && paso === 2,
       esPaso3: enWizard && paso === 3,
       esSubDetalles: subActual === 'detalles',
+      esSubAsociado: subActual === 'asociado',
+      asociadoOpciones: asociadoOpciones,
+      asociadoVacio: esEnsayoDr && asociadoOpciones.length === 0,
+      resumenEsEnsayo: esEnsayoDr,
+      resumenAsociado: padreDr ? (padreDr.servicio + (padreDr.tema ? ' — ' + padreDr.tema : '')) : 'Sin evento asociado',
+      resumenAsociadoSub: padreDr ? (fechaEv(padreDr) + ' · ' + (padreDr.hora || 'Sin hora')) : 'Elige el evento en el paso anterior.',
       bandaSoloLectura: usaBanda && !puedeBanda,
       esSubBanda: subActual === 'banda',
       esSubRepertorio: subActual === 'repertorio',
@@ -2426,9 +2529,12 @@ class Component extends DCLogic {
       tipoKicker: s.editId ? 'Editando evento' : 'Nuevo evento',
       tiposEvento: dr ? (dr.servicio && R.SERVICIOS.indexOf(dr.servicio) < 0 ? [dr.servicio].concat(R.SERVICIOS) : R.SERVICIOS).map((label) => ({
         label: label,
-        sub: R.usaRepertorio(label) ? 'Banda y repertorio' : 'Solo detalles',
+        sub: label === R.SERVICIO_ENSAYO ? 'Hereda de un evento' : (R.usaRepertorio(label) ? 'Banda y repertorio' : 'Solo detalles'),
         clase: 'tipo' + (dr.servicio === label ? ' on' : ''),
-        onClick: () => this.setDraft((x) => { x.hora = R.horaAlCambiarServicio(x.hora, label); x.servicio = label; })
+        onClick: () => this.setDraft((x) => {
+          x.hora = R.horaAlCambiarServicio(x.hora, label); x.servicio = label;
+          if (label !== R.SERVICIO_ENSAYO) delete x.eventoAsociadoId;
+        })
       })) : [],
       diaKicker: s.fecha ? (s.fecha === hoyIso ? 'Hoy' : 'Día seleccionado') : 'Calendario',
       sinFecha: !s.fecha,
@@ -2490,7 +2596,7 @@ class Component extends DCLogic {
       agregarParte: () => this.agregarParte(),
       resumen: resumen,
       resumenSecciones: resumenSecciones,
-      resumenVacio: resumen.length ? '' : 'Aún no hay canciones con nombre.',
+      resumenVacio: resumen.length ? '' : (esEnsayoDr ? 'El evento asociado aún no tiene canciones con nombre.' : 'Aún no hay canciones con nombre.'),
       resumenTitulo: dr ? (R.diaNombre(dr.fecha) + ' ' + dr.hora) : '',
       resumenTema: dr ? (dr.tema || 'Sin tema') : '',
       resumenBanda: resumenBanda,
@@ -2530,6 +2636,9 @@ class Component extends DCLogic {
         if (paso === 2) {
           const faltaHora = !(dr.hora || '').trim();
           if (faltaHora && (subActual === 'detalles' || ultimoSub)) { this.setState({ sub: 'detalles' }); this.avisar(false, '', 'Falta la hora'); return; }
+          if (esEnsayoDr && puedeBanda && !padreDr && (subActual === 'asociado' || ultimoSub)) {
+            this.setState({ sub: 'asociado' }); this.avisar(false, '', 'Elige el evento al que pertenece este ensayo'); return;
+          }
           if (!ultimoSub) { this.irA({ sub: subsDef[subIdx + 1].id }); return; }
           this.irA({ paso: 3 });
         }
