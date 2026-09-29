@@ -34,7 +34,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260928b"></script>
+<script src="repertorio-data.js?v=20260929a"></script>
 <script src="avisos.js?v=20260928b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -1804,9 +1804,12 @@ class Component extends DCLogic {
       /* Aviso al equipo solo cuando pasa a publicado (no al re-guardar un
          evento que ya lo estaba: para eso está "Reenviar eventos"). */
       const recienPublicado = dr.estado === 'PUBLICADO' && !(enNube && R.estadoEvento(enNube) === 'PUBLICADO');
+      /* Avisar al equipo es de quien gestiona Avisos (admin); un editor
+         publica igual, pero sin avisos. */
+      const avisa = recienPublicado && R.puede(userDoc, 'avisos.gestionar');
       const avisarGuardado = (ok) => {
-        this.avisar(ok, msg, 'No se guardó en la nube: revisa tu sesión o conexión');
-        if (ok && recienPublicado && window.RepertorioAvisos) window.RepertorioAvisos.alPublicar(orgId, [dr.id]);
+        this.avisar(ok, msg + (recienPublicado && !avisa ? ' · los avisos los envía un admin' : ''), 'No se guardó en la nube: revisa tu sesión o conexión');
+        if (ok && avisa && window.RepertorioAvisos) window.RepertorioAvisos.alPublicar(orgId, [dr.id]);
         /* Los ensayos asociados a este evento reciben su lista y banda nuevas. */
         if (ok && R.usaRepertorio(dr.servicio) && !R.esEnsayo(dr)) {
           R.sincronizarEnsayos(dr, this._eventosVivos || this.state.data.eventos || [], puedeBanda, (okE) => {
@@ -1824,9 +1827,10 @@ class Component extends DCLogic {
   /* Acciones rápidas del listado del día: no abren el asistente, solo
      cambian el estado del evento ya guardado. */
   publicarEvento(ev) {
+    const avisa = D().puede(this.state.userDoc, 'avisos.gestionar');
     D().setEventEstado(ev.id, 'PUBLICADO', (ok) => {
-      this.avisar(ok, 'Evento publicado', 'No se pudo publicar: revisa tu sesión o conexión');
-      if (ok && window.RepertorioAvisos) window.RepertorioAvisos.alPublicar(ev.organizationId || this.state.organizationId, [ev.id]);
+      this.avisar(ok, 'Evento publicado' + (avisa ? '' : ' · los avisos los envía un admin'), 'No se pudo publicar: revisa tu sesión o conexión');
+      if (ok && avisa && window.RepertorioAvisos) window.RepertorioAvisos.alPublicar(ev.organizationId || this.state.organizationId, [ev.id]);
     });
   }
 

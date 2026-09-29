@@ -902,11 +902,36 @@
      banda.editar (sub-pestaña Banda: asignar integrantes; sin él la banda
      solo se consulta en la revisión y se guarda tal como está en la nube),
      eventos.tipo (cambiar el tipo de evento de uno existente; sin él, al
-     editar se entra directo al paso 2 y se conserva el tipo de la nube). */
+     editar se entra directo al paso 2 y se conserva el tipo de la nube),
+     avisos.gestionar (módulo Avisos y el panel "Avisar al equipo" al
+     publicar: sin él se publica igual, pero sin avisar).
+     editor: todo lo de eventos como un admin, más el Repertorio; nada de
+     usuarios/personas, organizaciones ni avisos. */
   var PERMISOS_POR_ROL = {
     admin: ['*'],
+    editor: [
+      'eventos.ver', 'eventos.crear', 'eventos.editar', 'eventos.mover', 'eventos.estado',
+      'eventos.todos', 'eventos.tipo', 'banda.editar', 'canciones.editar', 'cifrados.editar',
+      'repertorio.gestionar'
+    ],
     normal: ['eventos.ver']
   };
+
+  /* Roles de cuenta en el orden en que se ofrecen en Usuarios. */
+  var ROLES = [
+    { id: 'normal', label: 'Normal' },
+    { id: 'editor', label: 'Editor' },
+    { id: 'admin', label: 'Admin' }
+  ];
+
+  function rolValido(role) {
+    return ROLES.some(function (r) { return r.id === role; }) ? role : 'normal';
+  }
+
+  function rolLabel(role) {
+    var r = ROLES.filter(function (x) { return x.id === role; })[0];
+    return r ? r.label : 'Normal';
+  }
 
   /* Permisos que da el PUESTO que la persona ocupa en un evento concreto
      (banda[].tipo), solo para ese evento. Un Director de Alabanza asignado
@@ -1010,7 +1035,7 @@
 
     /* Acceso creado por un admin con "+ Agregar usuario": se aplica una sola
        vez (rol, organizaciones y persona) y se borra en la misma escritura.
-       Nunca baja de admin a normal a una cuenta que ya era admin. */
+       Nunca baja de rol a una cuenta que ya era admin (ni de editor a normal). */
     function aplicarAccesoPendiente(doc, onDone) {
       var key = emailKey(email);
       if (!key) { onDone(doc); return; }
@@ -1021,7 +1046,9 @@
         var orgs = Object.assign({}, acc.organizationIds || {});
         var links = acc.musicianLinks || {};
         Object.keys(links).forEach(function (orgId) { orgs[orgId] = true; });
-        var nuevoRol = acc.role === 'admin' ? 'admin' : (doc.role || 'normal');
+        var nivel = { normal: 0, editor: 1, admin: 2 };
+        var rolAcceso = rolValido(acc.role), rolActual = rolValido(doc.role);
+        var nuevoRol = nivel[rolAcceso] > nivel[rolActual] ? rolAcceso : rolActual;
         var updates = {};
         updates[ACCESOS_PATH + '/' + key] = null;
         if (nuevoRol !== doc.role) updates[base + '/role'] = nuevoRol;
@@ -1204,7 +1231,7 @@
     Object.keys(acc.musicianLinks || {}).forEach(function (orgId) {
       if (acc.musicianLinks[orgId]) { links[orgId] = acc.musicianLinks[orgId]; orgs[orgId] = true; }
     });
-    var doc = { email: email, role: acc.role === 'admin' ? 'admin' : 'normal', organizationIds: orgs, createdAt: Date.now(), createdBy: creadoPor || null };
+    var doc = { email: email, role: rolValido(acc.role), organizationIds: orgs, createdAt: Date.now(), createdBy: creadoPor || null };
     if (Object.keys(links).length) doc.musicianLinks = links;
     root.child(ACCESOS_PATH).child(emailKey(email)).set(doc).then(function () { cb && cb(true); }, function (err) {
       console.error('Firebase crearAccesoPendiente rechazado:', err && err.code, err && err.message, err);
@@ -2400,7 +2427,7 @@
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
     setUserRole: setUserRole, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
     userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
-    normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
+    normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
     integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,
     watchAccesosPendientes: watchAccesosPendientes, crearAccesoPendiente: crearAccesoPendiente, borrarAccesoPendiente: borrarAccesoPendiente,
     watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, saveEventSinBanda: saveEventSinBanda, setEventEstado: setEventEstado, moveEvent: moveEvent,

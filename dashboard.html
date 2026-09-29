@@ -31,7 +31,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="menu-config.js"></script>
-<script src="repertorio-data.js?v=20260928b"></script>
+<script src="repertorio-data.js?v=20260929a"></script>
 <script src="avisos.js?v=20260928b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -717,10 +717,13 @@ class Component extends DCLogic {
     this.setState({ publicando: true });
     R.publicarEventos(borradores.map((ev) => ev.id), (ok) => {
       this.setState({ publicando: false });
-      this.avisar(ok ? (n === 1 ? '1 evento ha sido publicado' : n + ' eventos han sido publicados') : 'No se pudo publicar: revisa tu sesión o conexión');
+      /* Avisar al equipo es de quien gestiona Avisos (admin); un editor
+         publica igual, pero sin avisos. */
+      const avisa = R.puede(this.state.userDoc, 'avisos.gestionar');
+      this.avisar(ok ? (n === 1 ? '1 evento ha sido publicado' : n + ' eventos han sido publicados') + (avisa ? '' : ' · los avisos los envía un admin') : 'No se pudo publicar: revisa tu sesión o conexión');
       /* Un solo aviso por persona con todos sus eventos, aunque se
          publiquen varios a la vez (agrupado por organización). */
-      if (ok && window.RepertorioAvisos) {
+      if (ok && avisa && window.RepertorioAvisos) {
         const porOrg = {};
         borradores.forEach((ev) => { (porOrg[ev.organizationId] = porOrg[ev.organizationId] || []).push(ev.id); });
         Object.keys(porOrg).forEach((orgId) => window.RepertorioAvisos.alPublicar(orgId, porOrg[orgId]));

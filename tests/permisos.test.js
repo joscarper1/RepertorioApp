@@ -51,3 +51,27 @@ test('el puesto de Director no da mover ni banda', () => {
   assert.equal(R.puedeSobreEvento(usuario('d'), 'banda.editar', ev), false);
   assert.equal(R.puede(usuario('d'), 'eventos.editar'), false);
 });
+
+test('editor: eventos como admin (cualquier evento, sin estar en la banda) y Repertorio', () => {
+  const editor = { role: 'editor' };
+  for (const p of ['eventos.ver', 'eventos.crear', 'eventos.editar', 'eventos.mover', 'eventos.estado', 'eventos.todos',
+    'eventos.tipo', 'banda.editar', 'canciones.editar', 'cifrados.editar', 'repertorio.gestionar']) {
+    assert.equal(R.puede(editor, p), true, p);
+  }
+  const ev = evento([slot('Director de Alabanza', 'otro')]);
+  for (const p of ['eventos.editar', 'eventos.mover', 'canciones.editar', 'cifrados.editar', 'banda.editar']) {
+    assert.equal(R.puedeSobreEvento(editor, p, ev), true, p);
+  }
+});
+
+test('editor: sin usuarios, organizaciones ni avisos', () => {
+  for (const p of ['usuarios.gestionar', 'organizaciones.gestionar', 'avisos.gestionar']) {
+    assert.equal(R.puede({ role: 'editor' }, p), false, p);
+  }
+});
+
+test('rolLabel y ROLES incluyen al editor', () => {
+  assert.equal(R.ROLES.map((r) => r.id).join(','), 'normal,editor,admin');
+  assert.equal(R.rolLabel('editor'), 'Editor');
+  assert.equal(R.rolLabel(undefined), 'Normal');
+});

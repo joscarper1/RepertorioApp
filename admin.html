@@ -35,7 +35,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260928b"></script>
+<script src="repertorio-data.js?v=20260929a"></script>
 <script src="avisos.js?v=20260928b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -516,6 +516,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 <span class="campo-l">Rol</span>
                 <select class="inp" value="{{ nuevoUsuarioRol }}" onChange="{{ onNuevoUsuarioRol }}">
                   <option value="normal">Normal</option>
+                  <option value="editor">Editor</option>
                   <option value="admin">Admin</option>
                 </select>
               </label>
@@ -587,6 +588,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 <div class="item-acc" style="width:auto">
                   <select class="inp sel-mini" value="{{ u.role }}" onChange="{{ u.onRole }}" aria-label="Rol">
                     <option value="normal">Normal</option>
+                    <option value="editor">Editor</option>
                     <option value="admin">Admin</option>
                   </select>
                   <span class="solo-desk">
@@ -1264,7 +1266,11 @@ class Component extends DCLogic {
       if (!user) { this.setState({ estadoAuth: 'anon', usuarioNombre: null, userDoc: null, todasOrgs: [] }); return; }
       this.setState({ estadoAuth: 'cargando', usuarioNombre: user.displayName || user.email });
       R.ensureUserRegistered(user, (doc) => {
-        if (!doc || doc.role !== 'admin') {
+        /* Entra al panel el admin y quien tenga algún módulo de aquí (el
+           editor: solo Repertorio). estadoAuth 'admin' = panel permitido;
+           cada pestaña se filtra por su permiso en cambiarTab. */
+        const modulosPanel = doc ? window.RepertorioMenu.MODULOS.filter((m) => m.id !== 'eventos' && R.puede(doc, m.permiso)) : [];
+        if (!doc || !modulosPanel.length) {
           if (doc && R.puede(doc, 'eventos.ver') && R.userOrgIds(doc).length) {
             location.href = 'eventos.html?org=' + encodeURIComponent(R.orgInicialDeUsuario(doc));
             return;
@@ -1274,8 +1280,8 @@ class Component extends DCLogic {
           return;
         }
         const orgIds = R.userOrgIds(doc);
-        this.setState({ estadoAuth: 'admin', userDoc: doc, currentOrgId: orgIds[0] || null });
-        this.leerConfigAvisos();
+        this.setState({ estadoAuth: 'admin', userDoc: doc, currentOrgId: orgIds[0] || null, activeTab: this.tabPermitida(this.state.activeTab, doc) });
+        if (R.puede(doc, 'avisos.gestionar')) this.leerConfigAvisos();
         /* Sin filtrar aquí: el filtro por "mis organizaciones" se calcula en
            renderVals a partir de s.userDoc, que sí se actualiza cuando se
            crea una organización nueva. Filtrar aquí con el orgIds de este
@@ -1335,7 +1341,16 @@ class Component extends DCLogic {
     clearTimeout(this._tSeek);
   }
 
+  /* La pestaña pedida si su módulo está permitido; si no, la primera que sí
+     (el editor que abre ?tab=usuarios cae en Repertorio). */
+  tabPermitida(tab, doc) {
+    const R = D();
+    const permitidas = window.RepertorioMenu.MODULOS.filter((m) => m.id !== 'eventos' && R.puede(doc, m.permiso)).map((m) => m.id);
+    return permitidas.indexOf(tab) >= 0 ? tab : (permitidas[0] || tab);
+  }
+
   cambiarTab(tab) {
+    tab = this.tabPermitida(tab, this.state.userDoc);
     this.setState((s) => ({ activeTab: tab, repertorioPagina: tab === 'repertorio' ? 1 : s.repertorioPagina }));
     this.cerrarSidebarSiMovil();
     /* La pestaña queda en la URL (?tab=) para que al recargar se vuelva a
@@ -2260,7 +2275,7 @@ class Component extends DCLogic {
         const persona = personaId ? (s.musicos || []).find((m) => m.id === personaId) : null;
         return {
           email: a.email,
-          detalle: (a.role === 'admin' ? 'Admin' : 'Normal') + ' · ' + resumenOrgs(a.organizationIds) + ' · ' +
+          detalle: D().rolLabel(a.role) + ' · ' + resumenOrgs(a.organizationIds) + ' · ' +
             (persona ? ('Persona: ' + persona.nombre) : (personaId ? 'Persona vinculada' : 'Sin persona')),
           cancelar: () => this.cancelarAccesoPendiente(a)
         };
