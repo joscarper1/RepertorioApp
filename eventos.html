@@ -34,7 +34,8 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260928"></script>
+<script src="repertorio-data.js?v=20260928b"></script>
+<script src="avisos.js?v=20260928"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -1767,8 +1768,12 @@ class Component extends DCLogic {
       const cambioVersion = !!version && version !== (enNube && enNube.version);
       const msg = (estado === undefined ? 'Cambios guardados' : (estado === 'PUBLICADO' ? 'Evento publicado' : 'Guardado como borrador'))
         + (cambioVersion ? (creada ? ' · versión ' + version : ' · regresó a la versión ' + version) : '');
+      /* Aviso al equipo solo cuando pasa a publicado (no al re-guardar un
+         evento que ya lo estaba: para eso está "Reenviar eventos"). */
+      const recienPublicado = dr.estado === 'PUBLICADO' && !(enNube && R.estadoEvento(enNube) === 'PUBLICADO');
       const avisarGuardado = (ok) => {
         this.avisar(ok, msg, 'No se guardó en la nube: revisa tu sesión o conexión');
+        if (ok && recienPublicado && window.RepertorioAvisos) window.RepertorioAvisos.alPublicar(orgId, [dr.id]);
         /* Los ensayos asociados a este evento reciben su lista y banda nuevas. */
         if (ok && R.usaRepertorio(dr.servicio) && !R.esEnsayo(dr)) {
           R.sincronizarEnsayos(dr, this._eventosVivos || this.state.data.eventos || [], puedeBanda, (okE) => {
@@ -1786,7 +1791,10 @@ class Component extends DCLogic {
   /* Acciones rápidas del listado del día: no abren el asistente, solo
      cambian el estado del evento ya guardado. */
   publicarEvento(ev) {
-    D().setEventEstado(ev.id, 'PUBLICADO', (ok) => this.avisar(ok, 'Evento publicado', 'No se pudo publicar: revisa tu sesión o conexión'));
+    D().setEventEstado(ev.id, 'PUBLICADO', (ok) => {
+      this.avisar(ok, 'Evento publicado', 'No se pudo publicar: revisa tu sesión o conexión');
+      if (ok && window.RepertorioAvisos) window.RepertorioAvisos.alPublicar(ev.organizationId || this.state.organizationId, [ev.id]);
+    });
   }
 
   eliminarEvento(ev) {
@@ -1899,7 +1907,7 @@ class Component extends DCLogic {
       noEmbebido: !s.embed,
       tabbarVisible: s.estadoAcceso === 'permitido' && !s.embed && !s.draft,
       pagClase: 'pag' + (s.embed ? ' embed' : ''),
-      tabsMovil: modulosMenu.filter((m) => m.id !== 'organizaciones').slice(0, 3).map((m) => Object.assign({
+      tabsMovil: modulosMenu.filter((m) => !m.enMas).slice(0, 3).map((m) => Object.assign({
         label: m.label, href: m.deshabilitado ? '#' : m.href,
         clase: 'tab' + (m.activo ? ' on' : '') + (m.deshabilitado ? ' off' : ''),
         onClick: () => this.setState({ masAbierto: false })
@@ -1909,7 +1917,7 @@ class Component extends DCLogic {
       toggleMas: () => this.setState((st) => ({ masAbierto: !st.masAbierto })),
       detenerMas: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       masSub: s.organizacion ? s.organizacion.name : '',
-      masItems: modulosMenu.filter((m) => m.id === 'organizaciones').map((m) => ({ label: m.label, href: m.href, onClick: () => {} }))
+      masItems: modulosMenu.filter((m) => m.enMas).map((m) => ({ label: m.label, href: m.href, onClick: () => {} }))
         .concat(accionesMenu.map((a) => ({ label: a.label, href: a.href, onClick: () => {} }))),
       usuarioNombre: s.usuarioNombre || '',
       usuarioIniciales: ((s.usuarioNombre || '').trim().split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('') || '?').toUpperCase(),

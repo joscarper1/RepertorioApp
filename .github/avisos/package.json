@@ -1,0 +1,15 @@
+{
+  "name": "repertorio-avisos",
+  "private": true,
+  "description": "Envío por correo de los avisos de programación (lo corre .github/workflows/avisos*.yml). El sitio no usa npm: esto vive aparte.",
+  "scripts": {
+    "enviar": "node enviar.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "nodemailer": "^6.9.16"
+  }
+}

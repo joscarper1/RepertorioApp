@@ -6,7 +6,8 @@
    en pantalla, igual en todas las páginas.
 
    - MODULOS: menú lateral ("Módulos"). `requiereOrg` lo deshabilita
-     mientras no haya organización activa.
+     mientras no haya organización activa. `enMas`: en el teléfono va en
+     la hoja "Más" en vez de la barra inferior de pestañas.
    - ACCIONES: botones de la barra superior, debajo del título.
    - ACCIONES_DASHBOARD: botones bajo el encabezado de dashboard.html.
    - ACCIONES_CALENDARIO: botones del pie de index.html. Los de
@@ -21,7 +22,8 @@
     { id: 'eventos', label: 'Eventos', requiereOrg: true, permiso: 'eventos.ver' },
     { id: 'usuarios', label: 'Usuarios', permiso: 'usuarios.gestionar' },
     { id: 'repertorio', label: 'Repertorio', requiereOrg: true, permiso: 'repertorio.gestionar' },
-    { id: 'organizaciones', label: 'Organizaciones', permiso: 'organizaciones.gestionar' }
+    { id: 'organizaciones', label: 'Organizaciones', permiso: 'organizaciones.gestionar', enMas: true },
+    { id: 'avisos', label: 'Avisos', permiso: 'avisos.gestionar', enMas: true }
   ];
 
   var ACCIONES = [
@@ -61,13 +63,14 @@
     return '#';
   }
 
-  /* Lista lista para pintar: [{id, label, activo, deshabilitado, href}]. */
+  /* Lista lista para pintar: [{id, label, activo, deshabilitado, enMas, href}]. */
   function modulos(activoId, org, userDoc) {
     return MODULOS.filter(function (m) { return permitido(m, userDoc); }).map(function (m) {
       return {
         id: m.id, label: m.label,
         activo: m.id === activoId,
         deshabilitado: !!m.requiereOrg && !org,
+        enMas: !!m.enMas,
         href: hrefModulo(m.id, org)
       };
     });

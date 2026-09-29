@@ -1,0 +1,48 @@
+# Envío de avisos de programación por correo. Lo dispara la app (al publicar
+# o con "Reenviar eventos") vía la API de GitHub; procesa /colaAvisos.
+#
+# Solo workflow_dispatch: GitHub pausa por inactividad únicamente los
+# workflows con `schedule`, así que este nunca se pausa. En cada corrida
+# reactiva avisos-respaldo.yml (el cron), para que publicar en la app lo
+# mantenga vivo aunque el repositorio pase meses sin commits.
+#
+# Nunca agregar `pull_request` como disparador: expondría los secrets.
+name: Avisos (envío)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: avisos
+  cancel-in-progress: false
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: .github/avisos/package-lock.json
+      - name: Instalar dependencias
+        run: npm ci --omit=dev --no-audit --no-fund
+        working-directory: .github/avisos
+      - name: Procesar la cola y enviar correos
+        run: node enviar.js
+        working-directory: .github/avisos
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      - name: Mantener activo el respaldo programado
+        if: always()
+        run: gh workflow enable avisos-respaldo.yml --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}

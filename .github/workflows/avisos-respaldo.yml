@@ -1,0 +1,42 @@
+# Respaldo de avisos.yml: cada 30 minutos toma los pedidos de /colaAvisos que
+# hayan quedado pendientes (por ejemplo, si el disparo desde la app falló por
+# un token de GitHub vencido). Si no hay pendientes, termina sin enviar nada.
+#
+# GitHub pausa los workflows con `schedule` tras 60 días sin actividad en el
+# repositorio; avisos.yml lo reactiva en cada corrida y Administración →
+# Avisos muestra su estado con un botón para reactivarlo a mano.
+name: Avisos (respaldo programado)
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avisos
+  cancel-in-progress: false
+
+jobs:
+  enviar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: .github/avisos/package-lock.json
+      - name: Instalar dependencias
+        run: npm ci --omit=dev --no-audit --no-fund
+        working-directory: .github/avisos
+      - name: Procesar la cola y enviar correos
+        run: node enviar.js
+        working-directory: .github/avisos
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}

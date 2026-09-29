@@ -1112,6 +1112,17 @@
     root.child(USERS_PATH).child(uid).child('role').set(role).then(function () { cb && cb(true); }, function () { cb && cb(false); });
   }
 
+  /* Teléfono para los avisos por WhatsApp (ver avisos.js): solo dígitos con
+     código de país, '' lo borra. */
+  function setUserTelefono(uid, telefono, cb) {
+    var root = dbRoot();
+    if (!root || !uid) { cb && cb(false); return; }
+    root.child(USERS_PATH).child(uid).child('telefono').set(telefono || null).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase setUserTelefono rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
   function deleteUser(uid, cb) {
     var root = dbRoot();
     if (!root) { cb && cb(false); return; }
@@ -2387,7 +2398,7 @@
     createOrganization: createOrganization, updateOrganization: updateOrganization, deleteOrganization: deleteOrganization,
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
-    setUserRole: setUserRole, setUserOrgs: setUserOrgs, deleteUser: deleteUser, userOrgIds: userOrgIds,
+    setUserRole: setUserRole, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
     userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
     normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
     integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,

@@ -35,7 +35,8 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260925c"></script>
+<script src="repertorio-data.js?v=20260928b"></script>
+<script src="avisos.js?v=20260928"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -221,7 +222,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .form-acc{display:flex;gap:8px;flex-wrap:wrap}
 .pend{border:1.5px dashed rgba(0,0,0,.2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff}
 .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid rgba(0,0,0,.07)}
-.pager .btn-sec:disabled{opacity:.4;cursor:not-allowed}
+.pager .btn-sec:disabled,.item-sub .btn-sec:disabled,.chips .btn-sec:disabled{opacity:.4;cursor:not-allowed}
 .rol-tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:4px 4px 4px 10px;border-radius:999px;background:var(--ac-lt);color:var(--ac-dk)}
 .rol-tag button{border:0;background:transparent;color:var(--ac-dk);font-size:14px;line-height:1;cursor:pointer;width:20px;height:20px;border-radius:50%}
 .rol-tag button:hover{background:rgba(0,0,0,.08)}
@@ -390,6 +391,13 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
     <sc-if value="{{ sinOrgsYNoEsOrgs }}" hint-placeholder-val="{{ false }}">
       <div class="vacio-caja" style="margin-bottom:16px">Todavía no tienes organizaciones asignadas.</div>
+    </sc-if>
+
+    <sc-if value="{{ avisoTokenGlobal }}" hint-placeholder-val="{{ false }}">
+      <div class="aviso" style="margin-bottom:16px;background:var(--gold-lt);color:var(--gold-dk)">
+        <span>{{ avisoTokenGlobal }}</span>
+        <button type="button" class="btn-sec" onClick="{{ irAAvisos }}">Ir a Avisos</button>
+      </div>
     </sc-if>
 
     <sc-if value="{{ mensaje }}" hint-placeholder-val="{{ false }}">
@@ -592,6 +600,10 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                     <button type="button" class="btn-pri" onClick="{{ u.toggleOrgsDropdown }}" style="border-radius:0">Listo</button>
                   </div>
                 </sc-if>
+                <input class="inp" type="tel" inputMode="tel" value="{{ u.telefono }}" onChange="{{ u.onTelefono }}" onBlur="{{ u.guardarTelefono }}" placeholder="WhatsApp: 7000-0000" aria-label="Teléfono (WhatsApp)" title="Teléfono para los avisos por WhatsApp. Sin código de país se asume +503." autoComplete="off" style="max-width:200px;flex:1;min-width:150px">
+                <sc-if value="{{ u.conPersona }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" class="btn-sec" onClick="{{ u.reenviar }}" disabled="{{ u.reenviarDeshabilitado }}" title="{{ u.reenviarTitulo }}">Reenviar eventos</button>
+                </sc-if>
               </div>
             </div>
           </sc-for>
@@ -761,6 +773,85 @@ a.mas-fila:hover{background:none;color:var(--ink)}
               <button type="button" class="btn-sec" onClick="{{ musicosPaginaSiguiente }}" disabled="{{ musicosEnUltimaPagina }}">Siguiente ›</button>
             </div>
           </sc-if>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ tabAvisos }}" hint-placeholder-val="{{ false }}">
+      <section class="adm">
+        <p class="campo-ayuda" style="margin:0">Al publicar un evento (o con "Reenviar eventos" en Usuarios → Cuentas) la app deja el pedido en cola y lanza el envío de correos en GitHub Actions; WhatsApp se abre desde el panel de avisos. Aquí se monitorea ese envío.</p>
+
+        <div class="panel">
+          <div class="panel-cab">
+            <div class="rotulo">Envío automático (GitHub Actions)</div>
+            <div class="chips">
+              <button type="button" class="btn-sec" onClick="{{ avisosEnviarPendientes }}" disabled="{{ avisosSinToken }}">Enviar pendientes ahora</button>
+              <button type="button" class="btn-sec" onClick="{{ avisosActualizar }}">{{ avisosActualizarLabel }}</button>
+            </div>
+          </div>
+          <sc-if value="{{ avisosWfError }}" hint-placeholder-val="{{ false }}">
+            <div class="panel-cuerpo" style="font-size:13px;color:var(--red)">{{ avisosWfError }}</div>
+          </sc-if>
+          <sc-for list="{{ avisosWorkflows }}" as="wf" hint-placeholder-count="2">
+            <div class="item">
+              <div class="item-fila">
+                <div style="min-width:0">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <span class="item-t">{{ wf.titulo }}</span>
+                    <span class="{{ wf.badgeClase }}">{{ wf.badge }}</span>
+                  </div>
+                  <div class="item-s">{{ wf.descripcion }}</div>
+                  <div class="item-s">{{ wf.ultima }}</div>
+                </div>
+                <div class="item-acc" style="width:auto">
+                  <sc-if value="{{ wf.reactivable }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" class="btn-pri btn-ac" onClick="{{ wf.reactivar }}" disabled="{{ avisosSinToken }}">Reactivar</button>
+                  </sc-if>
+                  <a class="btn-sec" href="{{ wf.url }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-bottom:1px solid var(--line)">Ver en GitHub</a>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div class="form-panel">
+          <div class="rotulo">Token de GitHub</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span class="{{ avisosTokenBadgeClase }}">{{ avisosTokenBadge }}</span>
+            <span class="campo-ayuda" style="margin:0">{{ avisosTokenDetalle }}</span>
+          </div>
+          <div class="form-fila">
+            <label class="campo" style="flex:2">
+              <span class="campo-l">Nuevo token (fine-grained)</span>
+              <input class="inp" type="password" value="{{ avisosTokenInput }}" onChange="{{ onAvisosTokenInput }}" placeholder="github_pat_…" autoComplete="off" style="font-family:ui-monospace,Menlo,monospace;font-size:13px">
+            </label>
+            <label class="campo" style="min-width:160px">
+              <span class="campo-l">Vence el</span>
+              <input class="inp" type="date" value="{{ avisosVenceInput }}" onChange="{{ onAvisosVenceInput }}">
+            </label>
+          </div>
+          <p class="campo-ayuda" style="margin:0">Créalo en GitHub → Settings → Developer settings → Fine-grained tokens: solo el repositorio joscarper1/RepertorioApp, permiso "Actions: Read and write". Solo los administradores pueden leerlo en la base de datos. Si GitHub informa la fecha de vencimiento, se toma sola.</p>
+          <div class="form-acc">
+            <button type="button" class="btn-pri btn-ac" onClick="{{ avisosGuardarToken }}" disabled="{{ avisosGuardando }}">Probar y guardar</button>
+          </div>
+        </div>
+
+        <div class="panel lista">
+          <div class="panel-cab"><div class="rotulo">Últimos avisos</div></div>
+          <sc-for list="{{ avisosHistorial }}" as="h" hint-placeholder-count="3">
+            <div class="item">
+              <div class="item-fila">
+                <div style="min-width:0">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <span class="item-t">{{ h.titulo }}</span>
+                    <span class="{{ h.badgeClase }}">{{ h.badge }}</span>
+                  </div>
+                  <div class="item-s">{{ h.detalle }}</div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+          <p style="{{ avisosHistorialVacioStyle }}">Todavía no se ha enviado ningún aviso.</p>
         </div>
       </section>
     </sc-if>
@@ -1093,6 +1184,12 @@ class Component extends DCLogic {
     nuevoUsuarioEmail: '', nuevoUsuarioRol: 'normal', nuevoUsuarioOrgs: {},
     nuevoUsuarioPersona: '', nuevoUsuarioPersonaNombre: '',
     usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {},
+    /* Teléfono en edición por uid (se guarda al salir del campo). */
+    telefonoEdit: {},
+    /* Pestaña Avisos (ver avisos.js): config = /config/avisos (token de
+       GitHub y su vencimiento), wf = estado de los dos workflows. */
+    avisosCfg: null, avisosWf: null, avisosWfCargando: false, avisosWfError: '', avisosHistorial: [],
+    avisosTokenInput: '', avisosVenceInput: '', avisosGuardando: false,
     musicos: [], nuevoMusicoNombre: '', nuevoMusicoAbierto: false, musicoRolAgregar: {},
     usuariosBusquedaNombre: '', usuariosPagina: 1,
     musicosBusquedaNombre: '', musicosPagina: 1,
@@ -1138,6 +1235,7 @@ class Component extends DCLogic {
         }
         const orgIds = R.userOrgIds(doc);
         this.setState({ estadoAuth: 'admin', userDoc: doc, currentOrgId: orgIds[0] || null });
+        this.leerConfigAvisos();
         /* Sin filtrar aquí: el filtro por "mis organizaciones" se calcula en
            renderVals a partir de s.userDoc, que sí se actualiza cuando se
            crea una organización nueva. Filtrar aquí con el orgIds de este
@@ -1163,7 +1261,7 @@ class Component extends DCLogic {
            lectura solo tiene permiso una vez que el rol admin ya quedó
            confirmado del lado del servidor. */
         const tabInicial = new URLSearchParams(location.search).get('tab');
-        if (tabInicial === 'usuarios' || tabInicial === 'organizaciones' || tabInicial === 'repertorio') {
+        if (tabInicial === 'usuarios' || tabInicial === 'organizaciones' || tabInicial === 'repertorio' || tabInicial === 'avisos') {
           this.cambiarTab(tabInicial);
         } else {
           /* Eventos es el módulo de entrada: sin ?tab explícito se salta
@@ -1192,6 +1290,7 @@ class Component extends DCLogic {
     if (this._unRepEventos) this._unRepEventos();
     if (this._unRepOverrides) this._unRepOverrides();
     if (this._unmusicos) this._unmusicos();
+    if (this._unAvisosHist) this._unAvisosHist();
     if (this._yt) this._yt.destroy();
     clearTimeout(this._tSeek);
   }
@@ -1199,21 +1298,24 @@ class Component extends DCLogic {
   cambiarTab(tab) {
     this.setState((s) => ({ activeTab: tab, repertorioPagina: tab === 'repertorio' ? 1 : s.repertorioPagina }));
     this.cerrarSidebarSiMovil();
-    if (tab === 'usuarios' && !this._unusers) {
+    if ((tab === 'usuarios' || tab === 'avisos') && !this._unusers) {
       this._unusers = D().watchAllUsers((lista) => this.setState({ usuarios: lista }));
       if (this._unaccesos) this._unaccesos();
       this._unaccesos = D().watchAccesosPendientes((lista) => this.setState({ accesosPendientes: lista }));
       D().migracionMusicosYaCorrio((yaCorrio) => this.setState({ migracionYaCorrio: yaCorrio }));
     }
     if (tab === 'repertorio') this.montarRepertorio(this.state.currentOrgId);
-    if (tab === 'usuarios') this.montarMusicos(this.state.currentOrgId);
+    if (tab === 'avisos') this.montarAvisos();
+    /* Los eventos de la organización también sirven en Cuentas: habilitan
+       "Reenviar eventos" solo a quien tiene eventos publicados próximos. */
+    if (tab === 'usuarios') { this.montarMusicos(this.state.currentOrgId); this.montarRepertorio(this.state.currentOrgId); }
   }
 
   seleccionarOrg(id) {
     this.setState({ currentOrgId: id, editandoOrgId: null, orgSwitcherAbierto: false, orgSwitcherBusqueda: '', repertorioPagina: 1, editandoSongKey: null });
     this.cerrarSidebarSiMovil();
     if (this.state.activeTab === 'repertorio') this.montarRepertorio(id);
-    if (this.state.activeTab === 'usuarios') this.montarMusicos(id);
+    if (this.state.activeTab === 'usuarios') { this.montarMusicos(id); this.montarRepertorio(id); }
   }
 
   /* Los músicos se guardan por organización (ver R.watchMusiciansForOrg), así
@@ -1851,6 +1953,94 @@ class Component extends DCLogic {
     });
   }
 
+  /* Al salir del campo: se guarda normalizado (solo dígitos con código de
+     país, ver RepertorioAvisos.normalizarTelefono); vacío lo borra. */
+  guardarTelefonoUsuario(u) {
+    const AV = window.RepertorioAvisos;
+    const texto = (this.state.telefonoEdit || {})[u.uid];
+    if (texto === undefined || !AV) return;
+    const limpiar = (extra) => this.setState((st) => {
+      const t = Object.assign({}, st.telefonoEdit);
+      delete t[u.uid];
+      return Object.assign({ telefonoEdit: t }, extra || {});
+    });
+    const tel = AV.normalizarTelefono(texto);
+    if (tel === (u.telefono || '')) { limpiar(); return; }
+    if (tel && !AV.telefonoValido(tel)) {
+      this.setState({ mensaje: 'El teléfono de ' + (u.displayName || u.email) + ' no es válido: usa 8 dígitos, o el número completo con código de país.' });
+      return;
+    }
+    D().setUserTelefono(u.uid, tel, (ok) => limpiar({
+      mensaje: ok ? (tel ? 'Teléfono de ' + (u.displayName || u.email) + ' guardado.' : 'Teléfono de ' + (u.displayName || u.email) + ' borrado.') : 'No se pudo guardar el teléfono: revisa tu sesión o las reglas de Firebase.'
+    }));
+  }
+
+  /* --- Avisos: monitoreo del envío por GitHub Actions --- */
+
+  leerConfigAvisos() {
+    const AV = window.RepertorioAvisos;
+    if (!AV) return Promise.resolve({});
+    return AV.leerConfig().then((cfg) => { this.setState({ avisosCfg: cfg || {} }); return cfg || {}; });
+  }
+
+  montarAvisos() {
+    const AV = window.RepertorioAvisos;
+    if (!AV) return;
+    if (!this._unAvisosHist) this._unAvisosHist = AV.historial(20, (lista) => this.setState({ avisosHistorial: lista }));
+    this.leerConfigAvisos().then(() => this.actualizarWorkflows());
+  }
+
+  actualizarWorkflows() {
+    const AV = window.RepertorioAvisos;
+    if (!AV || this.state.avisosWfCargando) return;
+    this.setState({ avisosWfCargando: true, avisosWfError: '' });
+    AV.estadoWorkflows((this.state.avisosCfg || {}).githubToken).then((wf) => {
+      this.setState({ avisosWf: wf, avisosWfCargando: false });
+    }, () => this.setState({ avisosWfCargando: false, avisosWfError: 'No se pudo consultar GitHub: revisa tu conexión.' }));
+  }
+
+  enviarPendientesAvisos() {
+    const AV = window.RepertorioAvisos;
+    if (!AV) return;
+    AV.dispararEnvio().then((d) => {
+      this.setState({ mensaje: d.ok ? 'Envío lanzado: en un minuto aparece en "Últimos avisos" y en GitHub.' : AV.textoMotivo(d.motivo) });
+      if (d.ok) setTimeout(() => this.actualizarWorkflows(), 4000);
+    });
+  }
+
+  reactivarRespaldoAvisos() {
+    const AV = window.RepertorioAvisos;
+    const token = (this.state.avisosCfg || {}).githubToken;
+    if (!AV || !token) return;
+    AV.reactivarRespaldo(token).then((ok) => {
+      this.setState({ mensaje: ok ? 'Respaldo programado reactivado.' : 'GitHub no permitió reactivarlo: revisa que el token tenga "Actions: Read and write".' });
+      this.actualizarWorkflows();
+    }, () => this.setState({ mensaje: 'No se pudo contactar a GitHub.' }));
+  }
+
+  /* Prueba el token contra GitHub antes de guardarlo; la fecha de
+     vencimiento la informa GitHub en un encabezado (si no, la escrita). */
+  guardarTokenAvisos() {
+    const AV = window.RepertorioAvisos;
+    const s = this.state;
+    const cfg = s.avisosCfg || {};
+    const token = (s.avisosTokenInput || '').trim() || cfg.githubToken || '';
+    if (!AV) return;
+    if (!token) { this.setState({ mensaje: 'Pega primero el token de GitHub.' }); return; }
+    this.setState({ avisosGuardando: true });
+    AV.probarToken(token).then((r) => {
+      if (!r.ok) {
+        this.setState({ avisosGuardando: false, mensaje: r.status === 401 ? 'GitHub rechazó el token: revisa que esté bien copiado y no haya vencido.' : 'No se pudo verificar el token con GitHub (' + (r.status || 'sin conexión') + ').' });
+        return;
+      }
+      const vence = r.vence || s.avisosVenceInput || cfg.tokenVence || '';
+      AV.guardarConfig({ githubToken: token, tokenVence: vence || null }).then(() => {
+        this.setState({ avisosGuardando: false, avisosTokenInput: '', avisosVenceInput: '', mensaje: 'Token guardado' + (vence ? ' (vence el ' + vence + ').' : '. Escribe su fecha de vencimiento para recibir el aviso de renovación.') });
+        this.leerConfigAvisos().then(() => this.actualizarWorkflows());
+      }, () => this.setState({ avisosGuardando: false, mensaje: 'No se pudo guardar el token: revisa las reglas de Firebase para /config/avisos.' }));
+    });
+  }
+
   confirmarBorrarUsuario(u) {
     const ok = confirm('¿Eliminar a "' + (u.displayName || u.email) + '"? Perderá acceso al sistema de inmediato. Esta acción no se puede deshacer.');
     if (!ok) return;
@@ -1943,8 +2133,13 @@ class Component extends DCLogic {
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
       .map((m) => ({ id: m.id, nombre: m.nombre }));
 
+    const AV = window.RepertorioAvisos;
+    const hoyAvisos = AV ? AV.hoyIso() : '';
     const usuariosLista = usuariosPagina.map((u) => {
       const busqueda = (s.usuarioOrgsBusqueda || {})[u.uid] || '';
+      const personaIdU = R.userMusicianLinks(u)[s.currentOrgId] || '';
+      const proximos = AV && personaIdU ? AV.eventosDePersona(s.repertorioEventos, personaIdU, hoyAvisos).length : 0;
+      const telEditado = (s.telefonoEdit || {})[u.uid];
       const misIds = R.userOrgIds(u);
       const idsMap = {};
       misIds.forEach((id) => (idsMap[id] = true));
@@ -1953,8 +2148,15 @@ class Component extends DCLogic {
         uid: u.uid, email: u.email, nombre: u.displayName || u.email,
         inicial: ((u.displayName || u.email || '?').trim().charAt(0) || '?').toUpperCase(),
         role: u.role || 'normal',
-        personaId: R.userMusicianLinks(u)[s.currentOrgId] || '',
+        personaId: personaIdU,
         personaOpciones: personaOpciones,
+        telefono: telEditado !== undefined ? telEditado : (AV ? AV.formatoTelefono(u.telefono) : (u.telefono || '')),
+        onTelefono: (e) => { const v = e.target.value; this.setState((st) => ({ telefonoEdit: Object.assign({}, st.telefonoEdit, { [u.uid]: v }) })); },
+        guardarTelefono: () => this.guardarTelefonoUsuario(u),
+        conPersona: !!personaIdU,
+        reenviarDeshabilitado: !proximos,
+        reenviarTitulo: proximos ? ('Enviar por correo y WhatsApp ' + (proximos === 1 ? 'su evento publicado próximo' : 'sus ' + proximos + ' eventos publicados próximos')) : 'Sin eventos publicados próximos',
+        reenviar: () => { if (proximos && AV) AV.reenviar(s.currentOrgId, u.uid); },
         onPersona: (e) => this.vincularUsuarioAPersona(u, e.target.value),
         onRole: (e) => this.cambiarRolUsuario(u.uid, e.target.value),
         puedeBorrar: !esUnoMismo,
@@ -2124,6 +2326,78 @@ class Component extends DCLogic {
       };
     });
 
+    /* --- Avisos --- */
+    const fechaHora = (v) => {
+      if (!v) return '';
+      const d = new Date(v);
+      return isNaN(d.getTime()) ? '' : d.toLocaleString('es-SV', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+    };
+    const nombreUid = (uid) => {
+      const u = (s.usuarios || []).find((x) => x.uid === uid);
+      return u ? (u.displayName || u.email) : 'otra cuenta';
+    };
+    const avisosCfg = s.avisosCfg || {};
+    const diasToken = AV && avisosCfg.githubToken ? AV.diasParaVencer(avisosCfg.tokenVence, hoyAvisos) : null;
+    let avisosTokenBadge = 'Sin configurar', avisosTokenBadgeClase = 'badge b-no', avisosTokenDetalle = 'Sin token, el correo solo sale con el respaldo programado.';
+    if (avisosCfg.githubToken) {
+      const fin = '…' + String(avisosCfg.githubToken).slice(-4);
+      if (diasToken === null) { avisosTokenBadge = 'Configurado'; avisosTokenBadgeClase = 'badge b-ok'; avisosTokenDetalle = fin + ' · sin fecha de vencimiento registrada.'; }
+      else if (diasToken < 0) { avisosTokenBadge = 'Vencido'; avisosTokenBadgeClase = 'badge b-no'; avisosTokenDetalle = fin + ' · venció el ' + avisosCfg.tokenVence + '.'; }
+      else {
+        const pronto = diasToken <= AV.DIAS_AVISO_TOKEN;
+        avisosTokenBadge = pronto ? 'Vence pronto' : 'Configurado';
+        avisosTokenBadgeClase = 'badge ' + (pronto ? 'b-pend' : 'b-ok');
+        avisosTokenDetalle = fin + ' · vence el ' + avisosCfg.tokenVence + (diasToken === 0 ? ' (hoy)' : ' (en ' + diasToken + (diasToken === 1 ? ' día)' : ' días)'));
+      }
+    }
+    const avisoTokenGlobal = avisosCfg.githubToken && diasToken !== null && diasToken <= (AV ? AV.DIAS_AVISO_TOKEN : 14)
+      ? (diasToken < 0 ? 'El token de GitHub para los avisos por correo venció: renuévalo para que el envío vuelva a ser inmediato.'
+        : 'El token de GitHub para los avisos por correo vence ' + (diasToken === 0 ? 'hoy' : 'en ' + diasToken + (diasToken === 1 ? ' día' : ' días')) + ': renuévalo para que el envío siga siendo inmediato.')
+      : '';
+    const WF_INFO = {
+      'avisos.yml': { titulo: 'Envío desde la app', descripcion: 'Se lanza al publicar o con "Reenviar eventos". No se pausa por inactividad.' },
+      'avisos-respaldo.yml': { titulo: 'Respaldo programado (cada 30 min)', descripcion: 'Recoge lo que haya quedado en cola. GitHub lo pausa tras 60 días sin actividad; cada envío desde la app lo reactiva.' }
+    };
+    const WF_ESTADO = {
+      active: ['Activo', 'b-ok'], disabled_inactivity: ['Pausado por inactividad', 'b-no'], disabled_manually: ['Desactivado', 'b-no'],
+      'no-existe': ['No publicado aún', 'b-gris'], desconocido: ['Sin datos', 'b-gris']
+    };
+    const RESULTADO = { success: '✓ Éxito', failure: '✕ Falló', cancelled: 'Cancelada', skipped: 'Omitida', timed_out: '✕ Tiempo agotado' };
+    const avisosWorkflows = (s.avisosWf || []).map((wf) => {
+      const info = WF_INFO[wf.archivo] || { titulo: wf.archivo, descripcion: '' };
+      const est = WF_ESTADO[wf.estado] || [wf.estado, 'b-gris'];
+      const c = wf.corridas[0];
+      return {
+        titulo: info.titulo, descripcion: info.descripcion,
+        badge: est[0], badgeClase: 'badge ' + est[1],
+        ultima: wf.estado === 'no-existe' ? 'El workflow aparece aquí cuando esté en la rama main.'
+          : (c ? 'Última ejecución: ' + fechaHora(c.creado) + ' · ' + (c.estado === 'completed' ? (RESULTADO[c.conclusion] || c.conclusion) : 'En curso') + (c.evento === 'schedule' ? ' (programada)' : '')
+            : 'Sin ejecuciones todavía.'),
+        url: wf.url,
+        reactivable: wf.archivo === 'avisos-respaldo.yml' && /^disabled/.test(wf.estado || ''),
+        reactivar: () => this.reactivarRespaldoAvisos()
+      };
+    });
+    const HIST_ESTADO = { pendiente: ['En cola', 'b-pend'], procesando: ['Enviando', 'b-azul'], enviado: ['Enviado', 'b-ok'], error: ['Error', 'b-no'] };
+    const orgNombre = (id) => { const o = (s.todasOrgs || []).find((x) => x.id === id); return o ? o.name : ''; };
+    const avisosHistorial = (s.avisosHistorial || []).map((h) => {
+      const est = HIST_ESTADO[h.estado] || [h.estado || '—', 'b-gris'];
+      const nEv = Object.keys(h.eventIds || {}).length;
+      const partes = [fechaHora(h.creado), orgNombre(h.orgId), 'por ' + nombreUid(h.pedidoPor)];
+      if (h.estado === 'enviado' || h.estado === 'error') {
+        partes.push((h.enviados || 0) + (h.enviados === 1 ? ' correo' : ' correos'));
+        if (h.errores) partes.push(h.errores + ' con error');
+        if (h.sinCorreo) partes.push(h.sinCorreo + ' sin correo');
+        if (h.sinEventos) partes.push(h.sinEventos + ' sin eventos próximos');
+        if (h.fallo) partes.push('motivo: ' + h.fallo);
+      }
+      return {
+        titulo: h.tipo === 'reenvio' ? 'Reenvío a ' + nombreUid(h.uid) : 'Publicación de ' + nEv + (nEv === 1 ? ' evento' : ' eventos'),
+        badge: est[0], badgeClase: 'badge ' + est[1],
+        detalle: partes.filter(Boolean).join(' · ')
+      };
+    });
+
     return {
       cargando: s.estadoAuth === 'cargando',
       denegado: s.estadoAuth === 'denegado',
@@ -2154,7 +2428,7 @@ class Component extends DCLogic {
           else this.cambiarTab(m.id);
         }
       })),
-      tabsMovil: window.RepertorioMenu.modulos(s.activeTab, orgActual, s.userDoc).filter((m) => m.id !== 'organizaciones').slice(0, 3).map((m) => Object.assign({
+      tabsMovil: window.RepertorioMenu.modulos(s.activeTab, orgActual, s.userDoc).filter((m) => !m.enMas).slice(0, 3).map((m) => Object.assign({
         label: m.label, href: m.href,
         clase: 'tab' + (m.activo ? ' on' : '') + (m.deshabilitado ? ' off' : ''),
         onClick: (e) => {
@@ -2165,18 +2439,18 @@ class Component extends DCLogic {
         }
       }, ({ icoEventos: m.id === 'eventos', icoUsuarios: m.id === 'usuarios', icoRepertorio: m.id === 'repertorio', icoInicio: false, icoCalendario: false }))),
       masAbierto: s.masAbierto,
-      masClase: 'tab' + (s.masAbierto || s.activeTab === 'organizaciones' ? ' on' : ''),
+      masClase: 'tab' + (s.masAbierto || s.activeTab === 'organizaciones' || s.activeTab === 'avisos' ? ' on' : ''),
       toggleMas: () => this.setState((st) => ({ masAbierto: !st.masAbierto })),
       detenerMas: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
       masSub: orgActual ? orgActual.name : 'Administración',
-      masItems: window.RepertorioMenu.modulos(s.activeTab, orgActual, s.userDoc).filter((m) => m.id === 'organizaciones').map((m) => ({
+      masItems: window.RepertorioMenu.modulos(s.activeTab, orgActual, s.userDoc).filter((m) => m.enMas).map((m) => ({
         label: m.label, href: m.href,
         onClick: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ masAbierto: false }); this.cambiarTab(m.id); }
       })).concat(window.RepertorioMenu.acciones(orgActual, s.userDoc).map((a) => ({ label: a.label, href: a.href, onClick: () => {} }))),
       usuarioIniciales: ((s.usuarioNombre || '').trim().split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('') || '?').toUpperCase(),
-      tabKicker: s.activeTab === 'organizaciones' ? 'Administración' : ((orgActual ? orgActual.name + ' · ' : '') + (s.activeTab === 'usuarios' ? 'Usuarios' : 'Administración')),
+      tabKicker: s.activeTab === 'organizaciones' || s.activeTab === 'avisos' ? 'Administración' : ((orgActual ? orgActual.name + ' · ' : '') + (s.activeTab === 'usuarios' ? 'Usuarios' : 'Administración')),
       tabTitulo: s.activeTab === 'usuarios' ? (s.subUsuarios === 'personas' ? 'Personas' : 'Cuentas')
-        : (({ organizaciones: 'Organizaciones', repertorio: 'Repertorio' })[s.activeTab] || 'Administración'),
+        : (({ organizaciones: 'Organizaciones', repertorio: 'Repertorio', avisos: 'Avisos' })[s.activeTab] || 'Administración'),
       nuevaCifClase: 'cif-btn' + (s.nuevaCancionCifradoId ? ' on' : ' vacio') + ((s.nuevaCancionTitulo || '').trim() ? '' : ' inactivo'),
       nuevaCifLabel: s.nuevaCancionCifradoId ? 'Ver cifrado' : 'Agregar cifrado',
       puedeCifrarNueva: R.puede(s.userDoc, 'cifrados.editar'),
@@ -2189,7 +2463,7 @@ class Component extends DCLogic {
       tabUsuariosPersonas: s.activeTab === 'usuarios' && s.subUsuarios === 'personas',
       cerrarMensaje: () => this.setState({ mensaje: '' }),
       sinOrgs: orgs.length === 0,
-      sinOrgsYNoEsOrgs: orgs.length === 0 && s.activeTab !== 'organizaciones',
+      sinOrgsYNoEsOrgs: orgs.length === 0 && s.activeTab !== 'organizaciones' && s.activeTab !== 'avisos',
       mensaje: s.mensaje || '',
       avisoAudio: s.avisoAudio || '',
       avisoAudioUrl: s.avisoAudioUrl || '',
@@ -2208,6 +2482,24 @@ class Component extends DCLogic {
       tabOrganizaciones: s.activeTab === 'organizaciones',
       tabUsuarios: s.activeTab === 'usuarios',
       tabRepertorio: s.activeTab === 'repertorio',
+      tabAvisos: s.activeTab === 'avisos',
+      avisoTokenGlobal: s.activeTab === 'avisos' ? '' : avisoTokenGlobal,
+      irAAvisos: () => this.cambiarTab('avisos'),
+      avisosWorkflows: avisosWorkflows,
+      avisosWfError: s.avisosWfError,
+      avisosActualizar: () => this.actualizarWorkflows(),
+      avisosActualizarLabel: s.avisosWfCargando ? 'Consultando…' : 'Actualizar',
+      avisosEnviarPendientes: () => this.enviarPendientesAvisos(),
+      avisosSinToken: !avisosCfg.githubToken,
+      avisosTokenBadge: avisosTokenBadge, avisosTokenBadgeClase: avisosTokenBadgeClase, avisosTokenDetalle: avisosTokenDetalle,
+      avisosTokenInput: s.avisosTokenInput,
+      onAvisosTokenInput: (e) => this.setState({ avisosTokenInput: e.target.value }),
+      avisosVenceInput: s.avisosVenceInput || avisosCfg.tokenVence || '',
+      onAvisosVenceInput: (e) => this.setState({ avisosVenceInput: e.target.value }),
+      avisosGuardarToken: () => this.guardarTokenAvisos(),
+      avisosGuardando: !!s.avisosGuardando,
+      avisosHistorial: avisosHistorial,
+      avisosHistorialVacioStyle: avisosHistorial.length ? 'display:none' : 'font-size:13px;color:var(--muted2);padding:16px 20px;margin:0',
       sidebarClase: 'admin-side' + (s.sidebarAbierto ? ' abierto' : ''),
       backdropClase: 'admin-backdrop' + (s.sidebarAbierto ? ' abierto' : ''),
       toggleSidebar: () => this.toggleSidebar(),

@@ -1,0 +1,41 @@
+# Avisos de programación por correo
+
+Al publicar un evento, o con **Reenviar eventos** en Usuarios → Cuentas, la app deja un pedido en
+`/colaAvisos` y dispara `.github/workflows/avisos.yml`. Ese workflow corre `enviar.js`, que lee la
+base de datos, arma el mensaje con `avisos.js` (el mismo que usa la app) y lo envía por Gmail.
+`avisos-respaldo.yml` revisa la cola cada 30 minutos por si el disparo falló.
+
+WhatsApp no pasa por aquí: el panel de la app abre `wa.me` con el mensaje ya escrito.
+
+El estado de los workflows, el token y el historial se ven en **Administración → Avisos**.
+
+## Configuración (una sola vez)
+
+1. **Gmail que envía**: activa la verificación en 2 pasos y crea una
+   [contraseña de aplicación](https://myaccount.google.com/apppasswords).
+2. **Cuenta de servicio de Firebase**: Consola de Firebase → Configuración del proyecto →
+   Cuentas de servicio → *Generar nueva clave privada* (descarga un JSON).
+3. **Secrets del repositorio** (GitHub → Settings → Secrets and variables → Actions):
+   - `FIREBASE_SA`: el contenido completo del JSON.
+   - `GMAIL_USER`: el correo de Gmail.
+   - `GMAIL_APP_PASSWORD`: la contraseña de aplicación (16 letras, sin espacios).
+4. **Token para que la app dispare el envío**: GitHub → Settings → Developer settings →
+   Fine-grained tokens. Solo el repositorio `joscarper1/RepertorioApp`, permiso
+   *Actions: Read and write*. Pégalo en Administración → Avisos, junto con su fecha de vencimiento.
+5. **Reglas de Realtime Database**: `colaAvisos`, `config/avisos` y `users/$uid/telefono`.
+
+## Seguridad
+
+- El repositorio es público y sus logs también: `enviar.js` solo imprime conteos, nunca correos,
+  teléfonos ni nombres.
+- Del pedido solo se usan `orgId` y `eventIds`/`uid`. Destinatarios y texto siempre se recalculan
+  desde la base.
+- Nunca agregues `pull_request` como disparador de estos workflows.
+
+## Probar sin enviar
+
+```bash
+cd .github/avisos && npm ci && FIREBASE_SA="$(cat clave.json)" AVISOS_PRUEBA=1 node enviar.js
+```
+
+Así procesa la cola real e imprime los conteos, pero no envía correos ni modifica la cola.
