@@ -37,9 +37,9 @@ El estado de los workflows, el token y el historial se ven en **Administración 
 En PowerShell (Windows), desde la raíz del repo:
 
 ```powershell
-cd .githubvisos
+cd .github\avisos
 npm ci
-$env:FIREBASE_SA = Get-Content -Raw "C:uta\clave.json"
+$env:FIREBASE_SA = Get-Content -Raw "C:\ruta\a\clave.json"
 $env:AVISOS_PRUEBA = "1"
 node enviar.js
 Remove-Item Env:FIREBASE_SA, Env:AVISOS_PRUEBA
