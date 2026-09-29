@@ -281,7 +281,27 @@ a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-c
   .cifrado-overlay{padding:0}
   .cifrado-modal{width:100%;height:100%;max-height:none;border-radius:0}
   .cifrado-head,.cifrado-body{padding-left:16px;padding-right:16px}
+  /* Subpestañas siempre en su propia fila: si comparten fila con el título,
+     "Cuentas"/"Personas" (anchos distintos) las hacen saltar de línea. */
+  .titulo-fila > .seg{flex:1 1 100%}
+  .titulo-fila > .seg button{flex:1}
+  /* Cuentas en teléfono: tarjeta compacta (nombre, correo, rol en una fila
+     + resumen); los controles de edición aparecen al tocar "Editar". */
+  .item.usr{gap:10px;padding-top:14px;padding-bottom:14px}
+  .item.usr .item-fila{flex-wrap:nowrap}
+  .item.usr .item-acc{width:auto;flex:none}
+  .item.usr .item-t,.item.usr .item-s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item.usr .item-sub:not(.abierto){display:none}
+  .item.usr .item-sub > .inp{max-width:none !important;flex:1 1 100% !important}
+  .item.usr .item-sub > .btn-sec{min-height:40px}
 }
+.usr-id{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.usr-res{display:flex;flex-direction:column;gap:10px;padding-left:48px}
+.usr-datos{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12.5px;color:var(--muted);min-width:0}
+.usr-datos > span:not(.badge){overflow-wrap:anywhere}
+.usr-acc{display:flex;gap:8px}
+.usr-acc .btn-sec{flex:1;min-height:36px}
+.usr-acc .btn-sec:disabled{opacity:.4;cursor:not-allowed}
 
 /* ---- Barra de pestañas (teléfono) ---- */
 .tabbar{display:none}
@@ -555,9 +575,9 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
         <div class="panel lista">
           <sc-for list="{{ usuariosLista }}" as="u" hint-placeholder-count="3">
-            <div class="item">
+            <div class="item usr">
               <div class="item-fila">
-                <div style="display:flex;align-items:center;gap:12px;min-width:0">
+                <div class="usr-id">
                   <span class="ini">{{ u.inicial }}</span>
                   <div style="min-width:0">
                     <div class="item-t">{{ u.nombre }}</div>
@@ -569,12 +589,27 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                     <option value="normal">Normal</option>
                     <option value="admin">Admin</option>
                   </select>
-                  <button type="button" class="ico peligro" onClick="{{ u.borrar }}" style="{{ u.borrarStyle }}" aria-label="Eliminar usuario" title="Eliminar usuario">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>
-                  </button>
+                  <span class="solo-desk">
+                    <button type="button" class="ico peligro" onClick="{{ u.borrar }}" style="{{ u.borrarStyle }}" aria-label="Eliminar usuario" title="Eliminar usuario">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>
+                    </button>
+                  </span>
                 </div>
               </div>
-              <div class="item-sub">
+              <div class="usr-res solo-movil">
+                <div class="usr-datos">
+                  <span class="{{ u.personaResumenClase }}">{{ u.personaResumen }}</span>
+                  <span>{{ u.orgsResumen }}</span>
+                  <span>{{ u.telefonoResumen }}</span>
+                </div>
+                <div class="usr-acc">
+                  <button type="button" class="btn-sec" onClick="{{ u.toggleEdit }}">{{ u.editTexto }}</button>
+                  <sc-if value="{{ u.conPersona }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" class="btn-sec" onClick="{{ u.reenviar }}" disabled="{{ u.reenviarDeshabilitado }}" title="{{ u.reenviarTitulo }}">Reenviar eventos</button>
+                  </sc-if>
+                </div>
+              </div>
+              <div class="{{ u.subClase }}">
                 <select class="inp" value="{{ u.personaId }}" onChange="{{ u.onPersona }}" aria-label="Persona vinculada" style="max-width:320px;flex:1;min-width:180px">
                   <option value="">Sin persona vinculada</option>
                   <sc-for list="{{ u.personaOpciones }}" as="po" hint-placeholder-count="2">
@@ -602,7 +637,10 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 </sc-if>
                 <input class="inp" type="tel" inputMode="tel" value="{{ u.telefono }}" onChange="{{ u.onTelefono }}" onBlur="{{ u.guardarTelefono }}" placeholder="WhatsApp: 7000-0000" aria-label="Teléfono (WhatsApp)" title="Teléfono para los avisos por WhatsApp. Sin código de país se asume +503." autoComplete="off" style="max-width:200px;flex:1;min-width:150px">
                 <sc-if value="{{ u.conPersona }}" hint-placeholder-val="{{ false }}">
-                  <button type="button" class="btn-sec" onClick="{{ u.reenviar }}" disabled="{{ u.reenviarDeshabilitado }}" title="{{ u.reenviarTitulo }}">Reenviar eventos</button>
+                  <button type="button" class="btn-sec solo-desk" onClick="{{ u.reenviar }}" disabled="{{ u.reenviarDeshabilitado }}" title="{{ u.reenviarTitulo }}">Reenviar eventos</button>
+                </sc-if>
+                <sc-if value="{{ u.puedeBorrar }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" class="btn-sec solo-movil" onClick="{{ u.borrar }}" style="color:var(--red)">Eliminar usuario</button>
                 </sc-if>
               </div>
             </div>
@@ -1186,6 +1224,8 @@ class Component extends DCLogic {
     usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {},
     /* Teléfono en edición por uid (se guarda al salir del campo). */
     telefonoEdit: {},
+    /* Teléfono: tarjetas de Cuentas desplegadas para editar {uid: true}. */
+    usuarioEditAbierto: {},
     /* Pestaña Avisos (ver avisos.js): config = /config/avisos (token de
        GitHub y su vencimiento), wf = estado de los dos workflows. */
     avisosCfg: null, avisosWf: null, avisosWfCargando: false, avisosWfError: '', avisosHistorial: [],
@@ -2118,6 +2158,11 @@ class Component extends DCLogic {
       const ids = R.userOrgIds(u);
       return ids.length === 0 || ids.indexOf(s.currentOrgId) >= 0;
     });
+    /* Primero las cuentas sin persona vinculada en esta organización, para
+       que el admin vea de un vistazo a quién falta vincular (orden estable:
+       dentro de cada grupo se conserva el orden original). */
+    const tienePersona = (u) => (R.userMusicianLinks(u)[s.currentOrgId] ? 1 : 0);
+    usuariosDeLaOrg.sort((a, b) => tienePersona(a) - tienePersona(b));
 
     const USUARIOS_PAGE_SIZE = 5;
     const usuariosBusquedaQ = (s.usuariosBusquedaNombre || '').trim().toLowerCase();
@@ -2154,6 +2199,14 @@ class Component extends DCLogic {
         onTelefono: (e) => { const v = e.target.value; this.setState((st) => ({ telefonoEdit: Object.assign({}, st.telefonoEdit, { [u.uid]: v }) })); },
         guardarTelefono: () => this.guardarTelefonoUsuario(u),
         conPersona: !!personaIdU,
+        /* Resumen compacto del teléfono: en vez de los controles, una línea
+           con persona, organizaciones y WhatsApp; "Editar" los despliega. */
+        personaResumen: personaIdU ? ((personaOpciones.find((p) => p.id === personaIdU) || {}).nombre || 'Persona vinculada') : 'Sin persona',
+        personaResumenClase: 'badge ' + (personaIdU ? 'b-ok' : 'b-pend'),
+        telefonoResumen: u.telefono ? (AV ? AV.formatoTelefono(u.telefono) : u.telefono) : 'Sin WhatsApp',
+        subClase: 'item-sub' + ((s.usuarioEditAbierto || {})[u.uid] ? ' abierto' : ''),
+        editTexto: (s.usuarioEditAbierto || {})[u.uid] ? 'Listo' : 'Editar',
+        toggleEdit: () => this.setState((st) => ({ usuarioEditAbierto: Object.assign({}, st.usuarioEditAbierto, { [u.uid]: !(st.usuarioEditAbierto || {})[u.uid] }) })),
         reenviarDeshabilitado: !proximos,
         reenviarTitulo: proximos ? ('Enviar por correo y WhatsApp ' + (proximos === 1 ? 'su evento publicado próximo' : 'sus ' + proximos + ' eventos publicados próximos')) : 'Sin eventos publicados próximos',
         reenviar: () => { if (proximos && AV) AV.reenviar(s.currentOrgId, u.uid); },
