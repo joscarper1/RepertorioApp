@@ -34,8 +34,24 @@ El estado de los workflows, el token y el historial se ven en **Administración 
 
 ## Probar sin enviar
 
-```bash
-cd .github/avisos && npm ci && FIREBASE_SA="$(cat clave.json)" AVISOS_PRUEBA=1 node enviar.js
+En PowerShell (Windows), desde la raíz del repo:
+
+```powershell
+cd .githubvisos
+npm ci
+$env:FIREBASE_SA = Get-Content -Raw "C:uta\clave.json"
+$env:AVISOS_PRUEBA = "1"
+node enviar.js
+Remove-Item Env:FIREBASE_SA, Env:AVISOS_PRUEBA
 ```
+
+En Bash:
+
+```bash
+cd .github/avisos && npm ci && FIREBASE_SA="$(cat /ruta/a/clave.json)" AVISOS_PRUEBA=1 node enviar.js
+```
+
+Guarda la clave fuera del repositorio. `.gitignore` ignora `clave*.json` y los nombres que usa Firebase
+(`*firebase-adminsdk*.json`) por si acaso.
 
 Así procesa la cola real e imprime los conteos, pero no envía correos ni modifica la cola.

@@ -1,1 +1,5 @@
 node_modules/
+# Clave de la cuenta de servicio de Firebase: nunca al repo (es público)
+clave*.json
+*serviceAccount*.json
+*firebase-adminsdk*.json
