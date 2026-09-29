@@ -199,3 +199,18 @@ test('procesarCola en modo prueba no envía ni toca la cola', async () => {
   assert.equal(r.enviados, 1);
   assert.equal(data.colaAvisos.p1.estado, 'pendiente');
 });
+
+test('procesarCola: Gmail rechaza credenciales (535) → no insiste y deja el motivo', async () => {
+  const ahora = Date.now();
+  const { root, data } = baseDePrueba({
+    p1: { orgId: 'o1', tipo: 'publicacion', eventIds: { e1: true }, estado: 'pendiente', creado: ahora },
+    p2: { orgId: 'o1', tipo: 'reenvio', uid: 'u-ana', estado: 'pendiente', creado: ahora }
+  });
+  let intentos = 0;
+  await procesarCola(root, async () => { intentos++; throw Object.assign(new Error('auth'), { responseCode: 535, code: 'EAUTH' }); }, { ahora });
+  assert.equal(intentos, 1, 'tras el 535 no se intenta con los demás');
+  assert.equal(data.colaAvisos.p1.fallo, 'gmail-credenciales');
+  assert.equal(data.colaAvisos.p2.fallo, 'gmail-credenciales');
+  assert.equal(data.colaAvisos.p2.estado, 'error');
+  assert.ok(A.textoFallo('gmail-credenciales').indexOf('GMAIL_APP_PASSWORD') >= 0);
+});

@@ -223,6 +223,15 @@
     return Math.round((b - a) / 86400000);
   }
 
+  /* Motivo guardado por el workflow en colaAvisos/{id}.fallo. */
+  var FALLOS = {
+    'gmail-credenciales': 'Gmail rechazó el usuario o la contraseña: revisa los secrets GMAIL_USER y GMAIL_APP_PASSWORD (contraseña de aplicación de 16 letras, sin espacios).',
+    'pedido-invalido': 'El pedido estaba incompleto.',
+    'organizacion-inexistente': 'La organización ya no existe.',
+    'error-interno': 'El envío falló por un error interno: revisa la ejecución en GitHub.'
+  };
+  function textoFallo(f) { return f ? (FALLOS[f] || f) : ''; }
+
   var api = {
     SITIO_URL: SITIO_URL, REPO: REPO, RAMA: RAMA, WORKFLOW_ENVIO: WORKFLOW_ENVIO, WORKFLOW_RESPALDO: WORKFLOW_RESPALDO,
     COLA_PATH: COLA_PATH, CONFIG_PATH: CONFIG_PATH, DIAS_AVISO_TOKEN: DIAS_AVISO_TOKEN,
@@ -231,7 +240,7 @@
     eventosDePersona: eventosDePersona, lineaEvento: lineaEvento, primerNombre: primerNombre,
     urlCalendario: urlCalendario, armarAviso: armarAviso, planAvisos: planAvisos,
     normalizarTelefono: normalizarTelefono, telefonoValido: telefonoValido, formatoTelefono: formatoTelefono,
-    urlWhatsApp: urlWhatsApp, diasParaVencer: diasParaVencer, escaparHtml: escaparHtml
+    urlWhatsApp: urlWhatsApp, diasParaVencer: diasParaVencer, escaparHtml: escaparHtml, textoFallo: textoFallo
   };
 
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
@@ -522,7 +531,9 @@
         var txt = n ? ('✓ Correo enviado a ' + n + (n === 1 ? ' persona' : ' personas')) : 'No se envió ningún correo';
         if (e) txt += ' · ' + e + ' con error';
         if (v.sinCorreo) txt += ' · ' + v.sinCorreo + ' sin correo';
-        panel.correo(txt + '.', e && !n ? 'err' : 'ok');
+        txt += '.';
+        if (v.fallo) txt += ' ' + textoFallo(v.fallo);
+        panel.correo(txt, (e && !n) || v.fallo ? 'err' : 'ok');
       } else if (v.estado === 'procesando') {
         panel.correo('Enviando correos…');
       } else if (aviso) {

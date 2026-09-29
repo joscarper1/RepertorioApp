@@ -81,6 +81,9 @@ async function procesarCola(root, enviarCorreo, opciones = {}) {
     else if ((v.creado || 0) < ahora - RETENCION_MS) viejos.push(c.key);
   });
   const resumen = { pedidos: pedidos.length, enviados: 0, errores: 0, sinCorreo: 0, sinEventos: 0 };
+  /* Gmail rechazó usuario/contraseña (535 / EAUTH): los demás envíos de
+     esta corrida fallarían igual, así que ya no se intentan. */
+  let credencialesMalas = false;
 
   for (const p of pedidos) {
     const ref = cola.child(p.key);
@@ -96,12 +99,14 @@ async function procesarCola(root, enviarCorreo, opciones = {}) {
         for (const f of filas) {
           if (!f.aviso) { res.sinEventos++; res.resultados[f.uid] = 'sin_eventos'; continue; }
           if (!f.email) { res.sinCorreo++; res.resultados[f.uid] = 'sin_correo'; continue; }
+          if (credencialesMalas) { res.errores++; res.resultados[f.uid] = 'error'; continue; }
           try {
             if (!prueba) await enviarCorreo({ para: f.email, asunto: f.aviso.asunto, texto: f.aviso.texto, html: f.aviso.html, remitente: datos.org.name || 'Repertorio' });
             res.enviados++; res.resultados[f.uid] = 'enviado';
           } catch (e) {
             res.errores++; res.resultados[f.uid] = 'error';
-            console.error('Error de envío (' + (e && (e.responseCode || e.code) || 'desconocido') + ')');
+            if (e && (e.responseCode === 535 || e.code === 'EAUTH')) credencialesMalas = true;
+            console.error('Error de envío (' + (e && (e.responseCode || e.code) || 'desconocido') + ')' + (credencialesMalas ? ': Gmail rechazó GMAIL_USER / GMAIL_APP_PASSWORD' : ''));
           }
         }
       }
@@ -113,7 +118,7 @@ async function procesarCola(root, enviarCorreo, opciones = {}) {
     if (prueba) continue;
     await ref.update({
       estado: fallo || (res.errores && !res.enviados) ? 'error' : 'enviado',
-      fallo: fallo || null,
+      fallo: fallo || (credencialesMalas && res.errores ? 'gmail-credenciales' : null),
       enviados: res.enviados, errores: res.errores, sinCorreo: res.sinCorreo, sinEventos: res.sinEventos,
       resultados: Object.keys(res.resultados).length ? res.resultados : null,
       procesado: Date.now()
