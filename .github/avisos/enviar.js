@@ -136,8 +136,13 @@ async function main() {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
   const prueba = process.env.AVISOS_PRUEBA === '1';
-  if (!sa) throw new Error('Falta el secret FIREBASE_SA');
-  if (!prueba && (!user || !pass)) throw new Error('Faltan los secrets GMAIL_USER / GMAIL_APP_PASSWORD');
+  /* Sin configurar todavía: el cron no debe fallar (y mandar un correo de
+     error de GitHub) cada 30 minutos; queda una advertencia en la corrida. */
+  const faltan = [!sa && 'FIREBASE_SA', !prueba && !user && 'GMAIL_USER', !prueba && !pass && 'GMAIL_APP_PASSWORD'].filter(Boolean);
+  if (faltan.length) {
+    console.log('::warning::Avisos sin configurar: faltan los secrets ' + faltan.join(', ') + '. No se procesó la cola.');
+    return;
+  }
 
   admin.initializeApp({ credential: admin.credential.cert(JSON.parse(sa)), databaseURL: DATABASE_URL });
   const transporte = prueba ? null : nodemailer.createTransport({ service: 'gmail', auth: { user, pass } });
