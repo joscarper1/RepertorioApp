@@ -131,15 +131,40 @@ async function procesarCola(root, enviarCorreo, opciones = {}) {
     await cola.update(borrar);
   }
   resumen.borrados = prueba ? 0 : viejos.length;
+  resumen.credencialesMalas = credencialesMalas;
   return resumen;
+}
+
+/* Los secrets pegados en GitHub suelen traer un salto de línea o espacios
+   invisibles al final, o comillas; la contraseña de aplicación se muestra
+   en grupos de 4 con espacios. Gmail rechaza cualquiera de esos (535). */
+function limpiarCredenciales(user, pass) {
+  return {
+    user: String(user || '').trim().replace(/^["']|["']$/g, '').trim(),
+    pass: String(pass || '').replace(/\s+/g, '').replace(/^["']|["']$/g, '')
+  };
+}
+
+/* Diagnóstico sin revelar nada: el log del repositorio es público. */
+function diagnosticoGmail(userRaw, passRaw) {
+  const u = String(userRaw || ''), p = String(passRaw || '');
+  const c = limpiarCredenciales(u, p);
+  const si = (b) => (b ? 'sí' : 'no');
+  return [
+    'GMAIL_USER: parece correo ' + si(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.user)) +
+      ', termina en @gmail.com ' + si(/@gmail\.com$/i.test(c.user)) +
+      ', traía espacios/saltos/comillas ' + si(c.user !== u),
+    'GMAIL_APP_PASSWORD: ' + c.pass.length + ' caracteres (debe ser 16)' +
+      ', solo letras ' + si(/^[a-zA-Z]+$/.test(c.pass)) +
+      ', traía espacios/saltos/comillas ' + si(c.pass !== p)
+  ].join(' · ');
 }
 
 async function main() {
   const admin = require('firebase-admin');
   const nodemailer = require('nodemailer');
   const sa = process.env.FIREBASE_SA;
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
+  const { user, pass } = limpiarCredenciales(process.env.GMAIL_USER, process.env.GMAIL_APP_PASSWORD);
   const prueba = process.env.AVISOS_PRUEBA === '1';
   /* Sin configurar todavía: el cron no debe fallar (y mandar un correo de
      error de GitHub) cada 30 minutos; queda una advertencia en la corrida. */
@@ -160,6 +185,7 @@ async function main() {
     const r = await procesarCola(admin.database().ref(), enviarCorreo, { prueba });
     console.log('Pedidos: ' + r.pedidos + ' · correos enviados: ' + r.enviados + ' · errores: ' + r.errores +
       ' · sin correo: ' + r.sinCorreo + ' · sin eventos: ' + r.sinEventos + ' · borrados de la cola: ' + r.borrados + (prueba ? ' (prueba, sin enviar)' : ''));
+    if (r.credencialesMalas) console.log('::error::Gmail rechazó la credencial (535). ' + diagnosticoGmail(process.env.GMAIL_USER, process.env.GMAIL_APP_PASSWORD));
     if (r.errores && !r.enviados) process.exitCode = 1;
   } finally {
     if (transporte) transporte.close();
@@ -171,4 +197,4 @@ if (require.main === module) {
   main().catch((e) => { console.error(e && e.message ? e.message : 'Error'); process.exit(1); });
 }
 
-module.exports = { procesarCola };
+module.exports = { procesarCola, limpiarCredenciales, diagnosticoGmail };
