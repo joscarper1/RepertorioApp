@@ -1338,6 +1338,15 @@ class Component extends DCLogic {
   cambiarTab(tab) {
     this.setState((s) => ({ activeTab: tab, repertorioPagina: tab === 'repertorio' ? 1 : s.repertorioPagina }));
     this.cerrarSidebarSiMovil();
+    /* La pestaña queda en la URL (?tab=) para que al recargar se vuelva a
+       abrir la misma. replaceState: no suma entradas al botón Atrás. */
+    try {
+      const params = new URLSearchParams(location.search);
+      if (params.get('tab') !== tab) {
+        params.set('tab', tab);
+        history.replaceState(history.state, '', location.pathname + '?' + params.toString() + location.hash);
+      }
+    } catch (e) { /* sin history (vista previa): se ignora */ }
     if ((tab === 'usuarios' || tab === 'avisos') && !this._unusers) {
       this._unusers = D().watchAllUsers((lista) => this.setState({ usuarios: lista }));
       if (this._unaccesos) this._unaccesos();

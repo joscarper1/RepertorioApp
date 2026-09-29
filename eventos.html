@@ -170,6 +170,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .modal{width:min(100%,440px);max-height:90vh;overflow-y:auto;background:#fff;border-radius:16px;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.28)}
 .modal-cab{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .modal-acc{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.rep-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .aviso{padding:12px 16px;border-radius:12px;background:var(--ac-lt);color:var(--ac-dk);font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
 @media (min-width:861px){ .solo-movil{display:none !important} }
@@ -834,7 +835,12 @@ a.mas-fila:hover{background:none;color:var(--ink)}
       </sc-if>
 
       <sc-if value="{{ esSubRepertorio }}" hint-placeholder-val="{{ false }}">
-        <p class="campo-ayuda" style="margin:0">Deja en blanco lo que no se use: solo se publica lo que tenga nombre.</p>
+        <div class="rep-cab">
+          <p class="campo-ayuda" style="margin:0">Deja en blanco lo que no se use: solo se publica lo que tenga nombre.</p>
+          <sc-if value="{{ bandaSoloLectura }}" hint-placeholder-val="{{ false }}">
+            <button type="button" class="btn-sec" onClick="{{ abrirVerBanda }}">Ver Banda</button>
+          </sc-if>
+        </div>
         <sc-for list="{{ bloques }}" as="bl" hint-placeholder-count="4">
           <div style="display:flex;flex-direction:column;gap:10px">
             <sc-if value="{{ bl.mostrarParte }}" hint-placeholder-val="{{ false }}">
@@ -1071,6 +1077,33 @@ a.mas-fila:hover{background:none;color:var(--ink)}
       <sc-if value="{{ estadoUrl }}" hint-placeholder-val="{{ false }}">
         <a class="toast-link" href="{{ estadoUrl }}" target="_blank" rel="noopener">Ábrelo en YouTube ↗</a>
       </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ verBandaAbierto }}" hint-placeholder-val="{{ false }}">
+    <div class="velo" onClick="{{ cerrarVerBanda }}">
+      <div class="modal" onClick="{{ detenerPropagacion }}" style="width:min(100%,400px)">
+        <div class="modal-cab">
+          <span class="kicker" style="margin:0">Banda del evento</span>
+          <button type="button" class="btn-quitar" onClick="{{ cerrarVerBanda }}" aria-label="Cerrar">✕</button>
+        </div>
+        <p style="font-size:14px;font-weight:600;margin:6px 0 12px;line-height:1.4">{{ verBandaResumen }}</p>
+        <sc-if value="{{ resumenHayVoces }}" hint-placeholder-val="{{ false }}">
+          <div class="banda-sub">Voces</div>
+          <sc-for list="{{ resumenVoces }}" as="bg" hint-placeholder-count="2">
+            <div class="banda-fila"><span style="color:var(--muted)">{{ bg.tipo }}</span><span style="font-weight:600;text-align:right">{{ bg.nombres }}</span></div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{ resumenHayMusicos }}" hint-placeholder-val="{{ false }}">
+          <div class="banda-sub">Músicos</div>
+          <sc-for list="{{ resumenMusicos }}" as="bg" hint-placeholder-count="3">
+            <div class="banda-fila"><span style="color:var(--muted)">{{ bg.tipo }}</span><span style="font-weight:600;text-align:right">{{ bg.nombres }}</span></div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{ resumenSinBanda }}" hint-placeholder-val="{{ false }}"><p style="font-size:13px;color:var(--muted2);margin:0">Sin integrantes asignados.</p></sc-if>
+        <p style="font-size:12px;color:var(--muted2);margin:12px 0 0">Solo lectura: la banda la asigna un administrador.</p>
+        <div class="modal-acc"><button type="button" class="btn-sec" onClick="{{ cerrarVerBanda }}">Cerrar</button></div>
+      </div>
     </div>
   </sc-if>
 
@@ -1316,7 +1349,7 @@ class Component extends DCLogic {
     reproduciendoKey: null, reproduciendoPausado: false, progT: 0, progD: 0, progArrastre: null, usuarioNombre: null, musicos: [],
     sidebarAbierto: typeof window !== 'undefined' ? window.innerWidth > 860 : true,
     orgSwitcherAbierto: false, orgSwitcherBusqueda: '', embed: false,
-    moverEventoId: null, moverMes: '', userDoc: null, sub: 'detalles', masAbierto: false,
+    moverEventoId: null, moverMes: '', verBanda: false, userDoc: null, sub: 'detalles', masAbierto: false,
     /* Modal "Cifrado" del paso 4 (null = cerrado), ver abrirCifrado. */
     cifrado: null,
     /* Versiones del evento en edición (más reciente primero) y la versión
@@ -1538,7 +1571,7 @@ class Component extends DCLogic {
   }
 
   irA(patch) {
-    this.setState(Object.assign({ estado: '' }, patch));
+    this.setState(Object.assign({ estado: '', verBanda: false }, patch));
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -2524,6 +2557,12 @@ class Component extends DCLogic {
       resumenAsociado: padreDr ? (padreDr.servicio + (padreDr.tema ? ' — ' + padreDr.tema : '')) : 'Sin evento asociado',
       resumenAsociadoSub: padreDr ? (fechaEv(padreDr) + ' · ' + (padreDr.hora || 'Sin hora')) : 'Elige el evento en el paso anterior.',
       bandaSoloLectura: usaBanda && !puedeBanda,
+      /* Quien no asigna la banda (p. ej. el Director del evento, que entra
+         directo a Canciones) la consulta en un modal de solo lectura. */
+      verBandaAbierto: !!s.verBanda && subActual === 'repertorio' && usaBanda && !puedeBanda,
+      verBandaResumen: dr ? (dr.servicio + ' · ' + R.diaNombre(dr.fecha) + ' ' + R.fechaLarga(dr.fecha) + (dr.hora ? ' · ' + dr.hora : '')) : '',
+      abrirVerBanda: () => this.setState({ verBanda: true }),
+      cerrarVerBanda: () => this.setState({ verBanda: false }),
       esSubBanda: subActual === 'banda',
       esSubRepertorio: subActual === 'repertorio',
       subTabs: subsDef.map((x) => ({ label: x.label, clase: x.id === subActual ? 'on' : '', onClick: () => this.setState({ sub: x.id }) })),
