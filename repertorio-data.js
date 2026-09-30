@@ -1430,12 +1430,49 @@
     return (userDoc && userDoc.musicianLinks) || {};
   }
 
-  /* La primera organización donde la cuenta ya tiene una Persona vinculada
-     (para que un admin que también es integrante aterrice en su propio
-     Dashboard de persona), o la primera a secas si no tiene ninguna. */
+  /* Último calendario abierto en este navegador (con o sin sesión): una
+     cookie con el id de la organización, que index.html escribe cada vez que
+     muestra un calendario. Sirve para que un visitante sin sesión no tenga
+     que elegir en cada visita y para que una cuenta con varias
+     organizaciones vuelva a la última que abrió. Vale un año y queda
+     acotada a la carpeta del sitio (en GitHub Pages, /RepertorioApp/). */
+  var COOKIE_ORG = 'repertorio_org';
+  var COOKIE_ORG_MAX_AGE = 365 * 24 * 60 * 60;
+
+  function rutaCookie() {
+    var p = (w.location && w.location.pathname) || '/';
+    return p.slice(0, p.lastIndexOf('/') + 1) || '/';
+  }
+
+  function guardarOrgPreferida(orgId) {
+    if (!orgId) return;
+    try {
+      w.document.cookie = COOKIE_ORG + '=' + encodeURIComponent(orgId) + '; max-age=' + COOKIE_ORG_MAX_AGE +
+        '; path=' + rutaCookie() + '; SameSite=Lax';
+    } catch (e) { /* sin cookies */ }
+  }
+
+  function orgPreferida() {
+    try {
+      var m = String(w.document.cookie || '').match(new RegExp('(?:^|;\\s*)' + COOKIE_ORG + '=([^;]*)'));
+      return m && m[1] ? decodeURIComponent(m[1]) : null;
+    } catch (e) { return null; }
+  }
+
+  function borrarOrgPreferida() {
+    try { w.document.cookie = COOKIE_ORG + '=; max-age=0; path=' + rutaCookie() + '; SameSite=Lax'; } catch (e) { /* sin cookies */ }
+  }
+
+  /* Organización con que arranca una cuenta: la del último calendario que
+     abrió en este navegador, si pertenece a ella; si no, la primera donde ya
+     tiene una Persona vinculada (para que un admin que también es
+     integrante aterrice en su propio Dashboard de persona), o la primera a
+     secas si no tiene ninguna. */
   function orgInicialDeUsuario(userDoc) {
     var ids = userOrgIds(userDoc);
     var links = userMusicianLinks(userDoc);
+    var pref = orgPreferida();
+    if (pref && ids.indexOf(pref) >= 0) return pref;
     return ids.filter(function (id) { return !!links[id]; })[0] || ids[0] || null;
   }
 
@@ -2681,6 +2718,7 @@
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
     setUserRole: setUserRole, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
     userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
+    guardarOrgPreferida: guardarOrgPreferida, orgPreferida: orgPreferida, borrarOrgPreferida: borrarOrgPreferida,
     normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
     integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,
     watchAccesosPendientes: watchAccesosPendientes, crearAccesoPendiente: crearAccesoPendiente, borrarAccesoPendiente: borrarAccesoPendiente,

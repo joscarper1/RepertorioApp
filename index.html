@@ -21,7 +21,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260930c"></script>
+<script src="repertorio-data.js?v=20260930d"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -35,6 +35,11 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 
 /* ---- Estructura general ---- */
 .pag{max-width:1320px;margin:0 auto;padding:0 32px 64px}
+.elegir-cal{display:flex;flex-direction:column;align-items:center;gap:8px;margin:28px auto 0;max-width:380px}
+.elegir-cal-l{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac-dk)}
+.elegir-cal select{width:100%;min-height:48px;font-size:16px;font-weight:600;padding:10px 40px 10px 14px;border:2px solid var(--ink);border-radius:0;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23141211' stroke-width='1.8' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;color:var(--ink);appearance:none;-webkit-appearance:none;cursor:pointer}
+.elegir-cal select:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.elegir-cal-ayuda{font-size:12.5px;color:#7d7979}
 .top{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px;border-bottom:1px solid rgba(0,0,0,.12)}
 .top-org{display:flex;align-items:center;gap:10px;min-width:0;position:relative}
 .top-cuadro{width:14px;height:14px;background:var(--ac);flex:none}
@@ -438,8 +443,21 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
       <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase">Ministerio de Alabanza</span>
     </div>
     <h1 style="font-size:44px;line-height:1;font-weight:800;letter-spacing:-.02em;text-transform:uppercase;margin:0">RepertorioApp</h1>
-    <p style="font-size:16px;line-height:1.6;color:#54514f;margin-top:16px">Calendario y repertorio de alabanza para iglesias y ministerios: cada agrupación gestiona sus propios eventos, banda y canciones, con un calendario público listo para compartir.</p>
-    <button onClick="{{ iniciarSesion }}" style="margin-top:24px;font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:12px 22px;cursor:pointer">Iniciar sesión con Google</button>
+    <p style="font-size:16px;line-height:1.6;color:#54514f;margin-top:16px">Calendario de eventos para iglesias y ministerios: cada agrupación gestiona sus propios eventos y equipos, con un calendario público listo para compartir.</p>
+    <sc-if value="{{ hayCalendariosPublicos }}" hint-placeholder-val="{{ false }}">
+      <label class="elegir-cal">
+        <span class="elegir-cal-l">¿Qué calendario deseas ver?</span>
+        <select value="" onChange="{{ onElegirCalendario }}">
+          <option value="">Selecciona un calendario…</option>
+          <sc-for list="{{ calendariosPublicos }}" as="c" hint-placeholder-count="2">
+            <option value="{{ c.slug }}">{{ c.nombre }}</option>
+          </sc-for>
+        </select>
+        <span class="elegir-cal-ayuda">Lo recordaremos en este navegador para tus próximas visitas.</span>
+      </label>
+      <div style="font-size:13px;color:#54514f;margin-top:28px">¿Eres parte de un equipo?</div>
+    </sc-if>
+    <button onClick="{{ iniciarSesion }}" style="margin-top:12px;font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:12px 22px;cursor:pointer">Iniciar sesión con Google</button>
     <div style="min-height:18px;font-size:13px;color:#b00020;margin-top:10px">{{ errorLogin }}</div>
   </div>
 </sc-if>
@@ -945,6 +963,8 @@ class Component extends DCLogic {
        progArrastre guarda el segundo elegido mientras se arrastra la barra. */
     progT: 0, progD: 0, progArrastre: null,
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
+    /* Bienvenida sin sesión: organizaciones para elegir qué calendario ver. */
+    calendariosPublicos: [],
     /* Vista de eventos: 'mes' (calendario, la inicial) o 'semana' (tarjetas
        de la semana elegida; en el teléfono siempre es esta). eventoSel viene de ?eventid= para abrir un enlace
        compartido directo en ese evento; semanaSel/diaMes/diaFiltro en null
@@ -997,6 +1017,9 @@ class Component extends DCLogic {
       });
       R.getOrganizationBySlug(slug.trim(), (org) => {
         if (!org) { this.setState({ modo: 'error' }); return; }
+        /* Queda como el calendario preferido de este navegador (ver
+           R.guardarOrgPreferida), con o sin sesión. */
+        R.guardarOrgPreferida(org.id);
         this.setState({ modo: 'calendario', org: org });
         this._unSongOverrides = R.watchSongCatalog(org.id, (map) => this.setState({ songOverrides: map }));
         this._unwatch = R.watchEventsForOrg(org.id, (evs) => {
@@ -1045,17 +1068,23 @@ class Component extends DCLogic {
     this._unauth = R.onAuthChange((user) => {
       this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null });
       if (!user) {
-        if (forzarBienvenida) { this.setState({ modo: 'bienvenida' }); return; }
-        /* Mientras solo exista una organización registrada, no tiene
-           sentido pedirle a un visitante anónimo que se registre: se manda
-           directo a su calendario público. En cuanto haya más de una, no
-           hay forma de adivinar cuál le corresponde y se muestra la
-           bienvenida con el botón de inicio de sesión, como antes. */
+        /* Visitante sin sesión: vuelve al último calendario que eligió en
+           este navegador (cookie). Si no hay preferencia (o esa organización
+           ya no existe) y solo hay una organización, va directo a ella; con
+           varias, la bienvenida le muestra la lista para elegir. Con
+           ?bienvenida=1 (el botón "Iniciar sesión" del calendario) se queda
+           en la bienvenida, que también deja elegir otro calendario. */
         if (this._unwatchOrgsCheck) return;
         this._unwatchOrgsCheck = R.watchAllOrganizations((orgs) => {
           if (this._unwatchOrgsCheck) { this._unwatchOrgsCheck(); this._unwatchOrgsCheck = null; }
-          if (orgs.length === 1) { window.location.href = 'index.html?group=' + orgs[0].slug; return; }
-          this.setState({ modo: 'bienvenida' });
+          const pref = R.orgPreferida();
+          const orgPref = pref ? orgs.find((o) => o.id === pref) : null;
+          if (pref && !orgPref) R.borrarOrgPreferida();
+          if (!forzarBienvenida) {
+            const destino = orgPref || (orgs.length === 1 ? orgs[0] : null);
+            if (destino) { window.location.href = 'index.html?group=' + encodeURIComponent(destino.slug); return; }
+          }
+          this.setState({ modo: 'bienvenida', calendariosPublicos: orgs });
         });
         return;
       }
@@ -1579,6 +1608,14 @@ class Component extends DCLogic {
       esCargando: s.modo === 'cargando',
       esError: s.modo === 'error',
       esBienvenida: s.modo === 'bienvenida',
+      hayCalendariosPublicos: (s.calendariosPublicos || []).length > 0,
+      calendariosPublicos: (s.calendariosPublicos || []).slice()
+        .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'es'))
+        .map((o) => ({ slug: o.slug, nombre: o.name })),
+      onElegirCalendario: (e) => {
+        const slug = e.target.value;
+        if (slug) window.location.href = 'index.html?group=' + encodeURIComponent(slug);
+      },
       esPendiente: s.modo === 'pendiente',
       esCalendario: s.modo === 'calendario',
       iniciarSesion: () => this.iniciarSesion(),
