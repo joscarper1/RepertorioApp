@@ -1062,6 +1062,7 @@
     { tipo: 'Alabanza', cantidad: 1, rolesBanda: true },
     { tipo: 'Ofrenda', cantidad: 1 },
     { tipo: 'Limpieza', cantidad: 1 },
+    { tipo: 'Oración', cantidad: 1 },
     { tipo: 'Infantil', cantidad: 1 }
   ];
   var MINISTERIO_CANTIDAD_MAX = 10;
