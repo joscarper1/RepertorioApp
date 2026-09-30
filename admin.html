@@ -35,7 +35,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260930e"></script>
+<script src="repertorio-data.js?v=20260930f"></script>
 <script src="avisos.js?v=20260930a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -557,21 +557,28 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
         <sc-if value="{{ agregarUsuarioAbierto }}" hint-placeholder-val="{{ false }}">
           <div class="form-panel">
-            <div class="rotulo">Nuevo acceso</div>
+            <div class="rotulo">Nuevo usuario</div>
             <div class="form-fila">
               <label class="campo" style="flex:2">
-                <span class="campo-l">Correo (cuenta de Google)</span>
+                <span class="campo-l">Correo (cuenta de Google) · opcional</span>
                 <input class="inp" type="email" value="{{ nuevoUsuarioEmail }}" onChange="{{ onNuevoUsuarioEmail }}" placeholder="correo@gmail.com" autoComplete="off">
               </label>
-              <label class="campo" style="min-width:140px">
-                <span class="campo-l">Rol</span>
-                <select class="inp" value="{{ nuevoUsuarioRol }}" onChange="{{ onNuevoUsuarioRol }}">
-                  <option value="normal">Normal</option>
-                  <option value="editor">Editor</option>
-                  <option value="admin">Admin</option>
-                </select>
+              <label class="campo">
+                <span class="campo-l">WhatsApp · opcional</span>
+                <input class="inp" type="tel" inputMode="tel" value="{{ nuevoUsuarioTelefono }}" onChange="{{ onNuevoUsuarioTelefono }}" placeholder="7000-0000" autoComplete="off">
               </label>
+              <sc-if value="{{ nuevoUsuarioConCorreo }}" hint-placeholder-val="{{ true }}">
+                <label class="campo" style="min-width:140px;flex:0 1 160px">
+                  <span class="campo-l">Rol</span>
+                  <select class="inp" value="{{ nuevoUsuarioRol }}" onChange="{{ onNuevoUsuarioRol }}">
+                    <option value="normal">Normal</option>
+                    <option value="editor">Editor</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </label>
+              </sc-if>
             </div>
+            <p class="campo-ayuda" style="margin:0">Escribe al menos uno de los dos. Sin correo no puede iniciar sesión, pero recibe sus eventos por WhatsApp.</p>
             <div class="campo">
               <span class="campo-l">Organizaciones</span>
               <div style="display:flex;flex-wrap:wrap;gap:4px 18px">
@@ -599,7 +606,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 </label>
               </sc-if>
             </div>
-            <p class="campo-ayuda" style="margin:0">No se envía ningún correo: el acceso se activa la primera vez que esa persona inicie sesión con Google usando este correo.</p>
+            <p class="campo-ayuda" style="margin:0">{{ nuevoUsuarioAyuda }}</p>
             <div class="form-acc">
               <button type="button" class="btn-pri btn-ac" onClick="{{ guardarNuevoUsuario }}">Guardar</button>
               <button type="button" class="btn-sec" onClick="{{ toggleAgregarUsuario }}" style="min-height:40px;padding:0 16px">Cancelar</button>
@@ -633,15 +640,20 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   <span class="ini">{{ u.inicial }}</span>
                   <div style="min-width:0">
                     <div class="item-t">{{ u.nombre }}</div>
-                    <div class="item-s">{{ u.email }}</div>
+                    <div class="item-s">{{ u.subtitulo }}</div>
                   </div>
                 </div>
                 <div class="item-acc" style="width:auto">
-                  <select class="inp sel-mini" value="{{ u.role }}" onChange="{{ u.onRole }}" aria-label="Rol">
-                    <option value="normal">Normal</option>
-                    <option value="editor">Editor</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <sc-if value="{{ u.conCorreo }}" hint-placeholder-val="{{ true }}">
+                    <select class="inp sel-mini" value="{{ u.role }}" onChange="{{ u.onRole }}" aria-label="Rol">
+                      <option value="normal">Normal</option>
+                      <option value="editor">Editor</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </sc-if>
+                  <sc-if value="{{ u.sinCorreo }}" hint-placeholder-val="{{ false }}">
+                    <span class="badge b-azul" title="Sin correo: no inicia sesión, recibe sus eventos por WhatsApp">Solo WhatsApp</span>
+                  </sc-if>
                   <span class="solo-desk">
                     <button type="button" class="ico peligro" onClick="{{ u.borrar }}" style="{{ u.borrarStyle }}" aria-label="Eliminar usuario" title="Eliminar usuario">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>
@@ -1275,7 +1287,7 @@ class Component extends DCLogic {
        inicio de sesión (ver R.crearAccesoPendiente). nuevoUsuarioPersona:
        '' = sin persona, '__nueva__' = crear una, o el id de una existente. */
     accesosPendientes: [], agregarUsuarioAbierto: false,
-    nuevoUsuarioEmail: '', nuevoUsuarioRol: 'normal', nuevoUsuarioOrgs: {},
+    nuevoUsuarioEmail: '', nuevoUsuarioTelefono: '', nuevoUsuarioRol: 'normal', nuevoUsuarioOrgs: {},
     nuevoUsuarioPersona: '', nuevoUsuarioPersonaNombre: '',
     usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {},
     /* Teléfono en edición por uid (se guarda al salir del campo). */
@@ -1761,7 +1773,7 @@ class Component extends DCLogic {
   toggleAgregarUsuario() {
     this.setState((s) => ({
       agregarUsuarioAbierto: !s.agregarUsuarioAbierto,
-      nuevoUsuarioEmail: '', nuevoUsuarioRol: 'normal',
+      nuevoUsuarioEmail: '', nuevoUsuarioTelefono: '', nuevoUsuarioRol: 'normal',
       nuevoUsuarioOrgs: s.currentOrgId ? { [s.currentOrgId]: true } : {},
       nuevoUsuarioPersona: '', nuevoUsuarioPersonaNombre: ''
     }));
@@ -1771,31 +1783,54 @@ class Component extends DCLogic {
     this.setState((s) => ({ nuevoUsuarioOrgs: Object.assign({}, s.nuevoUsuarioOrgs, { [orgId]: !(s.nuevoUsuarioOrgs || {})[orgId] }) }));
   }
 
+  /* Correo y WhatsApp son opcionales, pero al menos uno es obligatorio. Con
+     correo se crea un acceso pendiente (entra con Google; el WhatsApp, si
+     viene, se le copia al iniciar sesión). Sin correo se registra un usuario
+     que no inicia sesión y recibe sus eventos por WhatsApp
+     (R.crearUsuarioSinCorreo). */
   guardarNuevoUsuario() {
     const R = D();
+    const AV = window.RepertorioAvisos;
     const s = this.state;
     const email = R.normalizarEmail(s.nuevoUsuarioEmail);
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { this.setState({ mensaje: 'Escribe un correo válido.' }); return; }
-    if ((s.usuarios || []).some((u) => R.normalizarEmail(u.email) === email)) {
+    const telTexto = (s.nuevoUsuarioTelefono || '').trim();
+    const tel = telTexto && AV ? AV.normalizarTelefono(telTexto) : '';
+    if (!R.contactoValido(email, telTexto)) { this.setState({ mensaje: 'Escribe al menos el correo o el WhatsApp.' }); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { this.setState({ mensaje: 'Escribe un correo válido.' }); return; }
+    if (telTexto && !(AV && AV.telefonoValido(tel))) { this.setState({ mensaje: 'El WhatsApp no es válido: usa 8 dígitos, o el número completo con código de país.' }); return; }
+    if (email && (s.usuarios || []).some((u) => R.normalizarEmail(u.email) === email)) {
       this.setState({ mensaje: 'Ya existe una cuenta con ' + email + ': cambia su rol, organizaciones y persona desde su tarjeta en la lista.' });
+      return;
+    }
+    if (!email && (s.usuarios || []).some((u) => u.telefono && u.telefono === tel)) {
+      this.setState({ mensaje: 'Ya existe un usuario con ese WhatsApp: edítalo desde su tarjeta en la lista.' });
       return;
     }
     const orgIds = Object.keys(s.nuevoUsuarioOrgs || {}).filter((id) => s.nuevoUsuarioOrgs[id]);
     const persona = s.nuevoUsuarioPersona;
     if (persona && s.currentOrgId && orgIds.indexOf(s.currentOrgId) < 0) orgIds.push(s.currentOrgId);
     if (!orgIds.length) { this.setState({ mensaje: 'Selecciona al menos una organización.' }); return; }
-    const guardar = (musicianId) => R.crearAccesoPendiente({
-      email: email, role: s.nuevoUsuarioRol, orgIds: orgIds,
-      musicianLinks: musicianId ? { [s.currentOrgId]: musicianId } : {}
-    }, s.userDoc && s.userDoc.uid, (ok) => this.setState(ok
-      ? { agregarUsuarioAbierto: false, mensaje: 'Acceso creado para ' + email + '. Se activa cuando inicie sesión con Google usando ese correo.' }
-      : { mensaje: 'No se pudo crear el acceso: revisa tu sesión o las reglas de Firebase.' }));
+    const guardar = (musicianId, nombrePersona) => {
+      const links = musicianId ? { [s.currentOrgId]: musicianId } : {};
+      if (!email) {
+        R.crearUsuarioSinCorreo({ nombre: nombrePersona, telefono: tel, orgIds: orgIds, musicianLinks: links }, s.userDoc && s.userDoc.uid, (uid) => this.setState(uid
+          ? { agregarUsuarioAbierto: false, mensaje: 'Usuario ' + (nombrePersona || AV.formatoTelefono(tel)) + ' registrado sin correo: recibirá sus eventos por WhatsApp.' }
+          : { mensaje: 'No se pudo registrar al usuario: revisa tu sesión o las reglas de Firebase.' }));
+        return;
+      }
+      R.crearAccesoPendiente({
+        email: email, role: s.nuevoUsuarioRol, orgIds: orgIds, musicianLinks: links, telefono: tel
+      }, s.userDoc && s.userDoc.uid, (ok) => this.setState(ok
+        ? { agregarUsuarioAbierto: false, mensaje: 'Acceso creado para ' + email + '. Se activa cuando inicie sesión con Google usando ese correo.' }
+        : { mensaje: 'No se pudo crear el acceso: revisa tu sesión o las reglas de Firebase.' }));
+    };
     if (persona === '__nueva__') {
       const nombre = (s.nuevoUsuarioPersonaNombre || '').trim();
       if (!nombre) { this.setState({ mensaje: 'Escribe el nombre de la persona nueva.' }); return; }
-      R.createMusician(s.currentOrgId, nombre, [], (m) => (m ? guardar(m.id) : this.setState({ mensaje: 'No se pudo crear la persona.' })));
+      R.createMusician(s.currentOrgId, nombre, [], (m) => (m ? guardar(m.id, nombre) : this.setState({ mensaje: 'No se pudo crear la persona.' })));
     } else {
-      guardar(persona || null);
+      const existente = persona ? (s.musicos || []).find((m) => m.id === persona) : null;
+      guardar(persona || null, existente ? existente.nombre : '');
     }
   }
 
@@ -2115,6 +2150,10 @@ class Component extends DCLogic {
     });
     const tel = AV.normalizarTelefono(texto);
     if (tel === (u.telefono || '')) { limpiar(); return; }
+    if (!tel && D().esUsuarioSinCorreo(u)) {
+      this.setState({ mensaje: (u.displayName || 'Este usuario') + ' no tiene correo: su WhatsApp no puede quedar vacío.' });
+      return;
+    }
     if (tel && !AV.telefonoValido(tel)) {
       this.setState({ mensaje: 'El teléfono de ' + (u.displayName || u.email) + ' no es válido: usa 8 dígitos, o el número completo con código de país.' });
       return;
@@ -2191,7 +2230,8 @@ class Component extends DCLogic {
   }
 
   confirmarBorrarUsuario(u) {
-    const ok = confirm('¿Eliminar a "' + (u.displayName || u.email) + '"? Perderá acceso al sistema de inmediato. Esta acción no se puede deshacer.');
+    const ok = confirm('¿Eliminar a "' + (u.displayName || u.email) + '"? ' + (D().esUsuarioSinCorreo(u)
+      ? 'Dejará de recibir sus eventos por WhatsApp.' : 'Perderá acceso al sistema de inmediato.') + ' Esta acción no se puede deshacer.');
     if (!ok) return;
     D().deleteUser(u.uid, (exito) => {
       this.setState({ mensaje: exito ? 'Usuario eliminado.' : 'No se pudo eliminar el usuario.' });
@@ -2301,9 +2341,17 @@ class Component extends DCLogic {
       const idsMap = {};
       misIds.forEach((id) => (idsMap[id] = true));
       const esUnoMismo = !!s.userDoc && u.uid === s.userDoc.uid;
+      /* Sin correo: el nombre es el de su persona (si la tiene) y en lugar del
+         correo se muestra su WhatsApp. */
+      const sinCorreoU = R.esUsuarioSinCorreo(u);
+      const personaU = personaIdU ? personaOpciones.find((p) => p.id === personaIdU) : null;
+      const nombreU = (sinCorreoU && personaU ? personaU.nombre : '') || u.displayName || u.email || (AV ? AV.formatoTelefono(u.telefono) : u.telefono) || 'Sin nombre';
       return {
-        uid: u.uid, email: u.email, nombre: u.displayName || u.email,
-        inicial: ((u.displayName || u.email || '?').trim().charAt(0) || '?').toUpperCase(),
+        uid: u.uid, email: u.email, nombre: nombreU,
+        subtitulo: sinCorreoU ? ('Sin correo · WhatsApp ' + (AV ? AV.formatoTelefono(u.telefono) : u.telefono)) : u.email,
+        conCorreo: !sinCorreoU,
+        sinCorreo: sinCorreoU,
+        inicial: (nombreU.trim().charAt(0) || '?').toUpperCase(),
         role: u.role || 'normal',
         personaId: personaIdU,
         personaOpciones: personaOpciones,
@@ -2714,6 +2762,14 @@ class Component extends DCLogic {
       onNuevoUsuarioEmail: (e) => this.setState({ nuevoUsuarioEmail: e.target.value }),
       nuevoUsuarioRol: s.nuevoUsuarioRol,
       onNuevoUsuarioRol: (e) => this.setState({ nuevoUsuarioRol: e.target.value }),
+      nuevoUsuarioTelefono: s.nuevoUsuarioTelefono,
+      onNuevoUsuarioTelefono: (e) => this.setState({ nuevoUsuarioTelefono: e.target.value }),
+      nuevoUsuarioConCorreo: !!(s.nuevoUsuarioEmail || '').trim(),
+      nuevoUsuarioAyuda: (s.nuevoUsuarioEmail || '').trim()
+        ? 'No se envía ningún correo: el acceso se activa la primera vez que esa persona inicie sesión con Google usando este correo.'
+        : ((s.nuevoUsuarioTelefono || '').trim()
+          ? 'Sin correo no inicia sesión: queda registrado para recibir por WhatsApp los eventos de la persona vinculada.'
+          : 'Escribe el correo, el WhatsApp o ambos.'),
       nuevoUsuarioOrgsChips: orgs.map((o) => ({
         nombre: o.name,
         marcada: !!(s.nuevoUsuarioOrgs || {})[o.id],

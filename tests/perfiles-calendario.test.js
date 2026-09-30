@@ -212,3 +212,16 @@ test('avisos: el puesto de Alabanza incluye el rol', () => {
   const rep = { fecha: '2026-10-04', servicio: 'Cultos Dominicales', banda: [{ tipo: 'Corista', numero: 2, nombre: 'B', musicianId: 'm2' }] };
   assert.match(A.lineaEvento(rep, 'm2'), /Cultos Dominicales \(Corista\)$/);
 });
+
+test('avisos: un usuario sin correo recibe su aviso por WhatsApp', () => {
+  const A = require('../avisos.js');
+  const ev = { id: 'e1', fecha: '2999-01-07', servicio: 'Culto Filial', estado: 'PUBLICADO', banda: [{ tipo: 'Protocolo', nombre: 'Beto', musicianId: 'm2' }] };
+  const filas = A.planAvisos({ tipo: 'publicacion', eventIds: ['e1'] }, {
+    org: { id: 'f', name: 'Filial' }, eventos: [ev], hoy: '2998-12-01', musicos: [{ id: 'm2', nombre: 'Beto' }],
+    usuarios: [{ uid: '-Nx', email: '', sinCorreo: true, telefono: '50370002222', organizationIds: { f: true }, musicianLinks: { f: 'm2' } }]
+  });
+  assert.equal(filas.length, 1);
+  assert.equal(filas[0].email, '');
+  assert.equal(filas[0].telefono, '50370002222');
+  assert.ok(filas[0].aviso && /Protocolo/.test(filas[0].aviso.texto));
+});

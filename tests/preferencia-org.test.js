@@ -77,3 +77,14 @@ test('sin document (Node) las funciones no fallan', () => {
   assert.equal(R.orgPreferida(), null);
   assert.equal(R.orgInicialDeUsuario({ organizationIds: { a: true } }), 'a');
 });
+
+test('usuarios sin correo: al menos correo o WhatsApp', () => {
+  const { R } = cargar();
+  assert.equal(R.contactoValido('a@b.com', ''), true);
+  assert.equal(R.contactoValido('', '50370000000'), true);
+  assert.equal(R.contactoValido('  ', ' '), false);
+  assert.equal(R.esUsuarioSinCorreo({ sinCorreo: true, email: '' }), true);
+  /* Si ya tiene correo cuenta como cuenta normal */
+  assert.equal(R.esUsuarioSinCorreo({ sinCorreo: true, email: 'a@b.com' }), false);
+  assert.equal(R.esUsuarioSinCorreo({ email: 'a@b.com' }), false);
+});

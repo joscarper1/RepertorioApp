@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planificador de Servidores</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -21,7 +22,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260930e"></script>
+<script src="repertorio-data.js?v=20260930f"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -35,11 +36,28 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 
 /* ---- Estructura general ---- */
 .pag{max-width:1320px;margin:0 auto;padding:0 32px 64px}
-.elegir-cal{display:flex;flex-direction:column;align-items:center;gap:8px;margin:28px auto 0;max-width:380px}
-.elegir-cal-l{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac-dk)}
-.elegir-cal select{width:100%;min-height:48px;font-size:16px;font-weight:600;padding:10px 40px 10px 14px;border:2px solid var(--ink);border-radius:0;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23141211' stroke-width='1.8' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;color:var(--ink);appearance:none;-webkit-appearance:none;cursor:pointer}
-.elegir-cal select:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
-.elegir-cal-ayuda{font-size:12.5px;color:#7d7979}
+/* Pantallas sin calendario (bienvenida, cargando, no encontrada, cuenta
+   pendiente): tarjeta centrada con el mismo estilo del acceso de los paneles. */
+.pant{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;box-sizing:border-box}
+.pant-card{width:min(100%,460px);background:#fff;border-radius:16px;border:1px solid rgba(0,0,0,.08);padding:28px 24px 24px;box-shadow:0 16px 40px rgba(0,0,0,.10);box-sizing:border-box}
+.pant-kicker{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac)}
+.pant-kicker .cuadro{width:14px;height:14px;background:var(--ac);flex:none}
+.pant-kicker.err{color:var(--red)}
+.pant-kicker.err .cuadro{background:var(--red)}
+.pant-t{font-size:30px;font-weight:900;margin:12px 0 0;text-transform:uppercase;line-height:1.02;letter-spacing:-.01em;overflow-wrap:break-word}
+.pant-p{font-size:14px;line-height:1.55;color:var(--muted);margin:10px 0 0}
+.pant-sep{height:1px;background:rgba(0,0,0,.08);margin:22px 0 18px}
+.pant-l{display:block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.pant-sel{width:100%;min-height:46px;font-size:15px;font-weight:600;padding:10px 38px 10px 12px;border:1px solid rgba(0,0,0,.18);border-radius:10px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235d5a55' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 14px center;color:var(--ink);appearance:none;-webkit-appearance:none;cursor:pointer;box-sizing:border-box}
+.pant-sel:focus-visible{outline:none;border-color:var(--ac);box-shadow:0 0 0 3px var(--ac-lt)}
+.pant-ayuda{font-size:12.5px;color:var(--muted2);margin:6px 0 0}
+.pant-btn{width:100%;min-height:46px;font-size:14px;font-weight:700;border:0;border-radius:10px;background:var(--ink);color:#fff;padding:0 16px;cursor:pointer;margin-top:20px}
+.pant-btn:hover{background:#000}
+.pant-btn.sec{background:#fff;color:var(--ink);border:1px solid rgba(0,0,0,.18)}
+.pant-btn.sec:hover{border-color:var(--ink)}
+.pant-cargando{font-size:14px;color:var(--muted2);margin:0}
+.pant-error{min-height:18px;font-size:13px;color:var(--red);margin-top:8px}
+@media (max-width:640px){ .pant-t{font-size:26px} .pant-card{padding:24px 18px 20px} }
 .top{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:60px;border-bottom:1px solid rgba(0,0,0,.12)}
 .top-org{display:flex;align-items:center;gap:10px;min-width:0;position:relative}
 .top-cuadro{width:14px;height:14px;background:var(--ac);flex:none}
@@ -414,51 +432,55 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
 </helmet>
 
 <sc-if value="{{ esCargando }}" hint-placeholder-val="{{ false }}">
-  <div style="max-width:480px;margin:80px auto;text-align:center;padding:0 20px">
-    <p style="font-size:14px;color:#7d7979">Cargando…</p>
-  </div>
+  <div class="pant"><p class="pant-cargando">Cargando…</p></div>
 </sc-if>
 
 <sc-if value="{{ esError }}" hint-placeholder-val="{{ false }}">
-  <div style="max-width:480px;margin:80px auto;text-align:center;padding:0 20px">
-    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:#b00020">Agrupación no encontrada</div>
-    <h1 style="font-size:28px;font-weight:800;margin:14px 0 0;text-transform:uppercase">No pudimos encontrar esta página</h1>
-    <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:12px">El enlace que abriste no corresponde a ninguna agrupación registrada. Verifica el enlace o contacta a quien te lo compartió.</p>
+  <div class="pant">
+    <div class="pant-card">
+      <div class="pant-kicker err"><span class="cuadro"></span>Calendario no encontrado</div>
+      <h1 class="pant-t">No pudimos encontrar esta página</h1>
+      <p class="pant-p">El enlace que abriste no corresponde a ningún calendario registrado. Verifica el enlace o contacta a quien te lo compartió.</p>
+      <button type="button" class="pant-btn sec" onClick="{{ irABienvenida }}">Elegir un calendario</button>
+    </div>
   </div>
 </sc-if>
 
 <sc-if value="{{ esPendiente }}" hint-placeholder-val="{{ false }}">
-  <div style="max-width:480px;margin:80px auto;text-align:center;padding:0 20px">
-    <div style="font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--ac-dk)">Cuenta creada</div>
-    <h1 style="font-size:28px;font-weight:800;margin:14px 0 0;text-transform:uppercase">Un administrador te asignará pronto</h1>
-    <p style="font-size:14px;line-height:1.5;color:#54514f;margin-top:12px">Tu cuenta de Google ya quedó registrada. En cuanto un administrador te vincule con tu agrupación, verás aquí su calendario.</p>
-    <button onClick="{{ cerrarSesion }}" style="margin-top:18px;font-size:13px;font-weight:600;letter-spacing:.04em;padding:10px 16px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer">Cerrar sesión</button>
+  <div class="pant">
+    <div class="pant-card">
+      <div class="pant-kicker"><span class="cuadro"></span>Cuenta creada</div>
+      <h1 class="pant-t">Un administrador te asignará pronto</h1>
+      <p class="pant-p">Tu cuenta de Google ya quedó registrada. En cuanto un administrador te vincule con tu organización, verás aquí su calendario.</p>
+      <button type="button" class="pant-btn sec" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
+    </div>
   </div>
 </sc-if>
 
 <sc-if value="{{ esBienvenida }}" hint-placeholder-val="{{ false }}">
-  <div style="max-width:640px;margin:60px auto;text-align:center;padding:0 20px">
-    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px">
-      <span style="width:14px;height:14px;background:var(--ac);display:inline-block"></span>
-      <span style="font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase">Ministerio de Alabanza</span>
+  <div class="pant">
+    <div class="pant-card">
+      <div class="pant-kicker"><span class="cuadro"></span>Servidores</div>
+      <h1 class="pant-t">Planificador de Servidores</h1>
+      <p class="pant-p">Calendario de eventos para iglesias y ministerios: cada organización planifica sus eventos y a quién le toca servir, con un calendario público listo para compartir.</p>
+      <sc-if value="{{ hayCalendariosPublicos }}" hint-placeholder-val="{{ false }}">
+        <div class="pant-sep"></div>
+        <label>
+          <span class="pant-l">¿Qué calendario deseas ver?</span>
+          <select class="pant-sel" value="" onChange="{{ onElegirCalendario }}">
+            <option value="">Selecciona un calendario…</option>
+            <sc-for list="{{ calendariosPublicos }}" as="c" hint-placeholder-count="2">
+              <option value="{{ c.slug }}">{{ c.nombre }}</option>
+            </sc-for>
+          </select>
+        </label>
+        <p class="pant-ayuda">Lo recordaremos en este navegador para tus próximas visitas.</p>
+        <div class="pant-sep"></div>
+        <p class="pant-p" style="margin:0">¿Eres parte de un equipo? Entra para ver tus eventos.</p>
+      </sc-if>
+      <button type="button" class="pant-btn" onClick="{{ iniciarSesion }}">Iniciar sesión con Google</button>
+      <div class="pant-error">{{ errorLogin }}</div>
     </div>
-    <h1 style="font-size:44px;line-height:1;font-weight:800;letter-spacing:-.02em;text-transform:uppercase;margin:0">RepertorioApp</h1>
-    <p style="font-size:16px;line-height:1.6;color:#54514f;margin-top:16px">Calendario de eventos para iglesias y ministerios: cada agrupación gestiona sus propios eventos y equipos, con un calendario público listo para compartir.</p>
-    <sc-if value="{{ hayCalendariosPublicos }}" hint-placeholder-val="{{ false }}">
-      <label class="elegir-cal">
-        <span class="elegir-cal-l">¿Qué calendario deseas ver?</span>
-        <select value="" onChange="{{ onElegirCalendario }}">
-          <option value="">Selecciona un calendario…</option>
-          <sc-for list="{{ calendariosPublicos }}" as="c" hint-placeholder-count="2">
-            <option value="{{ c.slug }}">{{ c.nombre }}</option>
-          </sc-for>
-        </select>
-        <span class="elegir-cal-ayuda">Lo recordaremos en este navegador para tus próximas visitas.</span>
-      </label>
-      <div style="font-size:13px;color:#54514f;margin-top:28px">¿Eres parte de un equipo?</div>
-    </sc-if>
-    <button onClick="{{ iniciarSesion }}" style="margin-top:12px;font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border:2px solid var(--ac);background:var(--ac);color:#fff;padding:12px 22px;cursor:pointer">Iniciar sesión con Google</button>
-    <div style="min-height:18px;font-size:13px;color:#b00020;margin-top:10px">{{ errorLogin }}</div>
   </div>
 </sc-if>
 

@@ -1319,7 +1319,9 @@
           updates[base + '/musicianLinks/' + orgId] = links[orgId];
           updates[MUSICIANS_PATH + '/' + links[orgId] + '/userId'] = firebaseUser.uid;
         });
+        if (acc.telefono && !doc.telefono) updates[base + '/telefono'] = String(acc.telefono);
         root.update(updates).then(function () {
+          if (acc.telefono && !doc.telefono) doc.telefono = String(acc.telefono);
           doc.role = nuevoRol;
           doc.organizationIds = Object.assign({}, doc.organizationIds || {}, orgs);
           doc.musicianLinks = Object.assign({}, doc.musicianLinks || {}, links);
@@ -1532,11 +1534,53 @@
     });
     var doc = { email: email, role: rolValido(acc.role), organizationIds: orgs, createdAt: Date.now(), createdBy: creadoPor || null };
     if (Object.keys(links).length) doc.musicianLinks = links;
+    /* WhatsApp opcional: se copia a la cuenta en su primer inicio de sesión. */
+    if (acc.telefono) doc.telefono = String(acc.telefono);
     root.child(ACCESOS_PATH).child(emailKey(email)).set(doc).then(function () { cb && cb(true); }, function (err) {
       console.error('Firebase crearAccesoPendiente rechazado:', err && err.code, err && err.message, err);
       cb && cb(false);
     });
   }
+
+  /* Registro sin correo (solo WhatsApp): no puede iniciar sesión, pero se le
+     vincula una Persona por organización y recibe sus eventos por WhatsApp
+     igual que cualquier cuenta. Vive en /users con una llave de push() (empieza
+     con '-', nunca coincide con el uid de una cuenta de Google) y
+     `sinCorreo: true`; así Usuarios, la vinculación con Persona y los avisos lo
+     tratan como a las demás cuentas. c: {nombre, telefono, orgIds,
+     musicianLinks: {orgId: musicianId}}. cb(uid|null). */
+  function crearUsuarioSinCorreo(c, creadoPor, cb) {
+    var root = dbRoot();
+    var tel = String((c && c.telefono) || '');
+    if (!root || !tel) { cb && cb(null); return; }
+    var uid = root.child(USERS_PATH).push().key;
+    var orgs = {};
+    (c.orgIds || []).forEach(function (id) { orgs[id] = true; });
+    var links = {};
+    Object.keys(c.musicianLinks || {}).forEach(function (orgId) {
+      if (c.musicianLinks[orgId]) { links[orgId] = c.musicianLinks[orgId]; orgs[orgId] = true; }
+    });
+    var doc = {
+      uid: uid, email: '', sinCorreo: true, displayName: String(c.nombre || '').trim() || tel,
+      role: 'normal', telefono: tel, organizationIds: orgs, createdAt: Date.now(), createdBy: creadoPor || null
+    };
+    if (Object.keys(links).length) doc.musicianLinks = links;
+    var updates = {};
+    updates[USERS_PATH + '/' + uid] = doc;
+    Object.keys(links).forEach(function (orgId) {
+      updates[MUSICIANS_PATH + '/' + links[orgId] + '/userId'] = uid;
+      updates[MUSICIANS_PATH + '/' + links[orgId] + '/updatedAt'] = Date.now();
+    });
+    root.update(updates).then(function () { cb && cb(uid); }, function (err) {
+      console.error('Firebase crearUsuarioSinCorreo rechazado:', err && err.code, err && err.message, err);
+      cb && cb(null);
+    });
+  }
+
+  function esUsuarioSinCorreo(u) { return !!(u && u.sinCorreo && !u.email); }
+
+  /* Toda cuenta debe tener al menos correo o WhatsApp. */
+  function contactoValido(email, telefono) { return !!(normalizarEmail(email) || String(telefono || '').trim()); }
 
   function borrarAccesoPendiente(key, cb) {
     var root = dbRoot();
@@ -2735,6 +2779,7 @@
     normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
     integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,
     watchAccesosPendientes: watchAccesosPendientes, crearAccesoPendiente: crearAccesoPendiente, borrarAccesoPendiente: borrarAccesoPendiente,
+    crearUsuarioSinCorreo: crearUsuarioSinCorreo, esUsuarioSinCorreo: esUsuarioSinCorreo, contactoValido: contactoValido,
     watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, saveEventSinBanda: saveEventSinBanda, setEventEstado: setEventEstado, moveEvent: moveEvent,
     watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong,
     urlCifrado: urlCifrado, prepararCifrado: prepararCifrado, getCifrado: getCifrado, saveCifrado: saveCifrado,
