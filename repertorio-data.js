@@ -857,8 +857,12 @@
 
   /* cb(org|null, error|null). Revisa que el slug generado del nombre no
      colisione con uno existente antes de escribir (agrega un sufijo numérico
-     si hace falta). */
-  function createOrganization(name, cb) {
+     si hace falta). tipoCalendario (ver PERFILES_CALENDARIO) se fija aquí y
+     no se cambia después; se acepta la firma vieja (name, cb). Los
+     ministerios de una organización de servicio no se escriben: sin lista
+     propia usa MINISTERIOS_DEFECTO. */
+  function createOrganization(name, tipoCalendario, cb) {
+    if (typeof tipoCalendario === 'function') { cb = tipoCalendario; tipoCalendario = null; }
     var root = dbRoot();
     if (!root) { cb && cb(null, new Error('Firebase no disponible')); return; }
     var base = slugify(name) || 'organizacion';
@@ -867,7 +871,8 @@
       var slug = base, n = 2;
       while (existentes.indexOf(slug) >= 0) { slug = base + n; n++; }
       var id = root.child(ORGS_PATH).push().key;
-      var org = { id: id, name: name, slug: slug, kicker: 'Calendario mensual', nota: '', createdAt: Date.now() };
+      var org = { id: id, name: name, slug: slug, kicker: 'Calendario mensual', nota: '', createdAt: Date.now(),
+        tipoCalendario: tipoCalendarioValido(tipoCalendario) };
       root.child(ORGS_PATH).child(id).set(org).then(function () { cb && cb(org, null); }, function (err) { cb && cb(null, err); });
     }, function (err) { cb && cb(null, err); });
   }
@@ -875,12 +880,15 @@
   /* patch no puede tocar id/slug (el slug es inmutable una vez creado para
      no romper enlaces ?group=slug ya compartidos). bannerUrl es una URL de
      imagen alojada externamente (no se sube ningún archivo, para mantener
-     el sitio sin costo de Firebase Storage). */
+     el sitio sin costo de Firebase Storage). tipoCalendario tampoco se toca
+     (se elige al crear). ministerios solo aplica a las de servicio
+     ministerial y se guarda ya normalizado. */
   function updateOrganization(orgId, patch, cb) {
     var root = dbRoot();
     if (!root) { cb && cb(false); return; }
     var safe = { name: patch.name, kicker: patch.kicker, nota: patch.nota };
     if (patch.bannerUrl !== undefined) safe.bannerUrl = patch.bannerUrl;
+    if (patch.ministerios !== undefined) safe.ministerios = normalizarMinisterios(patch.ministerios);
     root.child(ORGS_PATH).child(orgId).update(safe).then(function () { cb && cb(true); }, function () { cb && cb(false); });
   }
 

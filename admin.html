@@ -35,7 +35,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260930a"></script>
+<script src="repertorio-data.js?v=20260930b"></script>
 <script src="avisos.js?v=20260928b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -220,6 +220,18 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .form-fila{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
 .form-fila > .campo{flex:1;min-width:200px}
 .form-acc{display:flex;gap:8px;flex-wrap:wrap}
+.tipo-cal{align-self:flex-start;flex-wrap:wrap}
+.tipo-cal-fijo{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.min-fila{display:grid;grid-template-columns:minmax(0,1fr) 84px auto 32px;gap:8px;align-items:center}
+.min-fila .btn-quitar{grid-column:4;grid-row:1}
+.min-fila .min-check{grid-column:3;grid-row:1}
+.min-check{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);white-space:nowrap;cursor:pointer}
+.min-check input{width:16px;height:16px;accent-color:var(--ac);cursor:pointer}
+@media (max-width:640px){
+  .min-fila{grid-template-columns:minmax(0,1fr) 72px 32px;row-gap:4px}
+  .min-fila .btn-quitar{grid-column:3}
+  .min-fila .min-check{grid-column:1 / -1;grid-row:2}
+}
 .pend{border:1.5px dashed rgba(0,0,0,.2);border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff}
 .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-top:1px solid rgba(0,0,0,.07)}
 .pager .btn-sec:disabled,.item-sub .btn-sec:disabled,.chips .btn-sec:disabled{opacity:.4;cursor:not-allowed}
@@ -436,7 +448,18 @@ a.mas-fila:hover{background:none;color:var(--ink)}
               <input class="inp" value="{{ nuevoOrgNombre }}" onChange="{{ onNuevoOrgNombre }}" placeholder="Nombre de la organización">
               <span class="campo-ayuda">Enlace público: /{{ slugPreview }}</span>
             </label>
-            <button type="button" class="btn-pri btn-ac" onClick="{{ crearOrganizacion }}" style="margin-bottom:22px">+ Crear</button>
+          </div>
+          <div class="campo">
+            <span class="campo-l">Tipo de calendario</span>
+            <div class="seg tipo-cal" role="radiogroup" aria-label="Tipo de calendario">
+              <sc-for list="{{ tiposCalendarioOpc }}" as="t" hint-placeholder-count="2">
+                <button type="button" class="{{ t.clase }}" role="radio" aria-checked="{{ t.activo }}" onClick="{{ t.elegir }}">{{ t.label }}</button>
+              </sc-for>
+            </div>
+            <span class="campo-ayuda">{{ nuevoOrgTipoAyuda }}</span>
+          </div>
+          <div class="form-acc">
+            <button type="button" class="btn-pri btn-ac" onClick="{{ crearOrganizacion }}">+ Crear</button>
           </div>
         </div>
 
@@ -467,6 +490,34 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                     <img src="{{ orgEditBannerUrl }}" alt="" style="display:block;width:100%;max-height:160px;object-fit:cover;border-radius:10px">
                   </sc-if>
                   <span style="{{ orgEditBannerEstadoStyle }}">{{ orgEditBannerEstado }}</span>
+                  <div class="campo">
+                    <span class="campo-l">Tipo de calendario</span>
+                    <div class="tipo-cal-fijo">
+                      <span class="{{ o.tipoClase }}">{{ o.tipoLabel }}</span>
+                      <span class="campo-ayuda">Se eligió al crear la organización y no se puede cambiar.</span>
+                    </div>
+                  </div>
+                  <sc-if value="{{ o.esServicio }}" hint-placeholder-val="{{ false }}">
+                    <div class="campo">
+                      <span class="campo-l">Ministerios</span>
+                      <span class="campo-ayuda">Puestos que se piden por defecto en cada evento, en este orden. Con “Roles de banda”, al convocar se elige el rol que hará la persona (Director de Alabanza, Corista, Piano…). Los cambios aplican a los eventos nuevos; los ya creados conservan sus puestos.</span>
+                      <sc-for list="{{ orgEditMinisterios }}" as="m" hint-placeholder-count="3">
+                        <div class="min-fila">
+                          <input class="inp" value="{{ m.tipo }}" onChange="{{ m.onTipo }}" placeholder="Nombre del ministerio" aria-label="Nombre del ministerio">
+                          <input class="inp" type="number" min="1" max="{{ m.max }}" value="{{ m.cantidad }}" onChange="{{ m.onCantidad }}" aria-label="Cantidad de puestos" title="Cantidad de puestos">
+                          <button type="button" class="btn-quitar" onClick="{{ m.quitar }}" aria-label="Quitar ministerio" title="Quitar ministerio">✕</button>
+                          <label class="min-check"><input type="checkbox" checked="{{ m.rolesBanda }}" onChange="{{ m.onRolesBanda }}"> Roles de banda</label>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{ orgEditMinisteriosVacio }}" hint-placeholder-val="{{ false }}">
+                        <span class="campo-ayuda">Sin ministerios se usan los de por defecto.</span>
+                      </sc-if>
+                      <div class="form-acc">
+                        <button type="button" class="btn-sec" onClick="{{ agregarMinisterio }}" style="min-height:38px;padding:0 14px">+ Agregar ministerio</button>
+                        <button type="button" class="btn-texto" onClick="{{ restaurarMinisterios }}">Restaurar por defecto</button>
+                      </div>
+                    </div>
+                  </sc-if>
                   <div class="form-acc">
                     <button type="button" class="btn-pri btn-ac" onClick="{{ guardarEdicionOrg }}">Guardar</button>
                     <button type="button" class="btn-sec" onClick="{{ cancelarEdicionOrg }}" style="min-height:40px;padding:0 16px">Cancelar</button>
@@ -476,7 +527,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
               <sc-if value="{{ o.noEditando }}" hint-placeholder-val="{{ true }}">
                 <div class="item-fila">
                   <div style="min-width:0">
-                    <div class="item-t">{{ o.nombre }}</div>
+                    <div class="item-t">{{ o.nombre }} <span class="{{ o.tipoClase }}" style="vertical-align:2px;margin-left:4px">{{ o.tipoLabel }}</span></div>
                     <div class="item-s">/{{ o.slug }} · creada {{ o.fecha }}</div>
                   </div>
                   <div class="item-acc" style="width:auto">
@@ -1210,7 +1261,10 @@ class Component extends DCLogic {
   state = {
     estadoAuth: 'cargando', usuarioNombre: null, userDoc: null,
     todasOrgs: [], currentOrgId: null, activeTab: 'organizaciones', subUsuarios: 'usuarios', masAbierto: false,
-    nuevoOrgNombre: '', editandoOrgId: null,
+    nuevoOrgNombre: '', nuevoOrgTipo: 'repertorio', editandoOrgId: null,
+    /* Ministerios de la organización de servicio en edición: [{tipo,
+       cantidad (texto del input), rolesBanda}] (ver R.normalizarMinisterios). */
+    orgEditMinisterios: [],
     orgEditNombre: '', orgEditKicker: '', orgEditNota: '',
     /* orgEditBannerValido: null mientras no se ha validado (o el campo está
        vacío), true/false según el resultado de intentar cargar la URL como
@@ -1556,7 +1610,7 @@ class Component extends DCLogic {
     const nombre = (this.state.nuevoOrgNombre || '').trim();
     if (!nombre) return;
     const R = D();
-    R.createOrganization(nombre, (org) => {
+    R.createOrganization(nombre, this.state.nuevoOrgTipo, (org) => {
       if (!org) { this.setState({ mensaje: 'No se pudo crear la organización.' }); return; }
       /* Quien crea la organización queda vinculado a ella de una vez —
          de lo contrario nunca la vería en su propio listado (el CRUD de
@@ -1564,8 +1618,8 @@ class Component extends DCLogic {
       const nuevosIds = R.userOrgIds(this.state.userDoc).concat([org.id]);
       R.setUserOrgs(this.state.userDoc.uid, nuevosIds, () => {});
       this.setState((s) => ({
-        nuevoOrgNombre: '',
-        mensaje: 'Organización "' + org.name + '" creada.',
+        nuevoOrgNombre: '', nuevoOrgTipo: 'repertorio',
+        mensaje: 'Organización "' + org.name + '" creada (' + R.perfilOrg(org).label + ').',
         currentOrgId: org.id,
         userDoc: Object.assign({}, s.userDoc, { organizationIds: nuevosIds.reduce((m, id) => (m[id] = true, m), {}) })
       }));
@@ -1576,10 +1630,29 @@ class Component extends DCLogic {
     const url = org.bannerUrl || '';
     this.setState({
       editandoOrgId: org.id, orgEditNombre: org.name, orgEditKicker: org.kicker || '', orgEditNota: org.nota || '',
-      orgEditBannerUrl: url, orgEditBannerValido: null, orgEditBannerValidando: false
+      orgEditBannerUrl: url, orgEditBannerValido: null, orgEditBannerValidando: false,
+      orgEditMinisterios: this.ministeriosEditables(org.ministerios)
     });
     if (url) this.validarOrgEditBanner(url);
   }
+
+  ministeriosEditables(lista) {
+    return D().normalizarMinisterios(lista).map((m) => ({ tipo: m.tipo, cantidad: String(m.cantidad), rolesBanda: !!m.rolesBanda }));
+  }
+
+  cambiarMinisterio(i, patch) {
+    this.setState((s) => ({ orgEditMinisterios: s.orgEditMinisterios.map((m, j) => (j === i ? Object.assign({}, m, patch) : m)) }));
+  }
+
+  quitarMinisterio(i) {
+    this.setState((s) => ({ orgEditMinisterios: s.orgEditMinisterios.filter((m, j) => j !== i) }));
+  }
+
+  agregarMinisterio() {
+    this.setState((s) => ({ orgEditMinisterios: s.orgEditMinisterios.concat([{ tipo: '', cantidad: '1', rolesBanda: false }]) }));
+  }
+
+  restaurarMinisterios() { this.setState({ orgEditMinisterios: this.ministeriosEditables(null) }); }
 
   cancelarEdicionOrg() { this.setState({ editandoOrgId: null }); }
 
@@ -1615,7 +1688,19 @@ class Component extends DCLogic {
       this.setState({ mensaje: 'La URL de la imagen banner no es válida: revisa que apunte directo a una imagen.' });
       return;
     }
-    D().updateOrganization(s.editandoOrgId, { name: s.orgEditNombre, kicker: s.orgEditKicker, nota: s.orgEditNota, bannerUrl: (s.orgEditBannerUrl || '').trim() }, (ok) => {
+    const patch = { name: s.orgEditNombre, kicker: s.orgEditKicker, nota: s.orgEditNota, bannerUrl: (s.orgEditBannerUrl || '').trim() };
+    const org = (s.todasOrgs || []).find((o) => o.id === s.editandoOrgId);
+    if (org && D().perfilOrg(org).id === 'servicio') {
+      /* Las filas sin nombre se ignoran; un nombre repetido se avisa en vez
+         de descartarlo en silencio. */
+      const conNombre = s.orgEditMinisterios.filter((m) => (m.tipo || '').trim());
+      const vistos = {};
+      const repetido = conNombre.map((m) => m.tipo.replace(/\s+/g, ' ').trim())
+        .find((t) => { const k = t.toLowerCase(); if (vistos[k]) return true; vistos[k] = true; return false; });
+      if (repetido) { this.setState({ mensaje: 'El ministerio "' + repetido + '" está repetido.' }); return; }
+      patch.ministerios = conNombre.map((m) => ({ tipo: m.tipo, cantidad: Number(m.cantidad), rolesBanda: !!m.rolesBanda }));
+    }
+    D().updateOrganization(s.editandoOrgId, patch, (ok) => {
       this.setState({ editandoOrgId: null, mensaje: ok ? 'Organización actualizada.' : 'No se pudo guardar el cambio.' });
     });
   }
@@ -2144,6 +2229,9 @@ class Component extends DCLogic {
 
     const orgsLista = orgs.map((o) => ({
       id: o.id, nombre: o.name, slug: o.slug,
+      tipoLabel: R.perfilOrg(o).label,
+      tipoClase: 'badge ' + (R.perfilOrg(o).id === 'servicio' ? 'b-azul' : 'b-gris'),
+      esServicio: R.perfilOrg(o).id === 'servicio',
       fecha: o.createdAt ? new Date(o.createdAt).toLocaleDateString('es-SV') : '',
       editando: s.editandoOrgId === o.id,
       noEditando: s.editandoOrgId !== o.id,
@@ -2586,6 +2674,23 @@ class Component extends DCLogic {
       onNuevoOrgNombre: (e) => this.setState({ nuevoOrgNombre: e.target.value }),
       slugPreview: R.slugify(s.nuevoOrgNombre) || '(se genera del nombre)',
       crearOrganizacion: () => this.crearOrganizacion(),
+      tiposCalendarioOpc: R.TIPOS_CALENDARIO.map((t) => ({
+        label: t.label,
+        activo: s.nuevoOrgTipo === t.id ? 'true' : 'false',
+        clase: s.nuevoOrgTipo === t.id ? 'on' : '',
+        elegir: () => this.setState({ nuevoOrgTipo: t.id })
+      })),
+      nuevoOrgTipoAyuda: R.perfilCalendario(s.nuevoOrgTipo).descripcion + '. No se puede cambiar después de crear la organización.',
+      orgEditMinisterios: (s.orgEditMinisterios || []).map((m, i) => ({
+        tipo: m.tipo, cantidad: m.cantidad, rolesBanda: !!m.rolesBanda, max: R.MINISTERIO_CANTIDAD_MAX,
+        onTipo: (e) => this.cambiarMinisterio(i, { tipo: e.target.value }),
+        onCantidad: (e) => this.cambiarMinisterio(i, { cantidad: e.target.value }),
+        onRolesBanda: (e) => this.cambiarMinisterio(i, { rolesBanda: e.target.checked }),
+        quitar: () => this.quitarMinisterio(i)
+      })),
+      orgEditMinisteriosVacio: !(s.orgEditMinisterios || []).some((m) => (m.tipo || '').trim()),
+      agregarMinisterio: () => this.agregarMinisterio(),
+      restaurarMinisterios: () => this.restaurarMinisterios(),
 
       orgsLista: orgsLista,
       orgEditNombre: s.orgEditNombre, onOrgEditNombre: (e) => this.setState({ orgEditNombre: e.target.value }),
