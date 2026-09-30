@@ -707,6 +707,12 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 <sc-if value="{{ u.conPersona }}" hint-placeholder-val="{{ false }}">
                   <button type="button" class="btn-sec solo-desk" onClick="{{ u.reenviar }}" disabled="{{ u.reenviarDeshabilitado }}" title="{{ u.reenviarTitulo }}">Reenviar eventos</button>
                 </sc-if>
+                <sc-if value="{{ u.hayCambios }}" hint-placeholder-val="{{ false }}">
+                  <span style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" class="btn-pri" onClick="{{ u.guardarCambios }}">Guardar cambios</button>
+                    <button type="button" class="btn-sec" onClick="{{ u.descartarCambios }}">Descartar</button>
+                  </span>
+                </sc-if>
                 <sc-if value="{{ u.puedeBorrar }}" hint-placeholder-val="{{ false }}">
                   <button type="button" class="btn-sec solo-movil" onClick="{{ u.borrar }}" style="color:var(--red)">Eliminar usuario</button>
                 </sc-if>
@@ -1292,7 +1298,7 @@ class Component extends DCLogic {
     accesosPendientes: [], agregarUsuarioAbierto: false,
     nuevoUsuarioEmail: '', nuevoUsuarioTelefono: '', nuevoUsuarioRol: 'normal', nuevoUsuarioOrgs: {},
     nuevoUsuarioPersona: '', nuevoUsuarioPersonaNombre: '',
-    usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {},
+    usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {}, usuarioPendiente: {},
     /* Teléfono en edición por uid (se guarda al salir del campo). */
     telefonoEdit: {},
     /* Teléfono: tarjetas de Cuentas desplegadas para editar {uid: true}. */
@@ -1445,7 +1451,7 @@ class Component extends DCLogic {
   }
 
   seleccionarOrg(id) {
-    this.setState({ currentOrgId: id, editandoOrgId: null, orgSwitcherAbierto: false, orgSwitcherBusqueda: '', repertorioPagina: 1, editandoSongKey: null });
+    this.setState({ currentOrgId: id, usuarioPendiente: {}, editandoOrgId: null, orgSwitcherAbierto: false, orgSwitcherBusqueda: '', repertorioPagina: 1, editandoSongKey: null });
     this.cerrarSidebarSiMovil();
     if (this.state.activeTab === 'repertorio') this.montarRepertorio(id);
     if (this.state.activeTab === 'usuarios') { this.montarMusicos(id); this.montarRepertorio(id); }
@@ -1730,11 +1736,58 @@ class Component extends DCLogic {
 
   cambiarRolUsuario(uid, role) { D().setUserRole(uid, role, () => {}); }
 
+  /* Organizaciones y persona de una tarjeta quedan pendientes hasta "Guardar
+     cambios": guardarlas al instante reordenaba la lista (y podía mandar la
+     tarjeta a otra página) antes de terminar de configurarla. */
+  cambiosDe(u) {
+    const p = (this.state.usuarioPendiente || {})[u.uid] || {};
+    const orgIds = p.orgIds || D().userOrgIds(u);
+    const personaActual = D().userMusicianLinks(u)[this.state.currentOrgId] || '';
+    const personaId = p.personaId !== undefined ? p.personaId : personaActual;
+    const mismas = (a, b) => a.length === b.length && a.every((x) => b.indexOf(x) >= 0);
+    const orgsCambiaron = !mismas(orgIds, D().userOrgIds(u));
+    const personaCambio = orgIds.indexOf(this.state.currentOrgId) >= 0 && personaId !== personaActual;
+    return { orgIds, personaId, orgsCambiaron, personaCambio, hay: orgsCambiaron || personaCambio };
+  }
+
+  marcarPendiente(uid, patch) {
+    this.setState((s) => {
+      const todos = Object.assign({}, s.usuarioPendiente);
+      todos[uid] = Object.assign({}, todos[uid], patch);
+      return { usuarioPendiente: todos };
+    });
+  }
+
+  descartarCambiosUsuario(uid) {
+    this.setState((s) => {
+      const todos = Object.assign({}, s.usuarioPendiente);
+      delete todos[uid];
+      return { usuarioPendiente: todos };
+    });
+  }
+
   toggleOrgUsuario(userDoc, orgId) {
-    const actuales = D().userOrgIds(userDoc);
-    const i = actuales.indexOf(orgId);
-    const nuevos = i >= 0 ? actuales.filter((x) => x !== orgId) : actuales.concat([orgId]);
-    D().setUserOrgs(userDoc.uid, nuevos, () => {});
+    const actuales = this.cambiosDe(userDoc).orgIds;
+    const nuevos = actuales.indexOf(orgId) >= 0 ? actuales.filter((x) => x !== orgId) : actuales.concat([orgId]);
+    this.marcarPendiente(userDoc.uid, { orgIds: nuevos });
+  }
+
+  guardarCambiosUsuario(u) {
+    const R = D();
+    const c = this.cambiosDe(u);
+    if (!c.hay) return;
+    const orgMap = {};
+    c.orgIds.forEach((id) => (orgMap[id] = true));
+    const conPersona = () => {
+      this.descartarCambiosUsuario(u.uid);
+      if (c.personaCambio) this.vincularUsuarioAPersona(Object.assign({}, u, { organizationIds: orgMap }), c.personaId);
+      else this.setState({ mensaje: 'Cambios guardados.' });
+    };
+    if (!c.orgsCambiaron) { conPersona(); return; }
+    R.setUserOrgs(u.uid, c.orgIds, (ok) => {
+      if (ok === false) { this.setState({ mensaje: 'No se pudieron guardar las organizaciones.' }); return; }
+      conPersona();
+    });
   }
 
   toggleUsuarioOrgsDropdown(uid) {
@@ -2341,9 +2394,14 @@ class Component extends DCLogic {
       const busqueda = (s.usuarioOrgsBusqueda || {})[u.uid] || '';
       const deLaOrgU = esDeLaOrg(u);
       const personaIdU = deLaOrgU ? (R.userMusicianLinks(u)[s.currentOrgId] || '') : '';
+      /* Lo que muestra la tarjeta incluye los cambios sin guardar; el orden
+         y "Reenviar eventos" usan lo guardado. */
+      const cambiosU = this.cambiosDe(u);
+      const deLaOrgSel = cambiosU.orgIds.indexOf(s.currentOrgId) >= 0;
+      const personaSel = deLaOrgSel ? cambiosU.personaId : '';
       const proximos = AV && personaIdU ? AV.eventosDePersona(s.repertorioEventos, personaIdU, hoyAvisos).length : 0;
       const telEditado = (s.telefonoEdit || {})[u.uid];
-      const misIds = R.userOrgIds(u);
+      const misIds = cambiosU.orgIds;
       const idsMap = {};
       misIds.forEach((id) => (idsMap[id] = true));
       const esUnoMismo = !!s.userDoc && u.uid === s.userDoc.uid;
@@ -2359,11 +2417,11 @@ class Component extends DCLogic {
         sinCorreo: sinCorreoU,
         inicial: (nombreU.trim().charAt(0) || '?').toUpperCase(),
         role: u.role || 'normal',
-        personaId: personaIdU,
-        personaOpciones: deLaOrgU ? personaOpciones : [],
-        personaDeshabilitada: !deLaOrgU,
-        personaVaciaTexto: deLaOrgU ? 'Sin persona vinculada' : 'Asígnale esta organización para vincularla',
-        personaTitulo: deLaOrgU ? 'Persona vinculada' : 'Esta cuenta no pertenece a ' + (orgActual ? orgActual.name : 'la organización activa') + ': márcala en sus organizaciones para poder vincularla con una persona.',
+        personaId: personaSel,
+        personaOpciones: deLaOrgSel ? personaOpciones : [],
+        personaDeshabilitada: !deLaOrgSel,
+        personaVaciaTexto: deLaOrgSel ? 'Sin persona vinculada' : 'Asígnale esta organización para vincularla',
+        personaTitulo: deLaOrgSel ? 'Persona vinculada' : 'Esta cuenta no pertenece a ' + (orgActual ? orgActual.name : 'la organización activa') + ': márcala en sus organizaciones para poder vincularla con una persona.',
         otraOrg: !deLaOrgU,
         telefono: telEditado !== undefined ? telEditado : (AV ? AV.formatoTelefono(u.telefono) : (u.telefono || '')),
         onTelefono: (e) => { const v = e.target.value; this.setState((st) => ({ telefonoEdit: Object.assign({}, st.telefonoEdit, { [u.uid]: v }) })); },
@@ -2374,13 +2432,17 @@ class Component extends DCLogic {
         personaResumen: !deLaOrgU ? 'Otra organización' : (personaIdU ? ((personaOpciones.find((p) => p.id === personaIdU) || {}).nombre || 'Persona vinculada') : 'Sin persona'),
         personaResumenClase: 'badge ' + (!deLaOrgU ? 'b-azul' : (personaIdU ? 'b-ok' : 'b-pend')),
         telefonoResumen: u.telefono ? (AV ? AV.formatoTelefono(u.telefono) : u.telefono) : 'Sin WhatsApp',
-        subClase: 'item-sub' + ((s.usuarioEditAbierto || {})[u.uid] ? ' abierto' : ''),
+        /* Con cambios sin guardar la edición queda abierta (en celular). */
+        subClase: 'item-sub' + ((s.usuarioEditAbierto || {})[u.uid] || cambiosU.hay ? ' abierto' : ''),
         editTexto: (s.usuarioEditAbierto || {})[u.uid] ? 'Listo' : 'Editar',
         toggleEdit: () => this.setState((st) => ({ usuarioEditAbierto: Object.assign({}, st.usuarioEditAbierto, { [u.uid]: !(st.usuarioEditAbierto || {})[u.uid] }) })),
         reenviarDeshabilitado: !proximos,
         reenviarTitulo: proximos ? ('Enviar por correo y WhatsApp ' + (proximos === 1 ? 'su evento publicado próximo' : 'sus ' + proximos + ' eventos publicados próximos')) : 'Sin eventos publicados próximos',
         reenviar: () => { if (proximos && AV) AV.reenviar(s.currentOrgId, u.uid); },
-        onPersona: (e) => this.vincularUsuarioAPersona(u, e.target.value),
+        onPersona: (e) => this.marcarPendiente(u.uid, { personaId: e.target.value }),
+        hayCambios: cambiosU.hay,
+        guardarCambios: () => this.guardarCambiosUsuario(u),
+        descartarCambios: () => this.descartarCambiosUsuario(u.uid),
         onRole: (e) => this.cambiarRolUsuario(u.uid, e.target.value),
         puedeBorrar: !esUnoMismo,
         borrarStyle: esUnoMismo ? 'display:none' : '',
