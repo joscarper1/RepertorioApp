@@ -34,7 +34,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260930b"></script>
+<script src="repertorio-data.js?v=20260930c"></script>
 <script src="avisos.js?v=20260928b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -289,6 +289,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .slot:first-of-type{border-top:0;padding-top:0}
 .slot-fila{display:grid;grid-template-columns:minmax(0,1fr) auto 32px;gap:6px 10px;align-items:center}
 .slot-l{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--ac-dk)}
+.slot-rol{grid-column:1/-1;min-height:34px;padding-top:5px;padding-bottom:5px;font-size:12.5px;font-weight:700;color:var(--ac-dk);background-color:var(--ac-lt);border-color:transparent}
 .warn{font-size:11.5px;font-weight:700;color:var(--red);background:var(--red-lt);padding:5px 9px;border-radius:6px;align-self:flex-start}
 /* Aviso discreto (no bloquea): la misma persona ocupa otro puesto de la banda. */
 .aviso-dup{font-size:11.5px;font-weight:600;color:var(--muted);line-height:1.35;align-self:flex-start}
@@ -737,8 +738,8 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             </sc-if>
             <sc-if value="{{ usaBanda }}" hint-placeholder-val="{{ false }}">
               <label class="campo">
-                <span class="campo-l">Notas del ensayo</span>
-                <textarea class="inp" value="{{ dNotas }}" onChange="{{ onNotas }}" rows="3" placeholder="Indicaciones especiales para el ensayo o el repertorio"></textarea>
+                <span class="campo-l">{{ notasLabel }}</span>
+                <textarea class="inp" value="{{ dNotas }}" onChange="{{ onNotas }}" rows="3" placeholder="{{ notasPlaceholder }}"></textarea>
               </label>
             </sc-if>
             <label class="campo">
@@ -752,86 +753,61 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
       <sc-if value="{{ esSubBanda }}" hint-placeholder-val="{{ false }}">
         <p class="campo-ayuda" style="margin:0">Elige a la persona de cada puesto; deja “Sin asignar” lo que no se use. “+ Agregar” suma otro puesto del mismo tipo.</p>
-        <div class="parte"><span class="parte-t">Voces</span><span class="linea"></span></div>
-        <div class="banda-grid">
-          <sc-for list="{{ bandaVoces }}" as="bg" hint-placeholder-count="2">
-            <div class="rol">
-              <div class="rol-cab">
-                <span class="rol-t">{{ bg.tipo }}</span>
-                <button type="button" class="btn-sec" onClick="{{ bg.addSlot }}">+ Agregar</button>
-              </div>
-              <sc-for list="{{ bg.slots }}" as="sl" hint-placeholder-count="1">
-                <div class="slot">
-                  <div class="slot-fila">
-                    <span class="slot-l">{{ sl.label }}</span>
-                    <select class="inp" value="{{ sl.nombre }}" onChange="{{ sl.onNombre }}">
-                      <sc-for list="{{ sl.opciones }}" as="op" hint-placeholder-count="4">
-                        <option value="{{ op.value }}">{{ op.label }}</option>
-                      </sc-for>
-                    </select>
-                    <label class="check" style="font-size:12.5px;font-weight:600;color:var(--muted)">
-                      <input type="checkbox" checked="{{ sl.resaltado }}" onChange="{{ sl.onResaltado }}">
-                      Resaltar
-                    </label>
-                    <button type="button" class="btn-quitar" onClick="{{ sl.remove }}" title="Quitar" aria-label="Quitar">✕</button>
-                  </div>
-                  <sc-if value="{{ sl.declinado }}" hint-placeholder-val="{{ false }}">
-                    <span class="warn">Declinó su participación{{ sl.motivoDeclinacion }}</span>
-                  </sc-if>
-                  <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
-                    <span class="warn">Marcado como no disponible esta fecha</span>
-                  </sc-if>
-                  <sc-if value="{{ sl.duplicado }}" hint-placeholder-val="{{ false }}">
-                    <span class="aviso-dup">{{ sl.avisoDuplicado }}</span>
-                  </sc-if>
-                  <sc-if value="{{ sl.resaltado }}" hint-placeholder-val="{{ false }}">
-                    <input class="inp" value="{{ sl.tarea }}" onChange="{{ sl.onTarea }}" placeholder="Encomienda: preparar reflexión, orar…" style="background:var(--ac-lt);border-color:transparent;color:var(--ac-dk)">
-                  </sc-if>
+        <sc-for list="{{ bandaSecciones }}" as="sec" hint-placeholder-count="2">
+          <div style="display:contents">
+            <sc-if value="{{ sec.conTitulo }}" hint-placeholder-val="{{ true }}">
+              <div class="parte"><span class="parte-t">{{ sec.titulo }}</span><span class="linea"></span></div>
+            </sc-if>
+            <div class="banda-grid">
+            <sc-for list="{{ sec.grupos }}" as="bg" hint-placeholder-count="3">
+              <div class="rol">
+                <div class="rol-cab">
+                  <span class="rol-t">{{ bg.tipo }}</span>
+                  <button type="button" class="btn-sec" onClick="{{ bg.addSlot }}">+ Agregar</button>
                 </div>
-              </sc-for>
-            </div>
-          </sc-for>
-        </div>
-        <div class="parte"><span class="parte-t">Músicos</span><span class="linea"></span></div>
-        <div class="banda-grid">
-          <sc-for list="{{ bandaMusicos }}" as="bg" hint-placeholder-count="5">
-            <div class="rol">
-              <div class="rol-cab">
-                <span class="rol-t">{{ bg.tipo }}</span>
-                <button type="button" class="btn-sec" onClick="{{ bg.addSlot }}">+ Agregar</button>
-              </div>
-              <sc-for list="{{ bg.slots }}" as="sl" hint-placeholder-count="1">
-                <div class="slot">
-                  <div class="slot-fila">
-                    <span class="slot-l">{{ sl.label }}</span>
-                    <select class="inp" value="{{ sl.nombre }}" onChange="{{ sl.onNombre }}">
-                      <sc-for list="{{ sl.opciones }}" as="op" hint-placeholder-count="4">
-                        <option value="{{ op.value }}">{{ op.label }}</option>
-                      </sc-for>
-                    </select>
-                    <label class="check" style="font-size:12.5px;font-weight:600;color:var(--muted)">
-                      <input type="checkbox" checked="{{ sl.resaltado }}" onChange="{{ sl.onResaltado }}">
-                      Resaltar
-                    </label>
-                    <button type="button" class="btn-quitar" onClick="{{ sl.remove }}" title="Quitar" aria-label="Quitar">✕</button>
+                <sc-for list="{{ bg.slots }}" as="sl" hint-placeholder-count="1">
+                  <div class="slot">
+                    <div class="slot-fila">
+                      <sc-if value="{{ sl.sinRol }}" hint-placeholder-val="{{ true }}">
+                        <span class="slot-l">{{ sl.label }}</span>
+                      </sc-if>
+                      <sc-if value="{{ sl.eligeRol }}" hint-placeholder-val="{{ false }}">
+                        <select class="inp slot-rol" value="{{ sl.rol }}" onChange="{{ sl.onRol }}" aria-label="Rol que hará">
+                          <sc-for list="{{ sl.rolOpciones }}" as="ro" hint-placeholder-count="3">
+                            <option value="{{ ro.value }}">{{ ro.label }}</option>
+                          </sc-for>
+                        </select>
+                      </sc-if>
+                      <select class="inp" value="{{ sl.nombre }}" onChange="{{ sl.onNombre }}">
+                        <sc-for list="{{ sl.opciones }}" as="op" hint-placeholder-count="4">
+                          <option value="{{ op.value }}">{{ op.label }}</option>
+                        </sc-for>
+                      </select>
+                      <label class="check" style="font-size:12.5px;font-weight:600;color:var(--muted)">
+                        <input type="checkbox" checked="{{ sl.resaltado }}" onChange="{{ sl.onResaltado }}">
+                        Resaltar
+                      </label>
+                      <button type="button" class="btn-quitar" onClick="{{ sl.remove }}" title="Quitar" aria-label="Quitar">✕</button>
+                    </div>
+                    <sc-if value="{{ sl.declinado }}" hint-placeholder-val="{{ false }}">
+                      <span class="warn">Declinó su participación{{ sl.motivoDeclinacion }}</span>
+                    </sc-if>
+                    <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
+                      <span class="warn">Marcado como no disponible esta fecha</span>
+                    </sc-if>
+                    <sc-if value="{{ sl.duplicado }}" hint-placeholder-val="{{ false }}">
+                      <span class="aviso-dup">{{ sl.avisoDuplicado }}</span>
+                    </sc-if>
+                    <sc-if value="{{ sl.resaltado }}" hint-placeholder-val="{{ false }}">
+                      <input class="inp" value="{{ sl.tarea }}" onChange="{{ sl.onTarea }}" placeholder="Encomienda: preparar reflexión, orar…" style="background:var(--ac-lt);border-color:transparent;color:var(--ac-dk)">
+                    </sc-if>
                   </div>
-                  <sc-if value="{{ sl.declinado }}" hint-placeholder-val="{{ false }}">
-                    <span class="warn">Declinó su participación{{ sl.motivoDeclinacion }}</span>
-                  </sc-if>
-                  <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
-                    <span class="warn">Marcado como no disponible esta fecha</span>
-                  </sc-if>
-                  <sc-if value="{{ sl.duplicado }}" hint-placeholder-val="{{ false }}">
-                    <span class="aviso-dup">{{ sl.avisoDuplicado }}</span>
-                  </sc-if>
-                  <sc-if value="{{ sl.resaltado }}" hint-placeholder-val="{{ false }}">
-                    <input class="inp" value="{{ sl.tarea }}" onChange="{{ sl.onTarea }}" placeholder="Encomienda: preparar reflexión, orar…" style="background:var(--ac-lt);border-color:transparent;color:var(--ac-dk)">
-                  </sc-if>
-                </div>
-              </sc-for>
+                </sc-for>
+              </div>
+            </sc-for>
             </div>
-          </sc-for>
-        </div>
+          </div>
+        </sc-for>
       </sc-if>
 
       <sc-if value="{{ esSubRepertorio }}" hint-placeholder-val="{{ false }}">
@@ -949,6 +925,20 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             <div class="callout"><span class="callout-t">Aviso importante</span><p>{{ resumenAviso }}</p></div>
           </sc-if>
 
+          <sc-if value="{{ resumenEquipoEnCuerpo }}" hint-placeholder-val="{{ false }}">
+            <div class="sec-t" style="margin:8px 0 0">{{ equipoTitulo }} <span class="linea"></span></div>
+            <div class="caja">
+              <sc-for list="{{ resumenEquipo }}" as="bg" hint-placeholder-count="4">
+                <div class="banda-fila"><span style="color:var(--muted)">{{ bg.tipo }}</span><span style="font-weight:600;text-align:right">{{ bg.nombres }}</span></div>
+              </sc-for>
+              <sc-if value="{{ resumenSinBanda }}" hint-placeholder-val="{{ false }}"><p style="font-size:13px;color:var(--muted2);margin:0">Sin servidores asignados.</p></sc-if>
+              <sc-if value="{{ bandaSoloLectura }}" hint-placeholder-val="{{ false }}"><p style="font-size:12px;color:var(--muted2);margin:10px 0 0">{{ equipoSoloLectura }}</p></sc-if>
+            </div>
+            <sc-if value="{{ resumenNotas }}" hint-placeholder-val="{{ false }}">
+              <div class="caja"><span class="rotulo">{{ notasLabel }}</span><p style="margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted);white-space:pre-line">{{ resumenNotas }}</p></div>
+            </sc-if>
+          </sc-if>
+
           <sc-if value="{{ resumenEsRepertorio }}" hint-placeholder-val="{{ false }}">
             <div class="sec-t" style="margin:8px 0 0">Repertorio <span class="linea"></span></div>
             <sc-for list="{{ resumenSecciones }}" as="sec" hint-placeholder-count="3">
@@ -1009,7 +999,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         </sc-if>
         <sc-if value="{{ resumenEsRepertorio }}" hint-placeholder-val="{{ false }}">
           <div class="caja">
-            <span class="rotulo" style="display:block;margin-bottom:8px">Banda</span>
+            <span class="rotulo" style="display:block;margin-bottom:8px">{{ equipoTitulo }}</span>
             <sc-if value="{{ resumenHayVoces }}" hint-placeholder-val="{{ false }}">
               <div class="banda-sub">Voces</div>
               <sc-for list="{{ resumenVoces }}" as="bg" hint-placeholder-count="2">
@@ -1023,10 +1013,10 @@ a.mas-fila:hover{background:none;color:var(--ink)}
               </sc-for>
             </sc-if>
             <sc-if value="{{ resumenSinBanda }}" hint-placeholder-val="{{ false }}"><p style="font-size:13px;color:var(--muted2);margin:0">Sin integrantes asignados.</p></sc-if>
-            <sc-if value="{{ bandaSoloLectura }}" hint-placeholder-val="{{ false }}"><p style="font-size:12px;color:var(--muted2);margin:10px 0 0">La banda la asigna un administrador.</p></sc-if>
+            <sc-if value="{{ bandaSoloLectura }}" hint-placeholder-val="{{ false }}"><p style="font-size:12px;color:var(--muted2);margin:10px 0 0">{{ equipoSoloLectura }}</p></sc-if>
           </div>
           <sc-if value="{{ resumenNotas }}" hint-placeholder-val="{{ false }}">
-            <div class="caja"><span class="rotulo">Notas del ensayo</span><p style="margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted);white-space:pre-line">{{ resumenNotas }}</p></div>
+            <div class="caja"><span class="rotulo">{{ notasLabel }}</span><p style="margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted);white-space:pre-line">{{ resumenNotas }}</p></div>
           </sc-if>
         </sc-if>
         <div class="caja" style="background:var(--ac-lt);border:0">
@@ -2152,28 +2142,41 @@ class Component extends DCLogic {
     // dr.banda puede faltar en registros guardados antes de esta función.
     const drBanda = dr ? (dr.banda || []) : [];
 
-    /* Paso 2 · Banda: los puestos se agrupan en Voces y Músicos. */
+    /* Paso 2 · Banda / Servidores: un grupo por puesto del perfil (en
+       repertorio, separados en Voces y Músicos; en servicio ministerial, los
+       ministerios en una sola lista). Los puestos que el evento ya trae y el
+       perfil ya no tiene (un ministerio renombrado o quitado) se muestran al
+       final para no perderlos. */
     const VOCES = ['Director de Alabanza', 'Corista'];
-    const bandaGrupos = dr ? pf.roles.map((r) => {
-      /* Personas seleccionables para este rol: quienes tienen ese rol entre
-         sus rolesBanda, más quienes todavía no tienen ningún rol asignado
-         (un músico sin rolesBanda definidos se muestra en todas las listas
-         hasta que un admin le asigne uno, para no dejarlo invisible). */
-      const disponibles = (s.musicos || [])
-        .filter((m) => !m.rolesBanda || !m.rolesBanda.length || m.rolesBanda.indexOf(r.tipo) >= 0)
-        .map((m) => (m.nombre || '').trim())
-        .filter(Boolean);
-      const nombresDisponibles = Array.from(new Set(disponibles)).sort((a, b) => a.localeCompare(b, 'es'));
+    const rolesPaso = pf.roles.concat(Array.from(new Set(drBanda.map((b) => b.tipo)))
+      .filter((t) => t && !pf.roles.some((r) => r.tipo === t))
+      .map((t) => ({ tipo: t, cantidad: 0, numerar: false })));
+    /* Personas seleccionables para un puesto: quienes tienen ese puesto (o,
+       en un ministerio con roles de banda, el rol elegido) entre sus
+       rolesBanda, más quienes todavía no tienen ninguno asignado (se
+       muestran en todas las listas hasta que un admin les asigne uno, para
+       no dejarlos invisibles). */
+    const nombresPara = (tipos) => Array.from(new Set((s.musicos || [])
+      .filter((m) => !m.rolesBanda || !m.rolesBanda.length || tipos.some((t) => m.rolesBanda.indexOf(t) >= 0))
+      .map((m) => (m.nombre || '').trim())
+      .filter(Boolean))).sort((a, b) => a.localeCompare(b, 'es'));
+    const bandaGrupos = dr ? rolesPaso.map((r) => {
+      const nombresDisponibles = nombresPara([r.tipo]);
 
       return {
       tipo: r.tipo,
       addSlot: () => this.setDraft((x) => {
         x.banda = x.banda || [];
+        if (r.rolesBanda) { x.banda.push(R.bandaSlotRol(x.banda, r.tipo, R.rolInicialMinisterio(x.banda, r))); return; }
         const num = R.bandaSiguienteNumero(x.banda, r.tipo);
         x.banda.push(R.bandaSlot(r.tipo, num));
       }),
       slots: drBanda.filter((b) => b.tipo === r.tipo).map((b) => {
         const nombreActual = (b.nombre || '').trim();
+        const eligeRol = !!r.rolesBanda;
+        const nombresDisponibles = eligeRol ? nombresPara([r.tipo, b.rol]) : nombresPara([r.tipo]);
+        /* El rol guardado se ofrece aunque ya no esté en la lista. */
+        const subroles = eligeRol ? ((b.rol && r.subroles.indexOf(b.rol) < 0) ? [b.rol] : []).concat(r.subroles) : [];
         /* Si el nombre ya guardado no aparece en el catálogo de músicos para
            este rol (persona borrada del catálogo, o un texto libre de antes
            de que existiera este catálogo), se agrega igual como opción para
@@ -2199,6 +2202,21 @@ class Component extends DCLogic {
         return {
         id: b.id,
         label: R.bandaLabel(b),
+        eligeRol: eligeRol,
+        sinRol: !eligeRol,
+        rol: b.rol || '',
+        rolOpciones: (b.rol ? [] : [{ value: '', label: '— Elige el rol —' }]).concat(subroles.map((ro) => ({
+          value: ro, label: ro === b.rol ? R.bandaLabel(b) : ro
+        }))),
+        onRol: (e) => {
+          const v = e.target.value;
+          this.setDraft((x) => {
+            const idx = (x.banda || []).findIndex((sl) => sl.id === b.id);
+            if (idx < 0 || !v) return;
+            x.banda[idx].rol = v;
+            x.banda[idx].numero = R.numeroParaRol(x.banda, r.tipo, v, b.id);
+          });
+        },
         nombre: b.nombre,
         opciones: opciones,
         resaltado: !!b.resaltado,
@@ -2251,8 +2269,9 @@ class Component extends DCLogic {
       };
     }) : [];
 
-    const resumenBanda = dr ? pf.roles.map((r) => {
-      const nombres = drBanda.filter((b) => b.tipo === r.tipo && b.nombre && b.nombre.trim()).map((b) => b.nombre.trim());
+    const resumenBanda = dr ? rolesPaso.map((r) => {
+      const nombres = drBanda.filter((b) => b.tipo === r.tipo && b.nombre && b.nombre.trim())
+        .map((b) => b.nombre.trim() + (b.rol ? ' (' + R.bandaLabel(b) + ')' : ''));
       return nombres.length ? { tipo: r.tipo, nombres: nombres.join(', ') } : null;
     }).filter(Boolean) : [];
 
@@ -2643,8 +2662,15 @@ class Component extends DCLogic {
       onDetalles: field('detalles'), onPersonas: field('personas'),
       servicios: pf.serviciosCon(dr && dr.servicio).map((label) => ({ label: label })),
       bandaGrupos: bandaGrupos,
-      bandaVoces: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) >= 0),
-      bandaMusicos: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) < 0),
+      bandaSecciones: pf.id === 'repertorio'
+        ? [{ titulo: 'Voces', conTitulo: true, grupos: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) >= 0) },
+          { titulo: 'Músicos', conTitulo: true, grupos: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) < 0) }]
+        : [{ titulo: '', conTitulo: false, grupos: bandaGrupos }],
+      resumenEquipo: resumenBanda,
+      equipoTitulo: pf.textos.equipo,
+      equipoSoloLectura: pf.textos.soloLectura,
+      notasLabel: pf.textos.notas,
+      notasPlaceholder: pf.textos.notasPlaceholder,
       resumenVoces: resumenBanda.filter((g) => VOCES.indexOf(g.tipo) >= 0),
       resumenMusicos: resumenBanda.filter((g) => VOCES.indexOf(g.tipo) < 0),
       resumenHayVoces: resumenBanda.some((g) => VOCES.indexOf(g.tipo) >= 0),
@@ -2674,7 +2700,10 @@ class Component extends DCLogic {
       avisoVersionCargada: s.versionCargada
         ? ('Estás viendo el contenido de la versión ' + s.versionCargada + '. Al guardar, el evento regresa a la versión ' + s.versionCargada + ' sin crear una copia (si cambias algo más, se guarda como versión nueva). La fecha y el estado del evento no cambian.')
         : '',
-      resumenEsRepertorio: usaBanda,
+      /* Repertorio: canciones en el cuerpo y la banda al costado. Servicio
+         ministerial: sin canciones, los servidores van en el cuerpo. */
+      resumenEsRepertorio: usaCanciones,
+      resumenEquipoEnCuerpo: usaBanda && !usaCanciones,
       resumenEsOtro: !!dr && !usaBanda,
       resumenDetalles: dr && dr.detalles ? dr.detalles : 'Sin detalles aún',
       resumenPersonas: dr && dr.personas ? dr.personas : 'Sin personas asignadas aún',

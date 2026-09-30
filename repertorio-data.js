@@ -467,15 +467,48 @@
 
   function bandaSlot(tipo, numero) { return { id: uid(), tipo: tipo, numero: numero || null, nombre: '', resaltado: false, tarea: '' }; }
 
+  /* Puestos de un ministerio con roles de banda (Alabanza, en servicio
+     ministerial): el slot sigue siendo del ministerio (tipo: 'Alabanza') y
+     además lleva el rol que hará la persona (rol: 'Corista'). El número es
+     por rol dentro del ministerio y respeta el `numerar` de BANDA_ROLES
+     (Director de Alabanza 1, Corista 1; Bajo, Bajo 2). */
+  function numeroParaRol(banda, tipo, rol, excluirId) {
+    var existentes = (banda || []).filter(function (b) { return b.tipo === tipo && b.rol === rol && b.id !== excluirId; });
+    var def = BANDA_ROLES.filter(function (r) { return r.tipo === rol; })[0];
+    if (!existentes.length) return def && def.numerar ? 1 : null;
+    return Math.max.apply(null, existentes.map(function (b) { return b.numero || 1; })) + 1;
+  }
+
+  function bandaSlotRol(banda, tipo, rol) {
+    var sl = bandaSlot(tipo, numeroParaRol(banda, tipo, rol));
+    sl.rol = rol;
+    return sl;
+  }
+
+  /* Rol con que arranca cada puesto nuevo de un ministerio con roles de
+     banda: el primero es Director de Alabanza; los que se agregan después,
+     el siguiente rol de la lista (Corista). */
+  function rolInicialMinisterio(banda, rolDef) {
+    var subroles = (rolDef && rolDef.subroles) || [];
+    var yaHay = (banda || []).some(function (b) { return b.tipo === rolDef.tipo; });
+    return (yaHay ? subroles[1] : null) || subroles[0] || '';
+  }
+
   function defaultBanda(perfil) {
     var out = [];
     perfilOr(perfil).roles.forEach(function (r) {
-      for (var i = 1; i <= r.cantidad; i++) out.push(bandaSlot(r.tipo, r.numerar ? i : null));
+      for (var i = 1; i <= r.cantidad; i++) {
+        if (r.rolesBanda) out.push(bandaSlotRol(out, r.tipo, rolInicialMinisterio(out, r)));
+        else out.push(bandaSlot(r.tipo, r.numerar ? i : null));
+      }
     });
     return out;
   }
 
-  function bandaLabel(slot) { return slot.numero ? (slot.tipo + ' ' + slot.numero) : slot.tipo; }
+  function bandaLabel(slot) {
+    var base = slot.rol || slot.tipo;
+    return slot.numero ? (base + ' ' + slot.numero) : base;
+  }
 
   /* Siguiente número disponible para agregar otro integrante del mismo tipo
      (un slot sin número cuenta como 1, así la próxima incorporación es 2). */
@@ -548,7 +581,7 @@
         });
       if (banda.length) {
         out.push(pf.textos.equipo + ':');
-        banda.forEach(function (b) { out.push(b.tipo + ': ' + b.nombre.trim()); });
+        banda.forEach(function (b) { out.push((b.rol ? b.tipo + ' · ' + bandaLabel(b) : b.tipo) + ': ' + b.nombre.trim()); });
         out.push('');
       }
       var canciones = [];
@@ -1070,6 +1103,16 @@
       usaBanda: usaBanda,
       usaCanciones: function (servicio) { return tieneCanciones && usaBanda(servicio); },
       ordenRoles: function () { return def.roles.map(function (r) { return r.tipo; }); },
+      /* Etiquetas que se le pueden poner a una persona (rolesBanda): los
+         puestos y, si algún ministerio convoca con roles de banda, también
+         esos roles, para filtrar a quién se ofrece en cada uno. */
+      etiquetasPersona: function () {
+        var out = [];
+        def.roles.forEach(function (r) {
+          [r.tipo].concat(r.subroles || []).forEach(function (t) { if (out.indexOf(t) < 0) out.push(t); });
+        });
+        return out;
+      },
       /* Tipos para elegir en el asistente: si el evento trae uno que este
          perfil no ofrece (dato viejo), se ofrece primero para no perderlo. */
       serviciosCon: function (actual) {
@@ -1088,7 +1131,12 @@
       roles: BANDA_ROLES,
       permisosPorPuesto: PERMISOS_POR_ROL_BANDA,
       ensayos: true,
-      textos: { equipo: 'Banda', integrantes: 'Integrantes de la banda', puesto: 'Rol' }
+      textos: {
+        equipo: 'Banda', integrantes: 'Integrantes de la banda', puesto: 'Rol',
+        soloLectura: 'La banda la asigna un administrador.',
+        personas: 'Identidad y roles de banda de cada integrante, con o sin cuenta todavía.', agregarEtiqueta: '+ Agregar rol',
+        notas: 'Notas del ensayo', notasPlaceholder: 'Indicaciones especiales para el ensayo o el repertorio'
+      }
     },
     servicio: {
       id: 'servicio',
@@ -1098,7 +1146,12 @@
       roles: rolesDeMinisterios(MINISTERIOS_DEFECTO),
       permisosPorPuesto: {},
       ensayos: false,
-      textos: { equipo: 'Servidores', integrantes: 'Servidores asignados', puesto: 'Ministerio' },
+      textos: {
+        equipo: 'Servidores', integrantes: 'Servidores asignados', puesto: 'Ministerio',
+        soloLectura: 'Los servidores los asigna un administrador.',
+        personas: 'Identidad, ministerios y roles de banda (para Alabanza) de cada servidor, con o sin cuenta todavía.', agregarEtiqueta: '+ Agregar ministerio o rol',
+        notas: 'Notas para los servidores', notasPlaceholder: 'Indicaciones especiales para los servidores de este evento'
+      },
       modulosOcultos: ['repertorio'],
       ministerios: true
     }
@@ -2606,6 +2659,7 @@
     song: song, songLabel: songLabel, songLabelParts: songLabelParts, songKey: songKey, buildSongCatalog: buildSongCatalog,
     youtubeId: youtubeId, youtubeController: youtubeController, formatoTiempo: formatoTiempo, progresoAudio: progresoAudio, youtubeErrorMessage: youtubeErrorMessage,defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
+    bandaSlotRol: bandaSlotRol, numeroParaRol: numeroParaRol, rolInicialMinisterio: rolInicialMinisterio,
     bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,
     diaNombre: diaNombre, fechaLarga: fechaLarga, semanaDelMes: semanaDelMes,

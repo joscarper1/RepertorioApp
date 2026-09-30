@@ -91,7 +91,12 @@ test('servicio ministerial: un evento nuevo arranca con un puesto por ministerio
   assert.equal(ev.hora, '8:00 am');
   assert.equal(ev.bloques.length, 0);
   assert.deepEqual(tipos(ev.banda), ['Protocolo', 'Alabanza', 'Ofrenda', 'Limpieza', 'Infantil']);
-  assert.ok(ev.banda.every((b) => b.numero === null));
+  assert.ok(ev.banda.filter((b) => b.tipo !== 'Alabanza').every((b) => b.numero === null && !b.rol));
+  /* Alabanza: una sola persona por defecto, como Director de Alabanza 1 */
+  const dir = ev.banda.find((b) => b.tipo === 'Alabanza');
+  assert.equal(dir.rol, 'Director de Alabanza');
+  assert.equal(dir.numero, 1);
+  assert.equal(R.bandaLabel(dir), 'Director de Alabanza 1');
   /* Alabanza convoca con los roles de la banda */
   const alabanza = srv.roles.find((r) => r.tipo === 'Alabanza');
   assert.equal(alabanza.rolesBanda, true);
@@ -155,4 +160,36 @@ test('el menú oculta los módulos que no aplican al perfil', () => {
   assert.ok(ids({ id: 'o1' }).indexOf('repertorio') >= 0);
   assert.equal(ids({ id: 'o2', tipoCalendario: 'servicio' }).indexOf('repertorio'), -1);
   assert.ok(ids(null).indexOf('repertorio') >= 0);
+});
+
+test('Alabanza: roles de banda numerados por rol dentro del ministerio', () => {
+  const alabanza = srv.roles.find((r) => r.tipo === 'Alabanza');
+  const banda = R.defaultBanda(srv);
+  /* El siguiente que se agrega arranca como Corista 1 */
+  assert.equal(R.rolInicialMinisterio(banda, alabanza), 'Corista');
+  const c1 = R.bandaSlotRol(banda, 'Alabanza', 'Corista');
+  banda.push(c1);
+  assert.equal(R.bandaLabel(c1), 'Corista 1');
+  const c2 = R.bandaSlotRol(banda, 'Alabanza', 'Corista');
+  assert.equal(c2.numero, 2);
+  /* Roles sin numerar (Bajo) solo muestran número desde el segundo */
+  const b1 = R.bandaSlotRol(banda, 'Alabanza', 'Bajo');
+  banda.push(b1);
+  assert.equal(R.bandaLabel(b1), 'Bajo');
+  assert.equal(R.bandaLabel(R.bandaSlotRol(banda, 'Alabanza', 'Bajo')), 'Bajo 2');
+  /* Al cambiarle el rol a un puesto, su número no cuenta contra sí mismo */
+  assert.equal(R.numeroParaRol(banda, 'Alabanza', 'Corista', c1.id), 1);
+  /* Sin rol (repertorio), la etiqueta es la de siempre */
+  assert.equal(R.bandaLabel({ tipo: 'Piano', numero: 1 }), 'Piano 1');
+  assert.equal(R.bandaLabel({ tipo: 'Protocolo', numero: null }), 'Protocolo');
+  const txt = R.eventoDescripcion({ servicio: 'Culto Filial', banda: [Object.assign({}, banda[1], { nombre: 'Ana' })] }, srv);
+  assert.match(txt, /Alabanza · Director de Alabanza 1: Ana/);
+});
+
+test('etiquetas de Personas: ministerios y, para Alabanza, los roles de banda', () => {
+  const et = Array.from(srv.etiquetasPersona());
+  assert.deepEqual(et.slice(0, 2), ['Protocolo', 'Alabanza']);
+  assert.ok(et.indexOf('Director de Alabanza') >= 0 && et.indexOf('Batería') >= 0);
+  assert.equal(new Set(et).size, et.length);
+  assert.deepEqual(Array.from(rep.etiquetasPersona()), Array.from(rep.ordenRoles()));
 });
