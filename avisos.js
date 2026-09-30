@@ -203,9 +203,15 @@
     }
     var musicoPorId = {};
     (datos.musicos || []).forEach(function (m) { if (m && m.id) musicoPorId[m.id] = m; });
+    /* Un registro sin correo al que se le agregó correo (emailPendiente) deja
+       de avisarse en cuanto existe su cuenta de Google, aunque el panel de
+       admin todavía no lo haya fusionado: si no, recibiría el aviso doble. */
+    var correos = {};
+    (datos.usuarios || []).forEach(function (u) { if (u && u.email) correos[String(u.email).trim().toLowerCase()] = true; });
     var filas = [];
     (datos.usuarios || []).forEach(function (u) {
       if (!u || !u.uid) return;
+      if (u.emailPendiente && !u.email && correos[String(u.emailPendiente).trim().toLowerCase()]) return;
       if (pedido.tipo === 'reenvio' && u.uid !== pedido.uid) return;
       if (orgIdsDe(u).indexOf(orgId) < 0) return;
       var mid = ((u.musicianLinks || {})[orgId]) || '';

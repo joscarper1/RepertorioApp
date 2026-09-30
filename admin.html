@@ -657,6 +657,9 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   <sc-if value="{{ u.sinCorreo }}" hint-placeholder-val="{{ false }}">
                     <span class="badge b-azul" title="Sin correo: no inicia sesión, recibe sus eventos por WhatsApp">Solo WhatsApp</span>
                   </sc-if>
+                  <button type="button" class="ico" onClick="{{ u.abrirDatos }}" aria-label="Editar datos" title="Editar nombre y correo">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                  </button>
                   <span class="solo-desk">
                     <button type="button" class="ico peligro" onClick="{{ u.borrar }}" style="{{ u.borrarStyle }}" aria-label="Eliminar usuario" title="Eliminar usuario">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>
@@ -664,6 +667,29 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   </span>
                 </div>
               </div>
+              <sc-if value="{{ u.editandoDatos }}" hint-placeholder-val="{{ false }}">
+                <div class="item-sub abierto" style="padding:10px 0">
+                  <input class="inp" value="{{ u.datosNombre }}" onChange="{{ u.onDatosNombre }}" placeholder="Nombre" aria-label="Nombre" autoComplete="off" style="max-width:320px;flex:1;min-width:180px">
+                  <sc-if value="{{ u.sinCorreo }}" hint-placeholder-val="{{ false }}">
+                    <input class="inp" type="email" value="{{ u.datosEmail }}" onChange="{{ u.onDatosEmail }}" placeholder="Correo (cuenta de Google)" aria-label="Correo" autoComplete="off" style="max-width:320px;flex:1;min-width:180px">
+                  </sc-if>
+                  <sc-if value="{{ u.conCorreo }}" hint-placeholder-val="{{ true }}">
+                    <span class="campo-ayuda" style="flex:1 1 100%">{{ u.correoFijoTexto }}</span>
+                  </sc-if>
+                  <sc-if value="{{ u.hayUnirOpciones }}" hint-placeholder-val="{{ false }}">
+                    <select class="inp" value="{{ u.unirCon }}" onChange="{{ u.onUnirCon }}" aria-label="Unir con un usuario de WhatsApp" title="Si esta persona ya estaba registrada solo con WhatsApp, elige ese registro: su cuenta de Google se queda con sus organizaciones, personas y WhatsApp." style="max-width:320px;flex:1;min-width:180px">
+                      <option value="">No unir con un usuario de WhatsApp</option>
+                      <sc-for list="{{ u.unirOpciones }}" as="uo" hint-placeholder-count="2">
+                        <option value="{{ uo.uid }}">Unir con: {{ uo.label }}</option>
+                      </sc-for>
+                    </select>
+                  </sc-if>
+                  <span style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" class="btn-pri" onClick="{{ u.guardarDatos }}">Guardar</button>
+                    <button type="button" class="btn-sec" onClick="{{ u.cancelarDatos }}">Cancelar</button>
+                  </span>
+                </div>
+              </sc-if>
               <div class="usr-res solo-movil">
                 <div class="usr-datos">
                   <span class="{{ u.personaResumenClase }}">{{ u.personaResumen }}</span>
@@ -1298,7 +1324,7 @@ class Component extends DCLogic {
     accesosPendientes: [], agregarUsuarioAbierto: false,
     nuevoUsuarioEmail: '', nuevoUsuarioTelefono: '', nuevoUsuarioRol: 'normal', nuevoUsuarioOrgs: {},
     nuevoUsuarioPersona: '', nuevoUsuarioPersonaNombre: '',
-    usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {}, usuarioPendiente: {},
+    usuarioOrgsAbierto: {}, usuarioOrgsBusqueda: {}, usuarioPendiente: {}, usuarioDatos: null,
     /* Teléfono en edición por uid (se guarda al salir del campo). */
     telefonoEdit: {},
     /* Teléfono: tarjetas de Cuentas desplegadas para editar {uid: true}. */
@@ -1438,7 +1464,7 @@ class Component extends DCLogic {
       }
     } catch (e) { /* sin history (vista previa): se ignora */ }
     if ((tab === 'usuarios' || tab === 'avisos') && !this._unusers) {
-      this._unusers = D().watchAllUsers((lista) => this.setState({ usuarios: lista }));
+      this._unusers = D().watchAllUsers((lista) => { this.setState({ usuarios: lista }); this.fusionarReemplazadas(lista); });
       if (this._unaccesos) this._unaccesos();
       this._unaccesos = D().watchAccesosPendientes((lista) => this.setState({ accesosPendientes: lista }));
       D().migracionMusicosYaCorrio((yaCorrio) => this.setState({ migracionYaCorrio: yaCorrio }));
@@ -1828,6 +1854,77 @@ class Component extends DCLogic {
     else vincular();
   }
 
+  /* --- Editar datos de una cuenta (lápiz) --- */
+
+  /* Nombre de cualquier cuenta; el correo solo se agrega a un usuario sin
+     correo (el de una cuenta de Google es el de su inicio de sesión). Ver
+     R.agregarCorreoAUsuario. */
+  abrirDatosUsuario(u) {
+    this.setState((s) => ({
+      usuarioDatos: s.usuarioDatos && s.usuarioDatos.uid === u.uid ? null : { uid: u.uid, nombre: u.displayName || '', email: u.emailPendiente || '', unirCon: '' }
+    }));
+  }
+
+  guardarDatosUsuario(u) {
+    const R = D();
+    const s = this.state;
+    const d = s.usuarioDatos;
+    if (!d || d.uid !== u.uid) return;
+    const nombre = (d.nombre || '').trim();
+    const email = R.normalizarEmail(d.email);
+    const anterior = R.normalizarEmail(u.emailPendiente);
+    const sinCorreo = R.esUsuarioSinCorreo(u);
+    const correoNuevo = sinCorreo && email && email !== anterior;
+    if (!nombre) { this.setState({ mensaje: 'El nombre no puede quedar vacío.' }); return; }
+    /* Cuenta de Google de alguien que ya estaba registrado solo con WhatsApp
+       (entró por su cuenta, sin que se le agregara el correo): se le unen
+       las organizaciones, personas y WhatsApp de ese registro. */
+    const viejo = !sinCorreo && d.unirCon ? (s.usuarios || []).find((o) => o.uid === d.unirCon && R.esUsuarioSinCorreo(o)) : null;
+    if (viejo && !confirm('¿Unir a ' + (u.email || nombre) + ' con el usuario de WhatsApp "' + (viejo.displayName || viejo.telefono) + '"? La cuenta de Google se queda con sus organizaciones, personas y WhatsApp, y ese registro se elimina.')) return;
+    if (correoNuevo) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { this.setState({ mensaje: 'Escribe un correo válido.' }); return; }
+      const enUso = (s.usuarios || []).some((o) => o.uid !== u.uid && (R.normalizarEmail(o.email) === email || R.normalizarEmail(o.emailPendiente) === email));
+      const enAcceso = (s.accesosPendientes || []).some((a) => R.normalizarEmail(a.email) === email && a.reemplazaUid !== u.uid);
+      if (enUso || enAcceso) { this.setState({ mensaje: 'Ya existe una cuenta o un acceso pendiente con ' + email + '.' }); return; }
+    }
+    const pasos = [];
+    if (nombre !== (u.displayName || '')) pasos.push((cb) => R.setUserNombre(u.uid, nombre, cb));
+    if (viejo) pasos.push((cb) => R.unirCuentas([{ viejo: viejo, nuevo: u }], (n) => cb(n > 0)));
+    if (correoNuevo) {
+      pasos.push((cb) => R.agregarCorreoAUsuario(u, email, anterior, s.userDoc && s.userDoc.uid, cb));
+    } else if (sinCorreo && !email && anterior) {
+      /* Borró el correo pendiente: se cancela su acceso. */
+      const acc = (s.accesosPendientes || []).find((a) => R.normalizarEmail(a.email) === anterior);
+      pasos.push((cb) => R.borrarAccesoPendiente(acc ? acc.key : null, cb, u.uid));
+    }
+    if (!pasos.length) { this.setState({ usuarioDatos: null }); return; }
+    const correr = (i) => {
+      if (i >= pasos.length) {
+        this.setState({
+          usuarioDatos: null,
+          mensaje: viejo ? (nombre + ' quedó unida a su usuario de WhatsApp.') : correoNuevo
+            ? 'Correo agregado: cuando ' + nombre + ' inicie sesión con Google usando ' + email + ', su cuenta conservará sus organizaciones, personas y WhatsApp. Mientras tanto sigue recibiendo sus eventos por WhatsApp.'
+            : 'Datos de ' + nombre + ' guardados.'
+        });
+        return;
+      }
+      pasos[i]((ok) => (ok ? correr(i + 1) : this.setState({ mensaje: 'No se pudieron guardar los datos: revisa tu sesión o las reglas de Firebase.' })));
+    };
+    correr(0);
+  }
+
+  /* Un usuario sin correo al que se le agregó correo ya inició sesión con
+     Google: se le pasan sus datos a esa cuenta y se borra el registro viejo. */
+  fusionarReemplazadas(lista) {
+    const R = D();
+    if (this._fusionando || !R.cuentasReemplazadas(lista).length) return;
+    this._fusionando = true;
+    R.fusionarCuentasReemplazadas(lista, (n) => {
+      this._fusionando = false;
+      if (n) this.setState({ mensaje: n === 1 ? 'Un usuario sin correo ya inició sesión con Google: se unió a su cuenta.' : n + ' usuarios sin correo ya iniciaron sesión con Google: se unieron a sus cuentas.' });
+    });
+  }
+
   /* --- "+ Agregar usuario" --- */
 
   toggleAgregarUsuario() {
@@ -1896,7 +1993,7 @@ class Component extends DCLogic {
 
   cancelarAccesoPendiente(acc) {
     if (!confirm('¿Cancelar el acceso pendiente de ' + acc.email + '? Si luego inicia sesión, entrará sin organización asignada.')) return;
-    D().borrarAccesoPendiente(acc.key, (ok) => this.setState({ mensaje: ok ? ('Se canceló el acceso de ' + acc.email + '.') : 'No se pudo cancelar el acceso.' }));
+    D().borrarAccesoPendiente(acc.key, (ok) => this.setState({ mensaje: ok ? ('Se canceló el acceso de ' + acc.email + '.') : 'No se pudo cancelar el acceso.' }), acc.reemplazaUid);
   }
 
   toggleNuevoMusico() {
@@ -2390,6 +2487,14 @@ class Component extends DCLogic {
 
     const AV = window.RepertorioAvisos;
     const hoyAvisos = AV ? AV.hoyIso() : '';
+    /* Para "Unir con un usuario de WhatsApp" en el lápiz de una cuenta de Google. */
+    const usuariosWhatsApp = (s.usuarios || []).filter((o) => R.esUsuarioSinCorreo(o))
+      .map((o) => {
+        const pid = Object.keys(o.musicianLinks || {}).map((k) => o.musicianLinks[k])[0];
+        const pm = pid ? (s.musicos || []).find((m) => m.id === pid) : null;
+        return { uid: o.uid, label: ((pm && pm.nombre) || o.displayName || 'Sin nombre') + ' · ' + (AV ? AV.formatoTelefono(o.telefono) : o.telefono) };
+      })
+      .sort((a, b) => a.label.localeCompare(b.label, 'es'));
     const usuariosLista = usuariosPagina.map((u) => {
       const busqueda = (s.usuarioOrgsBusqueda || {})[u.uid] || '';
       const deLaOrgU = esDeLaOrg(u);
@@ -2412,7 +2517,7 @@ class Component extends DCLogic {
       const nombreU = (sinCorreoU && personaU ? personaU.nombre : '') || u.displayName || u.email || (AV ? AV.formatoTelefono(u.telefono) : u.telefono) || 'Sin nombre';
       return {
         uid: u.uid, email: u.email, nombre: nombreU,
-        subtitulo: sinCorreoU ? ('Sin correo · WhatsApp ' + (AV ? AV.formatoTelefono(u.telefono) : u.telefono)) : u.email,
+        subtitulo: sinCorreoU ? ((u.emailPendiente ? 'Correo pendiente: ' + u.emailPendiente : 'Sin correo') + ' · WhatsApp ' + (AV ? AV.formatoTelefono(u.telefono) : u.telefono)) : u.email,
         conCorreo: !sinCorreoU,
         sinCorreo: sinCorreoU,
         inicial: (nombreU.trim().charAt(0) || '?').toUpperCase(),
@@ -2441,6 +2546,19 @@ class Component extends DCLogic {
         reenviar: () => { if (proximos && AV) AV.reenviar(s.currentOrgId, u.uid); },
         onPersona: (e) => this.marcarPendiente(u.uid, { personaId: e.target.value }),
         hayCambios: cambiosU.hay,
+        abrirDatos: () => this.abrirDatosUsuario(u),
+        editandoDatos: !!(s.usuarioDatos && s.usuarioDatos.uid === u.uid),
+        datosNombre: s.usuarioDatos && s.usuarioDatos.uid === u.uid ? s.usuarioDatos.nombre : '',
+        datosEmail: s.usuarioDatos && s.usuarioDatos.uid === u.uid ? s.usuarioDatos.email : '',
+        onDatosNombre: (e) => { const v = e.target.value; this.setState((st) => ({ usuarioDatos: Object.assign({}, st.usuarioDatos, { nombre: v }) })); },
+        onDatosEmail: (e) => { const v = e.target.value; this.setState((st) => ({ usuarioDatos: Object.assign({}, st.usuarioDatos, { email: v }) })); },
+        guardarDatos: () => this.guardarDatosUsuario(u),
+        cancelarDatos: () => this.setState({ usuarioDatos: null }),
+        unirCon: s.usuarioDatos && s.usuarioDatos.uid === u.uid ? (s.usuarioDatos.unirCon || '') : '',
+        onUnirCon: (e) => { const v = e.target.value; this.setState((st) => ({ usuarioDatos: Object.assign({}, st.usuarioDatos, { unirCon: v }) })); },
+        unirOpciones: sinCorreoU ? [] : usuariosWhatsApp,
+        hayUnirOpciones: !sinCorreoU && usuariosWhatsApp.length > 0,
+        correoFijoTexto: 'Correo: ' + (u.email || '') + ' (es el de su inicio de sesión con Google; no se puede cambiar).',
         guardarCambios: () => this.guardarCambiosUsuario(u),
         descartarCambios: () => this.descartarCambiosUsuario(u.uid),
         onRole: (e) => this.cambiarRolUsuario(u.uid, e.target.value),
@@ -2484,7 +2602,8 @@ class Component extends DCLogic {
         return {
           email: a.email,
           detalle: D().rolLabel(a.role) + ' · ' + resumenOrgs(a.organizationIds) + ' · ' +
-            (persona ? ('Persona: ' + persona.nombre) : (personaId ? 'Persona vinculada' : 'Sin persona')),
+            (persona ? ('Persona: ' + persona.nombre) : (personaId ? 'Persona vinculada' : 'Sin persona')) +
+            (a.reemplazaUid ? ' · correo agregado a un usuario sin correo' : ''),
           cancelar: () => this.cancelarAccesoPendiente(a)
         };
       });

@@ -1580,13 +1580,109 @@
 
   function esUsuarioSinCorreo(u) { return !!(u && u.sinCorreo && !u.email); }
 
+  function setUserNombre(uid, nombre, cb) {
+    var root = dbRoot();
+    var n = String(nombre || '').trim();
+    if (!root || !uid || !n) { cb && cb(false); return; }
+    root.child(USERS_PATH).child(uid).child('displayName').set(n).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase setUserNombre rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
+  /* Agregar correo a un usuario sin correo. Su llave no es la de Google, así
+     que no se le puede poner el correo directamente: se crea un acceso
+     pendiente con sus organizaciones, personas y WhatsApp (se aplican a la
+     cuenta de Google en su primer inicio de sesión) y se anota el correo en
+     emailPendiente. Mientras no entre sigue recibiendo sus eventos por
+     WhatsApp; cuando entra, el panel de admin fusiona y borra el registro
+     viejo (fusionarCuentasReemplazadas). anterior: correo pendiente previo
+     cuyo acceso se reemplaza (o ''). */
+  function agregarCorreoAUsuario(u, email, anterior, creadoPor, cb) {
+    var root = dbRoot();
+    email = normalizarEmail(email);
+    if (!root || !u || !u.uid || !email) { cb && cb(false); return; }
+    var orgs = Object.assign({}, u.organizationIds || {});
+    var links = Object.assign({}, u.musicianLinks || {});
+    Object.keys(links).forEach(function (orgId) { if (links[orgId]) orgs[orgId] = true; else delete links[orgId]; });
+    var acc = { email: email, role: rolValido(u.role), organizationIds: orgs, reemplazaUid: u.uid, createdAt: Date.now(), createdBy: creadoPor || null };
+    if (Object.keys(links).length) acc.musicianLinks = links;
+    if (u.telefono) acc.telefono = String(u.telefono);
+    var updates = {};
+    anterior = normalizarEmail(anterior);
+    if (anterior && anterior !== email) updates[ACCESOS_PATH + '/' + emailKey(anterior)] = null;
+    updates[ACCESOS_PATH + '/' + emailKey(email)] = acc;
+    updates[USERS_PATH + '/' + u.uid + '/emailPendiente'] = email;
+    root.update(updates).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase agregarCorreoAUsuario rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
+  /* Registros sin correo cuyo correo pendiente ya tiene cuenta de Google:
+     [{viejo, nuevo}]. */
+  function cuentasReemplazadas(usuarios) {
+    var porEmail = {};
+    (usuarios || []).forEach(function (u) { if (u && u.email) porEmail[normalizarEmail(u.email)] = u; });
+    var out = [];
+    (usuarios || []).forEach(function (u) {
+      var nuevo = u && u.emailPendiente && porEmail[normalizarEmail(u.emailPendiente)];
+      if (nuevo && nuevo.uid !== u.uid) out.push({ viejo: u, nuevo: nuevo });
+    });
+    return out;
+  }
+
+  /* Lo corre el panel de admin (quien puede escribir /users ajenos): pasa a
+     la cuenta de Google (nuevo) las organizaciones, personas y WhatsApp que
+     el registro sin correo (viejo) tenga en ese momento y borra el registro
+     viejo. Si la cuenta de Google ya tenía otra persona en una organización,
+     se queda con la suya y la del registro viejo queda sin cuenta.
+     pares: [{viejo, nuevo}]. cb(n unidas). */
+  function unirCuentas(pares, cb) {
+    var root = dbRoot();
+    pares = (pares || []).filter(function (p) { return p && p.viejo && p.nuevo && p.viejo.uid && p.nuevo.uid && p.viejo.uid !== p.nuevo.uid; });
+    if (!root || !pares.length) { cb && cb(0); return; }
+    var updates = {};
+    pares.forEach(function (par) {
+      var v = par.viejo, n = par.nuevo;
+      var base = USERS_PATH + '/' + n.uid;
+      Object.keys(v.organizationIds || {}).forEach(function (orgId) { if (v.organizationIds[orgId]) updates[base + '/organizationIds/' + orgId] = true; });
+      var linksNuevo = n.musicianLinks || {};
+      Object.keys(v.musicianLinks || {}).forEach(function (orgId) {
+        var mid = v.musicianLinks[orgId];
+        if (!mid) return;
+        if (linksNuevo[orgId]) {
+          if (linksNuevo[orgId] !== mid) updates[MUSICIANS_PATH + '/' + mid + '/userId'] = null;
+          return;
+        }
+        updates[base + '/musicianLinks/' + orgId] = mid;
+        updates[base + '/organizationIds/' + orgId] = true;
+        updates[MUSICIANS_PATH + '/' + mid + '/userId'] = n.uid;
+      });
+      if (v.telefono && !n.telefono) updates[base + '/telefono'] = String(v.telefono);
+      updates[USERS_PATH + '/' + v.uid] = null;
+    });
+    root.update(updates).then(function () { cb && cb(pares.length); }, function (err) {
+      console.error('Firebase unirCuentas rechazado:', err && err.code, err && err.message, err);
+      cb && cb(0);
+    });
+  }
+
+  /* Los que ya iniciaron sesión con el correo que se les agregó. */
+  function fusionarCuentasReemplazadas(usuarios, cb) { unirCuentas(cuentasReemplazadas(usuarios), cb); }
+
   /* Toda cuenta debe tener al menos correo o WhatsApp. */
   function contactoValido(email, telefono) { return !!(normalizarEmail(email) || String(telefono || '').trim()); }
 
-  function borrarAccesoPendiente(key, cb) {
+  /* reemplazaUid: si el acceso era el correo agregado a un usuario sin
+     correo, también se le quita el emailPendiente. */
+  function borrarAccesoPendiente(key, cb, reemplazaUid) {
     var root = dbRoot();
-    if (!root || !key) { cb && cb(false); return; }
-    root.child(ACCESOS_PATH).child(key).remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
+    if (!root || (!key && !reemplazaUid)) { cb && cb(false); return; }
+    var updates = {};
+    if (key) updates[ACCESOS_PATH + '/' + key] = null;
+    if (reemplazaUid) updates[USERS_PATH + '/' + reemplazaUid + '/emailPendiente'] = null;
+    root.update(updates).then(function () { cb && cb(true); }, function () { cb && cb(false); });
   }
 
   /* --- Eventos --- */
@@ -2855,7 +2951,9 @@
     normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
     integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,
     watchAccesosPendientes: watchAccesosPendientes, crearAccesoPendiente: crearAccesoPendiente, borrarAccesoPendiente: borrarAccesoPendiente,
-    crearUsuarioSinCorreo: crearUsuarioSinCorreo, esUsuarioSinCorreo: esUsuarioSinCorreo, contactoValido: contactoValido,
+    crearUsuarioSinCorreo: crearUsuarioSinCorreo, esUsuarioSinCorreo: esUsuarioSinCorreo,
+    setUserNombre: setUserNombre, agregarCorreoAUsuario: agregarCorreoAUsuario,
+    cuentasReemplazadas: cuentasReemplazadas, fusionarCuentasReemplazadas: fusionarCuentasReemplazadas, unirCuentas: unirCuentas, contactoValido: contactoValido,
     watchEventsForOrg: watchEventsForOrg, saveEvent: saveEvent, saveEventSinBanda: saveEventSinBanda, setEventEstado: setEventEstado, moveEvent: moveEvent,
     watchSongCatalog: watchSongCatalog, saveSongOverride: saveSongOverride, archiveSong: archiveSong,
     urlCifrado: urlCifrado, prepararCifrado: prepararCifrado, getCifrado: getCifrado, saveCifrado: saveCifrado,
