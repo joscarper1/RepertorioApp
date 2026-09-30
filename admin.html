@@ -550,7 +550,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         <div class="barra-acc">
           <div class="buscar">
             <span class="buscar-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg></span>
-            <input class="inp" value="{{ usuariosBusquedaNombre }}" onChange="{{ onUsuariosBusquedaNombre }}" placeholder="Buscar por nombre…" autoComplete="off">
+            <input class="inp" value="{{ usuariosBusquedaNombre }}" onChange="{{ onUsuariosBusquedaNombre }}" placeholder="Buscar por nombre o correo…" autoComplete="off">
           </div>
           <button type="button" class="btn-pri btn-ac" onClick="{{ toggleAgregarUsuario }}">+ Agregar usuario</button>
         </div>
@@ -641,6 +641,9 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   <div style="min-width:0">
                     <div class="item-t">{{ u.nombre }}</div>
                     <div class="item-s">{{ u.subtitulo }}</div>
+                    <sc-if value="{{ u.otraOrg }}" hint-placeholder-val="{{ false }}">
+                      <span class="badge b-azul solo-desk" title="{{ u.personaTitulo }}">No pertenece a esta organización</span>
+                    </sc-if>
                   </div>
                 </div>
                 <div class="item-acc" style="width:auto">
@@ -675,8 +678,8 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 </div>
               </div>
               <div class="{{ u.subClase }}">
-                <select class="inp" value="{{ u.personaId }}" onChange="{{ u.onPersona }}" aria-label="Persona vinculada" style="max-width:320px;flex:1;min-width:180px">
-                  <option value="">Sin persona vinculada</option>
+                <select class="inp" value="{{ u.personaId }}" onChange="{{ u.onPersona }}" disabled="{{ u.personaDeshabilitada }}" aria-label="Persona vinculada" title="{{ u.personaTitulo }}" style="max-width:320px;flex:1;min-width:180px">
+                  <option value="">{{ u.personaVaciaTexto }}</option>
                   <sc-for list="{{ u.personaOpciones }}" as="po" hint-placeholder-count="2">
                     <option value="{{ po.id }}">{{ po.nombre }}</option>
                   </sc-for>
@@ -1753,6 +1756,10 @@ class Component extends DCLogic {
   vincularUsuarioAPersona(u, musicianId) {
     const R = D();
     const orgId = this.state.currentOrgId;
+    if (R.userOrgIds(u).indexOf(orgId) < 0) {
+      this.setState({ mensaje: 'Primero asígnale esta organización a la cuenta para poder vincularla con una persona.' });
+      return;
+    }
     const musicos = this.state.musicos || [];
     const actualId = R.userMusicianLinks(u)[orgId];
     const nueva = musicos.find((m) => m.id === musicianId);
@@ -1799,7 +1806,7 @@ class Component extends DCLogic {
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { this.setState({ mensaje: 'Escribe un correo válido.' }); return; }
     if (telTexto && !(AV && AV.telefonoValido(tel))) { this.setState({ mensaje: 'El WhatsApp no es válido: usa 8 dígitos, o el número completo con código de país.' }); return; }
     if (email && (s.usuarios || []).some((u) => R.normalizarEmail(u.email) === email)) {
-      this.setState({ mensaje: 'Ya existe una cuenta con ' + email + ': cambia su rol, organizaciones y persona desde su tarjeta en la lista.' });
+      this.setState({ mensaje: 'Ya existe una cuenta con ' + email + ': búscala en la lista de cuentas y, desde su tarjeta, márcale esta organización y vincúlala con su persona.' });
       return;
     }
     if (!email && (s.usuarios || []).some((u) => u.telefono && u.telefono === tel)) {
@@ -2301,26 +2308,24 @@ class Component extends DCLogic {
     }));
     const orgSwitcherVacioStyle = orgsSidebarFiltradas.length === 0 ? 'font-size:13px;color:#9a9694;padding:10px' : 'display:none';
 
-    /* Acotado a la organización activa — salvo los que todavía no tienen
-       ninguna asignada (recién auto-registrados como 'normal' pendientes),
-       que deben seguir viéndose sin importar cuál organización esté activa,
-       o de lo contrario nunca aparecerían en ningún listado para poder
-       asignarlos por primera vez. */
-    const usuariosDeLaOrg = (s.usuarios || []).filter((u) => {
-      const ids = R.userOrgIds(u);
-      return ids.length === 0 || ids.indexOf(s.currentOrgId) >= 0;
-    });
-    /* Primero las cuentas sin persona vinculada en esta organización, para
-       que el admin vea de un vistazo a quién falta vincular (orden estable:
-       dentro de cada grupo se conserva el orden original). */
-    const tienePersona = (u) => (R.userMusicianLinks(u)[s.currentOrgId] ? 1 : 0);
-    usuariosDeLaOrg.sort((a, b) => tienePersona(a) - tienePersona(b));
+    /* Las cuentas se listan en todas las organizaciones (a diferencia de las
+       personas), para que una cuenta existente se pueda sumar a otra
+       organización desde su tarjeta en vez de chocar con "Ya existe una
+       cuenta". Solo las que pertenecen a la organización activa pueden
+       vincularse con sus personas. */
+    const esDeLaOrg = (u) => R.userOrgIds(u).indexOf(s.currentOrgId) >= 0;
+    const usuariosOrdenados = (s.usuarios || []).slice();
+    /* Orden (estable): primero las de esta organización sin persona
+       vinculada, para ver de un vistazo a quién falta vincular; luego las
+       que ya tienen persona; al final las de otras organizaciones. */
+    const grupoUsuario = (u) => (!esDeLaOrg(u) ? 2 : (R.userMusicianLinks(u)[s.currentOrgId] ? 1 : 0));
+    usuariosOrdenados.sort((a, b) => grupoUsuario(a) - grupoUsuario(b));
 
     const USUARIOS_PAGE_SIZE = 5;
     const usuariosBusquedaQ = (s.usuariosBusquedaNombre || '').trim().toLowerCase();
     const usuariosFiltrados = usuariosBusquedaQ
-      ? usuariosDeLaOrg.filter((u) => (u.displayName || u.email || '').toLowerCase().indexOf(usuariosBusquedaQ) >= 0)
-      : usuariosDeLaOrg;
+      ? usuariosOrdenados.filter((u) => ((u.displayName || '') + ' ' + (u.email || '')).toLowerCase().indexOf(usuariosBusquedaQ) >= 0)
+      : usuariosOrdenados;
     const usuariosTotalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / USUARIOS_PAGE_SIZE));
     const usuariosPaginaActual = Math.min(Math.max(1, s.usuariosPagina || 1), usuariosTotalPaginas);
     const usuariosInicioPagina = (usuariosPaginaActual - 1) * USUARIOS_PAGE_SIZE;
@@ -2334,7 +2339,8 @@ class Component extends DCLogic {
     const hoyAvisos = AV ? AV.hoyIso() : '';
     const usuariosLista = usuariosPagina.map((u) => {
       const busqueda = (s.usuarioOrgsBusqueda || {})[u.uid] || '';
-      const personaIdU = R.userMusicianLinks(u)[s.currentOrgId] || '';
+      const deLaOrgU = esDeLaOrg(u);
+      const personaIdU = deLaOrgU ? (R.userMusicianLinks(u)[s.currentOrgId] || '') : '';
       const proximos = AV && personaIdU ? AV.eventosDePersona(s.repertorioEventos, personaIdU, hoyAvisos).length : 0;
       const telEditado = (s.telefonoEdit || {})[u.uid];
       const misIds = R.userOrgIds(u);
@@ -2354,15 +2360,19 @@ class Component extends DCLogic {
         inicial: (nombreU.trim().charAt(0) || '?').toUpperCase(),
         role: u.role || 'normal',
         personaId: personaIdU,
-        personaOpciones: personaOpciones,
+        personaOpciones: deLaOrgU ? personaOpciones : [],
+        personaDeshabilitada: !deLaOrgU,
+        personaVaciaTexto: deLaOrgU ? 'Sin persona vinculada' : 'Asígnale esta organización para vincularla',
+        personaTitulo: deLaOrgU ? 'Persona vinculada' : 'Esta cuenta no pertenece a ' + (orgActual ? orgActual.name : 'la organización activa') + ': márcala en sus organizaciones para poder vincularla con una persona.',
+        otraOrg: !deLaOrgU,
         telefono: telEditado !== undefined ? telEditado : (AV ? AV.formatoTelefono(u.telefono) : (u.telefono || '')),
         onTelefono: (e) => { const v = e.target.value; this.setState((st) => ({ telefonoEdit: Object.assign({}, st.telefonoEdit, { [u.uid]: v }) })); },
         guardarTelefono: () => this.guardarTelefonoUsuario(u),
         conPersona: !!personaIdU,
         /* Resumen compacto del teléfono: en vez de los controles, una línea
            con persona, organizaciones y WhatsApp; "Editar" los despliega. */
-        personaResumen: personaIdU ? ((personaOpciones.find((p) => p.id === personaIdU) || {}).nombre || 'Persona vinculada') : 'Sin persona',
-        personaResumenClase: 'badge ' + (personaIdU ? 'b-ok' : 'b-pend'),
+        personaResumen: !deLaOrgU ? 'Otra organización' : (personaIdU ? ((personaOpciones.find((p) => p.id === personaIdU) || {}).nombre || 'Persona vinculada') : 'Sin persona'),
+        personaResumenClase: 'badge ' + (!deLaOrgU ? 'b-azul' : (personaIdU ? 'b-ok' : 'b-pend')),
         telefonoResumen: u.telefono ? (AV ? AV.formatoTelefono(u.telefono) : u.telefono) : 'Sin WhatsApp',
         subClase: 'item-sub' + ((s.usuarioEditAbierto || {})[u.uid] ? ' abierto' : ''),
         editTexto: (s.usuarioEditAbierto || {})[u.uid] ? 'Listo' : 'Editar',
@@ -2790,7 +2800,7 @@ class Component extends DCLogic {
       onUsuariosBusquedaNombre: (e) => this.onUsuariosBusquedaNombre(e),
       usuariosLista: usuariosLista,
       sinUsuariosStyle: usuariosFiltrados.length === 0 ? 'font-size:13px;color:var(--muted2);padding:18px 20px;margin:0' : 'display:none',
-      sinUsuariosTexto: usuariosBusquedaQ ? ('Sin resultados para "' + s.usuariosBusquedaNombre.trim() + '".') : 'No existen usuarios registrados para la organización seleccionada.',
+      sinUsuariosTexto: usuariosBusquedaQ ? ('Sin resultados para "' + s.usuariosBusquedaNombre.trim() + '".') : 'No existen usuarios registrados.',
       hayUsuarios: usuariosFiltrados.length > 0,
       usuariosPaginaActual: usuariosPaginaActual,
       usuariosTotalPaginas: usuariosTotalPaginas,
