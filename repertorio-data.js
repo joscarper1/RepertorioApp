@@ -2743,8 +2743,83 @@
     });
   }
 
+  /* --- Balance de participaciones (planificación) ---
+     Ayudas para repartir los puestos: cuántas veces sirve cada persona en el
+     mes, quién ya sirve otro evento el mismo día y a quién le tocaría un
+     puesto vacío. Solo cuentan los eventos que se van a realizar
+     (Borrador/Publicado); las personas se identifican por su nombre
+     normalizado, igual que el aviso de "también asignado como". */
+  var ESTADOS_QUE_CUENTAN = ['BORRADOR', 'PUBLICADO'];
+
+  function clavePersona(nombre) { return String(nombre || '').trim().toLowerCase(); }
+
+  /* Un Ensayo copia la banda de su evento: contarlo sería contar doble. */
+  function cuentaParaBalance(ev) { return !!ev && !esEnsayo(ev) && ESTADOS_QUE_CUENTAN.indexOf(estadoEvento(ev)) >= 0; }
+
+  /* {clave: {nombre, total, puestos: {tipo: n}, fechas: [iso]}} de los
+     eventos del mes `mes` ('2026-10'), sin contar `excluirId` (el evento que
+     se está editando). `total` cuenta eventos, no puestos: servir en dos
+     puestos del mismo evento es una sola participación. */
+  function cargaDelMes(eventos, mes, excluirId) {
+    var out = {};
+    (eventos || []).forEach(function (ev) {
+      if (!cuentaParaBalance(ev) || ev.id === excluirId || monthKey(ev.fecha) !== mes) return;
+      var vistos = {};
+      (ev.banda || []).forEach(function (b) {
+        var k = clavePersona(b && b.nombre);
+        if (!k) return;
+        var c = out[k] || (out[k] = { nombre: b.nombre.trim(), total: 0, puestos: {}, fechas: [] });
+        c.puestos[b.tipo] = (c.puestos[b.tipo] || 0) + 1;
+        if (!vistos[k]) { vistos[k] = true; c.total++; c.fechas.push(ev.fecha); }
+      });
+    });
+    return out;
+  }
+
+  /* {clave: ['Vigilia Filial 7:00 pm', …]}: otros eventos del mismo día
+     donde la persona ya tiene un puesto. */
+  function ocupadosMismoDia(eventos, fecha, excluirId) {
+    var out = {};
+    (eventos || []).forEach(function (ev) {
+      if (!cuentaParaBalance(ev) || ev.id === excluirId || !fecha || ev.fecha !== fecha) return;
+      var etiqueta = [ev.servicio || 'Evento', ev.hora || ''].filter(Boolean).join(' ');
+      (ev.banda || []).forEach(function (b) {
+        var k = clavePersona(b && b.nombre);
+        if (!k) return;
+        var l = out[k] || (out[k] = []);
+        if (l.indexOf(etiqueta) < 0) l.push(etiqueta);
+      });
+    });
+    return out;
+  }
+
+  /* Candidatos ordenados para un puesto: primero quien menos ha servido en
+     el mes (y, a igual carga, menos veces en ese mismo puesto), luego por
+     nombre. Se descarta a quien ya está en el evento, sirve otro evento ese
+     día o marcó la fecha como no disponible. o: {candidatos: [nombre],
+     tipo, carga, enEvento: {clave: true}, mismoDia, noDisponibles}. */
+  function candidatosParaPuesto(o) {
+    var carga = o.carga || {}, enEvento = o.enEvento || {}, mismoDia = o.mismoDia || {}, noDisp = o.noDisponibles || {};
+    var vistos = {};
+    return (o.candidatos || []).filter(function (nm) {
+      var k = clavePersona(nm);
+      if (!k || vistos[k] || enEvento[k] || mismoDia[k] || noDisp[k]) return false;
+      vistos[k] = true;
+      return true;
+    }).map(function (nm) {
+      var c = carga[clavePersona(nm)];
+      return { nombre: nm, total: c ? c.total : 0, enPuesto: c ? (c.puestos[o.tipo] || 0) : 0 };
+    }).sort(function (a, b) {
+      return (a.total - b.total) || (a.enPuesto - b.enPuesto) || a.nombre.localeCompare(b.nombre, 'es');
+    });
+  }
+
+  function textoCarga(n) { return n === 1 ? '1 vez este mes' : n + ' veces este mes'; }
+
   w.RepertorioData = {
     MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
+    clavePersona: clavePersona, cargaDelMes: cargaDelMes, ocupadosMismoDia: ocupadosMismoDia,
+    candidatosParaPuesto: candidatosParaPuesto, textoCarga: textoCarga,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
     PERFILES_CALENDARIO: PERFILES_CALENDARIO, TIPOS_CALENDARIO: TIPOS_CALENDARIO, TIPO_CALENDARIO_DEFECTO: TIPO_CALENDARIO_DEFECTO,
     tipoCalendarioValido: tipoCalendarioValido, perfilCalendario: perfilCalendario, perfilOrg: perfilOrg,

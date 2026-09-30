@@ -34,7 +34,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260930f"></script>
+<script src="repertorio-data.js?v=20260930g"></script>
 <script src="avisos.js?v=20260930a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -292,6 +292,15 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .slot-rol{grid-column:1/-1;min-height:34px;padding-top:5px;padding-bottom:5px;font-size:12.5px;font-weight:700;color:var(--ac-dk);background-color:var(--ac-lt);border-color:transparent}
 .warn{font-size:11.5px;font-weight:700;color:var(--red);background:var(--red-lt);padding:5px 9px;border-radius:6px;align-self:flex-start}
 /* Aviso discreto (no bloquea): la misma persona ocupa otro puesto de la banda. */
+.balance-barra{display:flex;align-items:flex-start;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
+.balance{flex:1 1 280px;min-width:0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.balance summary{cursor:pointer;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ac-dk);list-style-position:inside}
+.balance summary span{color:var(--muted2);font-weight:700;letter-spacing:.04em}
+.balance-lista{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.balance-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--soft);color:var(--ink)}
+.balance-chip b{font-weight:800;color:var(--ac-dk)}
+.sugerencia{align-self:flex-start;font-size:12px;font-weight:600;color:var(--ac-dk);background:var(--ac-lt);border:0;border-radius:6px;padding:5px 9px;cursor:pointer;text-align:left}
+.sugerencia:hover{background:#d3e8da}
 .aviso-dup{font-size:11.5px;font-weight:600;color:var(--muted);line-height:1.35;align-self:flex-start}
 .aviso-dup::before{content:"ⓘ ";color:var(--ac-dk)}
 .banda-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -753,6 +762,22 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
       <sc-if value="{{ esSubBanda }}" hint-placeholder-val="{{ false }}">
         <p class="campo-ayuda" style="margin:0">Elige a la persona de cada puesto; deja “Sin asignar” lo que no se use. “+ Agregar” suma otro puesto del mismo tipo.</p>
+        <div class="balance-barra">
+          <details class="balance">
+            <summary>Carga de {{ balanceMes }} <span>· {{ balanceCuenta }}</span></summary>
+            <sc-if value="{{ balanceHayFilas }}" hint-placeholder-val="{{ false }}">
+              <div class="balance-lista">
+                <sc-for list="{{ balanceFilas }}" as="bf" hint-placeholder-count="4">
+                  <span class="balance-chip" title="{{ bf.detalle }}">{{ bf.nombre }} <b>{{ bf.total }}</b></span>
+                </sc-for>
+              </div>
+            </sc-if>
+            <p class="campo-ayuda" style="margin:8px 0 0">Veces que cada persona sirve en otros eventos del mes (borradores y publicados, sin ensayos). Las sugerencias eligen a quien menos ha servido.</p>
+          </details>
+          <sc-if value="{{ hayVacantesSugeribles }}" hint-placeholder-val="{{ false }}">
+            <button type="button" class="btn-sec" onClick="{{ completarVacios }}" title="Asigna en cada puesto vacío a quien menos ha servido este mes">Completar vacíos con sugerencias</button>
+          </sc-if>
+        </div>
         <sc-for list="{{ bandaSecciones }}" as="sec" hint-placeholder-count="2">
           <div style="display:contents">
             <sc-if value="{{ sec.conTitulo }}" hint-placeholder-val="{{ true }}">
@@ -794,6 +819,12 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                     </sc-if>
                     <sc-if value="{{ sl.noDisponible }}" hint-placeholder-val="{{ false }}">
                       <span class="warn">Marcado como no disponible esta fecha</span>
+                    </sc-if>
+                    <sc-if value="{{ sl.mismoDia }}" hint-placeholder-val="{{ false }}">
+                      <span class="warn">{{ sl.avisoMismoDia }}</span>
+                    </sc-if>
+                    <sc-if value="{{ sl.haySugerencia }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" class="sugerencia" onClick="{{ sl.aplicarSugerencia }}">Sugerencia: <b>{{ sl.sugerenciaNombre }}</b> · {{ sl.sugerenciaCarga }}</button>
                     </sc-if>
                     <sc-if value="{{ sl.duplicado }}" hint-placeholder-val="{{ false }}">
                       <span class="aviso-dup">{{ sl.avisoDuplicado }}</span>
@@ -2160,6 +2191,40 @@ class Component extends DCLogic {
       .filter((m) => !m.rolesBanda || !m.rolesBanda.length || tipos.some((t) => m.rolesBanda.indexOf(t) >= 0))
       .map((m) => (m.nombre || '').trim())
       .filter(Boolean))).sort((a, b) => a.localeCompare(b, 'es'));
+    /* Balance del mes (Fase 5): carga de cada persona en los otros eventos
+       del mes, quién ya sirve otro evento ese día y quién marcó la fecha como
+       no disponible; alimenta la cuenta en cada opción, los avisos y las
+       sugerencias para los puestos vacíos. */
+    const mesDr = dr ? R.monthKey(dr.fecha) : '';
+    const cargaMes = dr ? R.cargaDelMes(s.data.eventos, mesDr, dr.id) : {};
+    const mismoDiaMap = dr ? R.ocupadosMismoDia(s.data.eventos, dr.fecha, dr.id) : {};
+    const enEventoMap = {};
+    drBanda.forEach((b) => { const k = R.clavePersona(b.nombre); if (k) enEventoMap[k] = true; });
+    const noDispMap = {};
+    (s.musicos || []).forEach((m) => {
+      if (dr && dr.fecha && R.fechaNoDisponible(Object.values(m.unavailableDates || {}), dr.fecha)) noDispMap[R.clavePersona(m.nombre)] = true;
+    });
+    const totalMes = (nm) => { const c = cargaMes[R.clavePersona(nm)]; return c ? c.total : 0; };
+    const etiquetaOpcion = (nm) => {
+      const n = totalMes(nm);
+      const partes = [nm];
+      if (n) partes.push(n + ' este mes');
+      if (mismoDiaMap[R.clavePersona(nm)]) partes.push('ya sirve ese día');
+      return partes.join(' · ');
+    };
+    const sugeridos = (r, b, enEvento, carga) => R.candidatosParaPuesto({
+      candidatos: r.rolesBanda ? nombresPara([r.tipo, b.rol]) : nombresPara([r.tipo]),
+      tipo: r.tipo, carga: carga || cargaMes, enEvento: enEvento || enEventoMap, mismoDia: mismoDiaMap, noDisponibles: noDispMap
+    });
+    const asignarNombre = (slotId, v) => this.setDraft((x) => {
+      const idx = (x.banda || []).findIndex((sl) => sl.id === slotId);
+      if (idx < 0) return;
+      if ((x.banda[idx].nombre || '') !== v) {
+        delete x.banda[idx].estadoConfirmacion;
+        delete x.banda[idx].motivoDeclinacion;
+      }
+      x.banda[idx].nombre = v;
+    });
     const bandaGrupos = dr ? rolesPaso.map((r) => {
       const nombresDisponibles = nombresPara([r.tipo]);
 
@@ -2185,7 +2250,9 @@ class Component extends DCLogic {
           ? [nombreActual].concat(nombresDisponibles)
           : nombresDisponibles;
         const opciones = [{ value: '', label: '— Sin asignar —' }]
-          .concat(opcionesNombres.map((nm) => ({ value: nm, label: nm })));
+          .concat(opcionesNombres.map((nm) => ({ value: nm, label: etiquetaOpcion(nm) })));
+        const mismoDia = nombreActual ? (mismoDiaMap[R.clavePersona(nombreActual)] || []) : [];
+        const sugerencia = !nombreActual ? sugeridos(r, b)[0] : null;
         /* Advertencia no bloqueante: si la persona seleccionada tiene esa
            fecha marcada como no disponible, se avisa aquí mismo — el admin
            puede igual guardar, es una señal, no un bloqueo. */
@@ -2262,12 +2329,46 @@ class Component extends DCLogic {
         declinado: !!nombreActual && R.estadoConfirmacionSlot(b) === 'rechazado',
         motivoDeclinacion: b.motivoDeclinacion ? (' — ' + b.motivoDeclinacion) : '',
         noDisponible: noDisponible,
+        mismoDia: mismoDia.length > 0,
+        avisoMismoDia: mismoDia.length ? ('Ese día también sirve en ' + mismoDia.join(', ')) : '',
+        haySugerencia: !!sugerencia,
+        sugerenciaNombre: sugerencia ? sugerencia.nombre : '',
+        sugerenciaCarga: sugerencia ? (sugerencia.total ? R.textoCarga(sugerencia.total) : 'aún no sirve este mes') : '',
+        aplicarSugerencia: () => { if (sugerencia) asignarNombre(b.id, sugerencia.nombre); },
         duplicado: otrosPuestos.length > 0,
         avisoDuplicado: otrosPuestos.length ? ('También asignado como ' + otrosPuestos.join(', ')) : ''
         };
       })
       };
     }) : [];
+
+    /* "Completar vacíos con sugerencias": recorre los puestos vacíos en
+       orden y asigna a cada uno a quien menos ha servido, contando a los que
+       va asignando (así reparte en vez de repetir a la misma persona). */
+    const vacantesSugeribles = dr ? rolesPaso.reduce((n, r) => n + drBanda
+      .filter((b) => b.tipo === r.tipo && !(b.nombre || '').trim() && sugeridos(r, b).length).length, 0) : 0;
+    const completarVacios = () => this.setDraft((x) => {
+      const enEv = {};
+      (x.banda || []).forEach((b) => { const k = R.clavePersona(b.nombre); if (k) enEv[k] = true; });
+      const carga = JSON.parse(JSON.stringify(cargaMes));
+      rolesPaso.forEach((r) => (x.banda || []).filter((b) => b.tipo === r.tipo && !(b.nombre || '').trim()).forEach((b) => {
+        const elegido = sugeridos(r, b, enEv, carga)[0];
+        if (!elegido) return;
+        b.nombre = elegido.nombre;
+        delete b.estadoConfirmacion; delete b.motivoDeclinacion;
+        const k = R.clavePersona(elegido.nombre);
+        enEv[k] = true;
+        const c = carga[k] || (carga[k] = { nombre: elegido.nombre, total: 0, puestos: {}, fechas: [] });
+        c.total++;
+        c.puestos[r.tipo] = (c.puestos[r.tipo] || 0) + 1;
+      }));
+    });
+    const balanceFilas = Object.keys(cargaMes).map((k) => cargaMes[k])
+      .sort((a, b) => (b.total - a.total) || a.nombre.localeCompare(b.nombre, 'es'))
+      .map((c) => ({
+        nombre: c.nombre, total: c.total,
+        detalle: Object.keys(c.puestos).map((t) => t + (c.puestos[t] > 1 ? ' ×' + c.puestos[t] : '')).join(', ')
+      }));
 
     const resumenBanda = dr ? rolesPaso.map((r) => {
       const nombres = drBanda.filter((b) => b.tipo === r.tipo && b.nombre && b.nombre.trim())
@@ -2662,6 +2763,12 @@ class Component extends DCLogic {
       onDetalles: field('detalles'), onPersonas: field('personas'),
       servicios: pf.serviciosCon(dr && dr.servicio).map((label) => ({ label: label })),
       bandaGrupos: bandaGrupos,
+      balanceMes: mesDr ? R.monthLabel(mesDr) : '',
+      balanceCuenta: balanceFilas.length ? (balanceFilas.length === 1 ? '1 persona' : balanceFilas.length + ' personas') : 'nadie aún',
+      balanceFilas: balanceFilas,
+      balanceHayFilas: balanceFilas.length > 0,
+      hayVacantesSugeribles: vacantesSugeribles > 0,
+      completarVacios: completarVacios,
       bandaSecciones: pf.id === 'repertorio'
         ? [{ titulo: 'Voces', conTitulo: true, grupos: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) >= 0) },
           { titulo: 'Músicos', conTitulo: true, grupos: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) < 0) }]
