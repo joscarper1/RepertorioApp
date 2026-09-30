@@ -510,6 +510,17 @@
     return slot.numero ? (base + ' ' + slot.numero) : base;
   }
 
+  /* Puesto completo para mostrárselo a la persona fuera del asistente: con
+     el ministerio delante cuando el puesto lleva rol de banda
+     ("Alabanza · Director de Alabanza 1"); si no, igual que bandaLabel. */
+  function puestoLabel(slot) {
+    return slot.rol ? (slot.tipo + ' · ' + bandaLabel(slot)) : bandaLabel(slot);
+  }
+
+  function servidoresAsignados(ev) {
+    return ((ev && ev.banda) || []).filter(function (b) { return b && (b.nombre || '').trim(); }).length;
+  }
+
   /* Siguiente número disponible para agregar otro integrante del mismo tipo
      (un slot sin número cuenta como 1, así la próxima incorporación es 2). */
   function bandaSiguienteNumero(banda, tipo) {
@@ -581,7 +592,7 @@
         });
       if (banda.length) {
         out.push(pf.textos.equipo + ':');
-        banda.forEach(function (b) { out.push((b.rol ? b.tipo + ' · ' + bandaLabel(b) : b.tipo) + ': ' + b.nombre.trim()); });
+        banda.forEach(function (b) { out.push((b.rol ? puestoLabel(b) : b.tipo) + ': ' + b.nombre.trim()); });
         out.push('');
       }
       var canciones = [];
@@ -1135,7 +1146,8 @@
         equipo: 'Banda', integrantes: 'Integrantes de la banda', puesto: 'Rol',
         soloLectura: 'La banda la asigna un administrador.',
         personas: 'Identidad y roles de banda de cada integrante, con o sin cuenta todavía.', agregarEtiqueta: '+ Agregar rol',
-        notas: 'Notas del ensayo', notasPlaceholder: 'Indicaciones especiales para el ensayo o el repertorio'
+        notas: 'Notas del ensayo', notasPlaceholder: 'Indicaciones especiales para el ensayo o el repertorio',
+        sinEtiquetas: 'Sin roles de banda asignados todavía', emojiEvento: '🎼'
       }
     },
     servicio: {
@@ -1150,7 +1162,8 @@
         equipo: 'Servidores', integrantes: 'Servidores asignados', puesto: 'Ministerio',
         soloLectura: 'Los servidores los asigna un administrador.',
         personas: 'Identidad, ministerios y roles de banda (para Alabanza) de cada servidor, con o sin cuenta todavía.', agregarEtiqueta: '+ Agregar ministerio o rol',
-        notas: 'Notas para los servidores', notasPlaceholder: 'Indicaciones especiales para los servidores de este evento'
+        notas: 'Notas para los servidores', notasPlaceholder: 'Indicaciones especiales para los servidores de este evento',
+        sinEtiquetas: 'Sin ministerios asignados todavía', emojiEvento: '📅'
       },
       modulosOcultos: ['repertorio'],
       ministerios: true
@@ -2697,7 +2710,7 @@
     youtubeId: youtubeId, youtubeController: youtubeController, formatoTiempo: formatoTiempo, progresoAudio: progresoAudio, youtubeErrorMessage: youtubeErrorMessage,defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaSlotRol: bandaSlotRol, numeroParaRol: numeroParaRol, rolInicialMinisterio: rolInicialMinisterio,
-    bandaLabel: bandaLabel, bandaSiguienteNumero: bandaSiguienteNumero,
+    bandaLabel: bandaLabel, puestoLabel: puestoLabel, servidoresAsignados: servidoresAsignados, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,
     diaNombre: diaNombre, fechaLarga: fechaLarga, semanaDelMes: semanaDelMes,
     hoyKey: hoyKey, calendario: calendario, clone: clone,

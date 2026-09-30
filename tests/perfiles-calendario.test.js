@@ -193,3 +193,22 @@ test('etiquetas de Personas: ministerios y, para Alabanza, los roles de banda', 
   assert.equal(new Set(et).size, et.length);
   assert.deepEqual(Array.from(rep.etiquetasPersona()), Array.from(rep.ordenRoles()));
 });
+
+test('puestoLabel antepone el ministerio cuando el puesto lleva rol', () => {
+  assert.equal(R.puestoLabel({ tipo: 'Alabanza', rol: 'Director de Alabanza', numero: 1 }), 'Alabanza · Director de Alabanza 1');
+  assert.equal(R.puestoLabel({ tipo: 'Protocolo', numero: null }), 'Protocolo');
+  assert.equal(R.puestoLabel({ tipo: 'Corista', numero: 2 }), 'Corista 2');
+  assert.equal(R.servidoresAsignados({ banda: [{ nombre: 'Ana' }, { nombre: ' ' }, {}] }), 1);
+  assert.equal(R.servidoresAsignados({}), 0);
+});
+
+test('avisos: el puesto de Alabanza incluye el rol', () => {
+  const A = require('../avisos.js');
+  const ev = { fecha: '2026-10-08', servicio: 'Culto Filial', banda: [
+    { tipo: 'Alabanza', rol: 'Corista', numero: 1, nombre: 'Ana', musicianId: 'm1' },
+    { tipo: 'Protocolo', nombre: 'Ana', musicianId: 'm1' }
+  ] };
+  assert.match(A.lineaEvento(ev, 'm1'), /Culto Filial \(Alabanza · Corista, Protocolo\)$/);
+  const rep = { fecha: '2026-10-04', servicio: 'Cultos Dominicales', banda: [{ tipo: 'Corista', numero: 2, nombre: 'B', musicianId: 'm2' }] };
+  assert.match(A.lineaEvento(rep, 'm2'), /Cultos Dominicales \(Corista\)$/);
+});

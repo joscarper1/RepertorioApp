@@ -31,8 +31,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="menu-config.js?v=20260930a"></script>
-<script src="repertorio-data.js?v=20260930d"></script>
-<script src="avisos.js?v=20260928b"></script>
+<script src="repertorio-data.js?v=20260930e"></script>
+<script src="avisos.js?v=20260930a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -329,7 +329,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
               <span class="tag">{{ rb.tipo }}</span>
             </sc-for>
             <sc-if value="{{ sinRoles }}" hint-placeholder-val="{{ false }}">
-              <span style="font-size:12px;color:var(--muted2)">Sin roles de banda asignados todavía</span>
+              <span style="font-size:12px;color:var(--muted2)">{{ sinEtiquetasTexto }}</span>
             </sc-if>
           </div>
         </div>
@@ -341,7 +341,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         <div class="panel-cab">
           <div>
             <div class="rotulo">Por publicar</div>
-            <div style="font-size:17px;font-weight:800;margin-top:4px">Borradores con repertorio <span style="font-size:13px;font-weight:700;color:var(--muted2)">{{ borradoresCuenta }}</span></div>
+            <div style="font-size:17px;font-weight:800;margin-top:4px">{{ borradoresTitulo }} <span style="font-size:13px;font-weight:700;color:var(--muted2)">{{ borradoresCuenta }}</span></div>
           </div>
           <button type="button" class="btn-pri btn-ac" onClick="{{ publicarTodos }}" disabled="{{ publicarTodosDeshabilitado }}" title="{{ publicarTodosTitulo }}">{{ publicarTodosTexto }}</button>
         </div>
@@ -350,7 +350,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             <div class="borr-tabla-wrap">
               <table class="borr-tabla">
                 <thead>
-                  <tr><th>Fecha</th><th>Tipo</th><th>Tema</th><th>Canciones</th></tr>
+                  <tr><th>Fecha</th><th>Tipo</th><th>Tema</th><th>{{ borradoresColumna }}</th></tr>
                 </thead>
                 <tbody>
                   <sc-for list="{{ borradoresLista }}" as="b" hint-placeholder-count="3">
@@ -363,7 +363,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                           <span class="borr-ok"><span class="borr-check" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"></path></svg></span>{{ b.cancionesTitulo }}</span>
                         </sc-if>
                         <sc-if value="{{ b.sinCanciones }}" hint-placeholder-val="{{ false }}">
-                          <span class="borr-falta">Sin canciones</span>
+                          <span class="borr-falta">{{ borradoresSinTexto }}</span>
                         </sc-if>
                       </td>
                     </tr>
@@ -376,7 +376,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             </sc-if>
           </sc-if>
           <sc-if value="{{ sinBorradores }}" hint-placeholder-val="{{ false }}">
-            <p style="font-size:13px;color:var(--muted2);margin:0">No hay eventos con repertorio en borrador.</p>
+            <p style="font-size:13px;color:var(--muted2);margin:0">{{ borradoresVacio }}</p>
           </sc-if>
         </div>
       </section>
@@ -706,14 +706,25 @@ class Component extends DCLogic {
      listadas se publican directamente; si alguno no tiene, se pregunta antes
      si se desea publicarlos así. Al publicar, el listener de eventos saca de
      la tabla los que ya no son borrador. */
+  /* Qué se revisa en la tabla de borradores según el tipo de calendario. */
+  criterioBorradores(pf) {
+    const R = D();
+    return pf.tieneCanciones
+      ? { contar: (ev) => R.cancionesEvento(ev), uno: 'canción', varios: 'canciones', listados: 'listadas',
+          titulo: 'Borradores con repertorio', columna: 'Canciones', vacio: 'No hay eventos con repertorio en borrador.' }
+      : { contar: (ev) => R.servidoresAsignados(ev), uno: 'servidor', varios: 'servidores', listados: 'asignados',
+          titulo: 'Borradores por publicar', columna: 'Servidores', vacio: 'No hay eventos en borrador.' };
+  }
+
   publicarTodos(borradores) {
     const R = D();
     if (!R.puede(this.state.userDoc, 'eventos.estado') || this.state.publicando) return;
     if (!borradores.length) return;
     const n = borradores.length;
-    const sinCanciones = borradores.filter((ev) => R.cancionesEvento(ev) === 0).length;
-    if (sinCanciones && !confirm((sinCanciones === 1 ? '1 evento no tiene' : sinCanciones + ' eventos no tienen') +
-      ' canciones listadas. ¿Deseas publicar ' + (n === 1 ? 'el evento' : 'los ' + n + ' eventos') + ' de todas formas?')) return;
+    const borr = this.criterioBorradores(R.perfilOrg(this.state.org));
+    const sinContenido = borradores.filter((ev) => borr.contar(ev) === 0).length;
+    if (sinContenido && !confirm((sinContenido === 1 ? '1 evento no tiene ' : sinContenido + ' eventos no tienen ') +
+      borr.varios + ' ' + borr.listados + '. ¿Deseas publicar ' + (n === 1 ? 'el evento' : 'los ' + n + ' eventos') + ' de todas formas?')) return;
     this.setState({ publicando: true });
     R.publicarEventos(borradores.map((ev) => ev.id), (ok) => {
       this.setState({ publicando: false });
@@ -787,7 +798,7 @@ class Component extends DCLogic {
         esBorrador: R.estadoEvento(ev) === 'BORRADOR',
         estadoClase: 'badge ' + (R.estadoEvento(ev) === 'BORRADOR' ? 'b-gris' : 'b-azul'),
         estadoTexto: R.estadoInfo(ev).label,
-        miRol: R.bandaLabel ? R.bandaLabel(slot) : (slot.tipo || ''),
+        miRol: R.puestoLabel(slot),
         badgeClase: badge[0], badgeTexto: badge[1],
         botonesDeshabilitados: botonesDeshabilitados,
         puedeResponder: !!puedeResponder,
@@ -805,16 +816,20 @@ class Component extends DCLogic {
     const pendientes = eventosLista.filter((e) => e.pendiente).length;
 
     /* Tabla de borradores (solo admin, no al ver el dashboard de otra
-       persona): eventos con repertorio aún en BORRADOR, de hoy en adelante. */
+       persona): eventos con equipo aún en BORRADOR, de hoy en adelante. En
+       repertorio se revisa que tengan canciones; en servicio ministerial,
+       que tengan servidores asignados. */
+    const pf = R.perfilOrg(s.org);
+    const borr = this.criterioBorradores(pf);
     const veBorradores = R.puede(s.userDoc, 'eventos.estado') && !s.viewOnlyActivo;
     const borradores = veBorradores ? (s.eventos || []).filter((ev) =>
-      R.estadoEvento(ev) === 'BORRADOR' && R.usaRepertorio(ev.servicio, R.perfilOrg(s.org)) && (ev.fecha || '') >= hoy
+      R.estadoEvento(ev) === 'BORRADOR' && pf.usaBanda(ev.servicio) && (ev.fecha || '') >= hoy
     ).sort((a, b) => {
       if (a.fecha !== b.fecha) return a.fecha < b.fecha ? -1 : 1;
       return R.horaMinutos(a.hora) - R.horaMinutos(b.hora);
     }) : [];
     const borradoresLista = borradores.map((ev) => {
-      const n = R.cancionesEvento(ev);
+      const n = borr.contar(ev);
       const dn = R.diaNombre(ev.fecha) || '';
       return {
         id: ev.id,
@@ -824,7 +839,7 @@ class Component extends DCLogic {
         tema: ev.tema || 'Sin tema aún',
         tieneCanciones: n > 0,
         sinCanciones: n === 0,
-        cancionesTitulo: n + (n === 1 ? ' canción' : ' canciones')
+        cancionesTitulo: n + ' ' + (n === 1 ? borr.uno : borr.varios)
       };
     });
     const faltan = borradoresLista.filter((b) => b.sinCanciones).length;
@@ -919,9 +934,14 @@ class Component extends DCLogic {
       borradoresCuenta: borradoresLista.length ? String(borradoresLista.length) : '',
       publicarTodosTexto: s.publicando ? 'Publicando…' : 'Publicar todos',
       publicarTodosDeshabilitado: !borradoresLista.length || s.publicando,
-      publicarTodosTitulo: faltan ? 'Hay eventos sin canciones listadas: se pedirá confirmación' : '',
-      faltanCancionesTexto: faltan ? (faltan === 1 ? '1 evento aún no tiene canciones listadas.' : faltan + ' eventos aún no tienen canciones listadas.') : '',
+      publicarTodosTitulo: faltan ? ('Hay eventos sin ' + borr.varios + ' ' + borr.listados + ': se pedirá confirmación') : '',
+      faltanCancionesTexto: faltan ? ((faltan === 1 ? '1 evento aún no tiene ' : faltan + ' eventos aún no tienen ') + borr.varios + ' ' + borr.listados + '.') : '',
       publicarTodos: () => this.publicarTodos(borradores),
+      borradoresTitulo: borr.titulo,
+      borradoresColumna: borr.columna,
+      borradoresSinTexto: 'Sin ' + borr.varios,
+      borradoresVacio: borr.vacio,
+      sinEtiquetasTexto: pf.textos.sinEtiquetas,
       toast: s.toast
     };
   }

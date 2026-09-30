@@ -21,7 +21,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260930d"></script>
+<script src="repertorio-data.js?v=20260930e"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -819,7 +819,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
                 </sc-if>
                 <sc-if value="{{ d.tieneBanda }}" hint-placeholder-val="{{ true }}">
                   <div class="caja caja-banda o-4">
-                    <span class="rotulo">Banda</span>
+                    <span class="rotulo">{{ d.equipoTitulo }}</span>
                     <sc-for list="{{ d.banda }}" as="m" hint-placeholder-count="5">
                       <div class="banda-fila">
                         <span class="banda-rol">{{ m.rol }}</span>
@@ -1418,9 +1418,14 @@ class Component extends DCLogic {
     if (ctx.miMusico && (ev.banda || []).some((b) => b.musicianId === ctx.miMusico && (b.nombre || '').trim())) badges.push({ t: 'PARTICIPAS', clase: 'badge b-part' });
     if (ev.avisoImportante && ev.avisoImportante.trim() && !pasado) badges.push({ t: 'IMPORTANTE', clase: 'badge b-aviso' });
     if (pasado && !cancelado) badges.push({ t: 'FINALIZADO', clase: 'badge b-fin' });
+    /* Avatares: quienes dirigen canciones; en un calendario sin canciones
+       (servicio ministerial), los servidores asignados. */
     const lideres = [];
-    canciones.forEach((c) => {
-      const n = (c.d || '').trim();
+    const nombresAvatar = this.perfil().tieneCanciones
+      ? canciones.map((c) => c.d)
+      : (ev.banda || []).map((b) => b.nombre);
+    nombresAvatar.forEach((nm) => {
+      const n = (nm || '').trim();
       if (n && !lideres.some((l) => l.toLowerCase() === n.toLowerCase())) lideres.push(n);
     });
     const color = this.colorTipo(ev.servicio);
@@ -1460,7 +1465,7 @@ class Component extends DCLogic {
       const yo = !!miMusico && b.musicianId === miMusico;
       f.nombres.push({
         sep: f.nombres.length ? ' · ' : '',
-        nombre: (b.resaltado ? '★ ' : '') + b.nombre.trim() + (yo ? ' (tú)' : ''),
+        nombre: (b.resaltado ? '★ ' : '') + b.nombre.trim() + (b.rol ? ' (' + R.bandaLabel(b) + ')' : '') + (yo ? ' (tú)' : ''),
         clase: yo ? 'yo' : (b.resaltado ? 'dest' : '')
       });
       const tarea = (b.tarea || '').trim();
@@ -1546,7 +1551,8 @@ class Component extends DCLogic {
       tieneRepertorio: bloques.length > 0,
       repertorioPendiente: !bloques.length && this.perfil().usaCanciones(ev.servicio),
       banda: banda,
-      tieneBanda: banda.length > 0
+      tieneBanda: banda.length > 0,
+      equipoTitulo: this.perfil().textos.equipo
     };
   }
 
@@ -1568,12 +1574,12 @@ class Component extends DCLogic {
     const R = window.RepertorioData;
     const out = [];
     evs.forEach((ev) => {
-      out.push('🎼 ' + R.diaNombre(ev.fecha) + ' ' + ev.hora + ' — ' + [R.fechaLarga(ev.fecha), ev.servicio].filter(Boolean).join(' · '));
+      out.push(this.perfil().textos.emojiEvento + ' ' + R.diaNombre(ev.fecha) + ' ' + ev.hora + ' — ' + [R.fechaLarga(ev.fecha), ev.servicio].filter(Boolean).join(' · '));
       const banda = (ev.banda || []).filter((b) => b.nombre && b.nombre.trim());
       if (banda.length) {
         const orden = this.perfil().ordenRoles();
         banda.slice().sort((a, b) => (orden.indexOf(a.tipo) - orden.indexOf(b.tipo)) || ((a.numero || 0) - (b.numero || 0)))
-          .forEach((b) => out.push(b.tipo + ': ' + b.nombre.trim() + (b.resaltado && b.tarea && b.tarea.trim() ? ' (' + b.tarea.trim() + ')' : '')));
+          .forEach((b) => out.push((b.rol ? R.puestoLabel(b) : b.tipo) + ': ' + b.nombre.trim() + (b.resaltado && b.tarea && b.tarea.trim() ? ' (' + b.tarea.trim() + ')' : '')));
         out.push('');
       }
       out.push('Tema: ' + (ev.tema || 'Por confirmar'));
@@ -1836,7 +1842,7 @@ class Component extends DCLogic {
         return {
           meta: [R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio].filter(Boolean).join(' · '),
           tema: ev.tema || 'Por confirmar',
-          tipo: R.bandaLabel(slot),
+          tipo: R.puestoLabel(slot),
           estado: R.estadoEvento(ev) === 'BORRADOR' ? 'BORRADOR' : 'PUBLICADO',
           estadoClase: 'badge ' + (R.estadoEvento(ev) === 'BORRADOR' ? 'b-borr' : 'b-pub'),
           colorStyle: 'color:' + color, dotStyle: 'background:' + color,

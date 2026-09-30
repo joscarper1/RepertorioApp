@@ -75,11 +75,15 @@
 
   function nombreValido(slot) { return !!(slot && (slot.nombre || '').trim()); }
 
-  /* Puestos (banda[].tipo, sin número) que ocupa la persona en el evento. */
+  /* Puestos (banda[].tipo, sin número) que ocupa la persona en el evento; si
+     el puesto lleva rol de banda (Alabanza en servicio ministerial), con el
+     rol: "Alabanza · Corista". */
   function puestosDePersona(ev, musicianId) {
     var out = [];
     ((ev && ev.banda) || []).forEach(function (slot) {
-      if (slot && slot.musicianId === musicianId && nombreValido(slot) && slot.tipo && out.indexOf(slot.tipo) < 0) out.push(slot.tipo);
+      if (!slot || slot.musicianId !== musicianId || !nombreValido(slot) || !slot.tipo) return;
+      var p = slot.rol ? slot.tipo + ' · ' + slot.rol : slot.tipo;
+      if (out.indexOf(p) < 0) out.push(p);
     });
     return out;
   }
