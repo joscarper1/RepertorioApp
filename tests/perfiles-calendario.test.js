@@ -1,0 +1,158 @@
+/* Pruebas de los perfiles de calendario (repertorio-data.js,
+   PERFILES_CALENDARIO / perfilOrg). Sin Firebase: solo funciones puras.
+   `node --test tests/perfiles-calendario.test.js` */
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+function cargar() {
+  const window = { RepertorioCifrado: require('../cifrado.js') };
+  const ctx = vm.createContext({ window, console, Date, Math, JSON, Promise, Map, encodeURIComponent, setTimeout, URLSearchParams });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'repertorio-data.js'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'menu-config.js'), 'utf8'), ctx);
+  return window;
+}
+const w = cargar();
+const R = w.RepertorioData;
+const rep = R.perfilCalendario('repertorio');
+const srv = R.perfilCalendario('servicio');
+const tipos = (banda) => Array.from(banda, (b) => b.tipo);
+
+test('una organización sin tipoCalendario (o con uno desconocido) es de repertorio', () => {
+  assert.equal(R.perfilOrg({ id: 'o1' }), rep);
+  assert.equal(R.perfilOrg(null), rep);
+  assert.equal(R.perfilOrg({ tipoCalendario: 'otro' }), rep);
+  assert.equal(R.perfilOrg({ tipoCalendario: 'servicio' }), srv);
+  assert.equal(R.tipoCalendarioValido('x'), 'repertorio');
+  assert.deepEqual(Array.from(R.TIPOS_CALENDARIO, (t) => t.id), ['repertorio', 'servicio']);
+});
+
+test('el perfil de repertorio usa exactamente los catálogos de siempre', () => {
+  assert.deepEqual(rep.servicios, R.SERVICIOS);
+  assert.deepEqual(rep.ordenRoles(), R.BANDA_ROLES.map((r) => r.tipo));
+  assert.equal(rep.permisosPorPuesto, R.PERMISOS_POR_ROL_BANDA);
+  R.SERVICIOS.forEach((sv) => {
+    assert.equal(rep.usaBanda(sv), R.SERVICIOS_CON_REPERTORIO.indexOf(sv) >= 0, sv);
+    assert.equal(rep.usaCanciones(sv), R.SERVICIOS_CON_REPERTORIO.indexOf(sv) >= 0, sv);
+    assert.equal(R.usaRepertorio(sv), R.usaRepertorio(sv, rep), sv);
+  });
+  assert.equal(rep.ensayos, true);
+  assert.equal(rep.muestraModulo('repertorio'), true);
+});
+
+test('sin perfil, las funciones se comportan como el perfil de repertorio', () => {
+  const a = R.newEvento({ fecha: '2026-10-04' });
+  const b = R.newEvento({ fecha: '2026-10-04' }, rep);
+  assert.equal(a.servicio, 'Cultos Dominicales');
+  assert.equal(a.servicio, b.servicio);
+  assert.equal(a.hora, b.hora);
+  assert.deepEqual(tipos(a.banda), tipos(b.banda));
+  assert.equal(a.bloques.length, b.bloques.length);
+  assert.equal(R.horaPorServicio('Culto Familiar', rep), '6:30 pm');
+  assert.equal(R.horaAlCambiarServicio('8:00 am', 'Culto Familiar', rep), '6:30 pm');
+});
+
+test('tipos de evento: un solo catálogo, cada tipo en uno o varios calendarios', () => {
+  assert.deepEqual(Array.from(rep.servicios), ['Cultos Dominicales', 'Culto Familiar', 'Vigilia General', 'Vigilia Juvenil',
+    'Evento Especial', 'Ensayo', 'Capacitación', 'Convocatoria', 'Otro']);
+  assert.deepEqual(Array.from(srv.servicios), ['Cultos Dominicales', 'Culto Familiar', 'Vigilia General', 'Vigilia Juvenil',
+    'Evento Especial', 'Capacitación', 'Convocatoria', 'Otro', 'Culto Filial', 'Vigilia Filial']);
+  /* Los filiales solo en servicio; Ensayo solo en repertorio */
+  assert.equal(rep.servicios.indexOf('Culto Filial'), -1);
+  assert.equal(srv.servicios.indexOf('Ensayo'), -1);
+  assert.equal(R.horaPorServicio('Culto Filial', srv), '7:00 pm');
+  assert.equal(R.horaPorServicio('Vigilia Filial', srv), '7:00 pm');
+  assert.equal(R.horaPorServicio('Cultos Dominicales', srv), '8:00 am');
+  assert.equal(R.horaAlCambiarServicio('8:00 am', 'Culto Filial', srv), '7:00 pm');
+  /* Color fijo: la posición de los tipos existentes no cambia */
+  R.SERVICIOS.forEach((t, i) => assert.equal(R.indiceTipoEvento(t), i, t));
+  assert.equal(R.indiceTipoEvento('Culto Filial'), R.SERVICIOS.length);
+  assert.equal(R.indiceTipoEvento('Inventado'), -1);
+});
+
+test('servicio ministerial: servidores sin canciones, sin Ensayo ni Repertorio', () => {
+  ['Cultos Dominicales', 'Culto Filial', 'Vigilia Filial', 'Evento Especial'].forEach((t) => {
+    assert.equal(srv.usaBanda(t), true, t);
+    assert.equal(srv.usaCanciones(t), false, t);
+  });
+  assert.equal(srv.usaBanda('Capacitación'), false);
+  assert.equal(R.usaRepertorio('Cultos Dominicales', srv), false);
+  assert.equal(srv.tieneCanciones, false);
+  assert.equal(srv.ensayos, false);
+  assert.equal(srv.muestraModulo('repertorio'), false);
+  assert.equal(srv.muestraModulo('eventos'), true);
+});
+
+test('servicio ministerial: un evento nuevo arranca con un puesto por ministerio y sin bloques', () => {
+  const ev = R.newEvento({ fecha: '2026-10-04' }, srv);
+  assert.equal(ev.servicio, 'Cultos Dominicales');
+  assert.equal(ev.hora, '8:00 am');
+  assert.equal(ev.bloques.length, 0);
+  assert.deepEqual(tipos(ev.banda), ['Protocolo', 'Alabanza', 'Ofrenda', 'Limpieza', 'Infantil']);
+  assert.ok(ev.banda.every((b) => b.numero === null));
+  /* Alabanza convoca con los roles de la banda */
+  const alabanza = srv.roles.find((r) => r.tipo === 'Alabanza');
+  assert.equal(alabanza.rolesBanda, true);
+  assert.deepEqual(Array.from(alabanza.subroles), Array.from(R.BANDA_ROLES, (r) => r.tipo));
+  /* Lo que ya trae el evento se respeta */
+  const viejo = R.newEvento({ servicio: 'Culto Filial', banda: [{ tipo: 'Protocolo', numero: 1, nombre: 'Ana' }] }, srv);
+  assert.equal(viejo.banda.length, 1);
+  assert.equal(viejo.hora, '7:00 pm');
+});
+
+test('ministerios configurables por organización', () => {
+  const org = { id: 'f1', tipoCalendario: 'servicio', ministerios: [
+    { tipo: ' Ujieres ', cantidad: 3 }, { tipo: 'ujieres', cantidad: 1 }, { tipo: '', cantidad: 2 },
+    { tipo: 'Alabanza', cantidad: 0, rolesBanda: true }, { tipo: 'Sonido', cantidad: 99 }
+  ] };
+  const pf = R.perfilOrg(org);
+  assert.deepEqual(Array.from(pf.ordenRoles()), ['Ujieres', 'Alabanza', 'Sonido']);
+  assert.deepEqual(Array.from(pf.roles, (r) => r.cantidad), [3, 1, R.MINISTERIO_CANTIDAD_MAX]);
+  assert.equal(pf.roles[1].rolesBanda, true);
+  assert.equal(R.perfilOrg(org), pf, 'se reutiliza mientras la lista no cambie');
+  assert.notEqual(R.perfilOrg(Object.assign({}, org, { ministerios: [{ tipo: 'Otro', cantidad: 1 }] })), pf);
+  assert.equal(R.newEvento({}, pf).banda.filter((b) => b.tipo === 'Ujieres').length, 3);
+  /* Lista vacía → los de por defecto; en repertorio se ignoran */
+  assert.deepEqual(Array.from(R.perfilOrg({ id: 'f2', tipoCalendario: 'servicio', ministerios: [] }).ordenRoles()), Array.from(R.MINISTERIOS_DEFECTO, (m) => m.tipo));
+  assert.equal(R.perfilOrg({ id: 'r1', ministerios: [{ tipo: 'X', cantidad: 1 }] }), rep);
+});
+
+test('serviciosCon ofrece primero un tipo que el perfil no tiene (dato viejo)', () => {
+  assert.deepEqual(Array.from(srv.serviciosCon('Ensayo').slice(0, 2)), ['Ensayo', 'Cultos Dominicales']);
+  assert.deepEqual(Array.from(srv.serviciosCon('Culto Filial')), Array.from(srv.servicios));
+  assert.deepEqual(Array.from(srv.serviciosCon('')), Array.from(srv.servicios));
+});
+
+test('permisos por puesto vienen del perfil', () => {
+  const usuario = { role: 'normal', musicianLinks: { o1: 'd' } };
+  const ev = { id: 'e1', organizationId: 'o1', banda: [{ tipo: 'Director de Alabanza', musicianId: 'd', nombre: 'D' }] };
+  assert.equal(R.puedeSobreEvento(usuario, 'eventos.editar', ev), true);
+  assert.equal(R.puedeSobreEvento(usuario, 'eventos.editar', ev, rep), true);
+  /* En servicio ministerial ningún puesto da permisos (por ahora). */
+  assert.equal(R.puedeSobreEvento(usuario, 'eventos.editar', ev, srv), false);
+  assert.equal(R.puedeSobreEvento({ role: 'admin' }, 'eventos.editar', ev, srv), true);
+});
+
+test('descripción de calendario externo: servicio lista servidores, nunca canciones', () => {
+  const ev = {
+    servicio: 'Culto Filial', tema: 'Fe',
+    banda: [{ tipo: 'Limpieza', numero: 1, nombre: 'Luis' }, { tipo: 'Protocolo', numero: 1, nombre: 'Ana' }],
+    bloques: [{ titulo: 'Júbilo', canciones: [{ t: 'Canción' }] }]
+  };
+  const txt = R.eventoDescripcion(ev, srv);
+  assert.match(txt, /^Servidores:\nProtocolo: Ana\nLimpieza: Luis/);
+  assert.doesNotMatch(txt, /Canciones/);
+  const repTxt = R.eventoDescripcion(Object.assign({}, ev, { servicio: 'Cultos Dominicales' }));
+  assert.match(repTxt, /^Banda:/);
+  assert.match(repTxt, /Canciones:\n- Canción/);
+});
+
+test('el menú oculta los módulos que no aplican al perfil', () => {
+  const admin = { role: 'admin' };
+  const ids = (org) => w.RepertorioMenu.modulos('eventos', org, admin).map((m) => m.id);
+  assert.ok(ids({ id: 'o1' }).indexOf('repertorio') >= 0);
+  assert.equal(ids({ id: 'o2', tipoCalendario: 'servicio' }).indexOf('repertorio'), -1);
+  assert.ok(ids(null).indexOf('repertorio') >= 0);
+});

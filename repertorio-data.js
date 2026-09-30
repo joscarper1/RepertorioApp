@@ -49,32 +49,66 @@
 
   var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  var SERVICIOS = ['Cultos Dominicales','Culto Familiar','Vigilia General','Vigilia Juvenil','Evento Especial','Ensayo','Capacitación', 'Convocatoria', 'Otro'];
-  /* Estos tipos de evento llevan repertorio musical (paso 3 con bloques de
-     canciones); el resto sólo pide detalles/responsable y personas requeridas. */
-  var SERVICIOS_CON_REPERTORIO = ['Cultos Dominicales','Culto Familiar','Vigilia General','Vigilia Juvenil','Evento Especial', 'Ensayo'];
+  /* Catálogo único de tipos de evento (se guarda el nombre en ev.servicio).
+     - calendarios: perfiles de calendario que lo ofrecen (ver
+       PERFILES_CALENDARIO); un tipo puede estar en uno o en varios.
+     - equipo: asigna personas a puestos (banda[]). En un perfil con
+       canciones, esos mismos tipos llevan además repertorio musical; el
+       resto sólo pide detalles/responsable y personas requeridas.
+     - hora: hora con la que se precarga al elegirlo; sin hora se conserva
+       la que ya tenía el borrador.
+     El orden es el de los colores fijos del calendario público: los tipos
+     nuevos van al final para no cambiarle el color a los existentes. */
+  var TIPOS_EVENTO = [
+    { nombre: 'Cultos Dominicales', equipo: true, hora: '8:00 am', calendarios: ['repertorio', 'servicio'] },
+    { nombre: 'Culto Familiar', equipo: true, hora: '6:30 pm', calendarios: ['repertorio', 'servicio'] },
+    { nombre: 'Vigilia General', equipo: true, hora: '7:00 pm', calendarios: ['repertorio', 'servicio'] },
+    { nombre: 'Vigilia Juvenil', equipo: true, hora: '7:00 pm', calendarios: ['repertorio', 'servicio'] },
+    { nombre: 'Evento Especial', equipo: true, calendarios: ['repertorio', 'servicio'] },
+    { nombre: 'Ensayo', equipo: true, calendarios: ['repertorio'] },
+    { nombre: 'Capacitación', calendarios: ['repertorio', 'servicio'] },
+    { nombre: 'Convocatoria', calendarios: ['repertorio', 'servicio'] },
+    { nombre: 'Otro', calendarios: ['repertorio', 'servicio'] },
+    { nombre: 'Culto Filial', equipo: true, hora: '7:00 pm', calendarios: ['servicio'] },
+    { nombre: 'Vigilia Filial', equipo: true, hora: '7:00 pm', calendarios: ['servicio'] }
+  ];
 
-  function usaRepertorio(servicio) { return SERVICIOS_CON_REPERTORIO.indexOf(servicio) >= 0; }
+  function tipoEvento(servicio) {
+    return TIPOS_EVENTO.filter(function (t) { return t.nombre === servicio; })[0] || null;
+  }
 
-  /* Hora con la que se precarga un evento al elegir su tipo; los tipos que
-     no están aquí conservan la hora que ya tenía el borrador. */
-  var HORA_POR_SERVICIO = {
-    'Cultos Dominicales': '8:00 am',
-    'Culto Familiar': '6:30 pm',
-    'Vigilia General': '7:00 pm',
-    'Vigilia Juvenil': '7:00 pm'
-  };
+  /* Posición fija del tipo en el catálogo (para su color), -1 si no existe. */
+  function indiceTipoEvento(servicio) {
+    var t = tipoEvento(servicio);
+    return t ? TIPOS_EVENTO.indexOf(t) : -1;
+  }
 
-  function horaPorServicio(servicio) { return HORA_POR_SERVICIO[servicio] || ''; }
+  function tiposDeCalendario(calendario, pred) {
+    return TIPOS_EVENTO.filter(function (t) { return t.calendarios.indexOf(calendario) >= 0 && (!pred || pred(t)); })
+      .map(function (t) { return t.nombre; });
+  }
+
+  /* Catálogos del perfil de calendario "repertorio", que se exportan con sus
+     nombres de siempre. Las funciones que dependen de un perfil lo reciben
+     como último argumento opcional; sin él usan el de repertorio. */
+  var SERVICIOS = tiposDeCalendario('repertorio');
+  var SERVICIOS_CON_REPERTORIO = tiposDeCalendario('repertorio', function (t) { return t.equipo; });
+  var HORA_POR_SERVICIO = {};
+  TIPOS_EVENTO.forEach(function (t) { if (t.hora) HORA_POR_SERVICIO[t.nombre] = t.hora; });
+
+  function usaRepertorio(servicio, perfil) { return perfilOr(perfil).usaCanciones(servicio); }
+
+  function horaPorServicio(servicio, perfil) { return HORA_POR_SERVICIO[servicio] || ''; }
 
   /* Al cambiar el tipo de evento: se usa la hora predefinida del tipo nuevo
      solo si la hora actual está vacía o es una de las predefinidas (vino de
      elegir otro tipo, nadie la ajustó a mano). */
-  function horaAlCambiarServicio(horaActual, servicioNuevo) {
-    var nueva = horaPorServicio(servicioNuevo);
+  function horaAlCambiarServicio(horaActual, servicioNuevo, perfil) {
+    var horas = HORA_POR_SERVICIO;
+    var nueva = horaPorServicio(servicioNuevo, perfil);
     var actual = String(horaActual || '').trim();
     if (!nueva) return actual;
-    var predefinidas = Object.keys(HORA_POR_SERVICIO).map(function (k) { return HORA_POR_SERVICIO[k]; });
+    var predefinidas = Object.keys(horas).map(function (k) { return horas[k]; });
     if (!actual || predefinidas.indexOf(actual) >= 0) return nueva;
     return actual;
   }
@@ -433,9 +467,9 @@
 
   function bandaSlot(tipo, numero) { return { id: uid(), tipo: tipo, numero: numero || null, nombre: '', resaltado: false, tarea: '' }; }
 
-  function defaultBanda() {
+  function defaultBanda(perfil) {
     var out = [];
-    BANDA_ROLES.forEach(function (r) {
+    perfilOr(perfil).roles.forEach(function (r) {
       for (var i = 1; i <= r.cantidad; i++) out.push(bandaSlot(r.tipo, r.numerar ? i : null));
     });
     return out;
@@ -498,11 +532,13 @@
   /* Descripción para calendario externo (.ics / Google Calendar): sin
      enlaces, sólo texto plano. Para eventos con repertorio musical incluye
      banda y canciones (con tono); para el resto, únicamente la descripción
-     del evento y las personas requeridas. */
-  function eventoDescripcion(ev) {
+     del evento y las personas requeridas. Un perfil sin canciones (servicio
+     ministerial) lista solo el equipo asignado. */
+  function eventoDescripcion(ev, perfil) {
+    var pf = perfilOr(perfil);
     var out = [];
-    if (usaRepertorio(ev.servicio)) {
-      var orden = BANDA_ROLES.map(function (r) { return r.tipo; });
+    if (pf.usaBanda(ev.servicio)) {
+      var orden = pf.ordenRoles();
       var banda = (ev.banda || [])
         .filter(function (b) { return b.nombre && b.nombre.trim(); })
         .slice()
@@ -511,13 +547,13 @@
           return d !== 0 ? d : (a.numero || 0) - (b.numero || 0);
         });
       if (banda.length) {
-        out.push('Banda:');
+        out.push(pf.textos.equipo + ':');
         banda.forEach(function (b) { out.push(b.tipo + ': ' + b.nombre.trim()); });
         out.push('');
       }
       var canciones = [];
       var partes = [];
-      (ev.bloques || []).forEach(function (bl) {
+      (pf.usaCanciones(ev.servicio) ? (ev.bloques || []) : []).forEach(function (bl) {
         (bl.canciones || []).forEach(function (c) {
           if (!(c.t && c.t.trim())) return;
           var parte = bloqueParte(bl);
@@ -573,7 +609,7 @@
     return out.join('\r\n');
   }
 
-  function buildIcs(ev) {
+  function buildIcs(ev, perfil) {
     var lines = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -586,27 +622,27 @@
       'DTSTART:' + stampUTC(eventoInicioUTC(ev)),
       'DTEND:' + stampUTC(eventoFinUTC(ev)),
       'SUMMARY:' + icsEscape(eventoTitulo(ev)),
-      'DESCRIPTION:' + icsEscape(eventoDescripcion(ev)),
+      'DESCRIPTION:' + icsEscape(eventoDescripcion(ev, perfil)),
       'END:VEVENT',
       'END:VCALENDAR'
     ];
     return lines.map(icsFoldLine).join('\r\n') + '\r\n';
   }
 
-  function icsDataHref(ev) {
-    return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(buildIcs(ev));
+  function icsDataHref(ev, perfil) {
+    return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(buildIcs(ev, perfil));
   }
 
   function icsFilename(ev) {
     return 'evento-' + (ev.fecha || 'sf') + '.ics';
   }
 
-  function googleCalendarUrl(ev) {
+  function googleCalendarUrl(ev, perfil) {
     var params = new URLSearchParams({
       action: 'TEMPLATE',
       text: eventoTitulo(ev),
       dates: stampUTC(eventoInicioUTC(ev)) + '/' + stampUTC(eventoFinUTC(ev)),
-      details: eventoDescripcion(ev)
+      details: eventoDescripcion(ev, perfil)
     });
     return 'https://calendar.google.com/calendar/render?' + params.toString();
   }
@@ -639,19 +675,23 @@
     return map[estadoEvento(ev)] || map.PUBLICADO;
   }
 
-  function newEvento(o) {
+  /* `perfil` (opcional) decide el tipo, la hora y la banda con que arranca
+     un evento nuevo; lo que ya trae `o` se respeta tal cual. */
+  function newEvento(o, perfil) {
     o = o || {};
+    var pf = perfilOr(perfil);
+    var servicio = o.servicio || pf.servicios[0];
     var ev = {
       id: o.id || uid(),
       fecha: o.fecha || '',
-      hora: o.hora || horaPorServicio(o.servicio || SERVICIOS[0]) || '8:00 am',
-      servicio: o.servicio || SERVICIOS[0],
+      hora: o.hora || horaPorServicio(servicio, pf) || '8:00 am',
+      servicio: servicio,
       tema: o.tema || '',
       cita: o.cita || '',
       avisoImportante: o.avisoImportante || '',
       notas: o.notas || '',
-      bloques: o.bloques || defaultBlocks(),
-      banda: o.banda || defaultBanda(),
+      bloques: o.bloques || (pf.tieneCanciones ? defaultBlocks() : []),
+      banda: o.banda || defaultBanda(pf),
       detalles: o.detalles || '',
       personas: o.personas || '',
       organizationId: o.organizationId || '',
@@ -941,6 +981,153 @@
     'Director de Alabanza': ['eventos.editar', 'canciones.editar', 'cifrados.editar']
   };
 
+  /* --- Perfiles de calendario ---
+     Cada organización elige al crearse qué clase de calendario lleva
+     (organizations/{id}.tipoCalendario, no se cambia después). Todas
+     comparten el mismo asistente, el mismo modelo de evento y los mismos
+     puestos en `banda[]` (con confirmación/declinación, integrantes, avisos
+     y participaciones); lo que cambia es el catálogo:
+     - servicios: tipos de evento que ofrece (TIPOS_EVENTO.calendarios).
+     - canciones: si sus tipos con equipo llevan además bloques de canciones.
+     - roles: puestos que se solicitan por defecto (orden = orden en
+       pantalla). En servicio ministerial son los ministerios, que cada
+       organización puede ajustar (organizations/{id}.ministerios); un
+       ministerio con `rolesBanda` (Alabanza) convoca con los roles de la
+       banda (Director de Alabanza, Corista, Piano…) en `subroles`.
+     - permisosPorPuesto: permisos que da ocupar un puesto en un evento. En
+       servicio ministerial no hay: los eventos los crea y edita el rol de
+       cuenta Editor (o Admin) de la organización.
+     - ensayos: si existe el tipo Ensayo (asociado a un evento de repertorio).
+     - textos: cómo se llama el equipo en pantalla.
+     - modulosOcultos: módulos de menu-config.js que no aplican.
+     Una organización sin tipoCalendario es de repertorio (todas las que
+     existían antes de los perfiles). */
+  var TIPO_CALENDARIO_DEFECTO = 'repertorio';
+
+  /* Ministerios con que arranca una organización de servicio ministerial. */
+  var MINISTERIOS_DEFECTO = [
+    { tipo: 'Protocolo', cantidad: 1 },
+    { tipo: 'Alabanza', cantidad: 1, rolesBanda: true },
+    { tipo: 'Ofrenda', cantidad: 1 },
+    { tipo: 'Limpieza', cantidad: 1 },
+    { tipo: 'Infantil', cantidad: 1 }
+  ];
+  var MINISTERIO_CANTIDAD_MAX = 10;
+
+  /* Limpia la lista de ministerios de una organización: nombre recortado y
+     sin repetir (sin distinguir mayúsculas), cantidad entera 1..10. Vacía o
+     inválida → los de por defecto. */
+  function normalizarMinisterios(lista) {
+    var vistos = {};
+    var out = (Array.isArray(lista) ? lista : []).map(function (m) {
+      var tipo = String((m && m.tipo) || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      var cantidad = Math.round(Number(m && m.cantidad));
+      if (!(cantidad >= 1)) cantidad = 1;
+      if (cantidad > MINISTERIO_CANTIDAD_MAX) cantidad = MINISTERIO_CANTIDAD_MAX;
+      var r = { tipo: tipo, cantidad: cantidad };
+      if (m && m.rolesBanda) r.rolesBanda = true;
+      return r;
+    }).filter(function (m) {
+      var k = m.tipo.toLowerCase();
+      if (!m.tipo || vistos[k]) return false;
+      vistos[k] = true;
+      return true;
+    });
+    return out.length ? out : MINISTERIOS_DEFECTO.map(function (m) { return Object.assign({}, m); });
+  }
+
+  function rolesDeMinisterios(lista) {
+    return normalizarMinisterios(lista).map(function (m) {
+      var r = { tipo: m.tipo, cantidad: m.cantidad, numerar: false };
+      if (m.rolesBanda) { r.rolesBanda = true; r.subroles = BANDA_ROLES.map(function (b) { return b.tipo; }); }
+      return r;
+    });
+  }
+
+  function crearPerfil(def) {
+    var servicios = tiposDeCalendario(def.id);
+    var tieneCanciones = !!def.canciones;
+    var usaBanda = function (servicio) { var t = tipoEvento(servicio); return !!(t && t.equipo); };
+    return {
+      id: def.id,
+      label: def.label,
+      descripcion: def.descripcion,
+      servicios: servicios,
+      roles: def.roles,
+      permisosPorPuesto: def.permisosPorPuesto || {},
+      ensayos: !!def.ensayos,
+      tieneCanciones: tieneCanciones,
+      textos: def.textos,
+      modulosOcultos: def.modulosOcultos || [],
+      usaBanda: usaBanda,
+      usaCanciones: function (servicio) { return tieneCanciones && usaBanda(servicio); },
+      ordenRoles: function () { return def.roles.map(function (r) { return r.tipo; }); },
+      /* Tipos para elegir en el asistente: si el evento trae uno que este
+         perfil no ofrece (dato viejo), se ofrece primero para no perderlo. */
+      serviciosCon: function (actual) {
+        return actual && servicios.indexOf(actual) < 0 ? [actual].concat(servicios) : servicios.slice();
+      },
+      muestraModulo: function (id) { return (def.modulosOcultos || []).indexOf(id) < 0; }
+    };
+  }
+
+  var DEF_PERFILES = {
+    repertorio: {
+      id: 'repertorio',
+      label: 'Repertorio musical',
+      descripcion: 'Banda, canciones, cifrados y ensayos',
+      canciones: true,
+      roles: BANDA_ROLES,
+      permisosPorPuesto: PERMISOS_POR_ROL_BANDA,
+      ensayos: true,
+      textos: { equipo: 'Banda', integrantes: 'Integrantes de la banda', puesto: 'Rol' }
+    },
+    servicio: {
+      id: 'servicio',
+      label: 'Servicio ministerial',
+      descripcion: 'Servidores por ministerio (Protocolo, Alabanza, Ofrenda…), sin canciones',
+      canciones: false,
+      roles: rolesDeMinisterios(MINISTERIOS_DEFECTO),
+      permisosPorPuesto: {},
+      ensayos: false,
+      textos: { equipo: 'Servidores', integrantes: 'Servidores asignados', puesto: 'Ministerio' },
+      modulosOcultos: ['repertorio'],
+      ministerios: true
+    }
+  };
+
+  var PERFILES_CALENDARIO = {};
+  Object.keys(DEF_PERFILES).forEach(function (k) { PERFILES_CALENDARIO[k] = crearPerfil(DEF_PERFILES[k]); });
+
+  var TIPOS_CALENDARIO = Object.keys(PERFILES_CALENDARIO).map(function (k) {
+    return { id: k, label: PERFILES_CALENDARIO[k].label, descripcion: PERFILES_CALENDARIO[k].descripcion };
+  });
+
+  function tipoCalendarioValido(tipo) {
+    return PERFILES_CALENDARIO[tipo] ? tipo : TIPO_CALENDARIO_DEFECTO;
+  }
+
+  function perfilCalendario(tipo) { return PERFILES_CALENDARIO[tipoCalendarioValido(tipo)]; }
+
+  /* Perfil de una organización: el de su tipo de calendario, con sus propios
+     ministerios si es de servicio y los configuró. Se reutiliza mientras la
+     lista no cambie (las páginas lo piden en cada render). */
+  var perfilesPorOrg = {};
+  function perfilOrg(org) {
+    var tipo = tipoCalendarioValido(org && org.tipoCalendario);
+    var def = DEF_PERFILES[tipo];
+    if (!def.ministerios || !org || !org.ministerios) return PERFILES_CALENDARIO[tipo];
+    var firma = JSON.stringify(normalizarMinisterios(org.ministerios));
+    var cache = perfilesPorOrg[org.id || ''];
+    if (cache && cache.firma === firma) return cache.perfil;
+    var perfil = crearPerfil(Object.assign({}, def, { roles: rolesDeMinisterios(org.ministerios) }));
+    perfilesPorOrg[org.id || ''] = { firma: firma, perfil: perfil };
+    return perfil;
+  }
+
+  /* Acepta un perfil ya resuelto o nada (→ repertorio). */
+  function perfilOr(perfil) { return perfil && perfil.usaBanda ? perfil : PERFILES_CALENDARIO[TIPO_CALENDARIO_DEFECTO]; }
+
   function puede(userDoc, permiso) {
     if (!userDoc) return false;
     var lista = PERMISOS_POR_ROL[userDoc.role || 'normal'] || [];
@@ -952,8 +1139,8 @@
      - el rol de la cuenta junto con 'eventos.todos' (admin), o
      - el rol de la cuenta, si su persona vinculada es integrante del evento, o
      - el puesto de banda que esa persona ocupa en el evento
-       (PERMISOS_POR_ROL_BANDA). */
-  function puedeSobreEvento(userDoc, permiso, ev) {
+       (permisosPorPuesto del perfil; sin perfil, PERMISOS_POR_ROL_BANDA). */
+  function puedeSobreEvento(userDoc, permiso, ev, perfil) {
     if (!userDoc || !ev) return false;
     var porCuenta = puede(userDoc, permiso);
     if (porCuenta && puede(userDoc, 'eventos.todos')) return true;
@@ -963,8 +1150,9 @@
     var clave = function (t) { return String(t || '').trim().toLowerCase(); };
     return (ev.banda || []).some(function (slot) {
       if (!slot || slot.musicianId !== miPersona || !(slot.nombre || '').trim()) return false;
-      return Object.keys(PERMISOS_POR_ROL_BANDA).some(function (r) {
-        return clave(r) === clave(slot.tipo) && PERMISOS_POR_ROL_BANDA[r].indexOf(permiso) >= 0;
+      var porPuesto = perfilOr(perfil).permisosPorPuesto;
+      return Object.keys(porPuesto).some(function (r) {
+        return clave(r) === clave(slot.tipo) && porPuesto[r].indexOf(permiso) >= 0;
       });
     });
   }
@@ -1387,10 +1575,10 @@
 
   /* Eventos a los que puede asociarse un ensayo: de repertorio (no otro
      ensayo), de `desde` en adelante, borradores o publicados. */
-  function eventosParaEnsayo(eventos, desde, excluirId) {
+  function eventosParaEnsayo(eventos, desde, excluirId, perfil) {
     return (eventos || []).filter(function (e) {
       var est = estadoEvento(e);
-      return e && e.id !== excluirId && usaRepertorio(e.servicio) && !esEnsayo(e) &&
+      return e && e.id !== excluirId && usaRepertorio(e.servicio, perfil) && !esEnsayo(e) &&
         (e.fecha || '') >= (desde || '') && (est === 'BORRADOR' || est === 'PUBLICADO');
     }).sort(function (a, b) {
       return (a.fecha || '').localeCompare(b.fecha || '') ||
@@ -2403,6 +2591,10 @@
   w.RepertorioData = {
     MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
+    PERFILES_CALENDARIO: PERFILES_CALENDARIO, TIPOS_CALENDARIO: TIPOS_CALENDARIO, TIPO_CALENDARIO_DEFECTO: TIPO_CALENDARIO_DEFECTO,
+    tipoCalendarioValido: tipoCalendarioValido, perfilCalendario: perfilCalendario, perfilOrg: perfilOrg,
+    TIPOS_EVENTO: TIPOS_EVENTO, tipoEvento: tipoEvento, indiceTipoEvento: indiceTipoEvento,
+    MINISTERIOS_DEFECTO: MINISTERIOS_DEFECTO, MINISTERIO_CANTIDAD_MAX: MINISTERIO_CANTIDAD_MAX, normalizarMinisterios: normalizarMinisterios,
     song: song, songLabel: songLabel, songLabelParts: songLabelParts, songKey: songKey, buildSongCatalog: buildSongCatalog,
     youtubeId: youtubeId, youtubeController: youtubeController, formatoTiempo: formatoTiempo, progresoAudio: progresoAudio, youtubeErrorMessage: youtubeErrorMessage,defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,

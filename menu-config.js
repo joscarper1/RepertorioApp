@@ -63,9 +63,16 @@
     return '#';
   }
 
+  /* Módulos que no aplican al perfil de calendario de la organización
+     (ej. Repertorio en una de servicio ministerial) no se muestran. */
+  function aplicaAlPerfil(item, org) {
+    var R = w.RepertorioData;
+    return !org || !R || !R.perfilOrg || R.perfilOrg(org).muestraModulo(item.id);
+  }
+
   /* Lista lista para pintar: [{id, label, activo, deshabilitado, enMas, href}]. */
   function modulos(activoId, org, userDoc) {
-    return MODULOS.filter(function (m) { return permitido(m, userDoc); }).map(function (m) {
+    return MODULOS.filter(function (m) { return permitido(m, userDoc) && aplicaAlPerfil(m, org); }).map(function (m) {
       return {
         id: m.id, label: m.label,
         activo: m.id === activoId,

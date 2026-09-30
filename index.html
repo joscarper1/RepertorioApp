@@ -16,12 +16,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="menu-config.js"></script>
+<script src="menu-config.js?v=20260930a"></script>
 <!-- ?v= obliga al navegador a bajar la versión que corresponde a esta
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260925c"></script>
+<script src="repertorio-data.js?v=20260930a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -1266,13 +1266,16 @@ class Component extends DCLogic {
     return R.horaMinutos(a.hora) - R.horaMinutos(b.hora);
   }
 
-  /* Color fijo por tipo de evento (según su posición en R.SERVICIOS, para
-     que "Culto Familiar" sea siempre azul sin importar el mes); un tipo que
-     no esté en esa lista cae en un color derivado de su nombre. */
+  /* Perfil de calendario de la organización mostrada (R.perfilOrg). */
+  perfil() { return window.RepertorioData.perfilOrg(this.state.org); }
+
+  /* Color fijo por tipo de evento (según su posición en R.TIPOS_EVENTO,
+     para que "Culto Familiar" sea siempre azul sin importar el mes ni el
+     tipo de calendario); un tipo que no esté en el catálogo cae en un color
+     derivado de su nombre. */
   colorTipo(servicio) {
-    const R = window.RepertorioData;
-    const PAL = ['#0e7a3c', '#2c5fa6', '#b3542b', '#7a5a9e', '#8a6d1e', '#3d7f86', '#b0356a', '#4f6b2a', '#6b6866'];
-    const i = R.SERVICIOS.indexOf(servicio);
+    const PAL = ['#0e7a3c', '#2c5fa6', '#b3542b', '#7a5a9e', '#8a6d1e', '#3d7f86', '#b0356a', '#4f6b2a', '#6b6866', '#5a4fb0', '#a33b2e'];
+    const i = window.RepertorioData.indiceTipoEvento(servicio);
     return i >= 0 ? PAL[i % PAL.length] : this.colorNombre(servicio || '');
   }
 
@@ -1409,13 +1412,13 @@ class Component extends DCLogic {
     };
   }
 
-  /* Banda agrupada por rol (Corista: A · B · C), en el orden de
-     BANDA_ROLES. Quien tiene estrella (resaltado) va marcado con ★ y su
+  /* Banda agrupada por rol (Corista: A · B · C), en el orden de los
+     puestos del perfil. Quien tiene estrella (resaltado) va marcado con ★ y su
      tarea se lista debajo de la fila; la cuenta con sesión iniciada se
      marca "(tú)". */
   bandaDetalle(ev, miMusico) {
     const R = window.RepertorioData;
-    const orden = R.BANDA_ROLES.map((r) => r.tipo);
+    const orden = this.perfil().ordenRoles();
     const slots = (ev.banda || []).filter((b) => b.nombre && b.nombre.trim()).slice().sort((a, b) => {
       const ia = orden.indexOf(a.tipo), ib = orden.indexOf(b.tipo);
       const d = (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
@@ -1503,7 +1506,7 @@ class Component extends DCLogic {
       fechaLarga: R.fechaLarga(ev.fecha) + ' de ' + d.getFullYear(),
       volverLabel: 'Semana ' + R.semanaDelMes(ev.fecha),
       hora: ev.hora || '',
-      gcalHref: R.googleCalendarUrl(ev),
+      gcalHref: R.googleCalendarUrl(ev, this.perfil()),
       tema: ev.tema || 'Por confirmar',
       cita: txt(ev.cita), tieneCita: !!txt(ev.cita),
       aviso: txt(ev.avisoImportante), tieneAviso: !!txt(ev.avisoImportante),
@@ -1512,7 +1515,7 @@ class Component extends DCLogic {
       personas: txt(ev.personas), tienePersonas: !!txt(ev.personas),
       bloques: bloques,
       tieneRepertorio: bloques.length > 0,
-      repertorioPendiente: !bloques.length && R.usaRepertorio(ev.servicio),
+      repertorioPendiente: !bloques.length && this.perfil().usaCanciones(ev.servicio),
       banda: banda,
       tieneBanda: banda.length > 0
     };
@@ -1539,7 +1542,7 @@ class Component extends DCLogic {
       out.push('🎼 ' + R.diaNombre(ev.fecha) + ' ' + ev.hora + ' — ' + [R.fechaLarga(ev.fecha), ev.servicio].filter(Boolean).join(' · '));
       const banda = (ev.banda || []).filter((b) => b.nombre && b.nombre.trim());
       if (banda.length) {
-        const orden = R.BANDA_ROLES.map((r) => r.tipo);
+        const orden = this.perfil().ordenRoles();
         banda.slice().sort((a, b) => (orden.indexOf(a.tipo) - orden.indexOf(b.tipo)) || ((a.numero || 0) - (b.numero || 0)))
           .forEach((b) => out.push(b.tipo + ': ' + b.nombre.trim() + (b.resaltado && b.tarea && b.tarea.trim() ? ' (' + b.tarea.trim() + ')' : '')));
         out.push('');
@@ -1625,7 +1628,8 @@ class Component extends DCLogic {
     const numsSemana = Object.keys(grupos).map(Number).sort((a, b) => a - b);
 
     const tiposMes = Array.from(new Set(delMes.map((e) => e.servicio || 'Evento'))).sort((a, b) => {
-      const ia = R.SERVICIOS.indexOf(a), ib = R.SERVICIOS.indexOf(b);
+      const servicios = this.perfil().servicios;
+      const ia = servicios.indexOf(a), ib = servicios.indexOf(b);
       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.localeCompare(b, 'es');
     });
     const tipoSel = tiposMes.indexOf(s.tipoSel) >= 0 ? s.tipoSel : 'all';

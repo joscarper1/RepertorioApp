@@ -29,12 +29,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="menu-config.js"></script>
+<script src="menu-config.js?v=20260930a"></script>
 <!-- ?v= obliga al navegador a bajar la versión que corresponde a esta
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260929a"></script>
+<script src="repertorio-data.js?v=20260930a"></script>
 <script src="avisos.js?v=20260928b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -1357,6 +1357,10 @@ class Component extends DCLogic {
     versiones: [], versionCargada: null
   };
 
+  /* Perfil de calendario de la organización activa (R.perfilOrg): tipos de
+     evento, puestos y permisos por puesto. */
+  perfil() { return D().perfilOrg(this.state.organizacion); }
+
   componentDidMount() {
     const R = D();
     const hoy = R.hoyKey();
@@ -1454,7 +1458,7 @@ class Component extends DCLogic {
     const v = s.versiones.find((x) => x.n === n);
     const vigente = !v || n === enNube.version;
     const base = vigente ? JSON.parse(JSON.stringify(enNube)) : R.eventoDesdeVersion(v, enNube);
-    this.setState({ draft: R.newEvento(base), versionCargada: vigente ? null : n });
+    this.setState({ draft: R.newEvento(base, this.perfil()), versionCargada: vigente ? null : n });
   }
 
   /* --- Selector de hora en rueda ---
@@ -1763,7 +1767,7 @@ class Component extends DCLogic {
     /* Canciones solo las edita admin o quien está asignado como Director de
        Alabanza en el evento (ver R.puedeSobreEvento); se juzga con la banda
        de la nube. */
-    if (enNube && !R.puedeSobreEvento(this.state.userDoc, 'canciones.editar', enNube)) dr.bloques = JSON.parse(JSON.stringify(enNube.bloques || []));
+    if (enNube && !R.puedeSobreEvento(this.state.userDoc, 'canciones.editar', enNube, this.perfil())) dr.bloques = JSON.parse(JSON.stringify(enNube.bloques || []));
     if (!puedeBanda && enNube) {
       /* Sin 'banda.editar' la banda no se toca: se guarda la que está en la
          nube ahora mismo (con sus confirmaciones y musicianId). */
@@ -1811,7 +1815,7 @@ class Component extends DCLogic {
         this.avisar(ok, msg + (recienPublicado && !avisa ? ' · los avisos los envía un admin' : ''), 'No se guardó en la nube: revisa tu sesión o conexión');
         if (ok && avisa && window.RepertorioAvisos) window.RepertorioAvisos.alPublicar(orgId, [dr.id]);
         /* Los ensayos asociados a este evento reciben su lista y banda nuevas. */
-        if (ok && R.usaRepertorio(dr.servicio) && !R.esEnsayo(dr)) {
+        if (ok && this.perfil().ensayos && R.usaRepertorio(dr.servicio, this.perfil()) && !R.esEnsayo(dr)) {
           R.sincronizarEnsayos(dr, this._eventosVivos || this.state.data.eventos || [], puedeBanda, (okE) => {
             if (!okE) this.avisar(false, '', 'El evento se guardó, pero no se pudo actualizar su ensayo');
           });
@@ -1889,7 +1893,7 @@ class Component extends DCLogic {
       poner: (v) => this.setState({ cifrado: v }),
       parchar: (patch) => this.setState((s) => (s.cifrado ? { cifrado: Object.assign({}, s.cifrado, patch) } : null)),
       orgId: () => this.state.organizationId,
-      puedeEditar: () => !!this.state.draft && R.puedeSobreEvento(this.state.userDoc, 'cifrados.editar', this.state.draft),
+      puedeEditar: () => !!this.state.draft && R.puedeSobreEvento(this.state.userDoc, 'cifrados.editar', this.state.draft, this.perfil()),
       alGuardar: (id, c, listo) => {
         const s = this.state;
         const cn = s.draft && s.draft.bloques[c.bi] && s.draft.bloques[c.bi].canciones[c.ci];
@@ -1915,6 +1919,7 @@ class Component extends DCLogic {
   renderVals() {
     const R = D();
     const s = this.state;
+    const pf = R.perfilOrg(s.organizacion);
 
     const q = (s.orgSwitcherBusqueda || '').trim().toLowerCase();
     const orgsFiltradas = q ? (s.orgs || []).filter((o) => o.name.toLowerCase().indexOf(q) >= 0) : (s.orgs || []);
@@ -1996,7 +2001,8 @@ class Component extends DCLogic {
     const dr = s.draft;
     /* El paso de banda sólo existe para los tipos de evento con repertorio;
        el resto salta directo del paso 2 al 4 (ver siguiente/atras). */
-    const usaBanda = dr ? R.usaRepertorio(dr.servicio) : false;
+    const usaBanda = dr ? pf.usaBanda(dr.servicio) : false;
+    const usaCanciones = dr ? pf.usaCanciones(dr.servicio) : false;
 
     /* Asistente de 3 pasos: 1) fecha + tipo, 2) detalles (y, si el tipo
        lleva repertorio, banda y canciones como sub-pestañas), 3) revisión. */
@@ -2004,8 +2010,8 @@ class Component extends DCLogic {
        la ve en la revisión final. 'canciones.editar' además lo da estar
        asignado como Director de Alabanza en este evento. */
     const puedeBanda = R.puede(s.userDoc, 'banda.editar');
-    const sinCanciones = usaBanda && R.cancionesEvento(dr) === 0;
-    const puedeCanciones = R.puedeSobreEvento(s.userDoc, 'canciones.editar', dr);
+    const sinCanciones = usaCanciones && R.cancionesEvento(dr) === 0;
+    const puedeCanciones = R.puedeSobreEvento(s.userDoc, 'canciones.editar', dr, pf);
     /* Sin 'eventos.tipo' (admin) no se cambia el tipo de un evento existente:
        al editar se entra directo al paso 2 y "Atrás" desde ahí cierra. */
     const puedeTipo = R.puede(s.userDoc, 'eventos.tipo');
@@ -2015,8 +2021,8 @@ class Component extends DCLogic {
     const esEnsayoDr = R.esEnsayo(dr);
     const subsDef = (esEnsayoDr
       ? (puedeBanda ? [{ id: 'asociado', label: 'Evento asociado' }] : [])
-      : (usaBanda && puedeBanda ? [{ id: 'banda', label: 'Banda' }] : [])
-        .concat(usaBanda && puedeCanciones ? [{ id: 'repertorio', label: 'Canciones' }] : []))
+      : (usaBanda && puedeBanda ? [{ id: 'banda', label: pf.textos.equipo }] : [])
+        .concat(usaCanciones && puedeCanciones ? [{ id: 'repertorio', label: 'Canciones' }] : []))
       .concat([{ id: 'detalles', label: 'Detalles' }]);
     const subIdx = Math.max(0, subsDef.findIndex((x) => x.id === s.sub));
     const subActual = subsDef[subIdx].id;
@@ -2074,18 +2080,18 @@ class Component extends DCLogic {
         /* R.newEvento normaliza el registro y completa con valores por defecto
            los campos que no existían cuando se creó (banda, detalles, etc.). */
         editar: () => {
-          if (!R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev)) return;
+          if (!R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev, pf)) return;
           /* Sin 'eventos.tipo' se salta el paso 1; sub '' = primera sub-pestaña. */
           const conTipo = R.puede(s.userDoc, 'eventos.tipo');
-          const draftEv = R.newEvento(JSON.parse(JSON.stringify(ev)));
+          const draftEv = R.newEvento(JSON.parse(JSON.stringify(ev)), pf);
           /* Un ensayo se abre con la lista y banda actuales de su evento. */
           const padreEv = R.esEnsayo(draftEv) && draftEv.eventoAsociadoId
             ? s.data.eventos.find((e) => e.id === draftEv.eventoAsociadoId) : null;
           if (padreEv) R.heredarDeEvento(draftEv, padreEv);
           this.irA({ draft: draftEv, editId: ev.id, paso: conTipo ? 1 : 2, sub: conTipo ? 'detalles' : '', fecha: ev.fecha });
         },
-        puedeEditar: R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev),
-        puedeMover: R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev),
+        puedeEditar: R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev, pf),
+        puedeMover: R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev, pf),
         /* Cancelar/archivar y "Ver en calendario" solo aplican a eventos ya
            publicados; "Publicar" solo al admin y mientras sea borrador. */
         puedeEstado: puedeEstadoEv,
@@ -2095,7 +2101,7 @@ class Component extends DCLogic {
         puedeEliminar: R.puede(s.userDoc, 'eventos.estado') && estadoEv === 'BORRADOR',
         eliminar: () => { if (R.puede(s.userDoc, 'eventos.estado') && estadoEv === 'BORRADOR') this.eliminarEvento(ev); },
         publicar: () => { if (R.puede(s.userDoc, 'eventos.estado') && estadoEv === 'BORRADOR') this.publicarEvento(ev); },
-        mover: () => { if (R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev)) this.abrirMover(ev); },
+        mover: () => { if (R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev, pf)) this.abrirMover(ev); },
         cancelar: () => { if (puedeEstadoEv) this.cancelarEvento(ev); },
         borrar: () => { if (puedeEstadoEv) this.archivarEvento(ev); },
         ver: () => { if (estadoEv === 'PUBLICADO') this.verEnCalendario(ev); }
@@ -2148,7 +2154,7 @@ class Component extends DCLogic {
 
     /* Paso 2 · Banda: los puestos se agrupan en Voces y Músicos. */
     const VOCES = ['Director de Alabanza', 'Corista'];
-    const bandaGrupos = dr ? R.BANDA_ROLES.map((r) => {
+    const bandaGrupos = dr ? pf.roles.map((r) => {
       /* Personas seleccionables para este rol: quienes tienen ese rol entre
          sus rolesBanda, más quienes todavía no tienen ningún rol asignado
          (un músico sin rolesBanda definidos se muestra en todas las listas
@@ -2245,7 +2251,7 @@ class Component extends DCLogic {
       };
     }) : [];
 
-    const resumenBanda = dr ? R.BANDA_ROLES.map((r) => {
+    const resumenBanda = dr ? pf.roles.map((r) => {
       const nombres = drBanda.filter((b) => b.tipo === r.tipo && b.nombre && b.nombre.trim()).map((b) => b.nombre.trim());
       return nombres.length ? { tipo: r.tipo, nombres: nombres.join(', ') } : null;
     }).filter(Boolean) : [];
@@ -2257,7 +2263,7 @@ class Component extends DCLogic {
        que dejen de sugerirse aquí sin tocar el texto ya guardado en los
        eventos históricos que las usan). */
     const catalogo = R.buildSongCatalog(s.data.eventos, s.songOverrides).filter((so) => !so.archivado);
-    const puedeCifrar = R.puedeSobreEvento(s.userDoc, 'cifrados.editar', s.draft);
+    const puedeCifrar = R.puedeSobreEvento(s.userDoc, 'cifrados.editar', s.draft, pf);
 
     /* Catálogo de salmistas: también es una llave (identifica versiones), así
        que necesita su propio autocomplete para no fragmentarse en variantes
@@ -2522,7 +2528,7 @@ class Component extends DCLogic {
        asociarse (más el que ya tiene, aunque haya quedado en el pasado). */
     const padreDr = esEnsayoDr && dr.eventoAsociadoId
       ? (s.data.eventos || []).find((e) => e.id === dr.eventoAsociadoId) || null : null;
-    const candidatosEnsayo = esEnsayoDr ? R.eventosParaEnsayo(s.data.eventos, hoyIso, dr.id) : [];
+    const candidatosEnsayo = esEnsayoDr ? R.eventosParaEnsayo(s.data.eventos, hoyIso, dr.id, pf) : [];
     if (padreDr && !candidatosEnsayo.some((e) => e.id === padreDr.id)) candidatosEnsayo.unshift(padreDr);
     const fechaEv = (e) => R.diaNombre(e.fecha) + ' ' + R.fechaLarga(e.fecha);
     const asociadoOpciones = candidatosEnsayo.map((e) => {
@@ -2578,12 +2584,13 @@ class Component extends DCLogic {
       eligiendoTipo: enWizard && paso === 1,
       viendoDia: !enWizard,
       tipoKicker: s.editId ? 'Editando evento' : 'Nuevo evento',
-      tiposEvento: dr ? (dr.servicio && R.SERVICIOS.indexOf(dr.servicio) < 0 ? [dr.servicio].concat(R.SERVICIOS) : R.SERVICIOS).map((label) => ({
+      tiposEvento: dr ? pf.serviciosCon(dr.servicio).map((label) => ({
         label: label,
-        sub: label === R.SERVICIO_ENSAYO ? 'Hereda de un evento' : (R.usaRepertorio(label) ? 'Banda y repertorio' : 'Solo detalles'),
+        sub: pf.ensayos && label === R.SERVICIO_ENSAYO ? 'Hereda de un evento'
+          : (pf.usaCanciones(label) ? pf.textos.equipo + ' y repertorio' : (pf.usaBanda(label) ? pf.textos.equipo : 'Solo detalles')),
         clase: 'tipo' + (dr.servicio === label ? ' on' : ''),
         onClick: () => this.setDraft((x) => {
-          x.hora = R.horaAlCambiarServicio(x.hora, label); x.servicio = label;
+          x.hora = R.horaAlCambiarServicio(x.hora, label, pf); x.servicio = label;
           if (label !== R.SERVICIO_ENSAYO) delete x.eventoAsociadoId;
         })
       })) : [],
@@ -2605,7 +2612,7 @@ class Component extends DCLogic {
       nuevoEvento: () => {
         if (!R.puede(s.userDoc, 'eventos.crear')) return;
         if (!s.fecha) { this.setState({ estado: 'Primero elige una fecha' }); return; }
-        this.irA({ draft: R.newEvento({ fecha: s.fecha }), editId: null, paso: 1, sub: 'detalles' });
+        this.irA({ draft: R.newEvento({ fecha: s.fecha }, pf), editId: null, paso: 1, sub: 'detalles' });
       },
 
       /* Con sub-pestañas, el título es el de la sub-pestaña activa y el tipo
@@ -2634,8 +2641,7 @@ class Component extends DCLogic {
       onServicio: field('servicio'), onTema: field('tema'),
       onCita: field('cita'), onAviso: field('avisoImportante'), onNotas: field('notas'),
       onDetalles: field('detalles'), onPersonas: field('personas'),
-      servicios: (dr && dr.servicio && R.SERVICIOS.indexOf(dr.servicio) < 0
-        ? [dr.servicio].concat(R.SERVICIOS) : R.SERVICIOS).map((label) => ({ label: label })),
+      servicios: pf.serviciosCon(dr && dr.servicio).map((label) => ({ label: label })),
       bandaGrupos: bandaGrupos,
       bandaVoces: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) >= 0),
       bandaMusicos: bandaGrupos.filter((g) => VOCES.indexOf(g.tipo) < 0),
@@ -2668,8 +2674,8 @@ class Component extends DCLogic {
       avisoVersionCargada: s.versionCargada
         ? ('Estás viendo el contenido de la versión ' + s.versionCargada + '. Al guardar, el evento regresa a la versión ' + s.versionCargada + ' sin crear una copia (si cambias algo más, se guarda como versión nueva). La fecha y el estado del evento no cambian.')
         : '',
-      resumenEsRepertorio: dr ? R.usaRepertorio(dr.servicio) : false,
-      resumenEsOtro: dr ? !R.usaRepertorio(dr.servicio) : false,
+      resumenEsRepertorio: usaBanda,
+      resumenEsOtro: !!dr && !usaBanda,
       resumenDetalles: dr && dr.detalles ? dr.detalles : 'Sin detalles aún',
       resumenPersonas: dr && dr.personas ? dr.personas : 'Sin personas asignadas aún',
 
