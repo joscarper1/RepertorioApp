@@ -188,7 +188,9 @@
   function planAvisos(pedido, datos) {
     var org = datos.org || {};
     var orgId = org.id || pedido.orgId;
-    var eventos = datos.eventos || [];
+    /* Solo eventos de esta organización, aunque `datos` trajera otros: una
+       cuenta en varias organizaciones recibe un aviso aparte por cada una. */
+    var eventos = (datos.eventos || []).filter(function (ev) { return ev && (!ev.organizationId || ev.organizationId === orgId); });
     var hoy = datos.hoy || hoyIso();
     var personas = null;
     if (pedido.tipo === 'publicacion') {

@@ -82,6 +82,29 @@ test('planAvisos reenvío: una sola cuenta; sin persona vinculada no hay fila', 
   assert.deepEqual(A.planAvisos({ tipo: 'reenvio', uid: 'u-otra' }, datos), []);
 });
 
+test('cuenta en dos organizaciones: un aviso por organización, cada uno solo con sus eventos', () => {
+  const org2 = { id: 'o2', name: 'Filial Los Chorros', slug: 'loschorros' };
+  const yes = { uid: 'u-yes', email: 'yes@x.com', telefono: '50370002222', organizationIds: { o1: true, o2: true }, musicianLinks: { o1: 'yes1', o2: 'yes2' } };
+  const ev1 = ev('y1', '2026-10-05', 'Culto o1', [slot('Corista', 'yes1')]);
+  const ev2 = ev('y2', '2026-10-06', 'Culto o2', [slot('Piano', 'yes2')], { organizationId: 'o2' });
+  const base = { usuarios: [yes], hoy: '2026-09-28' };
+  /* Aunque llegaran eventos de la otra organización, no se mezclan. */
+  const d1 = Object.assign({ org, musicos: [{ id: 'yes1', nombre: 'Yessy Sorto' }], eventos: [ev1, ev2] }, base);
+  const d2 = Object.assign({ org: org2, musicos: [{ id: 'yes2', nombre: 'Yessy Sorto' }], eventos: [ev1, ev2] }, base);
+  const [f1] = A.planAvisos({ tipo: 'reenvio', uid: 'u-yes' }, d1);
+  const [f2] = A.planAvisos({ tipo: 'reenvio', uid: 'u-yes' }, d2);
+  assert.deepEqual(f1.aviso.lineas, ['Lun 5 oct – Culto o1 (Corista)']);
+  assert.deepEqual(f2.aviso.lineas, ['Mar 6 oct – Culto o2 (Piano)']);
+  assert.equal(f1.aviso.asunto, 'Tus próximos eventos – Templo Betel');
+  assert.equal(f2.aviso.asunto, 'Tus próximos eventos – Filial Los Chorros');
+  assert.ok(f2.aviso.url.indexOf('group=loschorros') >= 0);
+  /* Publicar en o2 no avisa por la persona de o1, y viceversa. */
+  assert.deepEqual(A.planAvisos({ tipo: 'publicacion', eventIds: ['y1'] }, d2), []);
+  /* Si se le quita la organización, deja de recibir sus avisos aunque quede el vínculo. */
+  const sinO2 = Object.assign({}, d2, { usuarios: [Object.assign({}, yes, { organizationIds: { o1: true } })] });
+  assert.deepEqual(A.planAvisos({ tipo: 'reenvio', uid: 'u-yes' }, sinO2), []);
+});
+
 test('teléfonos y WhatsApp', () => {
   assert.equal(A.normalizarTelefono('7000-1111'), '50370001111');
   assert.equal(A.normalizarTelefono('+503 7000 1111'), '50370001111');

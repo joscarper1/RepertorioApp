@@ -90,7 +90,7 @@ test('servicio ministerial: un evento nuevo arranca con un puesto por ministerio
   assert.equal(ev.servicio, 'Cultos Dominicales');
   assert.equal(ev.hora, '8:00 am');
   assert.equal(ev.bloques.length, 0);
-  assert.deepEqual(tipos(ev.banda), ['Protocolo', 'Alabanza', 'Ofrenda', 'Limpieza', 'Infantil']);
+  assert.deepEqual(tipos(ev.banda), ['Protocolo', 'Alabanza', 'Ofrenda', 'Limpieza', 'Oración', 'Infantil']);
   assert.ok(ev.banda.filter((b) => b.tipo !== 'Alabanza').every((b) => b.numero === null && !b.rol));
   /* Alabanza: una sola persona por defecto, como Director de Alabanza 1 */
   const dir = ev.banda.find((b) => b.tipo === 'Alabanza');
