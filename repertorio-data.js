@@ -2873,6 +2873,55 @@
     return out;
   }
 
+  /* Programa del mes (vista previa / PDF en eventos.html): una fila por
+     evento borrador o publicado del mes (sin ensayos ni tipos sin equipo),
+     en orden de fecha y hora, y una columna por puesto en el orden del
+     perfil. Los puestos que no están en el perfil (datos viejos) van al
+     final. En repertorio se omiten las columnas sin nadie en el mes (son
+     muchos roles); en servicio se muestran todos los ministerios para que
+     se vean los vacíos. Cada celda trae los nombres del puesto; `destacado`
+     marca al Director de Alabanza (va primero, en negrita como en el
+     programa impreso).
+     → { columnas: ['Protocolo', …], filas: [{ id, fecha, dia, diaNumero,
+         hora, servicio, borrador, celdas: [[{ nombre, destacado }]] }] } */
+  function programaMes(eventos, mes, perfil) {
+    var pf = perfilOr(perfil);
+    var evs = (eventos || []).filter(function (ev) {
+      return cuentaParaBalance(ev) && monthKey(ev.fecha) === mes && pf.usaBanda(ev.servicio);
+    }).sort(function (a, b) {
+      return (a.fecha || '').localeCompare(b.fecha || '') || horaMinutos(a.hora) - horaMinutos(b.hora);
+    });
+    var columnas = pf.ordenRoles().slice();
+    var usadas = {};
+    evs.forEach(function (ev) {
+      (ev.banda || []).forEach(function (b) {
+        if (!b || !(b.nombre || '').trim() || !b.tipo) return;
+        usadas[b.tipo] = true;
+        if (columnas.indexOf(b.tipo) < 0) columnas.push(b.tipo);
+      });
+    });
+    if (pf.id !== 'servicio') {
+      var conGente = columnas.filter(function (c) { return usadas[c]; });
+      if (conGente.length) columnas = conGente;
+    }
+    var esDirector = function (b) { return /^director/i.test(String(b.rol || b.tipo || '').trim()); };
+    var filas = evs.map(function (ev) {
+      var celdas = columnas.map(function (col) {
+        return (ev.banda || []).filter(function (b) {
+          return b && b.tipo === col && (b.nombre || '').trim();
+        }).map(function (b, i) {
+          return { nombre: b.nombre.trim(), destacado: esDirector(b), orden: (esDirector(b) ? 0 : 1) * 100 + (b.numero || 1) + i / 100 };
+        }).sort(function (x, y) { return x.orden - y.orden; })
+          .map(function (x) { return { nombre: x.nombre, destacado: x.destacado }; });
+      });
+      return {
+        id: ev.id, fecha: ev.fecha, dia: diaNombre(ev.fecha), diaNumero: parse(ev.fecha).getDate(),
+        hora: ev.hora || '', servicio: ev.servicio || '', borrador: estadoEvento(ev) === 'BORRADOR', celdas: celdas
+      };
+    });
+    return { columnas: columnas, filas: filas };
+  }
+
   /* {clave: ['Vigilia Filial 7:00 pm', …]}: otros eventos del mismo día
      donde la persona ya tiene un puesto. */
   function ocupadosMismoDia(eventos, fecha, excluirId) {
@@ -2915,7 +2964,7 @@
 
   w.RepertorioData = {
     MESES: MESES, DIAS: DIAS, SERVICIOS: SERVICIOS,
-    clavePersona: clavePersona, cargaDelMes: cargaDelMes, ocupadosMismoDia: ocupadosMismoDia,
+    clavePersona: clavePersona, cargaDelMes: cargaDelMes, ocupadosMismoDia: ocupadosMismoDia, programaMes: programaMes,
     candidatosParaPuesto: candidatosParaPuesto, textoCarga: textoCarga,
     SERVICIOS_CON_REPERTORIO: SERVICIOS_CON_REPERTORIO, usaRepertorio: usaRepertorio,
     PERFILES_CALENDARIO: PERFILES_CALENDARIO, TIPOS_CALENDARIO: TIPOS_CALENDARIO, TIPO_CALENDARIO_DEFECTO: TIPO_CALENDARIO_DEFECTO,
