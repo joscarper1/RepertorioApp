@@ -145,7 +145,7 @@
     if (!eventos || !eventos.length) return null;
     var orgNombre = (org && (org.name || org.nombre)) || 'la organización';
     var primer = primerNombre(nombre);
-    var saludo = 'Hola' + (primer ? ' ' + primer : '') + ', tienes participación en los siguientes eventos de ' + orgNombre + ':';
+    var saludo = 'Hola' + (primer ? ' ' + primer : '') + ', ¡Dios te bendiga!'+ '\n\n' + 'Tienes participación en los siguientes eventos de ' + orgNombre + ':';
     var lineas = eventos.map(function (ev) { return lineaEvento(ev, musicianId); });
     var url = urlCalendario(org, eventos[eventos.length - 1].fecha);
     var texto = saludo + '\n\n' + lineas.map(function (l) { return '• ' + l; }).join('\n') + '\n\nVer calendario: ' + url;
