@@ -836,7 +836,7 @@ class Component extends DCLogic {
         fecha: dn.charAt(0).toUpperCase() + dn.slice(1, 3) + ' · ' + R.fechaLarga(ev.fecha),
         hora: ev.hora || '',
         servicio: ev.servicio,
-        tema: ev.tema || 'Sin tema aún',
+        tema: ev.tema || '',
         tieneCanciones: n > 0,
         sinCanciones: n === 0,
         cancionesTitulo: n + ' ' + (n === 1 ? borr.uno : borr.varios)

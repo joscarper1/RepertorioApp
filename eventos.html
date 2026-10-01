@@ -598,6 +598,19 @@ a.mas-fila:hover{background:none;color:var(--ink)}
   </div>
 
   <sc-if value="{{ esPaso1 }}" hint-placeholder-val="{{ true }}">
+    <div class="balance-barra" style="margin-bottom:16px">
+      <details class="balance">
+        <summary>Carga de {{ balanceMesCal }} <span>· {{ balanceCuentaCal }}</span></summary>
+        <sc-if value="{{ balanceHayFilasCal }}" hint-placeholder-val="{{ false }}">
+          <div class="balance-lista">
+            <sc-for list="{{ balanceFilasCal }}" as="bf" hint-placeholder-count="4">
+              <span class="balance-chip" title="{{ bf.detalle }}">{{ bf.nombre }} <b>{{ bf.total }}</b></span>
+            </sc-for>
+          </div>
+        </sc-if>
+        <p class="campo-ayuda" style="margin:8px 0 0">Veces que cada persona sirve en los eventos del mes (borradores y publicados, sin ensayos).</p>
+      </details>
+    </div>
     <section class="p1">
       <div class="cal">
         <div class="cal-nav">
@@ -662,7 +675,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   <span class="badge b-gris" title="{{ ev.versionTitulo }}">{{ ev.versionLabel }}</span>
                 </sc-if>
               </div>
-              <div class="evc-tema">{{ ev.resumen }}</div>
+              <sc-if value="{{ ev.resumen }}" hint-placeholder-val="{{ true }}"><div class="evc-tema">{{ ev.resumen }}</div></sc-if>
               <sc-if value="{{ ev.tieneDeclinados }}" hint-placeholder-val="{{ false }}">
                 <div class="evc-dec">
                   <span style="font-weight:800;color:var(--red)">Declinaron y siguen programados</span>
@@ -740,7 +753,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 <sc-if value="{{ ao.estadoLabel }}" hint-placeholder-val="{{ false }}"><span class="badge b-gris" style="margin-left:auto">{{ ao.estadoLabel }}</span></sc-if>
               </span>
               <span class="asoc-fecha">{{ ao.fecha }}</span>
-              <span class="asoc-tema">{{ ao.tema }}</span>
+              <sc-if value="{{ ao.tema }}" hint-placeholder-val="{{ true }}"><span class="asoc-tema">{{ ao.tema }}</span></sc-if>
               <span class="tipo-s">{{ ao.resumen }}</span>
             </button>
           </sc-for>
@@ -1006,7 +1019,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
           <div style="font-size:15px;color:var(--muted)"><strong style="color:var(--ink)">{{ resumenFecha }}</strong> · {{ resumenHora }}</div>
         </div>
         <div class="rev-cuerpo">
-          <div class="rev-tema">{{ resumenTema }}</div>
+          <sc-if value="{{ resumenTema }}" hint-placeholder-val="{{ true }}"><div class="rev-tema">{{ resumenTema }}</div></sc-if>
           <sc-if value="{{ resumenCita }}" hint-placeholder-val="{{ false }}"><div class="cita">{{ resumenCita }}</div></sc-if>
           <sc-if value="{{ resumenAviso }}" hint-placeholder-val="{{ false }}">
             <div class="callout"><span class="callout-t">Aviso importante</span><p>{{ resumenAviso }}</p></div>
@@ -2368,7 +2381,7 @@ class Component extends DCLogic {
         declinados: declinados,
         hora: ev.hora,
         servicio: ev.servicio,
-        resumen: ev.tema || 'Sin tema aún',
+        resumen: ev.tema || '',
         estadoLabel: info.label,
         estadoStyle: 'font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;white-space:nowrap;background:' + info.bg + ';color:' + info.color,
         /* R.newEvento normaliza el registro y completa con valores por defecto
@@ -2636,12 +2649,16 @@ class Component extends DCLogic {
         c.puestos[r.tipo] = (c.puestos[r.tipo] || 0) + 1;
       }));
     });
-    const balanceFilas = Object.keys(cargaMes).map((k) => cargaMes[k])
+    const filasBalance = (carga) => Object.keys(carga).map((k) => carga[k])
       .sort((a, b) => (b.total - a.total) || a.nombre.localeCompare(b.nombre, 'es'))
       .map((c) => ({
         nombre: c.nombre, total: c.total,
         detalle: Object.keys(c.puestos).map((t) => t + (c.puestos[t] > 1 ? ' ×' + c.puestos[t] : '')).join(', ')
       }));
+    const cuentaBalance = (filas) => filas.length ? (filas.length === 1 ? '1 persona' : filas.length + ' personas') : 'nadie aún';
+    const balanceFilas = filasBalance(cargaMes);
+    /* Paso 1: la misma carga, pero de todo el mes que muestra el calendario. */
+    const balanceFilasCal = filasBalance(R.cargaDelMes(s.data.eventos, s.mes));
 
     const resumenBanda = dr ? rolesPaso.map((r) => {
       const nombres = drBanda.filter((b) => b.tipo === r.tipo && b.nombre && b.nombre.trim())
@@ -2934,7 +2951,7 @@ class Component extends DCLogic {
         hora: e.hora,
         servicio: e.servicio,
         fecha: fechaEv(e),
-        tema: e.tema || 'Sin tema aún',
+        tema: e.tema || '',
         resumen: (nCanciones ? nCanciones + (nCanciones > 1 ? ' canciones' : ' canción') : 'Sin canciones aún')
           + ' · ' + (nBanda ? nBanda + (nBanda > 1 ? ' integrantes' : ' integrante') : 'sin banda'),
         estadoLabel: R.estadoEvento(e) === 'BORRADOR' ? 'Borrador' : '',
@@ -3037,9 +3054,13 @@ class Component extends DCLogic {
       servicios: pf.serviciosCon(dr && dr.servicio).map((label) => ({ label: label })),
       bandaGrupos: bandaGrupos,
       balanceMes: mesDr ? R.monthLabel(mesDr) : '',
-      balanceCuenta: balanceFilas.length ? (balanceFilas.length === 1 ? '1 persona' : balanceFilas.length + ' personas') : 'nadie aún',
+      balanceCuenta: cuentaBalance(balanceFilas),
       balanceFilas: balanceFilas,
       balanceHayFilas: balanceFilas.length > 0,
+      balanceMesCal: R.monthLabel(s.mes),
+      balanceCuentaCal: cuentaBalance(balanceFilasCal),
+      balanceFilasCal: balanceFilasCal,
+      balanceHayFilasCal: balanceFilasCal.length > 0,
       hayVacantesSugeribles: vacantesSugeribles > 0,
       completarVacios: completarVacios,
       bandaSecciones: pf.id === 'repertorio'
@@ -3061,7 +3082,7 @@ class Component extends DCLogic {
       resumenSecciones: resumenSecciones,
       resumenVacio: resumen.length ? '' : (esEnsayoDr ? 'El evento asociado aún no tiene canciones con nombre.' : 'Aún no hay canciones con nombre.'),
       resumenTitulo: dr ? (R.diaNombre(dr.fecha) + ' ' + dr.hora) : '',
-      resumenTema: dr ? (dr.tema || 'Sin tema') : '',
+      resumenTema: dr ? (dr.tema || '') : '',
       resumenBanda: resumenBanda,
       resumenTieneBanda: resumenBanda.length > 0,
       resumenSinBanda: resumenBanda.length === 0,

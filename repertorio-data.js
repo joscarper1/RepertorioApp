@@ -618,8 +618,9 @@
         });
         out.push('');
       }
-      out.push('Descripción:');
-      out.push(ev.tema && ev.tema.trim() ? ev.tema.trim() : 'Por confirmar');
+      /* Sin tema ni cita no se agrega la sección (no "Por confirmar"). */
+      if ((ev.tema && ev.tema.trim()) || (ev.cita && ev.cita.trim())) out.push('Descripción:');
+      if (ev.tema && ev.tema.trim()) out.push(ev.tema.trim());
       if (ev.cita && ev.cita.trim()) out.push(ev.cita.trim());
     } else {
       if (ev.detalles && ev.detalles.trim()) out.push(ev.detalles.trim());
@@ -629,7 +630,7 @@
         out.push(ev.personas.trim());
       }
     }
-    return out.join('\n');
+    return out.join('\n').trim();
   }
 
   function icsEscape(text) {
