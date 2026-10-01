@@ -610,6 +610,43 @@
     }).catch(function (err) { console.error('Reenviar eventos:', err); });
   }
 
+  /* Reabre el panel de la última publicación de la organización (botón
+     "Avisos WhatsApp" del dashboard). El correo no se vuelve a enviar: solo
+     se muestra cómo quedó; los enlaces de WhatsApp se arman con los datos
+     actuales. Sin publicaciones en la cola, muestra a todos los que tienen
+     eventos publicados próximos. */
+  function abrirUltimo(orgId) {
+    var r = db();
+    if (!r || !orgId) return Promise.resolve();
+    var cola = r.child(COLA_PATH).orderByChild('creado').limitToLast(50).once('value')
+      .then(function (s) { return lista(s); }, function () { return []; });
+    return Promise.all([api.leerDatos(orgId), cola]).then(function (res) {
+      var datos = res[0];
+      var ultimo = res[1].filter(function (p) { return p.orgId === orgId && p.tipo === 'publicacion' && p.eventIds; }).pop();
+      var pedido, kicker;
+      if (ultimo) {
+        pedido = { orgId: orgId, tipo: 'publicacion', eventIds: ultimo.eventIds };
+        var n = Object.keys(ultimo.eventIds).length;
+        var cuando = ultimo.creado ? new Date(ultimo.creado).toLocaleString('es', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+        kicker = 'Última publicación' + (cuando ? ' · ' + cuando : '') + ' · ' + n + (n === 1 ? ' evento' : ' eventos');
+      } else {
+        var hoy = datos.hoy || hoyIso();
+        pedido = {
+          orgId: orgId, tipo: 'publicacion',
+          eventIds: datos.eventos.filter(function (ev) { return estadoEvento(ev) === 'PUBLICADO' && (ev.fecha || '') >= hoy; }).map(function (ev) { return ev.id; })
+        };
+        kicker = 'Eventos publicados próximos';
+      }
+      var filas = planAvisos(pedido, datos);
+      var panel = abrirPanel({ kicker: kicker, titulo: 'Avisar al equipo (' + filas.length + ')', filas: filas });
+      if (!filas.length) panel.correo('No hay personas con eventos publicados próximos.');
+      else if (ultimo) {
+        panel.correo('Revisando el correo de esta publicación…');
+        api.seguirPedido(ultimo.id, panel, 'El correo de esta publicación sigue en cola.');
+      } else panel.correo('El correo se envía al publicar; aquí solo están los enlaces de WhatsApp.');
+    }).catch(function (err) { console.error('Abrir avisos:', err); });
+  }
+
   api.leerDatos = leerDatos;
   api.encolar = encolar;
   api.leerConfig = leerConfig;
@@ -622,6 +659,7 @@
   api.historial = historial;
   api.alPublicar = alPublicar;
   api.reenviar = reenviar;
+  api.abrirUltimo = abrirUltimo;
   api.cerrarPanel = cerrarPanel;
   api.seguirPedido = seguirPedido;
   root.RepertorioAvisos = api;

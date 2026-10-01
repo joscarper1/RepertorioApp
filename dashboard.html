@@ -32,7 +32,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="menu-config.js?v=20260930a"></script>
 <script src="repertorio-data.js?v=20260930g"></script>
-<script src="avisos.js?v=20260930a"></script>
+<script src="avisos.js?v=20261001a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -343,7 +343,12 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             <div class="rotulo">Por publicar</div>
             <div style="font-size:17px;font-weight:800;margin-top:4px">{{ borradoresTitulo }} <span style="font-size:13px;font-weight:700;color:var(--muted2)">{{ borradoresCuenta }}</span></div>
           </div>
-          <button type="button" class="btn-pri btn-ac" onClick="{{ publicarTodos }}" disabled="{{ publicarTodosDeshabilitado }}" title="{{ publicarTodosTitulo }}">{{ publicarTodosTexto }}</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <sc-if value="{{ veAvisos }}" hint-placeholder-val="{{ true }}">
+              <button type="button" class="btn-sec" style="min-height:40px;padding:0 14px;font-size:13px" onClick="{{ abrirAvisos }}" title="Reabre los enlaces de WhatsApp de la última publicación (el correo no se vuelve a enviar)">Avisos WhatsApp</button>
+            </sc-if>
+            <button type="button" class="btn-pri btn-ac" onClick="{{ publicarTodos }}" disabled="{{ publicarTodosDeshabilitado }}" title="{{ publicarTodosTitulo }}">{{ publicarTodosTexto }}</button>
+          </div>
         </div>
         <div class="panel-cuerpo">
           <sc-if value="{{ hayBorradores }}" hint-placeholder-val="{{ true }}">
@@ -937,6 +942,8 @@ class Component extends DCLogic {
       publicarTodosTitulo: faltan ? ('Hay eventos sin ' + borr.varios + ' ' + borr.listados + ': se pedirá confirmación') : '',
       faltanCancionesTexto: faltan ? ((faltan === 1 ? '1 evento aún no tiene ' : faltan + ' eventos aún no tienen ') + borr.varios + ' ' + borr.listados + '.') : '',
       publicarTodos: () => this.publicarTodos(borradores),
+      veAvisos: R.puede(s.userDoc, 'avisos.gestionar') && !!window.RepertorioAvisos,
+      abrirAvisos: () => window.RepertorioAvisos.abrirUltimo(s.currentOrgId),
       borradoresTitulo: borr.titulo,
       borradoresColumna: borr.columna,
       borradoresSinTexto: 'Sin ' + borr.varios,
