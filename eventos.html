@@ -1955,6 +1955,8 @@ class Component extends DCLogic {
         const nombre = (slot.nombre || '').trim();
         const m = nombre ? R.matchMusicianByNombre(this.state.musicos, nombre) : null;
         slot.musicianId = m ? m.id : null;
+        /* El nombre del puesto es copia del de Personas (la fuente). */
+        if (m) slot.nombre = m.nombre;
       });
     }
     /* Ensayo: la lista y la banda se toman de su evento tal como está en la
@@ -1970,6 +1972,7 @@ class Component extends DCLogic {
         const nombre = (slot.nombre || '').trim();
         const m = nombre ? R.matchMusicianByNombre(this.state.musicos, nombre) : null;
         slot.musicianId = m ? m.id : (slot.musicianId || null);
+        if (m) slot.nombre = m.nombre;
       });
     }
     const orgId = this.state.organizationId;

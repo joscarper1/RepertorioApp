@@ -2611,6 +2611,52 @@
     }, function () { cb && cb(false); });
   }
 
+  /* Renombrar una persona: el catálogo de Personas es la fuente del nombre y
+     cada puesto de banda guarda solo una copia, así que se reescribe en todos
+     los eventos de la organización (pasados, futuros y ensayos) en la misma
+     escritura multi-ruta. Se corrigen los puestos que apuntan a la persona
+     (musicianId) y los que aún no tienen musicianId pero tienen escrito su
+     nombre o una de sus variantes (a esos se les estampa el musicianId). El
+     nombre anterior queda en aliases. Puro: devuelve { updates, puestos }. */
+  function cambiosRenombrePersona(musico, nombre, eventos) {
+    var updates = {};
+    var puestos = 0;
+    var aliases = (musico.aliases || []).slice();
+    [musico.nombre, nombre].forEach(function (n) { if (n && aliases.indexOf(n) < 0) aliases.push(n); });
+    var claves = {};
+    aliases.forEach(function (a) { var k = slugify(a); if (k) claves[k] = true; });
+    (eventos || []).forEach(function (ev) {
+      if (!ev || !ev.id) return;
+      (ev.banda || []).forEach(function (slot, idx) {
+        if (!slot) return;
+        var esSuyo = slot.musicianId === musico.id || (!slot.musicianId && claves[slugify(slot.nombre)]);
+        if (!esSuyo) return;
+        var base = EVENTS_PATH + '/' + ev.id + '/banda/' + idx;
+        if (slot.nombre !== nombre) { updates[base + '/nombre'] = nombre; puestos++; }
+        if (slot.musicianId !== musico.id) updates[base + '/musicianId'] = musico.id;
+      });
+    });
+    var mBase = MUSICIANS_PATH + '/' + musico.id;
+    updates[mBase + '/nombre'] = nombre;
+    updates[mBase + '/nombreNormalizado'] = slugify(nombre);
+    updates[mBase + '/aliases'] = aliases;
+    updates[mBase + '/updatedAt'] = Date.now();
+    return { updates: updates, puestos: puestos };
+  }
+
+  /* cb(ok, puestosActualizados) */
+  function renameMusician(musico, nombre, cb) {
+    var root = dbRoot();
+    if (!root || !musico || !musico.id || !musico.organizationId || !nombre) { cb && cb(false, 0); return; }
+    root.child(EVENTS_PATH).orderByChild('organizationId').equalTo(musico.organizationId).once('value').then(function (snap) {
+      var r = cambiosRenombrePersona(musico, nombre, snapshotToArray(snap));
+      root.update(r.updates).then(function () { cb && cb(true, r.puestos); }, function (err) {
+        console.error('Firebase renameMusician rechazado:', err && err.code, err && err.message);
+        cb && cb(false, 0);
+      });
+    }, function () { cb && cb(false, 0); });
+  }
+
   /* Encuentra, dentro de una lista de músicos ya cargada, cuál corresponde a
      un nombre libre (el texto tal cual se tipeó en un slot de banda),
      comparando por la misma normalización que usa la migración. No crea
@@ -3014,6 +3060,7 @@
     newMusician: newMusician, watchMusiciansForOrg: watchMusiciansForOrg, getMusician: getMusician,
     createMusician: createMusician, updateMusician: updateMusician,
     linkMusicianToUser: linkMusicianToUser, unlinkMusician: unlinkMusician, mergeMusicians: mergeMusicians,
+    renameMusician: renameMusician, cambiosRenombrePersona: cambiosRenombrePersona,
     deleteMusician: deleteMusician,
     matchMusicianByNombre: matchMusicianByNombre,
     previewMusicianMigration: previewMusicianMigration, commitMusicianMigration: commitMusicianMigration,

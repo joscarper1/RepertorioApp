@@ -900,7 +900,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                     <button type="button" class="btn-pri" onClick="{{ m.guardarDatos }}">Guardar</button>
                     <button type="button" class="btn-sec" onClick="{{ m.cancelarDatos }}">Cancelar</button>
                   </span>
-                  <span class="campo-ayuda" style="flex:1 1 100%">El nombre anterior se guarda como variante, así los eventos que lo usan siguen reconociendo a esta persona; para corregirlo en esos eventos usa “Sincronizar nombres en eventos”.</span>
+                  <span class="campo-ayuda" style="flex:1 1 100%">El nombre se actualiza también en todos los eventos (pasados y futuros) donde aparece esta persona.</span>
                 </div>
               </sc-if>
               <div class="item-sub">
@@ -2045,9 +2045,9 @@ class Component extends DCLogic {
     }));
   }
 
-  /* Al renombrar, el nombre anterior queda en aliases para que
-     matchMusicianByNombre siga emparejando los eventos que lo tienen escrito
-     (y "Sincronizar nombres en eventos" los proponga para corregir). */
+  /* El nombre se reescribe también en los puestos de todos los eventos de la
+     organización (R.renameMusician): Personas es la fuente y el evento solo
+     guarda una copia. Guardar sin cambios igual sincroniza esas copias. */
   guardarDatosMusico(musico) {
     const R = D();
     const s = this.state;
@@ -2055,15 +2055,18 @@ class Component extends DCLogic {
     if (!d || d.id !== musico.id) return;
     const nombre = (d.nombre || '').replace(/\s+/g, ' ').trim();
     if (!nombre) { this.setState({ mensaje: 'El nombre no puede quedar vacío.' }); return; }
-    if (nombre === musico.nombre) { this.setState({ musicoDatos: null }); return; }
     const clave = R.slugify(nombre);
     const otro = (s.musicos || []).find((m) => m.id !== musico.id && R.slugify(m.nombre) === clave);
     if (otro) { this.setState({ mensaje: 'Ya existe una persona llamada "' + otro.nombre + '". Si son la misma, únelas con "Sincronizar nombres en eventos".' }); return; }
-    const aliases = (musico.aliases || []).slice();
-    [musico.nombre, nombre].forEach((n) => { if (n && aliases.indexOf(n) < 0) aliases.push(n); });
-    R.updateMusician(musico.id, { nombre: nombre, aliases: aliases }, (ok) => this.setState(ok
-      ? { musicoDatos: null, mensaje: '"' + musico.nombre + '" ahora se llama "' + nombre + '".' }
-      : { mensaje: 'No se pudo guardar el nombre: revisa tu sesión o las reglas de Firebase.' }));
+    const m = Object.assign({ organizationId: s.currentOrgId }, musico);
+    R.renameMusician(m, nombre, (ok, puestos) => {
+      if (!ok) { this.setState({ mensaje: 'No se pudo guardar el nombre: revisa tu sesión o las reglas de Firebase.' }); return; }
+      const enEventos = puestos ? (' Se actualizó en ' + puestos + (puestos === 1 ? ' puesto' : ' puestos') + ' de eventos.') : '';
+      this.setState({
+        musicoDatos: null,
+        mensaje: (nombre === musico.nombre ? 'Nombre de "' + nombre + '" sincronizado.' : '"' + musico.nombre + '" ahora se llama "' + nombre + '".') + enEventos
+      });
+    });
   }
 
   confirmarBorrarMusico(musico) {
