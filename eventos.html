@@ -608,7 +608,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             </sc-for>
           </div>
         </sc-if>
-        <p class="campo-ayuda" style="margin:8px 0 0">Veces que cada persona sirve en los eventos del mes (borradores y publicados, sin ensayos).</p>
+        <p class="campo-ayuda" style="margin:8px 0 0">Puestos que cada persona tiene en los eventos del mes (borradores y publicados, sin ensayos); dos puestos en un mismo evento cuentan dos.</p>
       </details>
     </div>
     <section class="p1">
@@ -841,7 +841,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 </sc-for>
               </div>
             </sc-if>
-            <p class="campo-ayuda" style="margin:8px 0 0">Veces que cada persona sirve en otros eventos del mes (borradores y publicados, sin ensayos). Las sugerencias eligen a quien menos ha servido.</p>
+            <p class="campo-ayuda" style="margin:8px 0 0">Puestos que cada persona tiene en otros eventos del mes (borradores y publicados, sin ensayos); dos puestos en un mismo evento cuentan dos. Las sugerencias eligen a quien menos ha servido.</p>
           </details>
           <sc-if value="{{ hayVacantesSugeribles }}" hint-placeholder-val="{{ false }}">
             <button type="button" class="btn-sec" onClick="{{ completarVacios }}" title="Asigna en cada puesto vacío a quien menos ha servido este mes">Completar vacíos con sugerencias</button>

@@ -2856,8 +2856,9 @@
 
   /* {clave: {nombre, total, puestos: {tipo: n}, fechas: [iso]}} de los
      eventos del mes `mes` ('2026-10'), sin contar `excluirId` (el evento que
-     se está editando). `total` cuenta eventos, no puestos: servir en dos
-     puestos del mismo evento es una sola participación. */
+     se está editando). `total` cuenta puestos, igual que el programa del
+     mes: servir en dos puestos del mismo evento son dos participaciones
+     (`fechas` sí lleva cada evento una sola vez). */
   function cargaDelMes(eventos, mes, excluirId) {
     var out = {};
     (eventos || []).forEach(function (ev) {
@@ -2868,7 +2869,8 @@
         if (!k) return;
         var c = out[k] || (out[k] = { nombre: b.nombre.trim(), total: 0, puestos: {}, fechas: [] });
         c.puestos[b.tipo] = (c.puestos[b.tipo] || 0) + 1;
-        if (!vistos[k]) { vistos[k] = true; c.total++; c.fechas.push(ev.fecha); }
+        c.total++;
+        if (!vistos[k]) { vistos[k] = true; c.fechas.push(ev.fecha); }
       });
     });
     return out;

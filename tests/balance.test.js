@@ -28,16 +28,17 @@ const eventos = [
     banda: [{ tipo: 'Protocolo', nombre: 'Beto' }] }
 ];
 
-test('carga del mes: cuenta eventos (no puestos), solo borradores y publicados del mes', () => {
+test('carga del mes: cuenta puestos, solo borradores y publicados del mes', () => {
   const c = R.cargaDelMes(eventos, '2026-10');
-  assert.equal(c.ana.total, 2, 'dos puestos en e1 cuentan como una participación');
+  assert.equal(c.ana.total, 3, 'dos puestos en e1 cuentan como dos participaciones');
+  assert.deepEqual(Array.from(c.ana.fechas), ['2026-10-04', '2026-10-08'], 'cada evento una sola vez en fechas');
   assert.equal(c.ana.puestos.Protocolo, 2);
   assert.equal(c.ana.puestos.Ofrenda, 1);
   assert.equal(c.beto.total, 1, 'noviembre no cuenta');
   assert.equal(c.carla, undefined, 'un evento cancelado no cuenta');
   assert.equal(c.dani.total, 1);
   /* Se excluye el evento que se está editando */
-  assert.equal(R.cargaDelMes(eventos, '2026-10', 'e2').ana.total, 1);
+  assert.equal(R.cargaDelMes(eventos, '2026-10', 'e2').ana.total, 2);
   assert.equal(R.textoCarga(1), '1 vez este mes');
   assert.equal(R.textoCarga(3), '3 veces este mes');
 });
