@@ -312,11 +312,13 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
    el conmutador Semana/Mes y los avatares, solo en escritorio). */
 @media (min-width:861px){
   .solo-movil{display:none !important}
-  /* Evento sin repertorio (p. ej. servicio ministerial): una sola columna;
-     el tema (si hay) arriba y los servidores debajo a todo el ancho, en
+  /* Evento sin repertorio (servicio ministerial o repertorio aún pendiente):
+     una sola columna; el tema y el aviso de repertorio pendiente (si hay)
+     arriba y los servidores debajo a todo el ancho, en
      filas puesto | nombres, sin dejar un hueco vacío a un lado. */
   .det-grid.ancho{grid-template-columns:minmax(0,1fr)}
   .det-grid.ancho.sin-main .det-main{display:none}
+  .det-grid.ancho .det-main{display:flex;flex-direction:column;gap:24px}
   .det-grid.ancho .det-tema{margin-bottom:0}
   .det-grid.ancho .caja-banda{padding:18px 22px 10px}
   .det-grid.ancho .banda-fila{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);font-size:14px;padding:11px 0}
@@ -1585,8 +1587,8 @@ class Component extends DCLogic {
       banda: banda,
       tieneBanda: banda.length > 0,
       /* Sin repertorio, una sola columna: el lateral se muestra a lo ancho. */
-      gridClase: 'det-grid' + (!bloques.length && !this.perfil().usaCanciones(ev.servicio)
-        ? ' ancho' + (txt(ev.tema) || txt(ev.cita) ? '' : ' sin-main') : ''),
+      gridClase: 'det-grid' + (!bloques.length
+        ? ' ancho' + (txt(ev.tema) || txt(ev.cita) || this.perfil().usaCanciones(ev.servicio) ? '' : ' sin-main') : ''),
       equipoTitulo: this.perfil().textos.equipo
     };
   }
