@@ -53,7 +53,8 @@
     /* Sin organización, eventos.html manda a admin.html, que elige la
        organización activa y vuelve aquí. */
     if (id === 'eventos') return org ? ('eventos.html?org=' + encodeURIComponent(org.id)) : 'admin.html';
-    return 'admin.html?tab=' + encodeURIComponent(id);
+    /* ?org= mantiene la organización activa al pasar de una página a otra. */
+    return 'admin.html?tab=' + encodeURIComponent(id) + (org ? '&org=' + encodeURIComponent(org.id) : '');
   }
 
   function hrefAccion(id, org) {

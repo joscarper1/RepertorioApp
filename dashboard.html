@@ -30,7 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="menu-config.js?v=20260930a"></script>
+<script src="menu-config.js?v=20261001a"></script>
 <script src="repertorio-data.js?v=20260930g"></script>
 <script src="avisos.js?v=20261001a"></script>
 <style>
@@ -274,7 +274,28 @@ a.mas-fila:hover{background:none;color:var(--ink)}
   <header class="top">
     <div class="top-org">
       <span class="top-cuadro"></span>
-      <span class="top-nombre">{{ orgNombreTop }}</span>
+      <sc-if value="{{ noHayOtrasOrgs }}" hint-placeholder-val="{{ true }}">
+        <span class="top-nombre">{{ orgNombreTop }}</span>
+      </sc-if>
+      <sc-if value="{{ hayOtrasOrgs }}" hint-placeholder-val="{{ false }}">
+        <button type="button" class="top-switch" onClick="{{ toggleOrgSwitcher }}" title="Organización activa">
+          <span class="top-nombre">{{ orgNombreTop }}</span>
+          <span style="font-size:11px">▾</span>
+        </button>
+        <sc-if value="{{ orgSwitcherAbierto }}" hint-placeholder-val="{{ false }}">
+          <div class="dropdown">
+            <input value="{{ orgSwitcherBusqueda }}" onChange="{{ onOrgSwitcherBusqueda }}" placeholder="Buscar organización…" autoComplete="off">
+            <div class="dropdown-lista">
+              <sc-for list="{{ misOrgsLista }}" as="o" hint-placeholder-count="2">
+                <button type="button" class="{{ o.clase }}" onClick="{{ o.onClick }}">{{ o.nombre }}</button>
+              </sc-for>
+              <sc-if value="{{ orgSwitcherVacio }}" hint-placeholder-val="{{ false }}">
+                <p style="font-size:13px;color:var(--muted2);padding:10px;margin:0">Sin resultados.</p>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
     </div>
     <div class="top-der">
       <nav class="top-nav nav-ancho">
@@ -615,7 +636,8 @@ class Component extends DCLogic {
     miMusicianId: null, effectiveMusicianId: null, viewOnlyActivo: false,
     musico: null, eventos: [], unavailableDates: [],
     nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: '', masAbierto: false,
-    declinar: null, declinarMotivo: '', toast: '', publicando: false
+    declinar: null, declinarMotivo: '', toast: '', publicando: false,
+    misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: ''
   };
 
   componentDidMount() {
@@ -623,12 +645,17 @@ class Component extends DCLogic {
     this._unauth = R.onAuthChange((user) => {
       if (this._unevents) { this._unevents(); this._unevents = null; }
       if (this._ununavail) { this._ununavail(); this._ununavail = null; }
-      if (!user) { this.setState({ estadoAuth: 'anon' }); return; }
+      if (this._unorgs) { this._unorgs(); this._unorgs = null; }
+      if (!user) { this.setState({ estadoAuth: 'anon', misOrgs: [] }); return; }
       this.setState({ estadoAuth: 'cargando', usuarioNombre: user.displayName || user.email });
       R.ensureUserRegistered(user, (doc) => {
         if (!doc) { this.setState({ estadoAuth: 'anon' }); return; }
         const orgIds = R.userOrgIds(doc);
         if (!orgIds.length) { this.setState({ estadoAuth: 'sinOrg', userDoc: doc }); return; }
+        /* Selector de organización del encabezado (con más de una). */
+        this._unorgs = R.watchAllOrganizations((todas) => {
+          this.setState({ misOrgs: todas.filter((o) => orgIds.indexOf(o.id) >= 0) });
+        });
 
         const params = new URLSearchParams(location.search);
         const musicianIdParam = params.get('musicianId');
@@ -644,6 +671,10 @@ class Component extends DCLogic {
             viewOnlyActivo: viewOnlyActivo && !!viewOnlyMusico,
             musico: viewOnlyActivo && viewOnlyMusico ? viewOnlyMusico : null
           });
+          /* La organización abierta queda como la activa en todas las
+             páginas (ver R.guardarOrgPreferida); viendo el dashboard de otra
+             persona no, porque esa no la eligió el usuario. */
+          if (!viewOnlyActivo) R.guardarOrgPreferida(orgId);
           R.getOrganization(orgId, (org) => this.setState({ org: org }));
           this._unevents = R.watchEventsForOrg(orgId, (evs) => this.setState({ eventos: evs }));
           if (effectiveId) {
@@ -674,6 +705,18 @@ class Component extends DCLogic {
     if (this._unauth) this._unauth();
     if (this._unevents) this._unevents();
     if (this._ununavail) this._ununavail();
+    if (this._unorgs) this._unorgs();
+  }
+
+  toggleOrgSwitcher() {
+    this.setState((s) => ({ orgSwitcherAbierto: !s.orgSwitcherAbierto, orgSwitcherBusqueda: '' }));
+  }
+
+  irAOrg(org) {
+    this.setState({ orgSwitcherAbierto: false, orgSwitcherBusqueda: '' });
+    if (org.id === this.state.currentOrgId && !this.state.viewOnlyActivo) return;
+    D().guardarOrgPreferida(org.id);
+    window.location.href = 'dashboard.html?org=' + encodeURIComponent(org.slug);
   }
 
   /* "Sí" responde de inmediato; "No" solo abre el modal del motivo — el
@@ -766,6 +809,8 @@ class Component extends DCLogic {
   renderVals() {
     const R = D();
     const s = this.state;
+    const qOrg = (s.orgSwitcherBusqueda || '').trim().toLowerCase();
+    const misOrgsFiltradas = qOrg ? (s.misOrgs || []).filter((o) => o.name.toLowerCase().indexOf(qOrg) >= 0) : (s.misOrgs || []);
 
     const puedeResponder = s.effectiveMusicianId && s.effectiveMusicianId === s.miMusicianId;
     const botonesDeshabilitados = !puedeResponder;
@@ -868,6 +913,18 @@ class Component extends DCLogic {
       usuarioNombre: s.usuarioNombre || '',
       usuarioIniciales: ((s.usuarioNombre || '').trim().split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('') || '?').toUpperCase(),
       orgNombreTop: s.org ? s.org.name : 'Dashboard',
+      hayOtrasOrgs: (s.misOrgs || []).length > 1,
+      noHayOtrasOrgs: (s.misOrgs || []).length <= 1,
+      orgSwitcherAbierto: s.orgSwitcherAbierto,
+      orgSwitcherBusqueda: s.orgSwitcherBusqueda,
+      onOrgSwitcherBusqueda: (e) => this.setState({ orgSwitcherBusqueda: e.target.value }),
+      toggleOrgSwitcher: () => this.toggleOrgSwitcher(),
+      misOrgsLista: misOrgsFiltradas.map((o) => ({
+        nombre: o.name,
+        clase: 'dropdown-item' + (o.id === s.currentOrgId ? ' on' : ''),
+        onClick: () => this.irAOrg(o)
+      })),
+      orgSwitcherVacio: misOrgsFiltradas.length === 0,
       tabsMovil: [{
         label: 'Inicio', href: '#', clase: 'tab on',
         icoEventos: false, icoUsuarios: false, icoRepertorio: false, icoInicio: true, icoCalendario: false,

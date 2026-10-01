@@ -30,7 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="menu-config.js?v=20260930a"></script>
+<script src="menu-config.js?v=20261001a"></script>
 <!-- ?v= obliga al navegador a bajar la versión que corresponde a esta
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
@@ -1394,7 +1394,13 @@ class Component extends DCLogic {
           return;
         }
         const orgIds = R.userOrgIds(doc);
-        this.setState({ estadoAuth: 'admin', userDoc: doc, currentOrgId: orgIds[0] || null, activeTab: this.tabPermitida(this.state.activeTab, doc) });
+        /* La organización activa se conserva entre páginas: la de ?org= (los
+           enlaces del menú la llevan), o la última elegida en este navegador
+           (R.orgPreferida). Nunca se cambia sola a la primera de la lista. */
+        const orgParam = new URLSearchParams(location.search).get('org');
+        const orgInicial = orgParam && orgIds.indexOf(orgParam) >= 0 ? orgParam : R.orgInicialDeUsuario(doc);
+        this.setState({ estadoAuth: 'admin', userDoc: doc, currentOrgId: orgInicial || null, activeTab: this.tabPermitida(this.state.activeTab, doc) });
+        this.recordarOrg(orgInicial);
         if (R.puede(doc, 'avisos.gestionar')) this.leerConfigAvisos();
         /* Sin filtrar aquí: el filtro por "mis organizaciones" se calcula en
            renderVals a partir de s.userDoc, que sí se actualiza cuando se
@@ -1489,7 +1495,22 @@ class Component extends DCLogic {
     if (tab === 'usuarios') { this.montarMusicos(this.state.currentOrgId); this.montarRepertorio(this.state.currentOrgId); }
   }
 
+  /* Deja la organización activa como preferida (la usan las demás páginas)
+     y en la URL (?org=), para que al recargar o navegar siga la misma. */
+  recordarOrg(id) {
+    if (!id) return;
+    D().guardarOrgPreferida(id);
+    try {
+      const params = new URLSearchParams(location.search);
+      if (params.get('org') !== id) {
+        params.set('org', id);
+        history.replaceState(history.state, '', location.pathname + '?' + params.toString() + location.hash);
+      }
+    } catch (e) { /* sin history (vista previa): se ignora */ }
+  }
+
   seleccionarOrg(id) {
+    this.recordarOrg(id);
     this.setState({ currentOrgId: id, usuarioPendiente: {}, editandoOrgId: null, orgSwitcherAbierto: false, orgSwitcherBusqueda: '', repertorioPagina: 1, editandoSongKey: null });
     this.cerrarSidebarSiMovil();
     if (this.state.activeTab === 'repertorio') this.montarRepertorio(id);
@@ -1680,7 +1701,9 @@ class Component extends DCLogic {
       this.setState((s) => ({
         nuevoOrgNombre: '', nuevoOrgTipo: 'repertorio',
         mensaje: 'Organización "' + org.name + '" creada (' + R.perfilOrg(org).label + ').',
-        currentOrgId: org.id,
+        /* Crear no cambia la organización activa (solo la elige si no había
+           ninguna): cambiarla es siempre una acción explícita del selector. */
+        currentOrgId: s.currentOrgId || org.id,
         userDoc: Object.assign({}, s.userDoc, { organizationIds: nuevosIds.reduce((m, id) => (m[id] = true, m), {}) })
       }));
     });
