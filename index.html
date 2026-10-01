@@ -312,6 +312,14 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
    el conmutador Semana/Mes y los avatares, solo en escritorio). */
 @media (min-width:861px){
   .solo-movil{display:none !important}
+  /* Evento sin tema ni repertorio (p. ej. servicio ministerial): la columna
+     lateral pasa a ocupar todo el ancho y los servidores se leen en filas
+     puesto | nombres, sin dejar el hueco vacío a la izquierda. */
+  .det-grid.ancho{grid-template-columns:minmax(0,1fr)}
+  .det-grid.ancho .det-main{display:none}
+  .det-grid.ancho .caja-banda{padding:18px 22px 10px}
+  .det-grid.ancho .banda-fila{display:grid;grid-template-columns:minmax(140px,220px) minmax(0,1fr);font-size:14px;padding:11px 0}
+  .det-grid.ancho .banda-nombres{text-align:left}
 }
 @media (max-width:860px){
   .solo-desk{display:none !important}
@@ -757,7 +765,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
               </div>
               <a class="btn-cal" href="{{ d.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar"><span class="mas">+</span>Añadir a calendario</a>
             </div>
-            <div class="det-grid">
+            <div class="{{ d.gridClase }}">
               <div class="det-main">
                 <sc-if value="{{ d.tieneTemaOCita }}" hint-placeholder-val="{{ true }}">
                 <div class="det-tema">
@@ -1575,6 +1583,8 @@ class Component extends DCLogic {
       repertorioPendiente: !bloques.length && this.perfil().usaCanciones(ev.servicio),
       banda: banda,
       tieneBanda: banda.length > 0,
+      /* Sin nada en la columna principal, el lateral se muestra a lo ancho. */
+      gridClase: 'det-grid' + (!bloques.length && !this.perfil().usaCanciones(ev.servicio) && !txt(ev.tema) && !txt(ev.cita) ? ' ancho' : ''),
       equipoTitulo: this.perfil().textos.equipo
     };
   }
