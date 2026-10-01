@@ -885,11 +885,24 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 </div>
                 <div class="item-acc" style="width:auto">
                   <button type="button" class="btn-sec" onClick="{{ m.verDashboard }}">Ver dashboard</button>
+                  <button type="button" class="ico" onClick="{{ m.abrirDatos }}" aria-label="Editar persona" title="Editar nombre">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                  </button>
                   <button type="button" class="ico peligro" onClick="{{ m.eliminar }}" aria-label="Eliminar persona" title="Eliminar persona">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path></svg>
                   </button>
                 </div>
               </div>
+              <sc-if value="{{ m.editandoDatos }}" hint-placeholder-val="{{ false }}">
+                <div class="item-sub abierto" style="padding:10px 0">
+                  <input class="inp" value="{{ m.datosNombre }}" onChange="{{ m.onDatosNombre }}" placeholder="Nombre completo" aria-label="Nombre" autoComplete="off" style="max-width:320px;flex:1;min-width:180px">
+                  <span style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" class="btn-pri" onClick="{{ m.guardarDatos }}">Guardar</button>
+                    <button type="button" class="btn-sec" onClick="{{ m.cancelarDatos }}">Cancelar</button>
+                  </span>
+                  <span class="campo-ayuda" style="flex:1 1 100%">El nombre anterior se guarda como variante, así los eventos que lo usan siguen reconociendo a esta persona; para corregirlo en esos eventos usa “Sincronizar nombres en eventos”.</span>
+                </div>
+              </sc-if>
               <div class="item-sub">
                 <sc-for list="{{ m.roles }}" as="r" hint-placeholder-count="2">
                   <span class="rol-tag">{{ r.tipo }}<button type="button" onClick="{{ r.quitar }}" aria-label="Quitar rol" title="Quitar rol">×</button></span>
@@ -1333,7 +1346,7 @@ class Component extends DCLogic {
        GitHub y su vencimiento), wf = estado de los dos workflows. */
     avisosCfg: null, avisosWf: null, avisosWfCargando: false, avisosWfError: '', avisosHistorial: [],
     avisosTokenInput: '', avisosVenceInput: '', avisosGuardando: false,
-    musicos: [], nuevoMusicoNombre: '', nuevoMusicoAbierto: false, musicoRolAgregar: {},
+    musicos: [], nuevoMusicoNombre: '', nuevoMusicoAbierto: false, musicoRolAgregar: {}, musicoDatos: null,
     usuariosBusquedaNombre: '', usuariosPagina: 1,
     musicosBusquedaNombre: '', musicosPagina: 1,
     migracionAbierta: false, migracionYaCorrio: null, migracionCargando: false,
@@ -2024,6 +2037,35 @@ class Component extends DCLogic {
     D().updateMusician(musico.id, { rolesBanda: actuales.filter((t) => t !== tipo) }, () => {});
   }
 
+  /* --- Editar datos de una persona (lápiz) --- */
+
+  abrirDatosMusico(musico) {
+    this.setState((s) => ({
+      musicoDatos: s.musicoDatos && s.musicoDatos.id === musico.id ? null : { id: musico.id, nombre: musico.nombre || '' }
+    }));
+  }
+
+  /* Al renombrar, el nombre anterior queda en aliases para que
+     matchMusicianByNombre siga emparejando los eventos que lo tienen escrito
+     (y "Sincronizar nombres en eventos" los proponga para corregir). */
+  guardarDatosMusico(musico) {
+    const R = D();
+    const s = this.state;
+    const d = s.musicoDatos;
+    if (!d || d.id !== musico.id) return;
+    const nombre = (d.nombre || '').replace(/\s+/g, ' ').trim();
+    if (!nombre) { this.setState({ mensaje: 'El nombre no puede quedar vacío.' }); return; }
+    if (nombre === musico.nombre) { this.setState({ musicoDatos: null }); return; }
+    const clave = R.slugify(nombre);
+    const otro = (s.musicos || []).find((m) => m.id !== musico.id && R.slugify(m.nombre) === clave);
+    if (otro) { this.setState({ mensaje: 'Ya existe una persona llamada "' + otro.nombre + '". Si son la misma, únelas con "Sincronizar nombres en eventos".' }); return; }
+    const aliases = (musico.aliases || []).slice();
+    [musico.nombre, nombre].forEach((n) => { if (n && aliases.indexOf(n) < 0) aliases.push(n); });
+    R.updateMusician(musico.id, { nombre: nombre, aliases: aliases }, (ok) => this.setState(ok
+      ? { musicoDatos: null, mensaje: '"' + musico.nombre + '" ahora se llama "' + nombre + '".' }
+      : { mensaje: 'No se pudo guardar el nombre: revisa tu sesión o las reglas de Firebase.' }));
+  }
+
   confirmarBorrarMusico(musico) {
     const ok = confirm('¿Eliminar a "' + musico.nombre + '" del módulo de personas? Si ya tiene cuenta vinculada, esa cuenta no se borra, solo se pierde su vínculo con esta persona.');
     if (!ok) return;
@@ -2640,6 +2682,12 @@ class Component extends DCLogic {
           if (tipo) this.agregarRolMusico(m, tipo);
         },
         verDashboard: () => this.verDashboardMusico(m, orgActual ? orgActual.slug : null),
+        abrirDatos: () => this.abrirDatosMusico(m),
+        editandoDatos: !!(s.musicoDatos && s.musicoDatos.id === m.id),
+        datosNombre: s.musicoDatos && s.musicoDatos.id === m.id ? s.musicoDatos.nombre : '',
+        onDatosNombre: (e) => { const v = e.target.value; this.setState((st) => ({ musicoDatos: Object.assign({}, st.musicoDatos, { nombre: v }) })); },
+        guardarDatos: () => this.guardarDatosMusico(m),
+        cancelarDatos: () => this.setState({ musicoDatos: null }),
         eliminar: () => this.confirmarBorrarMusico(m)
       };
     });
