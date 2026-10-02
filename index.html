@@ -22,7 +22,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20261002a"></script>
+<script src="repertorio-data.js?v=20261002b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -235,7 +235,7 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .bloque-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:10px}
 .bloque-t .linea{flex:1;height:1px;background:rgba(0,0,0,.12)}
 .bloque-lista{display:flex;flex-direction:column;border:1px solid rgba(0,0,0,.09);border-radius:10px;overflow:hidden}
-.can{display:grid;grid-template-columns:22px minmax(0,1fr) auto 32px;gap:12px;align-items:center;padding:12px 14px;background:#fff;border-top:1px solid rgba(0,0,0,.07);transition:background .15s}
+.can{display:grid;grid-template-columns:22px minmax(0,1fr) auto 32px 34px;gap:12px;align-items:center;padding:12px 14px;background:#fff;border-top:1px solid rgba(0,0,0,.07);transition:background .15s}
 .can:first-child{border-top:0}
 .can.sonando{background:#eef6f1}
 .can-num{font-size:12px;font-weight:700;color:var(--muted3);font-variant-numeric:tabular-nums}
@@ -252,6 +252,13 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .play{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--ac);background:transparent;color:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .play.on{background:var(--ac);color:#fff}
 .play.oculto{visibility:hidden;pointer-events:none}
+/* Me gusta: corazón vacío sin votos, rojo con votos; el número va debajo. */
+.like{display:flex;flex-direction:column;align-items:center;gap:1px;width:34px;padding:2px 0;border:0;background:transparent;color:var(--muted3);cursor:pointer;font:inherit;line-height:1}
+.like svg{display:block;transition:transform .12s}
+.like:hover svg{transform:scale(1.12)}
+.like.con-votos{color:#e0245e}
+.like-n{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted)}
+.like.mio .like-n{color:#e0245e}
 /* Línea de tiempo de la canción que suena: solo aparece en esa fila. */
 .can-prog{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:-2px}
 .can-prog-t{font-size:11.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;min-width:32px}
@@ -271,7 +278,22 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .callout p{margin:8px 0 0;font-size:14px;line-height:1.55;text-wrap:pretty;white-space:pre-line}
 .callout-aviso{border:1.5px solid var(--gold)}
 /* Banner "Importante" de la semana elegida: junta los avisos de sus eventos. */
-.avisos-sem{margin-top:12px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:12px;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.avisos-sem{margin-top:12px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:12px;display:flex;flex-direction:column}
+/* Colapsado (al cargar y al cambiar de semana): solo la fila del título, con
+   un pulso para llamar la atención; tocarla despliega los avisos. */
+.avisos-sem-cab{display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;background:none;border:0;cursor:pointer;font:inherit;color:var(--gold-dk);text-align:left}
+.avisos-sem-cab .avisos-sem-t{flex:1;min-width:0}
+.avisos-sem-n{font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--gold);color:#fff;white-space:nowrap}
+.avisos-sem-flecha{flex:none;transition:transform .2s}
+.avisos-sem.abierto .avisos-sem-flecha{transform:rotate(180deg)}
+.avisos-sem-punto{flex:none;width:9px;height:9px;border-radius:50%;background:var(--gold-dk)}
+.avisos-sem-lista{display:flex;flex-direction:column;gap:8px;padding:0 16px 12px;animation:avisos-abrir .2s ease-out}
+.avisos-sem.cerrado{animation:avisos-pulso 2s ease-out infinite}
+.avisos-sem.cerrado .avisos-sem-punto{animation:avisos-punto 2s ease-out infinite}
+@keyframes avisos-pulso{0%{box-shadow:0 0 0 0 rgba(201,154,30,.45)}70%{box-shadow:0 0 0 10px rgba(201,154,30,0)}100%{box-shadow:0 0 0 0 rgba(201,154,30,0)}}
+@keyframes avisos-punto{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.55}}
+@keyframes avisos-abrir{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.avisos-sem.cerrado,.avisos-sem.cerrado .avisos-sem-punto,.avisos-sem-lista{animation:none}}
 .avisos-sem-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dk)}
 .aviso-sem{display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;padding:0;cursor:pointer;color:var(--gold-dk);font:inherit}
 .aviso-sem-meta{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
@@ -425,7 +447,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .bloque{margin-bottom:16px}
   .bloque-t{font-size:10px;gap:8px}
   .bloque-lista{background:#fff;border:0;border-radius:12px}
-  .can{grid-template-columns:minmax(0,1fr) auto 40px;gap:10px;padding:11px 12px 11px 14px}
+  .can{grid-template-columns:minmax(0,1fr) auto 40px 34px;gap:10px;padding:11px 12px 11px 14px}
   .can-t{font-size:14.5px}
   .can-meta{font-size:12px;margin-top:2px;gap:4px}
   .medley-chip{font-size:11px;padding:3px 7px}
@@ -604,14 +626,23 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
     </div>
 
     <sc-if value="{{ hayAvisosSemana }}" hint-placeholder-val="{{ false }}">
-      <div class="avisos-sem" role="note">
-        <span class="avisos-sem-t">{{ avisosSemanaTitulo }}</span>
-        <sc-for list="{{ avisosSemana }}" as="av" hint-placeholder-count="1">
-          <button type="button" class="aviso-sem" onClick="{{ av.onClick }}">
-            <span class="aviso-sem-meta">{{ av.meta }}</span>
-            <span class="aviso-sem-txt">{{ av.texto }}</span>
-          </button>
-        </sc-for>
+      <div class="{{ avisosSemanaClase }}" role="note">
+        <button type="button" class="avisos-sem-cab" onClick="{{ toggleAvisosSemana }}" aria-expanded="{{ avisosSemanaAbierto }}" title="{{ avisosSemanaAyuda }}">
+          <span class="avisos-sem-punto" aria-hidden="true"></span>
+          <span class="avisos-sem-t">{{ avisosSemanaTitulo }}</span>
+          <span class="avisos-sem-n">{{ avisosSemanaConteo }}</span>
+          <svg class="avisos-sem-flecha" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </button>
+        <sc-if value="{{ avisosSemanaAbierto }}" hint-placeholder-val="{{ false }}">
+          <div class="avisos-sem-lista">
+            <sc-for list="{{ avisosSemana }}" as="av" hint-placeholder-count="1">
+              <button type="button" class="aviso-sem" onClick="{{ av.onClick }}">
+                <span class="aviso-sem-meta">{{ av.meta }}</span>
+                <span class="aviso-sem-txt">{{ av.texto }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
       </div>
     </sc-if>
 
@@ -817,6 +848,10 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
                                 <sc-if value="{{ s.muestraPlay }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><polygon points="2,1 9,5 2,9" fill="currentColor"></polygon></svg></sc-if>
                                 <sc-if value="{{ s.muestraPausa }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><rect x="1.5" y="1" width="2.5" height="8" fill="currentColor"></rect><rect x="6" y="1" width="2.5" height="8" fill="currentColor"></rect></svg></sc-if>
                               </button>
+                              <button type="button" class="{{ s.likeClase }}" onClick="{{ s.onLike }}" onDoubleClick="{{ s.likeDetener }}" aria-pressed="{{ s.likeMio }}" aria-label="{{ s.likeLabel }}" title="{{ s.likeLabel }}">
+                                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-9.3-9.2C1.4 8 3.5 4.5 7 4.5c2 0 3.6 1.1 5 3 1.4-1.9 3-3 5-3 3.5 0 5.6 3.5 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2z" fill="{{ s.likeRelleno }}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg>
+                                <span class="like-n">{{ s.likeN }}</span>
+                              </button>
                               <sc-if value="{{ s.muestraProg }}" hint-placeholder-val="{{ false }}">
                                 <div class="can-prog" onDoubleClick="{{ s.progDetener }}">
                                   <span class="can-prog-t">{{ s.progActual }}</span>
@@ -840,7 +875,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
               </div>
               <div class="det-aside">
                 <sc-if value="{{ d.tieneAviso }}" hint-placeholder-val="{{ false }}">
-                  <div class="callout callout-aviso o-2"><div class="callout-t">Importante</div><p>{{ d.aviso }}</p></div>
+                  <div class="{{ d.avisoClase }}"><div class="callout-t">Importante</div><p>{{ d.aviso }}</p></div>
                 </sc-if>
                 <sc-if value="{{ d.tieneNotas }}" hint-placeholder-val="{{ false }}">
                   <div class="callout o-2"><div class="callout-t">Indicaciones para el ensayo</div><p>{{ d.notas }}</p></div>
@@ -1012,7 +1047,12 @@ class Component extends DCLogic {
     participacionesAbierto: false, participacionesBusqueda: '', personaSeleccionada: null,
     /* Catálogo de la organización (para heredar el cifrado de una canción,
        ver R.cifradoIdDeCancion) y modal de cifrado (null = cerrado). */
-    songOverrides: {}, cifradoVer: null
+    songOverrides: {}, cifradoVer: null,
+    /* Me gusta: votos de la organización ({songKey: {uid: true}}), la cuenta
+       con sesión (uid) y el voto que quedó esperando el inicio de sesión. */
+    songLikes: {}, uid: null, likePendiente: null,
+    /* Banner "Importante": mes|semana en que está desplegado (null = colapsado). */
+    avisosAbiertosEn: null
   };
 
   componentDidMount() {
@@ -1036,7 +1076,14 @@ class Component extends DCLogic {
          usuario tiene más de una organización asignada, además habilita el
          selector para saltar entre sus calendarios. */
       this._unauth = R.onAuthChange((user) => {
-        this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null });
+        this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null, uid: user ? user.uid : null });
+        /* Tocó el corazón sin sesión: al volver del inicio de sesión se
+           registra ese voto (solo si aún no lo tenía). */
+        const pendiente = this.state.likePendiente;
+        if (user && pendiente) {
+          this.setState({ likePendiente: null });
+          if (!((this.state.songLikes[pendiente] || {})[user.uid])) this.toggleLike(pendiente);
+        }
         this._detenerSeguimientoMisOrgs();
         if (!user) { this.setState({ misOrgs: [], misLinks: {} }); return; }
         this._unwatchUser = R.watchUser(user.uid, (doc) => {
@@ -1056,6 +1103,7 @@ class Component extends DCLogic {
         R.guardarOrgPreferida(org.id);
         this.setState({ modo: 'calendario', org: org });
         this._unSongOverrides = R.watchSongCatalog(org.id, (map) => this.setState({ songOverrides: map }));
+        this._unSongLikes = R.watchSongLikes(org.id, (map) => this.setState({ songLikes: map }));
         this._unwatch = R.watchEventsForOrg(org.id, (evs) => {
           /* Se muestran eventos Publicado, Borrador (con su etiqueta) y
              Cancelado; Archivado es de uso exclusivo del panel de administración. */
@@ -1132,6 +1180,7 @@ class Component extends DCLogic {
 
   componentWillUnmount() {
     if (this._unSongOverrides) this._unSongOverrides();
+    if (this._unSongLikes) this._unSongLikes();
     if (this._escCifrado) document.removeEventListener('keydown', this._escCifrado);
     if (this._onPopState) window.removeEventListener('popstate', this._onPopState);
     if (this._unwatch) this._unwatch();
@@ -1162,6 +1211,25 @@ class Component extends DCLogic {
       console.error('Fallo el inicio de sesión con Google:', e);
       this.setState({ errorLogin: 'No se pudo iniciar sesión (' + (e && e.code ? e.code : 'error desconocido') + ').' });
     });
+  }
+
+  /* Corazón de una canción: sin sesión abre el inicio de sesión con Google
+     y el voto se aplica al volver (ver onAuthChange); con sesión suma o
+     quita el voto de la cuenta (uno por canción). */
+  toggleLike(key) {
+    const R = window.RepertorioData;
+    const s = this.state;
+    if (!s.org || !key) return;
+    if (!s.uid) {
+      this.setState({ likePendiente: key, errorLogin: '' });
+      R.signInWithGoogle().catch((e) => {
+        console.error('Fallo el inicio de sesión con Google:', e);
+        this.setState({ likePendiente: null });
+      });
+      return;
+    }
+    const mio = !!((s.songLikes[key] || {})[s.uid]);
+    R.setSongLike(s.org.id, key, s.uid, !mio);
   }
 
   /* Valores de la línea de tiempo para una fila (vacía si no es la que suena). */
@@ -1535,6 +1603,10 @@ class Component extends DCLogic {
         const dirige = (c.d || '').trim();
         const cid = R.cifradoIdDeCancion(c, this._catalogo);
         const titulo = lineas[0] || c.t.trim();
+        const likeKey = R.songKey(c.t.trim(), artista, (c.u || '').trim());
+        const votos = this.state.songLikes[likeKey] || {};
+        const likeN = Object.keys(votos).length;
+        const likeMio = !!(this.state.uid && votos[this.state.uid]);
         return {
           num: String(num).padStart(2, '0'),
           t: titulo, a: artista, by: dirige, byI: this.iniciales(dirige), byStyle: 'background:' + this.colorNombre(dirige),
@@ -1552,7 +1624,13 @@ class Component extends DCLogic {
           ...this.progresoFila(activa, key, titulo),
           tieneCifrado: !!cid, sinCifrado: !cid,
           cifradoLabel: 'Ver cifrado de ' + titulo + (c.k ? ' en ' + c.k : ''),
-          onCifrado: () => this.abrirCifrado(cid, c)
+          onCifrado: () => this.abrirCifrado(cid, c),
+          likeN: likeN, likeMio: likeMio,
+          likeClase: 'like' + (likeN ? ' con-votos' : '') + (likeMio ? ' mio' : ''),
+          likeRelleno: likeN ? 'currentColor' : 'none',
+          likeLabel: !this.state.uid ? 'Inicia sesión para votar por esta canción' : likeMio ? 'Quitar mi voto' : 'Me gusta esta canción',
+          onLike: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.toggleLike(likeKey); },
+          likeDetener: (e) => { if (e && e.stopPropagation) e.stopPropagation(); }
         };
       })
     })).filter((bl) => bl.canciones.length));
@@ -1578,6 +1656,10 @@ class Component extends DCLogic {
       tema: txt(ev.tema), tieneTema: !!txt(ev.tema), tieneTemaOCita: !!(txt(ev.tema) || txt(ev.cita)),
       cita: txt(ev.cita), tieneCita: !!txt(ev.cita),
       aviso: txt(ev.avisoImportante), tieneAviso: !!txt(ev.avisoImportante),
+      /* Si el aviso ya sale en el banner "Importante" de la semana, en
+         escritorio no se repite en el detalle; en el teléfono el detalle es
+         una pantalla aparte (sin el banner), así que ahí se conserva. */
+      avisoClase: 'callout callout-aviso o-2' + (ctx.avisosEnBanner && ctx.avisosEnBanner[ev.id] ? ' solo-movil' : ''),
       notas: txt(ev.notas), tieneNotas: !!txt(ev.notas),
       detalles: txt(ev.detalles), tieneDetalles: !!txt(ev.detalles),
       personas: txt(ev.personas), tienePersonas: !!txt(ev.personas),
@@ -1762,8 +1844,15 @@ class Component extends DCLogic {
       .map((ev) => ({
         meta: R.diaNombre(ev.fecha) + ' ' + R.parse(ev.fecha).getDate() + ' · ' + (ev.servicio || 'Evento'),
         texto: ev.avisoImportante.trim(),
-        onClick: () => this.seleccionarEvento(ev, { semanaSel: semana, diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all' })
+        onClick: () => this.seleccionarEvento(ev, { semanaSel: semana, diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all' }),
+        id: ev.id
       }));
+    /* Abierto solo para la semana en que se desplegó: al cargar o al pasar a
+       otra semana vuelve a aparecer colapsado (con el pulso). */
+    const avisosSemanaId = s.mes + '|' + semana;
+    const avisosSemanaAbierto = s.avisosAbiertosEn === avisosSemanaId;
+    ctx.avisosEnBanner = {};
+    avisosSemana.forEach((av) => { ctx.avisosEnBanner[av.id] = true; });
 
     const mesNum = Number((s.mes || '').slice(5, 7)) - 1;
     const mesCorto = (R.MESES[mesNum] || '').slice(0, 3);
@@ -1973,6 +2062,11 @@ class Component extends DCLogic {
 
       avisosSemana: avisosSemana,
       hayAvisosSemana: avisosSemana.length > 0,
+      avisosSemanaAbierto: avisosSemanaAbierto,
+      avisosSemanaClase: 'avisos-sem ' + (avisosSemanaAbierto ? 'abierto' : 'cerrado'),
+      avisosSemanaConteo: avisosSemana.length === 1 ? '1 aviso' : avisosSemana.length + ' avisos',
+      avisosSemanaAyuda: avisosSemanaAbierto ? 'Ocultar avisos' : 'Ver avisos importantes',
+      toggleAvisosSemana: () => this.setState({ avisosAbiertosEn: avisosSemanaAbierto ? null : avisosSemanaId }),
       avisosSemanaTitulo: 'Importante · Semana ' + semana,
       listaTitulo: diaFiltro ? 'Día seleccionado' : 'Toda la semana',
       hayDiaFiltro: !!diaFiltro,

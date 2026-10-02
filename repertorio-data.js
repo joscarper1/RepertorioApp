@@ -21,6 +21,9 @@
      autorizar que la propia cuenta tome ese rol, organizaciones y persona. */
   var ACCESOS_PATH = 'accesosPorCorreo';
   var SONG_CATALOG_PATH = 'songCatalog';
+  /* Me gusta de las canciones: {orgId: {songKey: {uid: true}}}. Lectura
+     pública (el contador se ve sin sesión); cada cuenta solo escribe su voto. */
+  var SONG_LIKES_PATH = 'songLikes';
   /* Cifrados (letra + acordes) importados una vez por canción:
      {orgId: {cifradoId: {titulo, artista, fuenteUrl, tonoOriginal, lineas,
      createdAt, createdBy, updatedAt, updatedBy}}}. Las canciones de los
@@ -2093,6 +2096,31 @@
     saveSongOverride(orgId, key, { archivado: true }, cb);
   }
 
+  /* --- Me gusta de canciones --- */
+
+  /* cb(map) con /songLikes/{orgId} crudo ({songKey: {uid: true}}). Una sola
+     suscripción por organización: la canción se identifica con songKey, así
+     que el mismo tema suma sus votos en todos los eventos donde aparezca. */
+  function watchSongLikes(orgId, cb) {
+    var root = dbRoot();
+    if (!root || !orgId) { cb({}); return function () {}; }
+    var ref = root.child(SONG_LIKES_PATH).child(orgId);
+    var handler = function (snap) { cb(snap.val() || {}); };
+    ref.on('value', handler, function (err) { console.error('Firebase watchSongLikes rechazado:', err && err.code, err); cb({}); });
+    return function () { ref.off('value', handler); };
+  }
+
+  /* Un voto por canción por cuenta: on=true lo suma, on=false lo quita. */
+  function setSongLike(orgId, key, uid, on, cb) {
+    var root = dbRoot();
+    if (!root || !orgId || !key || !uid) { cb && cb(false); return; }
+    var ref = root.child(SONG_LIKES_PATH).child(orgId).child(key).child(uid);
+    (on ? ref.set(true) : ref.remove()).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase setSongLike rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
   /* --- Cifrados (letra + acordes, ver cifrado.js) --- */
 
   /* Topes de tamaño: los mismos que validan las reglas de la base. */
@@ -3034,6 +3062,7 @@
     TIPOS_EVENTO: TIPOS_EVENTO, tipoEvento: tipoEvento, indiceTipoEvento: indiceTipoEvento,
     MINISTERIOS_DEFECTO: MINISTERIOS_DEFECTO, MINISTERIO_CANTIDAD_MAX: MINISTERIO_CANTIDAD_MAX, normalizarMinisterios: normalizarMinisterios,
     song: song, songLabel: songLabel, songLabelParts: songLabelParts, songKey: songKey, buildSongCatalog: buildSongCatalog,
+    watchSongLikes: watchSongLikes, setSongLike: setSongLike,
     youtubeId: youtubeId, youtubeController: youtubeController, formatoTiempo: formatoTiempo, progresoAudio: progresoAudio, youtubeErrorMessage: youtubeErrorMessage,defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaSlotRol: bandaSlotRol, numeroParaRol: numeroParaRol, rolInicialMinisterio: rolInicialMinisterio,
