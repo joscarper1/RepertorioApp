@@ -1410,17 +1410,29 @@
     intentar(5);
   }
 
+  /* Si la base cancela la escucha (permiso denegado porque la conexión aún
+     no llevaba la sesión al suscribirse, recién cargada la página), Firebase
+     no la reintenta: se vuelve a suscribir sola unas veces, con espera
+     creciente. Sin esto la página se quedaba sin el doc de la cuenta. */
   function watchUser(uid, cb) {
     var root = dbRoot();
     if (!root) return function () {};
     var ref = root.child(USERS_PATH).child(uid);
+    var activo = true, intentos = 0, timer = null;
     var handler = function (snap) {
+      intentos = 0;
       var v = snap.val();
       if (v) v.uid = uid;
       cb(v);
     };
-    ref.on('value', handler);
-    return function () { ref.off('value', handler); };
+    var cancelado = function (err) {
+      console.warn('Firebase watchUser cancelado:', err && err.code, '— reintentando');
+      if (!activo || intentos >= 5) return;
+      intentos++;
+      timer = setTimeout(function () { if (activo) ref.on('value', handler, cancelado); }, 800 * intentos);
+    };
+    ref.on('value', handler, cancelado);
+    return function () { activo = false; clearTimeout(timer); ref.off('value', handler); };
   }
 
   /* Solo debe llamarse si el usuario actual ya es 'admin' (las reglas del

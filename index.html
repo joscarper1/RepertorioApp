@@ -22,7 +22,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20261002e"></script>
+<script src="repertorio-data.js?v=20261002f"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -259,7 +259,7 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .like-btn:hover svg{transform:scale(1.12)}
 .like.mio .like-btn{color:#e0245e}
 .like-n{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
-/* Debajo del corazón: "Has votado" / "Tú y N más" (rojo, subrayado) o el
+/* Debajo del corazón: "Te gusta" / "Tú y N más" (rojo, subrayado) o el
    número; tocarlo abre quién votó. */
 .like-txt{border:0;background:transparent;padding:0;font:inherit;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);cursor:pointer;white-space:nowrap}
 .like.mio .like-n{color:#e0245e}
@@ -1118,7 +1118,7 @@ class Component extends DCLogic {
     songLikes: {}, uid: null, likePendiente: null,
     /* Nombres de quienes votan ({uid: nombre}) y modal "quién votó"
        ({key, titulo} de la canción, o null = cerrado). */
-    votantes: {}, votosVer: null,
+    votantes: {}, votosVer: null, docUsuario: null,
     /* Banner "Importante": mes|semana en que está desplegado (null = colapsado). */
     avisosAbiertosEn: null, avisoDetalleAbierto: null
   };
@@ -1156,15 +1156,16 @@ class Component extends DCLogic {
         }
         this._asegurarNombreVotante();
         this._detenerSeguimientoMisOrgs();
-        if (!user) { this._docUsuario = null; this._actualizarVotantes(); this.setState({ misOrgs: [], misLinks: {} }); return; }
+        if (!user) { this.setState({ docUsuario: null, misOrgs: [], misLinks: {} }, () => this._actualizarVotantes()); return; }
         /* Quien inicia sesión aquí (p. ej. solo para votar una canción)
            queda registrado de inmediato en /users y, si es nuevo, en la
            organización de este calendario (ver R.ensureUserRegistered). */
         this._registrarCuenta(user, this._orgCalendario);
         this._unwatchUser = R.watchUser(user.uid, (doc) => {
-          this._docUsuario = doc;
-          this.setState({ misLinks: R.userMusicianLinks(doc) });
-          this._actualizarVotantes();
+          /* En el estado (no en un campo suelto) para que la página se
+             vuelva a dibujar cuando llega: de él depende poder abrir la
+             lista de quién votó. */
+          this.setState({ docUsuario: doc, misLinks: R.userMusicianLinks(doc) }, () => this._actualizarVotantes());
           const ids = R.userOrgIds(doc);
           if (this._unmyorgs) { this._unmyorgs(); this._unmyorgs = null; }
           if (!ids.length) { this.setState({ misOrgs: [] }); return; }
@@ -1179,11 +1180,10 @@ class Component extends DCLogic {
            R.guardarOrgPreferida), con o sin sesión. */
         R.guardarOrgPreferida(org.id);
         this._orgCalendario = org;
-        this.setState({ modo: 'calendario', org: org });
+        this.setState({ modo: 'calendario', org: org }, () => this._actualizarVotantes());
         this._registrarCuenta(this._usuarioSesion, org);
         this._unSongOverrides = R.watchSongCatalog(org.id, (map) => this.setState({ songOverrides: map }));
         this._unSongLikes = R.watchSongLikes(org.id, (map) => this.setState({ songLikes: map }, () => this._asegurarNombreVotante()));
-        this._actualizarVotantes();
         this._unwatch = R.watchEventsForOrg(org.id, (evs) => {
           /* Se muestran eventos Publicado, Borrador (con su etiqueta) y
              Cancelado; Archivado es de uso exclusivo del panel de administración. */
@@ -1357,7 +1357,7 @@ class Component extends DCLogic {
      pertenece a esta organización (o un admin), igual que la regla de
      /votantes; para el resto ni se suscribe (evita el permiso denegado). */
   puedeVerVotantes() {
-    const doc = this._docUsuario, org = this.state.org;
+    const doc = this.state.docUsuario, org = this.state.org;
     if (!doc || !org) return false;
     return doc.role === 'admin' || window.RepertorioData.userOrgIds(doc).indexOf(org.id) >= 0;
   }
@@ -1821,7 +1821,7 @@ class Component extends DCLogic {
           cifradoLabel: 'Ver cifrado de ' + titulo + (c.k ? ' en ' + c.k : ''),
           onCifrado: () => this.abrirCifrado(cid, c),
           likeMio: likeMio,
-          /* Corazón rojo = votaste; debajo, "Has votado" / "Tú y N más" o
+          /* Corazón rojo = votaste; debajo, "Te gusta" / "Tú y N más" o
              solo el número (0 cuando nadie ha votado). */
           likeClase: 'like' + (likeMio ? ' mio' : ''),
           likeRelleno: likeMio ? 'currentColor' : 'none',
@@ -1829,7 +1829,7 @@ class Component extends DCLogic {
              organización; sin sesión (u otra organización) se ve solo el
              número, sin poder tocarlo. */
           likeVerLista: likeN > 0 && verLista, likeSoloNumero: !(likeN > 0 && verLista),
-          likeTexto: likeMio ? (likeN === 1 ? 'Has votado' : 'Tú y ' + (likeN - 1) + ' más') : String(likeN),
+          likeTexto: likeMio ? (likeN === 1 ? 'Te gusta' : 'Tú y ' + (likeN - 1) + ' más') : String(likeN),
           onVerVotos: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.abrirVotos(likeKey, titulo); },
           likeLabel: !this.state.uid ? 'Inicia sesión para votar por esta canción' : likeMio ? 'Quitar mi voto' : 'Me gusta esta canción',
           onLike: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.toggleLike(likeKey); },
