@@ -2110,14 +2110,24 @@
     return function () { ref.off('value', handler); };
   }
 
-  /* Un voto por canción por cuenta: on=true lo suma, on=false lo quita. */
+  /* Un voto por canción por cuenta: on=true lo suma, on=false lo quita.
+     Si la base lo rechaza por permisos, se renueva el token de la sesión y
+     se reintenta una vez: una sesión iniciada antes de publicar la regla
+     quedaba rechazada hasta cerrar sesión y volver a entrar. */
   function setSongLike(orgId, key, uid, on, cb) {
     var root = dbRoot();
     if (!root || !orgId || !key || !uid) { cb && cb(false); return; }
     var ref = root.child(SONG_LIKES_PATH).child(orgId).child(key).child(uid);
-    (on ? ref.set(true) : ref.remove()).then(function () { cb && cb(true); }, function (err) {
+    var escribir = function () { return on ? ref.set(true) : ref.remove(); };
+    var fallo = function (err) {
       console.error('Firebase setSongLike rechazado:', err && err.code, err && err.message, err);
       cb && cb(false);
+    };
+    escribir().then(function () { cb && cb(true); }, function (err) {
+      var auth = ensureAuthApp();
+      var user = auth && auth.currentUser;
+      if (!user || !/permission/i.test((err && (err.code || err.message)) || '')) { fallo(err); return; }
+      user.getIdToken(true).then(escribir).then(function () { cb && cb(true); }, fallo);
     });
   }
 
