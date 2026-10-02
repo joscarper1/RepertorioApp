@@ -1242,8 +1242,14 @@
 
   /* Se llama justo después de cada login. Si el usuario no tiene doc en
      /users todavía, lo crea como 'normal' sin organizaciones asignadas
-     (queda pendiente de que un admin lo vincule). cb(userDoc). */
-  function ensureUserRegistered(firebaseUser, cb) {
+     (queda pendiente de que un admin lo vincule). cb(userDoc).
+     `orgIdVisitado` (opcional): la organización cuyo calendario está viendo
+     (index.html?group=, o el último que vio si entra por la bienvenida). Si la cuenta es nueva, o no tiene ninguna
+     organización, queda en esa como 'normal' y marcada `nuevo` para que el
+     admin la vea destacada en Usuarios. Va en una escritura aparte de la
+     creación del doc: si la base la rechaza, la cuenta queda registrada
+     igual (con su nombre), solo que sin organización. */
+  function ensureUserRegistered(firebaseUser, cb, orgIdVisitado) {
     var root = dbRoot();
     if (!root || !firebaseUser) { cb && cb(null); return; }
     var ref = root.child(USERS_PATH).child(firebaseUser.uid);
@@ -1340,8 +1346,27 @@
       }, function () { onDone(doc); });
     }
 
+    function sumarOrgVisitada(doc, onDone) {
+      if (!orgIdVisitado || userOrgIds(doc).length) { onDone(doc); return; }
+      var updates = { nuevo: true };
+      updates['organizationIds/' + orgIdVisitado] = true;
+      /* La organización puede venir de una cookie vieja: solo si existe. */
+      root.child(ORGS_PATH).child(orgIdVisitado).once('value').then(function (snap) {
+        if (!snap.exists()) return Promise.reject({ code: 'organización inexistente' });
+        return ref.update(updates);
+      }).then(function () {
+        doc.nuevo = true;
+        doc.organizationIds = {};
+        doc.organizationIds[orgIdVisitado] = true;
+        onDone(doc);
+      }, function (err) {
+        console.error('Firebase sumarOrgVisitada rechazado:', err && err.code, err && err.message, err);
+        onDone(doc);
+      });
+    }
+
     function completar(doc) {
-      aplicarAccesoPendiente(doc, function (d) { vincularPorCorreo(d, function (d2) { cb && cb(d2); }); });
+      aplicarAccesoPendiente(doc, function (d) { vincularPorCorreo(d, function (d2) { sumarOrgVisitada(d2, function (d3) { cb && cb(d3); }); }); });
     }
 
     function intentar(reintentosRestantes) {
@@ -1402,6 +1427,13 @@
     var handler = function (snap) { cb(snapshotToArray(snap)); };
     ref.on('value', handler);
     return function () { ref.off('value', handler); };
+  }
+
+  /* El admin ya revisó la cuenta que se registró sola desde un calendario. */
+  function quitarMarcaNuevo(uid, cb) {
+    var root = dbRoot();
+    if (!root || !uid) { cb && cb(false); return; }
+    root.child(USERS_PATH).child(uid).child('nuevo').remove().then(function () { cb && cb(true); }, function () { cb && cb(false); });
   }
 
   function setUserRole(uid, role, cb) {
@@ -2098,7 +2130,8 @@
 
   /* --- Me gusta de canciones --- */
 
-  /* cb(map) con /songLikes/{orgId} crudo ({songKey: {uid: true}}). Una sola
+  /* cb(map) con /songLikes/{orgId} crudo ({songKey: {uid: fecha}}; los votos
+     de antes de guardar la fecha valen `true`). Una sola
      suscripción por organización: la canción se identifica con songKey, así
      que el mismo tema suma sus votos en todos los eventos donde aparezca. */
   function watchSongLikes(orgId, cb) {
@@ -2111,14 +2144,19 @@
   }
 
   /* Un voto por canción por cuenta: on=true lo suma, on=false lo quita.
-     Si la base lo rechaza por permisos, se renueva el token de la sesión y
-     se reintenta una vez: una sesión iniciada antes de publicar la regla
-     quedaba rechazada hasta cerrar sesión y volver a entrar. */
+     El voto guarda la fecha del servidor (para el top del mes del
+     dashboard); si la regla publicada aún solo acepta `true`, se guarda
+     `true`. Si la base lo rechaza por permisos, se renueva el token de la
+     sesión y se reintenta una vez: una sesión iniciada antes de publicar la
+     regla quedaba rechazada hasta cerrar sesión y volver a entrar. */
   function setSongLike(orgId, key, uid, on, cb) {
     var root = dbRoot();
     if (!root || !orgId || !key || !uid) { cb && cb(false); return; }
     var ref = root.child(SONG_LIKES_PATH).child(orgId).child(key).child(uid);
-    var escribir = function () { return on ? ref.set(true) : ref.remove(); };
+    var escribir = function () {
+      if (!on) return ref.remove();
+      return ref.set(w.firebase.database.ServerValue.TIMESTAMP).catch(function () { return ref.set(true); });
+    };
     var fallo = function (err) {
       console.error('Firebase setSongLike rechazado:', err && err.code, err && err.message, err);
       cb && cb(false);
@@ -2129,6 +2167,16 @@
       if (!user || !/permission/i.test((err && (err.code || err.message)) || '')) { fallo(err); return; }
       user.getIdToken(true).then(escribir).then(function () { cb && cb(true); }, fallo);
     });
+  }
+
+  /* Mes ('YYYY-MM') en que se emitió un voto de /songLikes. Los votos
+     guardados como `true` son de antes de registrar la fecha: la función
+     salió en octubre de 2026, así que cuentan en ese mes. */
+  var MES_VOTOS_SIN_FECHA = '2026-10';
+  function mesDeVoto(v) {
+    if (typeof v !== 'number') return MES_VOTOS_SIN_FECHA;
+    var d = new Date(v);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
   }
 
   /* --- Cifrados (letra + acordes, ver cifrado.js) --- */
@@ -3072,7 +3120,7 @@
     TIPOS_EVENTO: TIPOS_EVENTO, tipoEvento: tipoEvento, indiceTipoEvento: indiceTipoEvento,
     MINISTERIOS_DEFECTO: MINISTERIOS_DEFECTO, MINISTERIO_CANTIDAD_MAX: MINISTERIO_CANTIDAD_MAX, normalizarMinisterios: normalizarMinisterios,
     song: song, songLabel: songLabel, songLabelParts: songLabelParts, songKey: songKey, buildSongCatalog: buildSongCatalog,
-    watchSongLikes: watchSongLikes, setSongLike: setSongLike,
+    watchSongLikes: watchSongLikes, setSongLike: setSongLike, mesDeVoto: mesDeVoto,
     youtubeId: youtubeId, youtubeController: youtubeController, formatoTiempo: formatoTiempo, progresoAudio: progresoAudio, youtubeErrorMessage: youtubeErrorMessage,defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaSlotRol: bandaSlotRol, numeroParaRol: numeroParaRol, rolInicialMinisterio: rolInicialMinisterio,
@@ -3095,7 +3143,7 @@
     createOrganization: createOrganization, updateOrganization: updateOrganization, deleteOrganization: deleteOrganization,
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
-    setUserRole: setUserRole, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
+    setUserRole: setUserRole, quitarMarcaNuevo: quitarMarcaNuevo, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
     userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
     guardarOrgPreferida: guardarOrgPreferida, orgPreferida: orgPreferida, borrarOrgPreferida: borrarOrgPreferida,
     normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,

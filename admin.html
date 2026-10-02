@@ -128,6 +128,7 @@ a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
 .b-no{background:var(--red-lt);color:var(--red)}
 .b-gris{background:#ecebe8;color:var(--muted)}
 .b-azul{background:var(--blue-lt);color:var(--blue)}
+.b-nuevo{background:var(--gold-lt);color:var(--gold-dk);border:0;cursor:pointer;vertical-align:2px;margin-left:4px;font-family:inherit}
 
 /* ---- Tarjetas / cajas ---- */
 .panel{background:#fff;border:1px solid var(--line);border-radius:14px}
@@ -639,7 +640,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 <div class="usr-id">
                   <span class="ini">{{ u.inicial }}</span>
                   <div style="min-width:0">
-                    <div class="item-t">{{ u.nombre }}</div>
+                    <div class="item-t">{{ u.nombre }}<sc-if value="{{ u.nuevo }}" hint-placeholder-val="{{ false }}"> <button type="button" class="badge b-nuevo" onClick="{{ u.quitarNuevo }}" title="Se registró solo desde el calendario. Quita el tag para confirmar que es bienvenido.">Nuevo ×</button></sc-if></div>
                     <div class="item-s">{{ u.subtitulo }}</div>
                     <sc-if value="{{ u.otraOrg }}" hint-placeholder-val="{{ false }}">
                       <span class="badge b-azul solo-desk" title="{{ u.personaTitulo }}">No pertenece a esta organización</span>
@@ -1798,6 +1799,13 @@ class Component extends DCLogic {
 
   cambiarRolUsuario(uid, role) { D().setUserRole(uid, role, () => {}); }
 
+  /* "Nuevo ×" de una cuenta que se registró sola desde un calendario: al
+     quitar el tag, el admin confirma que es bienvenida en la organización. */
+  quitarNuevo(uid) {
+    const u = (this.state.usuarios || []).find((x) => x.uid === uid);
+    if (u && u.nuevo) D().quitarMarcaNuevo(uid);
+  }
+
   /* Organizaciones y persona de una tarjeta quedan pendientes hasta "Guardar
      cambios": guardarlas al instante reordenaba la lista (y podía mandar la
      tarjeta a otra página) antes de terminar de configurarla. */
@@ -2533,10 +2541,11 @@ class Component extends DCLogic {
        vincularse con sus personas. */
     const esDeLaOrg = (u) => R.userOrgIds(u).indexOf(s.currentOrgId) >= 0;
     const usuariosOrdenados = (s.usuarios || []).slice();
-    /* Orden (estable): primero las de esta organización sin persona
+    /* Orden (estable): primero las nuevas de esta organización (se
+       registraron solas desde su calendario), luego las sin persona
        vinculada, para ver de un vistazo a quién falta vincular; luego las
        que ya tienen persona; al final las de otras organizaciones. */
-    const grupoUsuario = (u) => (!esDeLaOrg(u) ? 2 : (R.userMusicianLinks(u)[s.currentOrgId] ? 1 : 0));
+    const grupoUsuario = (u) => (!esDeLaOrg(u) ? 2 : (u.nuevo ? -1 : (R.userMusicianLinks(u)[s.currentOrgId] ? 1 : 0)));
     usuariosOrdenados.sort((a, b) => grupoUsuario(a) - grupoUsuario(b));
 
     const USUARIOS_PAGE_SIZE = 5;
@@ -2596,6 +2605,8 @@ class Component extends DCLogic {
         personaVaciaTexto: deLaOrgSel ? 'Sin persona vinculada' : 'Asígnale esta organización para vincularla',
         personaTitulo: deLaOrgSel ? 'Persona vinculada' : 'Esta cuenta no pertenece a ' + (orgActual ? orgActual.name : 'la organización activa') + ': márcala en sus organizaciones para poder vincularla con una persona.',
         otraOrg: !deLaOrgU,
+        nuevo: !!u.nuevo,
+        quitarNuevo: () => this.quitarNuevo(u.uid),
         telefono: telEditado !== undefined ? telEditado : (AV ? AV.formatoTelefono(u.telefono) : (u.telefono || '')),
         onTelefono: (e) => { const v = e.target.value; this.setState((st) => ({ telefonoEdit: Object.assign({}, st.telefonoEdit, { [u.uid]: v }) })); },
         guardarTelefono: () => this.guardarTelefonoUsuario(u),

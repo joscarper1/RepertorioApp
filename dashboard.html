@@ -129,6 +129,24 @@ a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
 .panel{background:#fff;border:1px solid var(--line);border-radius:14px}
 .panel-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid rgba(0,0,0,.08);flex-wrap:wrap}
 .panel-cuerpo{padding:18px 20px}
+.votos-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.votos-mes{min-width:128px;text-align:center;font-size:13px;font-weight:800;text-transform:capitalize}
+.votos-flecha{width:34px;height:34px;padding:0;font-size:16px}
+.votos-flecha:disabled{opacity:.35;cursor:not-allowed;border-color:rgba(0,0,0,.18)}
+.votos-lista{margin:-18px -20px;list-style:none;padding:0}
+.votos-fila{border-top:1px solid rgba(0,0,0,.07)}
+.votos-lista .votos-fila:first-child{border-top:0}
+.votos-btn{display:grid;grid-template-columns:28px minmax(0,1fr) auto 18px;align-items:center;gap:12px;width:100%;padding:11px 20px;border:0;background:none;text-align:left;cursor:pointer;font-size:13px}
+.votos-btn:hover{background:var(--soft)}
+.votos-pos{font-size:12px;font-weight:800;color:var(--muted2);font-variant-numeric:tabular-nums}
+.votos-tit{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.votos-art{font-size:12px;color:var(--muted2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.votos-n{display:inline-flex;align-items:center;gap:5px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums}
+.votos-chev{color:var(--muted2);transition:transform .15s}
+.votos-fila.abierta .votos-chev{transform:rotate(90deg)}
+.votos-personas{list-style:none;margin:0;padding:2px 20px 14px 60px;display:flex;flex-direction:column;gap:6px}
+.votos-persona{display:flex;justify-content:space-between;gap:12px;font-size:13px}
+.votos-persona span:last-child{font-size:12px;color:var(--muted2);white-space:nowrap}
 .caja{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
 .card{display:grid;grid-template-columns:60px minmax(0,1fr);gap:14px;padding:14px;border-radius:12px;background:#fff;border:2px solid transparent;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:border-color .15s,box-shadow .15s}
 .card.clic{cursor:pointer}
@@ -185,6 +203,9 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
   .card-tema{font-size:15px}
   .panel{border-radius:14px;border:0}
   .panel-cab,.panel-cuerpo{padding:14px 16px}
+  .votos-lista{margin:-14px -16px}
+  .votos-btn{padding:11px 16px;gap:10px}
+  .votos-personas{padding:2px 16px 14px 54px}
   .caja{border:0;border-radius:14px}
   .inp{font-size:16px;min-height:46px}
   .btn-pri{min-height:46px;border-radius:10px;font-size:14px}
@@ -403,6 +424,59 @@ a.mas-fila:hover{background:none;color:var(--ink)}
           </sc-if>
           <sc-if value="{{ sinBorradores }}" hint-placeholder-val="{{ false }}">
             <p style="font-size:13px;color:var(--muted2);margin:0">{{ borradoresVacio }}</p>
+          </sc-if>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ veVotos }}" hint-placeholder-val="{{ false }}">
+      <section class="panel" style="margin-bottom:24px">
+        <div class="panel-cab">
+          <div>
+            <div class="rotulo">Me gusta de canciones</div>
+            <div style="font-size:17px;font-weight:800;margin-top:4px">{{ votosTitulo }} <span style="font-size:13px;font-weight:700;color:var(--muted2)">{{ votosCuenta }}</span></div>
+          </div>
+          <div class="votos-nav">
+            <sc-if value="{{ votosEsMes }}" hint-placeholder-val="{{ true }}">
+              <button type="button" class="btn-sec votos-flecha" onClick="{{ votosMesAnterior }}" disabled="{{ votosSinAnterior }}" aria-label="Mes anterior">‹</button>
+              <span class="votos-mes">{{ votosMesTexto }}</span>
+              <button type="button" class="btn-sec votos-flecha" onClick="{{ votosMesSiguiente }}" disabled="{{ votosSinSiguiente }}" aria-label="Mes siguiente">›</button>
+            </sc-if>
+            <div class="seg">
+              <button type="button" class="{{ votosClaseMes }}" onClick="{{ votosVerMes }}">Por mes</button>
+              <button type="button" class="{{ votosClaseTodo }}" onClick="{{ votosVerTodo }}">Todas</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel-cuerpo">
+          <sc-if value="{{ hayVotos }}" hint-placeholder-val="{{ true }}">
+            <ul class="votos-lista">
+              <sc-for list="{{ votosLista }}" as="v" hint-placeholder-count="3">
+                <li class="{{ v.clase }}">
+                  <button type="button" class="votos-btn" onClick="{{ v.toggle }}" aria-expanded="{{ v.abierta }}">
+                    <span class="votos-pos">{{ v.pos }}</span>
+                    <span style="min-width:0">
+                      <div class="votos-tit">{{ v.titulo }}</div>
+                      <sc-if value="{{ v.tieneArtista }}" hint-placeholder-val="{{ false }}">
+                        <div class="votos-art">{{ v.artista }}</div>
+                      </sc-if>
+                    </span>
+                    <span class="votos-n"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 3 4.5 6.6 4.5c2.1 0 3.6 1.2 5.4 3.2 1.8-2 3.3-3.2 5.4-3.2 3.6 0 5.7 3.7 4.2 7.2C19.5 16.4 12 21 12 21z"></path></svg>{{ v.n }}</span>
+                    <svg class="votos-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+                  </button>
+                  <sc-if value="{{ v.abierta }}" hint-placeholder-val="{{ false }}">
+                    <ul class="votos-personas">
+                      <sc-for list="{{ v.personas }}" as="p" hint-placeholder-count="2">
+                        <li class="votos-persona"><span>{{ p.nombre }}</span><span>{{ p.fecha }}</span></li>
+                      </sc-for>
+                    </ul>
+                  </sc-if>
+                </li>
+              </sc-for>
+            </ul>
+          </sc-if>
+          <sc-if value="{{ sinVotos }}" hint-placeholder-val="{{ false }}">
+            <p style="font-size:13px;color:var(--muted2);margin:0">{{ votosVacio }}</p>
           </sc-if>
         </div>
       </section>
@@ -637,7 +711,8 @@ class Component extends DCLogic {
     musico: null, eventos: [], unavailableDates: [],
     nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: '', masAbierto: false,
     declinar: null, declinarMotivo: '', toast: '', publicando: false,
-    misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: ''
+    misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
+    songLikes: {}, songOverrides: {}, usuarios: {}, votosMes: null, votosTodo: false, votosAbierta: null
   };
 
   componentDidMount() {
@@ -677,6 +752,18 @@ class Component extends DCLogic {
           if (!viewOnlyActivo) R.guardarOrgPreferida(orgId);
           R.getOrganization(orgId, (org) => this.setState({ org: org }));
           this._unevents = R.watchEventsForOrg(orgId, (evs) => this.setState({ eventos: evs }));
+          /* Me gusta de canciones (solo admin, en su propio dashboard): los
+             votos, el catálogo para el nombre de cada canción y las cuentas
+             para saber quién votó. */
+          if (doc.role === 'admin' && !viewOnlyActivo) {
+            this._unlikes = R.watchSongLikes(orgId, (map) => this.setState({ songLikes: map }));
+            this._unsongs = R.watchSongCatalog(orgId, (map) => this.setState({ songOverrides: map || {} }));
+            this._unusers = R.watchAllUsers((lista) => {
+              const porUid = {};
+              lista.forEach((u) => { porUid[u.uid || u.id] = u.displayName || u.email || ''; });
+              this.setState({ usuarios: porUid });
+            });
+          }
           if (effectiveId) {
             this._ununavail = R.watchUnavailableDates(effectiveId, (lista) => this.setState({ unavailableDates: lista }));
             if (!(viewOnlyActivo && viewOnlyMusico)) R.getMusician(effectiveId, (m) => this.setState({ musico: m }));
@@ -706,6 +793,90 @@ class Component extends DCLogic {
     if (this._unevents) this._unevents();
     if (this._ununavail) this._ununavail();
     if (this._unorgs) this._unorgs();
+    if (this._unlikes) this._unlikes();
+    if (this._unsongs) this._unsongs();
+    if (this._unusers) this._unusers();
+  }
+
+  /* Panel de "Me gusta": por mes, el top 10 de canciones con más votos
+     emitidos ese mes; en "Todas", cada canción con votos vigentes (de
+     cualquier mes). Cada fila se despliega con quién votó y cuándo. */
+  panelVotos() {
+    const R = D();
+    const s = this.state;
+    const hoy = new Date();
+    const mesActual = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0');
+    const mes = s.votosMes || mesActual;
+    const catalogo = {};
+    R.buildSongCatalog(s.eventos, s.songOverrides).forEach((c) => { catalogo[c.key] = c; });
+    /* Una canción que no está en los eventos cargados se nombra con su
+       propia llave (título|artista|link en minúsculas, ver R.songKey). */
+    const cap = (t) => (t || '').charAt(0).toUpperCase() + (t || '').slice(1);
+    const nombreDe = (key) => {
+      const c = catalogo[key];
+      if (c) return { titulo: c.nombre.split('\n')[0], artista: c.salmista || '' };
+      let partes = [key];
+      try { partes = decodeURIComponent(key).split('|'); } catch (e) {}
+      return { titulo: cap((partes[0] || '').split('\n')[0]) || 'Sin título', artista: cap(partes[1] || '') };
+    };
+    let primerMes = mesActual;
+    const filas = [];
+    Object.keys(s.songLikes || {}).forEach((key) => {
+      const votos = s.songLikes[key] || {};
+      const personas = [];
+      Object.keys(votos).forEach((uid) => {
+        const m = R.mesDeVoto(votos[uid]);
+        if (m < primerMes) primerMes = m;
+        if (!s.votosTodo && m !== mes) return;
+        const ts = typeof votos[uid] === 'number' ? votos[uid] : 0;
+        personas.push({ ts: ts, nombre: s.usuarios[uid] || 'Cuenta no registrada' });
+      });
+      if (!personas.length) return;
+      personas.sort((a, b) => (b.ts - a.ts) || a.nombre.localeCompare(b.nombre, 'es'));
+      filas.push(Object.assign({ key: key, personas: personas }, nombreDe(key)));
+    });
+    filas.sort((a, b) => (b.personas.length - a.personas.length) || a.titulo.localeCompare(b.titulo, 'es'));
+    const lista = (s.votosTodo ? filas : filas.slice(0, 10)).map((f, i) => {
+      const abierta = s.votosAbierta === f.key;
+      return {
+        pos: String(i + 1),
+        titulo: f.titulo,
+        artista: f.artista, tieneArtista: !!f.artista,
+        n: String(f.personas.length),
+        clase: 'votos-fila' + (abierta ? ' abierta' : ''),
+        abierta: abierta,
+        toggle: () => this.setState({ votosAbierta: abierta ? null : f.key }),
+        personas: f.personas.map((p) => {
+          const d = p.ts ? new Date(p.ts) : null;
+          return { nombre: p.nombre, fecha: d ? (d.getDate() + ' ' + R.MESES[d.getMonth()].slice(0, 3) + ' ' + d.getFullYear()) : 'oct 2026' };
+        })
+      };
+    });
+    const mover = (delta) => {
+      const p = mes.split('-').map(Number);
+      const d = new Date(p[0], p[1] - 1 + delta, 1);
+      this.setState({ votosMes: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), votosAbierta: null });
+    };
+    const mp = mes.split('-').map(Number);
+    const total = filas.reduce((n, f) => n + f.personas.length, 0);
+    return {
+      votosTitulo: s.votosTodo ? 'Todas las canciones votadas' : 'Top 10 del mes',
+      votosCuenta: total ? (total === 1 ? '1 voto' : total + ' votos') : '',
+      votosEsMes: !s.votosTodo,
+      votosMesTexto: R.MESES[mp[1] - 1] + ' ' + mp[0],
+      votosSinAnterior: mes <= primerMes,
+      votosSinSiguiente: mes >= mesActual,
+      votosMesAnterior: () => mover(-1),
+      votosMesSiguiente: () => mover(1),
+      votosClaseMes: s.votosTodo ? '' : 'on',
+      votosClaseTodo: s.votosTodo ? 'on' : '',
+      votosVerMes: () => this.setState({ votosTodo: false, votosAbierta: null }),
+      votosVerTodo: () => this.setState({ votosTodo: true, votosAbierta: null }),
+      votosLista: lista,
+      hayVotos: lista.length > 0,
+      sinVotos: lista.length === 0,
+      votosVacio: s.votosTodo ? 'Todavía nadie ha votado por una canción.' : 'Nadie votó por una canción este mes.'
+    };
   }
 
   toggleOrgSwitcher() {
@@ -1006,6 +1177,8 @@ class Component extends DCLogic {
       borradoresSinTexto: 'Sin ' + borr.varios,
       borradoresVacio: borr.vacio,
       sinEtiquetasTexto: pf.textos.sinEtiquetas,
+      veVotos: !!(s.userDoc && s.userDoc.role === 'admin') && !s.viewOnlyActivo && !!pf.tieneCanciones,
+      ...this.panelVotos(),
       toast: s.toast
     };
   }

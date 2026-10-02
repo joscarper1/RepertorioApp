@@ -1094,6 +1094,7 @@ class Component extends DCLogic {
          usuario tiene más de una organización asignada, además habilita el
          selector para saltar entre sus calendarios. */
       this._unauth = R.onAuthChange((user) => {
+        this._usuarioSesion = user;
         this.setState({ usuarioNombre: user ? (user.displayName || user.email) : null, uid: user ? user.uid : null });
         /* Tocó el corazón sin sesión: al volver del inicio de sesión se
            registra ese voto (solo si aún no lo tenía). */
@@ -1104,6 +1105,10 @@ class Component extends DCLogic {
         }
         this._detenerSeguimientoMisOrgs();
         if (!user) { this.setState({ misOrgs: [], misLinks: {} }); return; }
+        /* Quien inicia sesión aquí (p. ej. solo para votar una canción)
+           queda registrado de inmediato en /users y, si es nuevo, en la
+           organización de este calendario (ver R.ensureUserRegistered). */
+        this._registrarCuenta(user, this._orgCalendario);
         this._unwatchUser = R.watchUser(user.uid, (doc) => {
           this.setState({ misLinks: R.userMusicianLinks(doc) });
           const ids = R.userOrgIds(doc);
@@ -1119,7 +1124,9 @@ class Component extends DCLogic {
         /* Queda como el calendario preferido de este navegador (ver
            R.guardarOrgPreferida), con o sin sesión. */
         R.guardarOrgPreferida(org.id);
+        this._orgCalendario = org;
         this.setState({ modo: 'calendario', org: org });
+        this._registrarCuenta(this._usuarioSesion, org);
         this._unSongOverrides = R.watchSongCatalog(org.id, (map) => this.setState({ songOverrides: map }));
         this._unSongLikes = R.watchSongLikes(org.id, (map) => this.setState({ songLikes: map }));
         this._unwatch = R.watchEventsForOrg(org.id, (evs) => {
@@ -1188,11 +1195,24 @@ class Component extends DCLogic {
         });
         return;
       }
-      R.ensureUserRegistered(user, (doc) => {
+      /* Cuenta nueva: queda en la organización del último calendario que
+         vio en este navegador (o en la única que hay), igual que al iniciar
+         sesión desde el propio calendario (ver R.ensureUserRegistered). */
+      const registrar = (orgId) => R.ensureUserRegistered(user, (doc) => {
         const ids = R.userOrgIds(doc);
         if (!ids.length) { this.setState({ modo: 'pendiente' }); return; }
         R.redirectToUserLanding(doc);
+      }, orgId);
+      const pref = R.orgPreferida();
+      if (pref) { registrar(pref); return; }
+      let unOrgs = null, listo = false;
+      unOrgs = R.watchAllOrganizations((orgs) => {
+        if (listo) return;
+        listo = true;
+        if (unOrgs) unOrgs();
+        registrar(orgs.length === 1 ? orgs[0].id : null);
       });
+      if (listo) unOrgs();
     });
   }
 
@@ -1229,6 +1249,14 @@ class Component extends DCLogic {
       console.error('Fallo el inicio de sesión con Google:', e);
       this.setState({ errorLogin: 'No se pudo iniciar sesión (' + (e && e.code ? e.code : 'error desconocido') + ').' });
     });
+  }
+
+  /* Registra la cuenta una sola vez por carga, cuando ya se conocen la
+     sesión y la organización del calendario (llegan en cualquier orden). */
+  _registrarCuenta(user, org) {
+    if (!user || !org || this._cuentaRegistrada === user.uid) return;
+    this._cuentaRegistrada = user.uid;
+    window.RepertorioData.ensureUserRegistered(user, () => {}, org.id);
   }
 
   /* Corazón de una canción: sin sesión abre el inicio de sesión con Google
