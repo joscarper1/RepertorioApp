@@ -277,6 +277,14 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .callout-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dk)}
 .callout p{margin:8px 0 0;font-size:14px;line-height:1.55;text-wrap:pretty;white-space:pre-line}
 .callout-aviso{border:1.5px solid var(--gold)}
+/* Aviso del detalle en el teléfono: igual que el banner de la semana,
+   inicia colapsado y con pulso; tocar la fila muestra el texto. */
+.aviso-cab{display:flex;align-items:center;gap:10px;width:100%;padding:0;background:none;border:0;cursor:pointer;font:inherit;color:var(--gold-dk);text-align:left}
+.aviso-cab .callout-t{flex:1;min-width:0}
+.callout-aviso.abierto .avisos-sem-flecha{transform:rotate(180deg)}
+.callout-aviso.abierto p{animation:avisos-abrir .2s ease-out}
+.callout-aviso.cerrado{animation:avisos-pulso 2s ease-out infinite}
+.callout-aviso.cerrado .avisos-sem-punto{animation:avisos-punto 2s ease-out infinite}
 /* Banner "Importante" de la semana elegida: junta los avisos de sus eventos. */
 .avisos-sem{margin-top:12px;background:var(--gold-lt);border:1.5px solid var(--gold);border-radius:12px;display:flex;flex-direction:column}
 /* Colapsado (al cargar y al cambiar de semana): solo la fila del título, con
@@ -293,7 +301,7 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 @keyframes avisos-pulso{0%{box-shadow:0 0 0 0 rgba(201,154,30,.45)}70%{box-shadow:0 0 0 10px rgba(201,154,30,0)}100%{box-shadow:0 0 0 0 rgba(201,154,30,0)}}
 @keyframes avisos-punto{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.5);opacity:.55}}
 @keyframes avisos-abrir{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.avisos-sem.cerrado,.avisos-sem.cerrado .avisos-sem-punto,.avisos-sem-lista{animation:none}}
+@media (prefers-reduced-motion:reduce){.avisos-sem.cerrado,.avisos-sem.cerrado .avisos-sem-punto,.avisos-sem-lista,.callout-aviso.cerrado,.callout-aviso.cerrado .avisos-sem-punto,.callout-aviso.abierto p{animation:none}}
 .avisos-sem-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dk)}
 .aviso-sem{display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;padding:0;cursor:pointer;color:var(--gold-dk);font:inherit}
 .aviso-sem-meta{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
@@ -875,7 +883,17 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
               </div>
               <div class="det-aside">
                 <sc-if value="{{ d.tieneAviso }}" hint-placeholder-val="{{ false }}">
-                  <div class="{{ d.avisoClase }}"><div class="callout-t">Importante</div><p>{{ d.aviso }}</p></div>
+                  <div class="{{ d.avisoClase }}">
+                    <sc-if value="{{ d.avisoColapsable }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" class="aviso-cab" onClick="{{ d.toggleAviso }}" aria-expanded="{{ d.avisoAbierto }}" title="{{ d.avisoAyuda }}">
+                        <span class="avisos-sem-punto" aria-hidden="true"></span>
+                        <span class="callout-t">Importante</span>
+                        <svg class="avisos-sem-flecha" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                      </button>
+                    </sc-if>
+                    <sc-if value="{{ d.avisoFijo }}" hint-placeholder-val="{{ true }}"><div class="callout-t">Importante</div></sc-if>
+                    <sc-if value="{{ d.avisoVisible }}" hint-placeholder-val="{{ true }}"><p>{{ d.aviso }}</p></sc-if>
+                  </div>
                 </sc-if>
                 <sc-if value="{{ d.tieneNotas }}" hint-placeholder-val="{{ false }}">
                   <div class="callout o-2"><div class="callout-t">Indicaciones para el ensayo</div><p>{{ d.notas }}</p></div>
@@ -1052,7 +1070,7 @@ class Component extends DCLogic {
        con sesión (uid) y el voto que quedó esperando el inicio de sesión. */
     songLikes: {}, uid: null, likePendiente: null,
     /* Banner "Importante": mes|semana en que está desplegado (null = colapsado). */
-    avisosAbiertosEn: null
+    avisosAbiertosEn: null, avisoDetalleAbierto: null
   };
 
   componentDidMount() {
@@ -1581,6 +1599,22 @@ class Component extends DCLogic {
     return filas;
   }
 
+  /* Cuadro "Importante" del detalle. Si el aviso ya sale en el banner de la
+     semana, en escritorio no se repite (solo-movil); en el teléfono, donde
+     el detalle es una pantalla aparte sin el banner, se muestra colapsado y
+     con pulso hasta que se toca (se vuelve a cerrar al abrir otro evento).
+     El aviso de un evento pasado o cancelado queda fijo y abierto. */
+  avisoDetalle(ev, ctx) {
+    const enBanner = !!(ctx.avisosEnBanner && ctx.avisosEnBanner[ev.id]);
+    const abierto = !enBanner || this.state.avisoDetalleAbierto === ev.id;
+    return {
+      avisoColapsable: enBanner, avisoFijo: !enBanner, avisoVisible: abierto, avisoAbierto: abierto,
+      avisoClase: 'callout callout-aviso o-2' + (enBanner ? ' solo-movil ' + (abierto ? 'abierto' : 'cerrado') : ''),
+      avisoAyuda: abierto ? 'Ocultar aviso' : 'Ver aviso importante',
+      toggleAviso: () => this.setState({ avisoDetalleAbierto: abierto ? null : ev.id })
+    };
+  }
+
   /* Todo lo que muestra el panel de detalle de un evento. */
   detalle(ev, ctx) {
     const R = window.RepertorioData;
@@ -1664,7 +1698,7 @@ class Component extends DCLogic {
       /* Si el aviso ya sale en el banner "Importante" de la semana, en
          escritorio no se repite en el detalle; en el teléfono el detalle es
          una pantalla aparte (sin el banner), así que ahí se conserva. */
-      avisoClase: 'callout callout-aviso o-2' + (ctx.avisosEnBanner && ctx.avisosEnBanner[ev.id] ? ' solo-movil' : ''),
+      ...this.avisoDetalle(ev, ctx),
       notas: txt(ev.notas), tieneNotas: !!txt(ev.notas),
       detalles: txt(ev.detalles), tieneDetalles: !!txt(ev.detalles),
       personas: txt(ev.personas), tienePersonas: !!txt(ev.personas),
