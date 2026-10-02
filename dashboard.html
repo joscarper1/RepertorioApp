@@ -31,7 +31,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="menu-config.js?v=20261001a"></script>
-<script src="repertorio-data.js?v=20261002a"></script>
+<script src="repertorio-data.js?v=20261002d"></script>
 <script src="avisos.js?v=20261001a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -101,6 +101,7 @@ a.btn-sec:hover{background:#fff;color:var(--ink);border-color:var(--ink)}
 .btn-quitar:hover{background:var(--red-lt);color:var(--red)}
 
 .titulo-fila{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:22px 0 16px;flex-wrap:wrap}
+.vistas{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 20px}
 .kicker{font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--ac);margin-bottom:6px}
 .mes-titulo{margin:0;font-size:42px;line-height:1;font-weight:900;font-stretch:115%;letter-spacing:-.01em;text-transform:uppercase;overflow-wrap:anywhere}
 .rotulo{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2)}
@@ -363,9 +364,10 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         <span class="perfil-avatar">{{ inicial }}</span>
         <div style="min-width:0;display:flex;flex-direction:column;gap:8px">
           <div>
-            <div class="kicker">{{ kickerPerfil }}</div>
-            <h1 class="mes-titulo">{{ musicoNombre }}</h1>
+            <div class="kicker">{{ kickerTitulo }}</div>
+            <h1 class="mes-titulo">{{ tituloPagina }}</h1>
           </div>
+          <sc-if value="{{ vistaInicio }}" hint-placeholder-val="{{ true }}">
           <div class="chips">
             <sc-for list="{{ rolesBanda }}" as="rb" hint-placeholder-count="2">
               <span class="tag">{{ rb.tipo }}</span>
@@ -374,11 +376,20 @@ a.mas-fila:hover{background:none;color:var(--ink)}
               <span style="font-size:12px;color:var(--muted2)">{{ sinEtiquetasTexto }}</span>
             </sc-if>
           </div>
+          </sc-if>
         </div>
       </div>
     </div>
 
-    <sc-if value="{{ veBorradores }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ hayVistas }}" hint-placeholder-val="{{ false }}">
+      <nav class="vistas solo-desk" aria-label="Secciones del dashboard">
+        <sc-for list="{{ vistasLista }}" as="vi" hint-placeholder-count="3">
+          <button type="button" class="{{ vi.clase }}" onClick="{{ vi.onClick }}">{{ vi.label }}</button>
+        </sc-for>
+      </nav>
+    </sc-if>
+
+    <sc-if value="{{ muestraBorradores }}" hint-placeholder-val="{{ false }}">
       <section class="panel" style="margin-bottom:24px">
         <div class="panel-cab">
           <div>
@@ -429,7 +440,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
       </section>
     </sc-if>
 
-    <sc-if value="{{ veVotos }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ muestraVotos }}" hint-placeholder-val="{{ false }}">
       <section class="panel" style="margin-bottom:24px">
         <div class="panel-cab">
           <div>
@@ -482,6 +493,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
       </section>
     </sc-if>
 
+    <sc-if value="{{ vistaInicio }}" hint-placeholder-val="{{ true }}">
     <div class="dash">
       <section class="o-1" style="min-width:0">
         <h2 class="sec-t">Próximos eventos <span class="cuenta">{{ eventosCuenta }}</span><span class="linea"></span></h2>
@@ -582,6 +594,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         </section>
       </aside>
     </div>
+    </sc-if>
   </sc-if>
 
   <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
@@ -596,6 +609,8 @@ a.mas-fila:hover{background:none;color:var(--ink)}
           <sc-if value="{{ t.icoUsuarios }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.6 3 5.2"></path></svg></sc-if>
           <sc-if value="{{ t.icoRepertorio }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></sc-if>
           <sc-if value="{{ t.icoInicio }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg></sc-if>
+          <sc-if value="{{ t.icoPublicar }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4z"></path></svg></sc-if>
+          <sc-if value="{{ t.icoMeGusta }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-9-8.8C1.6 7.9 3.6 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.4 0 5.4 3.4 4 6.7C19 15.6 12 20 12 20z"></path></svg></sc-if>
           <sc-if value="{{ t.icoCalendario }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></sc-if>
         </span>
         <span>{{ t.label }}</span>
@@ -712,7 +727,8 @@ class Component extends DCLogic {
     nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: '', masAbierto: false,
     declinar: null, declinarMotivo: '', toast: '', publicando: false,
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
-    songLikes: {}, songOverrides: {}, usuarios: {}, votosMes: null, votosTodo: false, votosAbierta: null
+    songLikes: {}, songOverrides: {}, usuarios: {}, votosMes: null, votosTodo: false, votosAbierta: null,
+    vista: 'inicio'
   };
 
   componentDidMount() {
@@ -796,6 +812,14 @@ class Component extends DCLogic {
     if (this._unlikes) this._unlikes();
     if (this._unsongs) this._unsongs();
     if (this._unusers) this._unusers();
+  }
+
+  /* Secciones del dashboard (menú bajo el título y barra inferior en el
+     teléfono): Inicio = próximos eventos + disponibilidad, siempre la
+     primera; las de admin muestran solo su tabla. */
+  irAVista(id) {
+    this.setState({ vista: id, masAbierto: false });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   /* Panel de "Me gusta": por mes, el top 10 de canciones con más votos
@@ -1077,6 +1101,15 @@ class Component extends DCLogic {
     const rolesBanda = ((s.musico && s.musico.rolesBanda) || []).map((tipo) => ({ tipo: tipo }));
     const nombre = (s.musico && s.musico.nombre) || s.usuarioNombre || '';
 
+    /* Me gusta de canciones: solo admin, en su propio dashboard y en
+       calendarios con canciones. */
+    const veVotos = !!(s.userDoc && s.userDoc.role === 'admin') && !s.viewOnlyActivo && !!pf.tieneCanciones;
+    const vistas = [{ id: 'inicio', label: 'Próximos eventos', corto: 'Inicio' }]
+      .concat(veBorradores ? [{ id: 'publicar', label: 'Por publicar', corto: 'Publicar' }] : [])
+      .concat(veVotos ? [{ id: 'megusta', label: 'Me gusta', corto: 'Me gusta' }] : []);
+    const vistaActual = vistas.find((v) => v.id === s.vista) || vistas[0];
+    const vista = vistaActual.id;
+
     return {
       cargando: s.estadoAuth === 'cargando',
       sinOrg: s.estadoAuth === 'sinOrg',
@@ -1096,15 +1129,25 @@ class Component extends DCLogic {
         onClick: () => this.irAOrg(o)
       })),
       orgSwitcherVacio: misOrgsFiltradas.length === 0,
-      tabsMovil: [{
-        label: 'Inicio', href: '#', clase: 'tab on',
-        icoEventos: false, icoUsuarios: false, icoRepertorio: false, icoInicio: true, icoCalendario: false,
-        onClick: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ masAbierto: false }); window.scrollTo({ top: 0, behavior: 'smooth' }); }
-      }].concat(window.RepertorioMenu.accionesDashboard(s.org, s.userDoc).map((a) => ({
+      tabsMovil: vistas.map((v) => ({
+        label: v.corto, href: '#', clase: 'tab' + (v.id === vista ? ' on' : ''),
+        icoEventos: false, icoUsuarios: false, icoRepertorio: false, icoCalendario: false,
+        icoInicio: v.id === 'inicio', icoPublicar: v.id === 'publicar', icoMeGusta: v.id === 'megusta',
+        onClick: (e) => { if (e && e.preventDefault) e.preventDefault(); this.irAVista(v.id); }
+      })).concat(window.RepertorioMenu.accionesDashboard(s.org, s.userDoc).map((a) => ({
         label: a.id === 'publicado' ? 'Calendario' : (a.id === 'eventos' ? 'Eventos' : a.label), href: a.href, clase: 'tab',
         icoEventos: a.id === 'eventos', icoUsuarios: false, icoRepertorio: false, icoInicio: false, icoCalendario: a.id === 'publicado',
+        icoPublicar: false, icoMeGusta: false,
         onClick: () => {}
       }))),
+      hayVistas: vistas.length > 1,
+      vistasLista: vistas.map((v) => ({
+        label: v.label, clase: 'chip' + (v.id === vista ? ' on' : ''),
+        onClick: () => this.irAVista(v.id)
+      })),
+      vistaInicio: vista === 'inicio',
+      muestraBorradores: veBorradores && vista === 'publicar',
+      muestraVotos: veVotos && vista === 'megusta',
       masAbierto: s.masAbierto,
       masClase: 'tab' + (s.masAbierto ? ' on' : ''),
       toggleMas: () => this.setState((st) => ({ masAbierto: !st.masAbierto })),
@@ -1112,9 +1155,11 @@ class Component extends DCLogic {
       masSub: s.org ? s.org.name : '',
       masItems: [{ label: 'Fechas no disponibles', href: '#disponibilidad', onClick: (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        this.setState({ masAbierto: false });
-        const el = document.getElementById('disponibilidad');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        this.setState({ masAbierto: false, vista: 'inicio' });
+        setTimeout(() => {
+          const el = document.getElementById('disponibilidad');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
       } }],
       cerrarSesion: () => D().signOutUser(),
       orgNombre: s.org ? s.org.name : '',
@@ -1123,7 +1168,10 @@ class Component extends DCLogic {
       menuAcciones: window.RepertorioMenu.accionesDashboard(s.org, s.userDoc),
 
       viewOnlyActivo: s.viewOnlyActivo,
-      kickerPerfil: s.viewOnlyActivo ? 'Dashboard de' : 'Mi dashboard',
+      /* En Inicio el título es la persona; en las demás secciones, la
+         sección (y la persona pasa al kicker). */
+      kickerTitulo: vista === 'inicio' ? (s.viewOnlyActivo ? 'Dashboard de' : 'Mi dashboard') : (nombre || 'Mi dashboard'),
+      tituloPagina: vista === 'inicio' ? (nombre || 'Sin nombre') : vistaActual.label,
       sinEventosTexto: s.viewOnlyActivo ? 'No tiene próximos eventos asignados.' : 'No tienes próximos eventos asignados.',
       musicoNombreVisto: nombre,
       miDashboardHref: s.org ? ('dashboard.html?org=' + s.org.slug) : 'dashboard.html',
@@ -1177,7 +1225,6 @@ class Component extends DCLogic {
       borradoresSinTexto: 'Sin ' + borr.varios,
       borradoresVacio: borr.vacio,
       sinEtiquetasTexto: pf.textos.sinEtiquetas,
-      veVotos: !!(s.userDoc && s.userDoc.role === 'admin') && !s.viewOnlyActivo && !!pf.tieneCanciones,
       ...this.panelVotos(),
       toast: s.toast
     };
