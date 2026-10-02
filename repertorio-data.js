@@ -24,6 +24,11 @@
   /* Me gusta de las canciones: {orgId: {songKey: {uid: true}}}. Lectura
      pública (el contador se ve sin sesión); cada cuenta solo escribe su voto. */
   var SONG_LIKES_PATH = 'songLikes';
+  /* Nombre visible de quien vota, para la lista "quién votó" del calendario
+     público: {orgId: {uid: nombre}}. Aparte de /songLikes para no cambiar el
+     formato del voto (la fecha, que usa el top del dashboard) y porque /users
+     solo lo lee un admin. */
+  var VOTANTES_PATH = 'votantes';
   /* Cifrados (letra + acordes) importados una vez por canción:
      {orgId: {cifradoId: {titulo, artista, fuenteUrl, tonoOriginal, lineas,
      createdAt, createdBy, updatedAt, updatedBy}}}. Las canciones de los
@@ -2169,6 +2174,27 @@
     });
   }
 
+  /* cb(map) con /votantes/{orgId} ({uid: nombre}). */
+  function watchVotantes(orgId, cb) {
+    var root = dbRoot();
+    if (!root || !orgId) { cb({}); return function () {}; }
+    var ref = root.child(VOTANTES_PATH).child(orgId);
+    var handler = function (snap) { cb(snap.val() || {}); };
+    ref.on('value', handler, function (err) { console.error('Firebase watchVotantes rechazado:', err && err.code, err); cb({}); });
+    return function () { ref.off('value', handler); };
+  }
+
+  /* Cada cuenta escribe solo su propio nombre (recortado a 80). */
+  function setVotanteNombre(orgId, uid, nombre, cb) {
+    var root = dbRoot();
+    nombre = String(nombre || '').trim().slice(0, 80);
+    if (!root || !orgId || !uid || !nombre) { cb && cb(false); return; }
+    root.child(VOTANTES_PATH).child(orgId).child(uid).set(nombre).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase setVotanteNombre rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
   /* Mes ('YYYY-MM') en que se emitió un voto de /songLikes. Los votos
      guardados como `true` son de antes de registrar la fecha: la función
      salió en octubre de 2026, así que cuentan en ese mes. */
@@ -3120,7 +3146,7 @@
     TIPOS_EVENTO: TIPOS_EVENTO, tipoEvento: tipoEvento, indiceTipoEvento: indiceTipoEvento,
     MINISTERIOS_DEFECTO: MINISTERIOS_DEFECTO, MINISTERIO_CANTIDAD_MAX: MINISTERIO_CANTIDAD_MAX, normalizarMinisterios: normalizarMinisterios,
     song: song, songLabel: songLabel, songLabelParts: songLabelParts, songKey: songKey, buildSongCatalog: buildSongCatalog,
-    watchSongLikes: watchSongLikes, setSongLike: setSongLike, mesDeVoto: mesDeVoto,
+    watchSongLikes: watchSongLikes, setSongLike: setSongLike, watchVotantes: watchVotantes, setVotanteNombre: setVotanteNombre, mesDeVoto: mesDeVoto,
     youtubeId: youtubeId, youtubeController: youtubeController, formatoTiempo: formatoTiempo, progresoAudio: progresoAudio, youtubeErrorMessage: youtubeErrorMessage,defaultBlocks: defaultBlocks, bloqueParte: bloqueParte, nuevaParte: nuevaParte, newEvento: newEvento, uid: uid,
     BANDA_ROLES: BANDA_ROLES, defaultBanda: defaultBanda, bandaSlot: bandaSlot,
     bandaSlotRol: bandaSlotRol, numeroParaRol: numeroParaRol, rolInicialMinisterio: rolInicialMinisterio,
