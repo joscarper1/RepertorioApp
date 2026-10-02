@@ -34,7 +34,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20260930h"></script>
+<script src="repertorio-data.js?v=20261002a"></script>
 <script src="avisos.js?v=20261001a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -313,7 +313,27 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .seccion-inp:focus{border-bottom-color:var(--ink)}
 .can{border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--soft)}
 .can-g1{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px}
-.can-g2{display:grid;grid-template-columns:minmax(0,1fr) 80px auto 36px 32px;gap:8px;align-items:center}
+.can-g2{display:grid;grid-template-columns:minmax(0,1fr) 80px auto 36px;gap:8px;align-items:center}
+/* Formulario de canción nueva: sin cifrado (se agrega desde la tarjeta). */
+.can-g2.sin-cif{grid-template-columns:minmax(0,1fr) 80px 36px}
+.can-kicker{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac-dk)}
+.can.can-edit{background:#fff;border-color:var(--ac)}
+.can.can-pend{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold)}
+.can-pie{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.can-pie .btn-sec{min-height:40px;padding:0 14px;font-size:13px}
+.can-pie-aviso{margin-right:auto;align-self:center}
+.seccion-n{font-size:12px;font-weight:700;color:var(--muted2);white-space:nowrap}
+/* Canción ya agregada: solo lectura, con sus acciones a la derecha. */
+.tarjeta{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:10px 12px;border:1px solid rgba(0,0,0,.09);border-radius:10px;background:#fff}
+.tarjeta-info{min-width:0}
+.tarjeta-nom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;font-weight:700;overflow-wrap:anywhere}
+.tarjeta-sub{font-size:12.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.tarjeta-acc{display:flex;align-items:center;gap:6px}
+.tarjeta .can-prog{margin-top:0}
+a.redondo{text-decoration:none}
+.redondo.peligro{border-color:rgba(0,0,0,.18);color:var(--muted)}
+.redondo.peligro:hover{border-color:var(--red);color:var(--red);background:var(--red-lt)}
+.pend-lista{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;line-height:1.4}
 .cif-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 14px;border-radius:999px;border:1.5px solid var(--ac);background:#fff;color:var(--ac-dk);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
 .cif-btn:hover{background:var(--ac-lt)}
 .cif-btn.on{background:var(--ac);color:#fff}
@@ -402,10 +422,15 @@ a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-c
   .slot-fila .btn-quitar{width:44px;height:44px}
   .can{background:var(--soft)}
   .can-g1{grid-template-columns:1fr}
-  .can-g2{grid-template-columns:72px minmax(0,1fr) 44px 44px}
+  .can-g2{grid-template-columns:72px minmax(0,1fr) 44px}
+  .can-g2.sin-cif{grid-template-columns:72px minmax(0,1fr) 44px}
+  .can-g2.sin-cif .redondo{grid-column:3}
   .can-g2 .inp-mono{grid-column:1/-1}
   .cif-btn{min-height:46px}
-  .can-g2 .btn-quitar{grid-column:auto}
+  .can-pie .btn-pri,.can-pie .btn-sec{flex:1;min-height:46px}
+  .can-pie-aviso{flex-basis:100%}
+  .tarjeta{grid-template-columns:minmax(0,1fr)}
+  .tarjeta-acc{justify-content:flex-end}
   .redondo{width:44px;height:44px}
   .prog-r{height:28px}
   .prog-r::-webkit-slider-thumb{width:16px;height:16px;margin-top:-6px}
@@ -931,57 +956,103 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             <div class="seccion">
               <div class="seccion-cab">
                 <input class="seccion-inp" value="{{ bl.titulo }}" onChange="{{ bl.onTitulo }}" aria-label="Nombre de la sección">
-                <button type="button" class="btn-sec" onClick="{{ bl.addCancion }}">+ Canción</button>
+                <span class="seccion-n">{{ bl.cuenta }}</span>
               </div>
-              <sc-for list="{{ bl.canciones }}" as="cn" hint-placeholder-count="2">
-                <div class="can">
-                  <div class="can-g1">
+              <sc-for list="{{ bl.items }}" as="cn" hint-placeholder-count="2">
+                <sc-if value="{{ cn.esForm }}" hint-placeholder-val="{{ true }}">
+                  <div class="{{ cn.formClase }}">
+                    <span class="can-kicker">{{ cn.formTitulo }}</span>
+                    <div class="can-g1">
+                      <div style="position:relative">
+                        <textarea class="inp" value="{{ cn.t }}" onChange="{{ cn.onT }}" onFocus="{{ cn.onFocusT }}" onBlur="{{ cn.onBlurT }}" placeholder="Nombre de la canción" autoComplete="off" rows="1" style="font-weight:600"></textarea>
+                        <sc-if value="{{ cn.autocompleteAbierto }}" hint-placeholder-val="{{ false }}">
+                          <div class="sugerencias">
+                            <sc-for list="{{ cn.sugerencias }}" as="sug" hint-placeholder-count="3">
+                              <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                      </div>
+                      <div style="position:relative">
+                        <input class="inp" value="{{ cn.sm }}" onChange="{{ cn.onSm }}" onFocus="{{ cn.onFocusSm }}" onBlur="{{ cn.onBlurSm }}" placeholder="Salmista / artista original" autoComplete="off">
+                        <sc-if value="{{ cn.salmistaAbierto }}" hint-placeholder-val="{{ false }}">
+                          <div class="sugerencias">
+                            <sc-for list="{{ cn.sugerenciasSm }}" as="sug" hint-placeholder-count="3">
+                              <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </div>
+                    <div class="{{ cn.g2Clase }}">
+                      <input class="inp inp-mono" value="{{ cn.u }}" onChange="{{ cn.onU }}" onBlur="{{ cn.onBlurU }}" placeholder="https://… enlace de la pista">
+                      <input class="inp inp-tono" value="{{ cn.k }}" onChange="{{ cn.onK }}" placeholder="Tono" aria-label="Tono">
+                      <sc-if value="{{ cn.conCif }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" class="{{ cn.cifClase }}" onClick="{{ cn.onCifrado }}" aria-label="{{ cn.cifradoTitle }}" title="{{ cn.cifradoTitle }}"><span style="font-size:14px">♪</span><span>{{ cn.cifradoTitle }}</span></button>
+                      </sc-if>
+                      <button type="button" class="{{ cn.playClase }}" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}">{{ cn.playIcon }}</button>
+                    </div>
+                    <sc-if value="{{ cn.muestraProg }}" hint-placeholder-val="{{ false }}">
+                      <div class="can-prog">
+                        <span class="can-prog-t">{{ cn.progActual }}</span>
+                        <input type="range" class="prog-r" min="0" max="{{ cn.progMax }}" step="1" value="{{ cn.progValor }}" style="{{ cn.progStyle }}" disabled="{{ cn.progSinDur }}" onChange="{{ cn.onSeek }}" aria-label="{{ cn.progLabel }}" aria-valuetext="{{ cn.progTexto }}">
+                        <span class="can-prog-t">{{ cn.progTotal }}</span>
+                      </div>
+                    </sc-if>
                     <div style="position:relative">
-                      <textarea class="inp" value="{{ cn.t }}" onChange="{{ cn.onT }}" onFocus="{{ cn.onFocusT }}" onBlur="{{ cn.onBlurT }}" placeholder="Nombre de la canción" autoComplete="off" rows="1" style="font-weight:600"></textarea>
-                      <sc-if value="{{ cn.autocompleteAbierto }}" hint-placeholder-val="{{ false }}">
+                      <input class="inp" value="{{ cn.d }}" onChange="{{ cn.onD }}" onFocus="{{ cn.onFocusD }}" onBlur="{{ cn.onBlurD }}" placeholder="Quién dirige" autoComplete="off">
+                      <sc-if value="{{ cn.dirigeAbierto }}" hint-placeholder-val="{{ false }}">
                         <div class="sugerencias">
-                          <sc-for list="{{ cn.sugerencias }}" as="sug" hint-placeholder-count="3">
+                          <sc-for list="{{ cn.sugerenciasD }}" as="sug" hint-placeholder-count="3">
                             <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
                           </sc-for>
                         </div>
                       </sc-if>
                     </div>
-                    <div style="position:relative">
-                      <input class="inp" value="{{ cn.sm }}" onChange="{{ cn.onSm }}" onFocus="{{ cn.onFocusSm }}" onBlur="{{ cn.onBlurSm }}" placeholder="Salmista / artista original" autoComplete="off">
-                      <sc-if value="{{ cn.salmistaAbierto }}" hint-placeholder-val="{{ false }}">
-                        <div class="sugerencias">
-                          <sc-for list="{{ cn.sugerenciasSm }}" as="sug" hint-placeholder-count="3">
-                            <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
-                          </sc-for>
-                        </div>
+                    <div class="can-pie">
+                      <sc-if value="{{ cn.avisoDup }}" hint-placeholder-val="{{ false }}"><span class="aviso-dup can-pie-aviso">{{ cn.avisoDup }}</span></sc-if>
+                      <sc-if value="{{ cn.muestraSec }}" hint-placeholder-val="{{ false }}">
+                        <button type="button" class="btn-sec" onClick="{{ cn.onSec }}">{{ cn.secLabel }}</button>
                       </sc-if>
+                      <button type="button" class="btn-pri btn-ac" onClick="{{ cn.onPri }}" disabled="{{ cn.priDeshabilitado }}">{{ cn.priLabel }}</button>
                     </div>
                   </div>
-                  <div class="can-g2">
-                    <input class="inp inp-mono" value="{{ cn.u }}" onChange="{{ cn.onU }}" onBlur="{{ cn.onBlurU }}" placeholder="https://… enlace de la pista">
-                    <input class="inp inp-tono" value="{{ cn.k }}" onChange="{{ cn.onK }}" placeholder="Tono" aria-label="Tono">
-                    <button type="button" class="{{ cn.cifClase }}" onClick="{{ cn.onCifrado }}" aria-label="{{ cn.cifradoTitle }}" title="{{ cn.cifradoTitle }}"><span style="font-size:14px">♪</span><span>{{ cn.cifradoTitle }}</span></button>
-                    <button type="button" class="{{ cn.playClase }}" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}">{{ cn.playIcon }}</button>
-                    <button type="button" class="btn-quitar" onClick="{{ cn.remove }}" title="Quitar canción" aria-label="Quitar canción">✕</button>
-                  </div>
-                  <sc-if value="{{ cn.muestraProg }}" hint-placeholder-val="{{ false }}">
-                    <div class="can-prog">
-                      <span class="can-prog-t">{{ cn.progActual }}</span>
-                      <input type="range" class="prog-r" min="0" max="{{ cn.progMax }}" step="1" value="{{ cn.progValor }}" style="{{ cn.progStyle }}" disabled="{{ cn.progSinDur }}" onChange="{{ cn.onSeek }}" aria-label="{{ cn.progLabel }}" aria-valuetext="{{ cn.progTexto }}">
-                      <span class="can-prog-t">{{ cn.progTotal }}</span>
+                </sc-if>
+                <sc-if value="{{ cn.esTarjeta }}" hint-placeholder-val="{{ false }}">
+                  <div class="tarjeta">
+                    <div class="tarjeta-info">
+                      <div class="tarjeta-nom">
+                        <span>{{ cn.nombre }}</span>
+                        <sc-if value="{{ cn.tono }}" hint-placeholder-val="{{ true }}"><span class="tono">{{ cn.tono }}</span></sc-if>
+                      </div>
+                      <sc-for list="{{ cn.nombreExtra }}" as="linea" hint-placeholder-count="0">
+                        <div class="tarjeta-sub">{{ linea }}</div>
+                      </sc-for>
+                      <sc-if value="{{ cn.sub }}" hint-placeholder-val="{{ true }}"><div class="tarjeta-sub">{{ cn.sub }}</div></sc-if>
+                      <sc-if value="{{ cn.avisoDup }}" hint-placeholder-val="{{ false }}"><div class="aviso-dup" style="margin-top:4px">{{ cn.avisoDup }}</div></sc-if>
                     </div>
-                  </sc-if>
-                  <div style="position:relative">
-                    <input class="inp" value="{{ cn.d }}" onChange="{{ cn.onD }}" onFocus="{{ cn.onFocusD }}" onBlur="{{ cn.onBlurD }}" placeholder="Quién dirige" autoComplete="off">
-                    <sc-if value="{{ cn.dirigeAbierto }}" hint-placeholder-val="{{ false }}">
-                      <div class="sugerencias">
-                        <sc-for list="{{ cn.sugerenciasD }}" as="sug" hint-placeholder-count="3">
-                          <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
-                        </sc-for>
+                    <div class="tarjeta-acc">
+                      <sc-if value="{{ cn.tieneAudio }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" class="{{ cn.playClase }}" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}">{{ cn.playIcon }}</button>
+                      </sc-if>
+                      <sc-if value="{{ cn.tieneEnlace }}" hint-placeholder-val="{{ false }}">
+                        <a class="redondo" href="{{ cn.enlace }}" target="_blank" rel="noopener" aria-label="Abrir enlace" title="Abrir enlace">↗</a>
+                      </sc-if>
+                      <sc-if value="{{ cn.conCif }}" hint-placeholder-val="{{ true }}">
+                        <button type="button" class="{{ cn.cifClase }}" onClick="{{ cn.onCifrado }}" aria-label="{{ cn.cifradoTitle }}" title="{{ cn.cifradoTitle }}">♪</button>
+                      </sc-if>
+                      <button type="button" class="redondo" onClick="{{ cn.onEditar }}" aria-label="Editar canción" title="Editar canción">✎</button>
+                      <button type="button" class="redondo peligro" onClick="{{ cn.onQuitar }}" aria-label="Quitar canción" title="Quitar canción">🗑</button>
+                    </div>
+                    <sc-if value="{{ cn.muestraProg }}" hint-placeholder-val="{{ false }}">
+                      <div class="can-prog">
+                        <span class="can-prog-t">{{ cn.progActual }}</span>
+                        <input type="range" class="prog-r" min="0" max="{{ cn.progMax }}" step="1" value="{{ cn.progValor }}" style="{{ cn.progStyle }}" disabled="{{ cn.progSinDur }}" onChange="{{ cn.onSeek }}" aria-label="{{ cn.progLabel }}" aria-valuetext="{{ cn.progTexto }}">
+                        <span class="can-prog-t">{{ cn.progTotal }}</span>
                       </div>
                     </sc-if>
                   </div>
-                </div>
+                </sc-if>
               </sc-for>
             </div>
           </div>
@@ -1167,6 +1238,33 @@ a.mas-fila:hover{background:none;color:var(--ink)}
       <sc-if value="{{ estadoUrl }}" hint-placeholder-val="{{ false }}">
         <a class="toast-link" href="{{ estadoUrl }}" target="_blank" rel="noopener">Ábrelo en YouTube ↗</a>
       </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ pendientesAbierto }}" hint-placeholder-val="{{ false }}">
+    <div class="velo" onClick="{{ pendRevisar }}">
+      <div class="modal" role="dialog" aria-modal="true" aria-label="Canciones sin confirmar" onClick="{{ detenerPropagacion }}" style="width:min(100%,460px)">
+        <div class="modal-cab">
+          <span class="kicker" style="margin:0">Canciones sin confirmar</span>
+          <button type="button" class="btn-quitar" onClick="{{ pendRevisar }}" aria-label="Cerrar">✕</button>
+        </div>
+        <p style="font-size:14px;margin:8px 0 10px;line-height:1.45">Quedaron canciones sin agregar o cambios sin aplicar:</p>
+        <ul class="pend-lista">
+          <sc-for list="{{ pendLista }}" as="pl" hint-placeholder-count="2">
+            <li>{{ pl.texto }}</li>
+          </sc-for>
+        </ul>
+        <sc-if value="{{ pendHaySinNombre }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0;line-height:1.45">Las que no tienen nombre no se pueden agregar: revísalas para completarlas, o descártalas.</p>
+        </sc-if>
+        <div class="modal-acc" style="flex-wrap:wrap">
+          <button type="button" class="btn-sec" onClick="{{ pendRevisar }}">Revisar</button>
+          <button type="button" class="btn-sec" onClick="{{ pendDescartar }}">Descartar y continuar</button>
+          <sc-if value="{{ pendPuedeAgregar }}" hint-placeholder-val="{{ true }}">
+            <button type="button" class="btn-pri btn-ac" onClick="{{ pendAgregar }}">Agregar y continuar</button>
+          </sc-if>
+        </div>
+      </div>
     </div>
   </sc-if>
 
@@ -1517,6 +1615,92 @@ function partesHora(hora) {
   return { h: String(Number(m[1])), m: m[2], p: m[3].toLowerCase() + 'm' };
 }
 
+/* --- Canciones del paso "Canciones" ---
+   Cada sección muestra arriba un formulario siempre abierto para agregar
+   (bl._nueva) y debajo sus canciones como tarjetas de solo lectura; el
+   lápiz abre una copia editable (cn._edit) que se aplica o se descarta.
+   Secciones y canciones llevan una clave local (_k) que no cambia al
+   quitar o reordenar filas: con ella se sabe qué canción suena. Nada de
+   esto se guarda en la nube (ver limpiarCanciones). */
+const CAMPOS_CANCION = ['t', 'sm', 'u', 'k', 'd'];
+
+function claveLocal() { return 'k' + Math.random().toString(36).slice(2, 10); }
+
+function cancionVacia(c) {
+  return !c || !CAMPOS_CANCION.concat(['cid']).some((f) => String(c[f] || '').trim());
+}
+
+function copiaCancion(c) {
+  const o = {};
+  CAMPOS_CANCION.forEach((f) => { o[f] = (c && c[f]) || ''; });
+  if (c && c.cid) o.cid = c.cid;
+  return o;
+}
+
+function nuevaCancionForm() { return Object.assign(copiaCancion(null), { _k: claveLocal() }); }
+
+function mismaCancion(a, b) {
+  return CAMPOS_CANCION.every((f) => String(a[f] || '').trim() === String(b[f] || '').trim()) && (a.cid || '') === (b.cid || '');
+}
+
+/* Copia los campos del formulario a la canción, sin espacios de sobra. */
+function volcarCancion(destino, datos) {
+  CAMPOS_CANCION.forEach((f) => { destino[f] = String(datos[f] || '').trim(); });
+  if (datos.cid) destino.cid = datos.cid; else delete destino.cid;
+  return destino;
+}
+
+/* Deja el borrador listo para el paso de canciones: claves locales, un
+   formulario nuevo por sección y sin las filas vacías de las plantillas
+   viejas. Es idempotente (corre en cada setDraft). */
+function prepararCanciones(dr) {
+  ((dr && dr.bloques) || []).forEach((bl) => {
+    if (!bl._k) bl._k = claveLocal();
+    if (!bl._nueva) bl._nueva = nuevaCancionForm();
+    bl.canciones = (bl.canciones || []).filter((c) => !cancionVacia(c));
+    bl.canciones.forEach((c) => { if (!c._k) c._k = claveLocal(); });
+  });
+  return dr;
+}
+
+function limpiarCanciones(dr) {
+  ((dr && dr.bloques) || []).forEach((bl) => {
+    delete bl._k; delete bl._nueva;
+    (bl.canciones || []).forEach((c) => { delete c._k; delete c._edit; });
+  });
+  return dr;
+}
+
+/* Datos que edita un formulario: el de canción nueva (ci === null) o la
+   copia en edición de una canción ya agregada. */
+function objetivoCancion(dr, bi, ci) {
+  const bl = dr && dr.bloques[bi];
+  if (!bl) return null;
+  if (ci === null) return bl._nueva || null;
+  const cn = bl.canciones[ci];
+  return (cn && cn._edit) || null;
+}
+
+/* Formularios con algo sin confirmar: canciones nuevas a medio escribir y
+   ediciones con cambios. */
+function pendientesCanciones(dr) {
+  const lista = [];
+  ((dr && dr.bloques) || []).forEach((bl) => {
+    const sec = (bl.titulo || '').trim() || 'Sección sin nombre';
+    const n = bl._nueva;
+    if (n && !cancionVacia(n)) {
+      const nombre = (n.t || '').trim();
+      lista.push({ sinNombre: !nombre, texto: sec + ' · ' + (nombre ? 'sin agregar: «' + nombre + '»' : 'canción nueva sin nombre') });
+    }
+    (bl.canciones || []).forEach((c) => {
+      if (!c._edit || mismaCancion(c._edit, c)) return;
+      const nombre = (c._edit.t || '').trim();
+      lista.push({ sinNombre: !nombre, texto: sec + ' · cambios sin aplicar en «' + ((c.t || '').trim() || 'sin nombre') + '»' });
+    });
+  });
+  return lista;
+}
+
 class Component extends DCLogic {
   state = {
     estadoAcceso: 'cargando', denegadoMotivo: '', organizationId: null, organizacion: null, orgs: [],
@@ -1532,7 +1716,10 @@ class Component extends DCLogic {
        cargada en el borrador desde el menú "Versión" (null = la vigente). */
     versiones: [], versionCargada: null,
     /* Modal "Programa del mes" y descarga de su PDF en curso. */
-    programaAbierto: false, generandoPdf: false
+    programaAbierto: false, generandoPdf: false,
+    /* Aviso de canciones sin agregar/aplicar al salir de "Canciones", y si
+       se resaltan los formularios pendientes tras elegir "Revisar". */
+    pendientesAbierto: false, marcarPendientes: false
   };
 
   /* Perfil de calendario de la organización activa (R.perfilOrg): tipos de
@@ -1638,7 +1825,7 @@ class Component extends DCLogic {
     const v = s.versiones.find((x) => x.n === n);
     const vigente = !v || n === enNube.version;
     const base = vigente ? JSON.parse(JSON.stringify(enNube)) : R.eventoDesdeVersion(v, enNube);
-    this.setState({ draft: R.newEvento(base, this.perfil()), versionCargada: vigente ? null : n });
+    this.setState({ draft: prepararCanciones(R.newEvento(base, this.perfil())), versionCargada: vigente ? null : n });
   }
 
   /* --- Selector de hora en rueda ---
@@ -1710,7 +1897,16 @@ class Component extends DCLogic {
   }
 
   togglePlay(key, videoId) {
-    if (this._yt) this._yt.toggle(key, videoId);
+    if (!this._yt || !videoId) return;
+    this._ytVideo = videoId;
+    this._yt.toggle(key, videoId);
+  }
+
+  /* Pausa la canción `key` si es la que suena (p. ej. al quitarla: si no,
+     seguiría sonando sin ningún control a la vista). */
+  pausarSiSuena(key) {
+    const s = this.state;
+    if (this._yt && this._ytVideo && s.reproduciendoKey === key && !s.reproduciendoPausado) this._yt.toggle(key, this._ytVideo);
   }
 
   toggleSidebar() { this.setState((s) => ({ sidebarAbierto: !s.sidebarAbierto })); }
@@ -1756,6 +1952,7 @@ class Component extends DCLogic {
   }
 
   irA(patch) {
+    if (patch.draft) prepararCanciones(patch.draft);
     this.setState(Object.assign({ estado: '', verBanda: false }, patch));
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1786,7 +1983,62 @@ class Component extends DCLogic {
     this.setState((s) => {
       const dr = JSON.parse(JSON.stringify(s.draft));
       fn(dr);
-      return { draft: dr };
+      return { draft: prepararCanciones(dr) };
+    });
+  }
+
+  /* "Agregar": pasa el formulario nuevo de la sección al final de su lista
+     (con la misma clave local, así el audio que sonaba sigue en la tarjeta)
+     y lo deja limpio y abierto para la siguiente. */
+  agregarCancion(x, bi) {
+    const bl = x.bloques[bi];
+    const n = bl && bl._nueva;
+    if (!n || !(n.t || '').trim()) return false;
+    bl.canciones.push(volcarCancion({ _k: n._k }, n));
+    bl._nueva = nuevaCancionForm();
+    return true;
+  }
+
+  aplicarEdicion(x, bi, ci) {
+    const cn = x.bloques[bi] && x.bloques[bi].canciones[ci];
+    if (!cn || !cn._edit || !(cn._edit.t || '').trim()) return false;
+    volcarCancion(cn, cn._edit);
+    delete cn._edit;
+    return true;
+  }
+
+  /* Antes de salir de "Canciones" (Siguiente, Atrás u otra sub-pestaña):
+     las ediciones abiertas sin cambios se cierran solas; si queda algo sin
+     confirmar, se pregunta qué hacer (ver pendAgregar/pendDescartar). */
+  conCancionesResueltas(continuar) {
+    const dr = this.state.draft;
+    if (!pendientesCanciones(dr).length) {
+      this.setDraft((x) => x.bloques.forEach((bl) => bl.canciones.forEach((c) => { delete c._edit; })));
+      continuar();
+      return;
+    }
+    this._continuarPend = continuar;
+    this.setState({ pendientesAbierto: true });
+  }
+
+  resolverPendientes(agregar) {
+    const continuar = this._continuarPend;
+    this._continuarPend = null;
+    this.setDraft((x) => x.bloques.forEach((bl, bi) => {
+      if (!agregar || !this.agregarCancion(x, bi)) bl._nueva = nuevaCancionForm();
+      bl.canciones.forEach((c, ci) => { if (!agregar || !this.aplicarEdicion(x, bi, ci)) delete c._edit; });
+    }));
+    this.setState({ pendientesAbierto: false, marcarPendientes: false });
+    if (continuar) continuar();
+  }
+
+  /* "Revisar": cierra el aviso, resalta los formularios pendientes y lleva
+     al primero. */
+  revisarPendientes() {
+    this._continuarPend = null;
+    this.setState({ pendientesAbierto: false, marcarPendientes: true }, () => {
+      const el = typeof document !== 'undefined' && document.querySelector('.can-pend');
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
     });
   }
 
@@ -1875,7 +2127,8 @@ class Component extends DCLogic {
     const s = this.state;
     const dr = s.draft;
     if (!dr) return;
-    const cn = dr.bloques[bi].canciones[ci];
+    const cn = objetivoCancion(dr, bi, ci);
+    if (!cn) return;
     const t = (cn.t || '').trim();
     const sm = (cn.sm || '').trim();
     const u = (cn.u || '').trim();
@@ -1906,7 +2159,7 @@ class Component extends DCLogic {
       maxV = Math.max(maxV, m ? parseInt(m[1], 10) : 1);
     });
     const nuevoNombre = base + ' v' + (maxV + 1);
-    this.setDraft((x) => { x.bloques[bi].canciones[ci].t = nuevoNombre; });
+    this.setDraft((x) => { const o = objetivoCancion(x, bi, ci); if (o) o.t = nuevoNombre; });
   }
 
   shiftMonth(delta) {
@@ -1923,7 +2176,8 @@ class Component extends DCLogic {
      de Firebase rechazan que ese rol lo cambie). */
   guardarConEstado(estado) {
     const R = D();
-    const dr = this.state.draft;
+    /* Copia sin las claves ni formularios locales del paso de canciones. */
+    const dr = limpiarCanciones(JSON.parse(JSON.stringify(this.state.draft)));
     if (estado !== undefined) dr.estado = estado;
     else {
       /* R.newEvento completa con 'BORRADOR' a los eventos antiguos sin
@@ -2209,7 +2463,11 @@ class Component extends DCLogic {
       alGuardar: (id, c, listo) => {
         const s = this.state;
         const cn = s.draft && s.draft.bloques[c.bi] && s.draft.bloques[c.bi].canciones[c.ci];
-        if (cn) this.setDraft((x) => { x.bloques[c.bi].canciones[c.ci].cid = id; });
+        if (cn) this.setDraft((x) => {
+          const destino = x.bloques[c.bi].canciones[c.ci];
+          destino.cid = id;
+          if (destino._edit) destino._edit.cid = id;
+        });
         /* Quien administra el repertorio lo deja además en el catálogo; para
            el resto, el catálogo lo toma del evento en cuanto este se guarde. */
         const titulo = ((cn && cn.t) || '').trim();
@@ -2225,7 +2483,8 @@ class Component extends DCLogic {
   abrirCifrado(bi, ci, cid) {
     const cn = this.state.draft && this.state.draft.bloques[bi] ? this.state.draft.bloques[bi].canciones[ci] : null;
     if (!cn) return;
-    this.modalCifrado().abrir({ bi: bi, ci: ci, t: cn.t, sm: cn.sm, k: cn.k || '' }, cid);
+    const datos = cn._edit || cn;
+    this.modalCifrado().abrir({ bi: bi, ci: ci, t: datos.t, sm: datos.sm, k: datos.k || '' }, cid);
   }
 
   renderVals() {
@@ -2707,117 +2966,209 @@ class Component extends DCLogic {
       return Array.from(porClave.values()).sort((a, b) => a.localeCompare(b, 'es'));
     })();
 
+    /* Aviso (no bloquea) de la misma canción repetida en el evento: se
+       compara el nombre sin mayúsculas ni espacios de sobra. */
+    const claveNombre = (t) => String(t || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const usosNombre = {};
+    if (dr) dr.bloques.forEach((bl) => (bl.canciones || []).forEach((c) => {
+      const kn = claveNombre(c.t);
+      if (kn) (usosNombre[kn] = usosNombre[kn] || []).push({ k: c._k, bl: bl._k, titulo: (bl.titulo || '').trim() || 'otra sección' });
+    }));
+    const avisoRepetida = (t, kPropia, blPropio, prefijo) => {
+      const otros = (usosNombre[claveNombre(t)] || []).filter((u) => u.k !== kPropia);
+      if (!otros.length) return '';
+      return prefijo + Array.from(new Set(otros.map((u) => (u.bl === blPropio ? 'esta misma sección' : u.titulo)))).join(', ');
+    };
+    const pendientesVisibles = !!s.marcarPendientes;
+
+    /* Campos y autocompletes del formulario de una canción: el de canción
+       nueva (ci === null) o el de una canción en edición. `datos` son los
+       valores del formulario y `playKey` la clave del audio (la misma que
+       tendrá/tiene la tarjeta, ver agregarCancion). */
+    const formCancion = (bi, ci, datos, playKey) => {
+      const fijar = (cambio) => this.setDraft((x) => { const o = objetivoCancion(x, bi, ci); if (o) cambio(o); });
+      const g = (campo) => (e) => { const v = e.target.value; fijar((o) => { o[campo] = v; }); };
+      const rowKey = (ci === null ? 'n-' : 'e-') + playKey;
+      const abrirFila = (abierto) => this.setState((st) => ({ autocompleteAbierto: Object.assign({}, st.autocompleteAbierto, { [rowKey]: abierto }) }));
+      const abrirSalmista = (abierto) => this.setState((st) => ({ salmistaAbierto: Object.assign({}, st.salmistaAbierto, { [rowKey]: abierto }) }));
+      const abrirDirige = (abierto) => this.setState((st) => ({ dirigeAbierto: Object.assign({}, st.dirigeAbierto, { [rowKey]: abierto }) }));
+      const query = (datos.t || '').trim().toLowerCase();
+      const coincidencias = query
+        ? catalogo.filter((so) => so.nombre.toLowerCase().indexOf(query) >= 0).slice(0, 6)
+        : [];
+      const querySm = (datos.sm || '').trim().toLowerCase();
+      const coincidenciasSm = querySm
+        ? catalogoSalmistas.filter((nm) => nm.toLowerCase().indexOf(querySm) >= 0).slice(0, 6)
+        : [];
+      const queryD = (datos.d || '').trim().toLowerCase();
+      const coincidenciasD = queryD
+        ? catalogoDirige.filter((nm) => nm.toLowerCase().indexOf(queryD) >= 0).slice(0, 6)
+        : [];
+      /* ▶ se habilita solo con un link de YouTube reconocible en `u`, sin
+         importar si llegó ahí por autocomplete o escrito/pegado a mano. */
+      const videoId = R.youtubeId(datos.u);
+      const activa = s.reproduciendoKey === playKey;
+      const enPausa = activa && s.reproduciendoPausado;
+      return {
+        esForm: true, esTarjeta: false,
+        t: datos.t, d: datos.d, k: datos.k, u: datos.u, sm: datos.sm,
+        onT: (e) => { g('t')(e); abrirFila(true); },
+        onD: (e) => { g('d')(e); abrirDirige(true); },
+        onK: g('k'),
+        onU: g('u'),
+        onBlurU: () => this.sugerirVersion(bi, ci),
+        onSm: (e) => { g('sm')(e); abrirSalmista(true); },
+        onFocusT: () => abrirFila(true),
+        onBlurT: () => { abrirFila(false); this.sugerirVersion(bi, ci); },
+        onFocusSm: () => abrirSalmista(true),
+        onBlurSm: () => { abrirSalmista(false); this.sugerirVersion(bi, ci); },
+        onFocusD: () => abrirDirige(true),
+        onBlurD: () => abrirDirige(false),
+        dirigeAbierto: !!s.dirigeAbierto[rowKey] && coincidenciasD.length > 0,
+        sugerenciasD: coincidenciasD.map((nm) => ({
+          nombre: nm,
+          onPick: () => { fijar((o) => { o.d = nm; }); abrirDirige(false); }
+        })),
+        autocompleteAbierto: !!s.autocompleteAbierto[rowKey] && coincidencias.length > 0,
+        sugerencias: coincidencias.map((so) => ({
+          nombre: so.salmista ? (so.nombre + ' — ' + so.salmista) : so.nombre,
+          /* onMouseDown (no onClick) para que el pick se aplique antes de
+             que el blur del input cierre el desplegable. */
+          onPick: () => {
+            fijar((o) => {
+              o.t = so.nombre;
+              o.sm = so.salmista;
+              o.u = so.u;
+              /* El cifrado viaja con la canción elegida (ver buildSongCatalog). */
+              if (so.cifradoId) o.cid = so.cifradoId;
+              else delete o.cid;
+            });
+            abrirFila(false);
+          }
+        })),
+        salmistaAbierto: !!s.salmistaAbierto[rowKey] && coincidenciasSm.length > 0,
+        sugerenciasSm: coincidenciasSm.map((nm) => ({
+          nombre: nm,
+          onPick: () => { fijar((o) => { o.sm = nm; }); abrirSalmista(false); }
+        })),
+        playIcon: activa && !enPausa ? '❚❚' : '▶',
+        playLabel: activa && !enPausa ? 'Pausar audio' : (enPausa ? 'Reanudar audio' : 'Reproducir audio'),
+        /* El botón siempre se renderiza (nunca sc-if) para no romper las
+           columnas del grid; sin video válido se oculta con
+           visibility:hidden en vez de display:none. */
+        playClase: 'redondo' + (activa ? ' on' : '') + (videoId ? '' : ' oculto'),
+        onPlay: () => this.togglePlay(playKey, videoId),
+        ...this.progresoFila(activa, playKey, (datos.t || '').trim().split(/\r?\n/)[0])
+      };
+    };
+
+    /* Estado del botón ♪ Cifrado: relleno si la canción ya tiene (propio o
+       del catálogo), contorno si todavía no; oculto sin cifrado ni permiso
+       para agregarlo. */
+    const cifradoBoton = (bi, ci, datos, base) => {
+      const cid = R.cifradoIdDeCancion(datos, catalogo);
+      const tieneTitulo = !!(datos.t || '').trim();
+      return {
+        conCif: !!cid || puedeCifrar,
+        cifradoTitle: cid ? 'Ver cifrado' : 'Agregar cifrado',
+        cifClase: base + (cid ? ' on' : ' vacio') + (tieneTitulo ? '' : ' inactivo'),
+        onCifrado: () => {
+          if (!tieneTitulo) { this.avisar(false, '', 'Escribe primero el nombre de la canción'); return; }
+          if (cid || puedeCifrar) this.abrirCifrado(bi, ci, cid);
+        }
+      };
+    };
+
     /* Cabecera "Bloque N" centrada al inicio de cada bloque, sólo cuando el
        evento tiene más de uno (con un único bloque no aporta nada). */
     const totalPartes = dr ? new Set(dr.bloques.map((bl) => R.bloqueParte(bl))).size : 0;
     const parteHeaderStyle = (primera) => 'position:relative;display:flex;align-items:center;gap:12px;' +
       'margin:' + (primera ? '0' : '16px') + ' 0 14px';
-    const bloques = dr ? dr.bloques.map((bl, bi) => ({
-      mostrarParte: totalPartes > 1 && (bi === 0 || R.bloqueParte(dr.bloques[bi - 1]) !== R.bloqueParte(bl)),
-      parteTitulo: 'Bloque ' + R.bloqueParte(bl),
-      parteStyle: parteHeaderStyle(bi === 0),
-      puedeQuitarParte: R.bloqueParte(bl) > 1,
-      quitarParte: () => {
-        if (window.confirm('¿Quitar el Bloque ' + R.bloqueParte(bl) + ' y todas sus canciones?')) this.quitarParte(R.bloqueParte(bl));
-      },
-      titulo: bl.titulo,
-      onTitulo: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].titulo = v; }); },
-      addCancion: () => this.setDraft((x) => { x.bloques[bi].canciones.push(R.song()); }),
-      canciones: bl.canciones.map((cn, ci) => {
-        const g = (campo) => (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].canciones[ci][campo] = v; }); };
-        const rowKey = bi + '-' + ci;
-        const abrirFila = (abierto) => this.setState((st) => ({ autocompleteAbierto: Object.assign({}, st.autocompleteAbierto, { [rowKey]: abierto }) }));
-        const abrirSalmista = (abierto) => this.setState((st) => ({ salmistaAbierto: Object.assign({}, st.salmistaAbierto, { [rowKey]: abierto }) }));
-        const abrirDirige = (abierto) => this.setState((st) => ({ dirigeAbierto: Object.assign({}, st.dirigeAbierto, { [rowKey]: abierto }) }));
-        const query = (cn.t || '').trim().toLowerCase();
-        const coincidencias = query
-          ? catalogo.filter((so) => so.nombre.toLowerCase().indexOf(query) >= 0).slice(0, 6)
-          : [];
-        const querySm = (cn.sm || '').trim().toLowerCase();
-        const coincidenciasSm = querySm
-          ? catalogoSalmistas.filter((nm) => nm.toLowerCase().indexOf(querySm) >= 0).slice(0, 6)
-          : [];
-        const queryD = (cn.d || '').trim().toLowerCase();
-        const coincidenciasD = queryD
-          ? catalogoDirige.filter((nm) => nm.toLowerCase().indexOf(queryD) >= 0).slice(0, 6)
-          : [];
-        /* Se habilita solo con un link de YouTube reconocible en `u`, sin
-           importar si llegó ahí por autocomplete o escrito/pegado a mano. */
-        const videoId = R.youtubeId(cn.u);
-        const cid = R.cifradoIdDeCancion(cn, catalogo);
-        const tieneTitulo = !!(cn.t || '').trim();
-        const activa = s.reproduciendoKey === rowKey;
+    const bloques = dr ? dr.bloques.map((bl, bi) => {
+      const canciones = bl.canciones || [];
+      const nueva = bl._nueva || nuevaCancionForm();
+      const nuevaNombre = !!(nueva.t || '').trim();
+      const nuevaHayDatos = !cancionVacia(nueva);
+      /* Formulario de canción nueva: siempre abierto arriba de la sección. */
+      const itemNueva = Object.assign(formCancion(bi, null, nueva, nueva._k), {
+        formTitulo: 'Nueva canción',
+        formClase: 'can' + (pendientesVisibles && nuevaHayDatos ? ' can-pend' : ''),
+        g2Clase: 'can-g2 sin-cif',
+        conCif: false, cifClase: '', cifradoTitle: '', onCifrado: () => {},
+        avisoDup: nuevaNombre ? avisoRepetida(nueva.t, null, bl._k, 'Ya está en ') : '',
+        priLabel: 'Agregar',
+        priDeshabilitado: !nuevaNombre,
+        onPri: () => { if (nuevaNombre) this.setDraft((x) => { this.agregarCancion(x, bi); }); },
+        muestraSec: nuevaHayDatos,
+        secLabel: 'Limpiar',
+        onSec: () => {
+          this.pausarSiSuena(nueva._k);
+          this.setDraft((x) => { x.bloques[bi]._nueva = nuevaCancionForm(); });
+        }
+      });
+      const items = canciones.map((cn, ci) => {
+        if (cn._edit) {
+          const e = cn._edit;
+          const conNombre = !!(e.t || '').trim();
+          const cambio = !mismaCancion(e, cn);
+          return Object.assign(formCancion(bi, ci, e, cn._k), cifradoBoton(bi, ci, e, 'cif-btn'), {
+            formTitulo: 'Editando canción',
+            formClase: 'can can-edit' + (pendientesVisibles && cambio ? ' can-pend' : ''),
+            g2Clase: 'can-g2',
+            avisoDup: conNombre ? avisoRepetida(e.t, cn._k, bl._k, 'También está en ') : '',
+            priLabel: 'Aplicar cambios',
+            priDeshabilitado: !cambio || !conNombre,
+            onPri: () => { if (cambio && conNombre) this.setDraft((x) => { this.aplicarEdicion(x, bi, ci); }); },
+            muestraSec: true,
+            secLabel: 'Descartar',
+            onSec: () => this.setDraft((x) => { delete x.bloques[bi].canciones[ci]._edit; })
+          });
+        }
+        /* Tarjeta de solo lectura. */
+        const lineas = (cn.t || '').trim().split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        const u = (cn.u || '').trim();
+        const videoId = R.youtubeId(u);
+        const activa = s.reproduciendoKey === cn._k;
         const enPausa = activa && s.reproduciendoPausado;
-        return {
-          t: cn.t, d: cn.d, k: cn.k, u: cn.u, sm: cn.sm,
-          onT: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].canciones[ci].t = v; }); abrirFila(true); },
-          onD: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].canciones[ci].d = v; }); abrirDirige(true); },
-          onK: g('k'),
-          onU: g('u'),
-          onBlurU: () => this.sugerirVersion(bi, ci),
-          onSm: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].canciones[ci].sm = v; }); abrirSalmista(true); },
-          onFocusT: () => abrirFila(true),
-          onBlurT: () => { abrirFila(false); this.sugerirVersion(bi, ci); },
-          onFocusSm: () => abrirSalmista(true),
-          onBlurSm: () => { abrirSalmista(false); this.sugerirVersion(bi, ci); },
-          onFocusD: () => abrirDirige(true),
-          onBlurD: () => abrirDirige(false),
-          dirigeAbierto: !!s.dirigeAbierto[rowKey] && coincidenciasD.length > 0,
-          sugerenciasD: coincidenciasD.map((nm) => ({
-            nombre: nm,
-            onPick: () => {
-              this.setDraft((x) => { x.bloques[bi].canciones[ci].d = nm; });
-              abrirDirige(false);
-            }
-          })),
-          autocompleteAbierto: !!s.autocompleteAbierto[rowKey] && coincidencias.length > 0,
-          sugerencias: coincidencias.map((so) => ({
-            nombre: so.salmista ? (so.nombre + ' — ' + so.salmista) : so.nombre,
-            /* onMouseDown (no onClick) para que el pick se aplique antes de
-               que el blur del input cierre el desplegable. */
-            onPick: () => {
-              this.setDraft((x) => {
-                x.bloques[bi].canciones[ci].t = so.nombre;
-                x.bloques[bi].canciones[ci].sm = so.salmista;
-                x.bloques[bi].canciones[ci].u = so.u;
-                /* El cifrado viaja con la canción elegida (ver buildSongCatalog). */
-                if (so.cifradoId) x.bloques[bi].canciones[ci].cid = so.cifradoId;
-                else delete x.bloques[bi].canciones[ci].cid;
-              });
-              abrirFila(false);
-            }
-          })),
-          salmistaAbierto: !!s.salmistaAbierto[rowKey] && coincidenciasSm.length > 0,
-          sugerenciasSm: coincidenciasSm.map((nm) => ({
-            nombre: nm,
-            onPick: () => {
-              this.setDraft((x) => { x.bloques[bi].canciones[ci].sm = nm; });
-              abrirSalmista(false);
-            }
-          })),
+        const nombre = lineas[0] || 'Sin nombre';
+        return Object.assign({
+          esForm: false, esTarjeta: true,
+          nombre: nombre,
+          nombreExtra: lineas.slice(1),
+          sub: [(cn.sm || '').trim(), (cn.d || '').trim() ? 'Dirige: ' + cn.d.trim() : ''].filter(Boolean).join(' · '),
+          tono: (cn.k || '').trim(),
+          avisoDup: avisoRepetida(cn.t, cn._k, bl._k, 'También está en '),
+          tieneAudio: !!videoId,
           playIcon: activa && !enPausa ? '❚❚' : '▶',
           playLabel: activa && !enPausa ? 'Pausar audio' : (enPausa ? 'Reanudar audio' : 'Reproducir audio'),
-          /* El botón siempre se renderiza (nunca sc-if) para no romper las
-             columnas del grid; sin video válido se oculta con
-             visibility:hidden en vez de display:none. */
-          playClase: 'redondo' + (activa ? ' on' : '') + (videoId ? '' : ' oculto'),
-          onPlay: () => this.togglePlay(rowKey, videoId),
-          ...this.progresoFila(activa, rowKey, (cn.t || '').trim().split(/\r?\n/)[0]),
-          /* ♪ Cifrado: relleno si la canción ya tiene (propio o del catálogo),
-             contorno si todavía no. Igual que ▶, siempre ocupa su columna. */
-          cifradoTitle: cid ? 'Ver cifrado' : 'Agregar cifrado',
-          cifClase: 'cif-btn' + (cid ? ' on' : ' vacio') + (!cid && !puedeCifrar ? ' oculto' : (tieneTitulo ? '' : ' inactivo')),
-          onCifrado: () => {
-            if (!tieneTitulo) { this.avisar(false, '', 'Escribe primero el nombre de la canción'); return; }
-            if (cid || puedeCifrar) this.abrirCifrado(bi, ci, cid);
-          },
-          remove: () => this.setDraft((x) => {
-            const arr = x.bloques[bi].canciones;
-            if (arr.length > 1) arr.splice(ci, 1); else arr[ci] = R.song();
-          })
-        };
-      })
-    })) : [];
+          playClase: 'redondo' + (activa ? ' on' : ''),
+          onPlay: () => this.togglePlay(cn._k, videoId),
+          /* Un link que no es de YouTube (Drive, Spotify…) no se puede
+             reproducir aquí: se ofrece abrirlo aparte. */
+          tieneEnlace: !videoId && /^https?:\/\//i.test(u),
+          enlace: u,
+          onEditar: () => this.setDraft((x) => { const c2 = x.bloques[bi].canciones[ci]; c2._edit = copiaCancion(c2); }),
+          onQuitar: () => {
+            if (!window.confirm('¿Quitar «' + nombre + '» de ' + ((bl.titulo || '').trim() || 'esta sección') + '?')) return;
+            this.pausarSiSuena(cn._k);
+            this.setDraft((x) => { x.bloques[bi].canciones.splice(ci, 1); });
+          }
+        }, cifradoBoton(bi, ci, cn, 'redondo'), this.progresoFila(activa, cn._k, nombre));
+      });
+      return {
+        mostrarParte: totalPartes > 1 && (bi === 0 || R.bloqueParte(dr.bloques[bi - 1]) !== R.bloqueParte(bl)),
+        parteTitulo: 'Bloque ' + R.bloqueParte(bl),
+        parteStyle: parteHeaderStyle(bi === 0),
+        puedeQuitarParte: R.bloqueParte(bl) > 1,
+        quitarParte: () => {
+          if (window.confirm('¿Quitar el Bloque ' + R.bloqueParte(bl) + ' y todas sus canciones?')) this.quitarParte(R.bloqueParte(bl));
+        },
+        titulo: bl.titulo,
+        onTitulo: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].titulo = v; }); },
+        cuenta: canciones.length ? (canciones.length + (canciones.length > 1 ? ' canciones' : ' canción')) : '',
+        items: [itemNueva].concat(items)
+      };
+    }) : [];
 
     /* El orden de esta lista (índice dentro de bl.canciones) es el mismo que
        pinta index.html, así que reordenar aquí reordena el evento publicado.
@@ -2837,7 +3188,7 @@ class Component extends DCLogic {
        se muestran en el resumen, y contra ellas sube/baja cada sección. */
     const seccionesConNombre = [];
     if (dr) dr.bloques.forEach((bl, bi) => {
-      const conNombre = bl.canciones
+      const conNombre = (bl.canciones || [])
         .map((c, ci) => ({ c: c, ci: ci }))
         .filter((x) => x.c.t && x.c.t.trim());
       if (conNombre.length) seccionesConNombre.push({ bl: bl, bi: bi, parte: R.bloqueParte(bl), conNombre: conNombre });
@@ -2926,6 +3277,10 @@ class Component extends DCLogic {
     }
 
     const ultimoSub = subIdx >= subsDef.length - 1;
+    /* Al salir de "Canciones" no se pierde en silencio lo que quedó a
+       medio escribir (ver conCancionesResueltas). */
+    const salirDeCanciones = (fn) => (enWizard && paso === 2 && subActual === 'repertorio' ? this.conCancionesResueltas(fn) : fn());
+    const pendLista = s.pendientesAbierto ? pendientesCanciones(dr) : [];
     const estadoOriginal = s.editId ? (s.data.eventos || []).find((e) => e.id === s.editId) : null;
     /* Menú "Versión" del paso 3 (solo quien puede editar este evento llega
        al asistente: admin o el Director asignado). */
@@ -2991,7 +3346,7 @@ class Component extends DCLogic {
       cerrarVerBanda: () => this.setState({ verBanda: false }),
       esSubBanda: subActual === 'banda',
       esSubRepertorio: subActual === 'repertorio',
-      subTabs: subsDef.map((x) => ({ label: x.label, clase: x.id === subActual ? 'on' : '', onClick: () => this.setState({ sub: x.id }) })),
+      subTabs: subsDef.map((x) => ({ label: x.label, clase: x.id === subActual ? 'on' : '', onClick: () => { if (x.id !== subActual) salirDeCanciones(() => this.setState({ sub: x.id })); } })),
       usaBanda: usaBanda,
       noUsaBanda: !!dr && !usaBanda,
       enWizard: enWizard,
@@ -3119,7 +3474,7 @@ class Component extends DCLogic {
       siguienteLabel: (paso === 2 && !ultimoSub) ? ('Siguiente: ' + subsDef[subIdx + 1].label) : 'Siguiente',
       atrasLabel: (paso === 1 || (sinPaso1 && paso === 2 && subIdx === 0)) ? 'Cancelar' : 'Atrás',
       mostrarCancelar: enWizard && paso !== 1 && !(sinPaso1 && paso === 2 && subIdx === 0),
-      siguiente: () => {
+      siguiente: () => salirDeCanciones(() => {
         if (!dr) return;
         if (paso === 1) {
           if (!dr.servicio) { this.avisar(false, '', 'Elige el tipo de evento'); return; }
@@ -3135,8 +3490,8 @@ class Component extends DCLogic {
           if (!ultimoSub) { this.irA({ sub: subsDef[subIdx + 1].id }); return; }
           this.irA({ paso: 3 });
         }
-      },
-      atras: () => {
+      }),
+      atras: () => salirDeCanciones(() => {
         if (paso === 1) { this.setState({ draft: null, editId: null, paso: 1, estado: '' }); return; }
         if (paso === 2) {
           if (subIdx > 0) this.irA({ sub: subsDef[subIdx - 1].id });
@@ -3145,8 +3500,8 @@ class Component extends DCLogic {
           return;
         }
         this.irA({ paso: 2, sub: subsDef[subsDef.length - 1].id });
-      },
-      cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '' }),
+      }),
+      cancelar: () => this.setState({ draft: null, editId: null, paso: 1, estado: '', pendientesAbierto: false, marcarPendientes: false }),
       esPasoFinalConEstado: paso === 3 && R.puede(s.userDoc, 'eventos.estado'),
       esPasoFinalSinEstado: paso === 3 && !R.puede(s.userDoc, 'eventos.estado'),
       guardarCambios: () => this.guardarConEstado(undefined),
@@ -3192,7 +3547,15 @@ class Component extends DCLogic {
       moverMesAnterior: () => this.moverShiftMonth(-1),
       moverMesSiguiente: () => this.moverShiftMonth(1),
       cerrarMover: () => this.cerrarMover(),
-      detenerPropagacion: (e) => this.detenerPropagacion(e)
+      detenerPropagacion: (e) => this.detenerPropagacion(e),
+
+      pendientesAbierto: !!s.pendientesAbierto,
+      pendLista: pendLista,
+      pendHaySinNombre: pendLista.some((x) => x.sinNombre),
+      pendPuedeAgregar: !pendLista.some((x) => x.sinNombre),
+      pendRevisar: () => this.revisarPendientes(),
+      pendDescartar: () => this.resolverPendientes(false),
+      pendAgregar: () => this.resolverPendientes(true)
     }, this.modalCifrado().vals());
   }
 }

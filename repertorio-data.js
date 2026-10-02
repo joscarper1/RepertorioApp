@@ -424,13 +424,15 @@
     return { toggle: toggle, seek: seek, destroy: destroy };
   }
 
+  /* Las secciones arrancan sin canciones: eventos.html muestra en cada una
+     un formulario para agregarlas (ya no hay filas vacías de relleno). */
   function defaultBlocks() {
     return [
-      { titulo: 'Alabanza de inicio', canciones: [song()] },
-      { titulo: 'Júbilo', canciones: [song(), song()] },
-      { titulo: 'Adoración', canciones: [song(), song()] },
-      { titulo: 'Himno', canciones: [song()] },
-      { titulo: 'Ofrenda', canciones: [song()] }
+      { titulo: 'Alabanza de inicio', canciones: [] },
+      { titulo: 'Júbilo', canciones: [] },
+      { titulo: 'Adoración', canciones: [] },
+      { titulo: 'Himno', canciones: [] },
+      { titulo: 'Ofrenda', canciones: [] }
     ];
   }
 
@@ -447,8 +449,8 @@
   /* Secciones con las que arranca cada bloque agregado con "Agregar Bloque". */
   function nuevaParte(parte) {
     return [
-      { titulo: 'Júbilo', parte: parte, canciones: [song(), song()] },
-      { titulo: 'Adoración', parte: parte, canciones: [song(), song()] }
+      { titulo: 'Júbilo', parte: parte, canciones: [] },
+      { titulo: 'Adoración', parte: parte, canciones: [] }
     ];
   }
 
@@ -1918,6 +1920,17 @@
       if (!slot) return;
       delete slot.estadoConfirmacion;
       delete slot.motivoDeclinacion;
+    });
+    /* Las filas de canción vacías (las de las plantillas viejas) no son
+       contenido, y una sección sin canciones vuelve de Firebase sin la
+       llave `canciones` (no guarda arreglos vacíos): ambas formas cuentan
+       igual para no estrenar una versión sin cambios reales. */
+    (c.bloques || []).forEach(function (bl) {
+      if (!bl) return;
+      var llenas = (bl.canciones || []).filter(function (cn) {
+        return cn && ['t', 'sm', 'u', 'k', 'd', 'cid'].some(function (f) { return String(cn[f] || '').trim(); });
+      });
+      if (llenas.length) bl.canciones = llenas; else delete bl.canciones;
     });
     return c;
   }

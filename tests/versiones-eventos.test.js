@@ -95,6 +95,32 @@ test('guardar sin cambios no crea otra versión (ni por campos vacíos o confirm
   assert.equal(plan.entradas.length, 0);
 });
 
+test('quitar filas de canción vacías o secciones sin canciones no cuenta como cambio', () => {
+  const R = cargar(firebaseFalso().fb);
+  const conHuecos = Object.assign(copia(PUBLICADO), {
+    bloques: [
+      { titulo: 'Júbilo', canciones: [{ t: 'Canción A' }, { t: '', d: '', k: '', u: '', sm: '' }] },
+      { titulo: 'Ofrenda', canciones: [{ t: '', d: '', k: '', u: '', sm: '' }] }
+    ]
+  });
+  /* El asistente ya no guarda los huecos, y Firebase no devuelve el arreglo vacío. */
+  const sinHuecos = Object.assign(copia(PUBLICADO), {
+    bloques: [{ titulo: 'Júbilo', canciones: [{ t: 'Canción A' }] }, { titulo: 'Ofrenda', canciones: [] }]
+  });
+  const deLaNube = Object.assign(copia(PUBLICADO), { bloques: [{ titulo: 'Júbilo', canciones: [{ t: 'Canción A' }] }, { titulo: 'Ofrenda' }] });
+  assert.ok(R.mismoContenidoEvento(conHuecos, sinHuecos));
+  assert.ok(R.mismoContenidoEvento(sinHuecos, deLaNube));
+  assert.ok(!R.mismoContenidoEvento(sinHuecos, Object.assign(copia(PUBLICADO), { bloques: [{ titulo: 'Júbilo', canciones: [{ t: 'Canción B' }] }, { titulo: 'Ofrenda' }] })));
+});
+
+test('las secciones de un evento nuevo arrancan sin filas vacías', () => {
+  const R = cargar(firebaseFalso().fb);
+  const ev = R.newEvento({ fecha: '2026-10-04' });
+  assert.ok(ev.bloques.length > 0);
+  assert.ok(ev.bloques.every((bl) => bl.canciones.length === 0));
+  assert.ok(R.nuevaParte(2).every((bl) => bl.parte === 2 && bl.canciones.length === 0));
+});
+
 test('versionarEvento escribe v{n} y devuelve el número nuevo', async () => {
   const { fb, arbol } = firebaseFalso();
   const R = cargar(fb);
