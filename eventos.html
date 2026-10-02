@@ -307,14 +307,16 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .parte{display:flex;align-items:center;gap:12px;margin:8px 0 4px}
 .parte .linea{flex:1;height:2px;background:var(--ac)}
 .parte-t{font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk)}
-.seccion{background:#fff;border-radius:12px;border:1px solid var(--line);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.seccion-cab{display:flex;align-items:center;gap:10px}
-.seccion-inp{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:0;border-bottom:1.5px dashed rgba(0,0,0,.2);background:transparent;padding:4px 0;flex:1;min-width:0;outline:none}
-.seccion-inp:focus{border-bottom-color:var(--ink)}
+.seccion{background:#fff;border-radius:14px;border:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:14px}
+/* El nombre de la sección sigue editable: la línea punteada es de la
+   cabecera y se oscurece al editarlo. */
+.seccion-cab{display:flex;align-items:baseline;gap:10px;border-bottom:1px dashed #cfccc6;padding-bottom:8px}
+.seccion-cab:focus-within{border-bottom-color:var(--ink)}
+.seccion-inp{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;border:0;background:transparent;padding:0;flex:1;min-width:0;outline:none}
 .can{border:1px solid rgba(0,0,0,.09);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--soft)}
 .can-g1{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px}
 .can-g2{display:grid;grid-template-columns:minmax(0,1fr) 80px auto 36px;gap:8px;align-items:center}
-/* Formulario de canción nueva: sin cifrado (se agrega desde la tarjeta). */
+/* Formulario de canción nueva: sin cifrado (se agrega desde la fila). */
 .can-g2.sin-cif{grid-template-columns:minmax(0,1fr) 80px 36px}
 .can-kicker{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac-dk)}
 .can.can-edit{background:#fff;border-color:var(--ac)}
@@ -322,17 +324,51 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .can-pie{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .can-pie .btn-sec{min-height:40px;padding:0 14px;font-size:13px}
 .can-pie-aviso{margin-right:auto;align-self:center}
-.seccion-n{font-size:12px;font-weight:700;color:var(--muted2);white-space:nowrap}
-/* Canción ya agregada: solo lectura, con sus acciones a la derecha. */
-.tarjeta{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:10px 12px;border:1px solid rgba(0,0,0,.09);border-radius:10px;background:#fff}
-.tarjeta-info{min-width:0}
-.tarjeta-nom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px;font-weight:700;overflow-wrap:anywhere}
-.tarjeta-sub{font-size:12.5px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
-.tarjeta-acc{display:flex;align-items:center;gap:6px}
-.tarjeta .can-prog{margin-top:0}
-a.redondo{text-decoration:none}
-.redondo.peligro{border-color:rgba(0,0,0,.18);color:var(--muted)}
-.redondo.peligro:hover{border-color:var(--red);color:var(--red);background:var(--red-lt)}
+.seccion-n{font-size:12px;font-weight:600;color:#6b675f;white-space:nowrap}
+/* Lista de canciones ya agregadas: filas con ▶ al inicio, Tono | Cifrado a
+   la derecha y el resto de acciones en el menú ⋯. */
+.lista-can{display:flex;flex-direction:column;border:1px solid #e4e1db;border-radius:10px}
+.lista-can > .can-fila:first-child{border-top:0;border-radius:10px 10px 0 0}
+.lista-can > .can-fila:last-child{border-radius:0 0 10px 10px}
+.lista-can > .can-fila:only-child{border-radius:10px}
+.can-fila{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-top:1px solid #efece7;background:#fff}
+.can-fila:hover{background:#f7f6f3}
+.can-fila.sonando{background:#f7faf8}
+.can-fila.fila-edit,.can-fila.fila-edit:hover{background:#fff}
+.fila-main{display:grid;grid-template-columns:28px 40px minmax(0,1fr) auto 36px;grid-template-areas:"n play info seg mas";align-items:center;gap:12px}
+.fila-n{grid-area:n;font-size:13px;font-weight:700;color:#9a958c;text-align:center}
+.fila-play{grid-area:play;width:40px;height:40px;border-radius:50%;border:0;background:var(--ac);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.fila-play:disabled{opacity:.4;cursor:not-allowed}
+.fila-info{grid-area:info;display:flex;flex-direction:column;gap:3px;min-width:0}
+.fila-t{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fila-sub{font-size:13px;color:#6b675f;overflow-wrap:anywhere}
+.seg{grid-area:seg;display:flex;height:34px;border:1px solid #d9d5ce;border-radius:8px;overflow:hidden;justify-self:start}
+.seg-tono{display:flex;align-items:center;gap:5px;padding:0 12px;font-size:13px;color:#6b675f;white-space:nowrap}
+.seg-tono b{color:var(--ink);font-weight:800}
+.seg-div{width:1px;background:#d9d5ce}
+.seg-cif{display:flex;align-items:center;gap:6px;padding:0 12px;border:0;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:var(--ac);white-space:nowrap}
+.seg-cif:hover{background:#eaf5ee}
+.seg-cif.vacio{background:#faf9f7;color:#a9a49b;font-weight:600}
+.seg-cif.vacio:hover{background:#f4f2ee}
+.seg-cif.inactivo{cursor:not-allowed}
+.fila-mas{grid-area:mas;position:relative}
+.mas-btn{width:36px;height:36px;border-radius:8px;border:0;background:transparent;color:#6b675f;cursor:pointer;font-size:20px;line-height:1;padding:0}
+.mas-btn:hover,.mas-btn[aria-expanded="true"]{background:#efece7}
+.menu-can{position:absolute;right:0;top:40px;z-index:30;display:flex;flex-direction:column;width:180px;background:#fff;border:1px solid #e4e1db;border-radius:10px;box-shadow:0 10px 24px rgba(0,0,0,.08);padding:6px}
+.menu-can button,.menu-can a{text-align:left;font-size:14px;font-weight:600;padding:8px 10px;border:0;border-radius:6px;background:transparent;cursor:pointer;color:var(--ink);text-decoration:none}
+.menu-can button:hover,.menu-can a:hover{background:#f4f2ee}
+.menu-can button:disabled{color:#c4c0b8;cursor:default;background:transparent}
+.menu-can .peligro{color:#b3261e}
+.menu-can .menu-volver{color:#6b675f;font-size:13px}
+.menu-t{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#9a958c;padding:8px 10px 4px}
+.fila-prog{display:flex;align-items:center;gap:12px;padding-left:92px}
+.fila-prog .can-prog-t{font-size:12px;font-weight:600;color:#4a463f;min-width:30px}
+.fila-prog .can-prog-t:last-child{text-align:right}
+@media (max-width:600px){
+  .fila-main{grid-template-columns:40px minmax(0,1fr) 36px;grid-template-areas:"play info mas" ". seg seg"}
+  .fila-n{display:none}
+  .fila-prog{padding-left:52px}
+}
 .pend-lista{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:13.5px;line-height:1.4}
 .cif-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 14px;border-radius:999px;border:1.5px solid var(--ac);background:#fff;color:var(--ac-dk);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
 .cif-btn:hover{background:var(--ac-lt)}
@@ -429,8 +465,7 @@ a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-c
   .cif-btn{min-height:46px}
   .can-pie .btn-pri,.can-pie .btn-sec{flex:1;min-height:46px}
   .can-pie-aviso{flex-basis:100%}
-  .tarjeta{grid-template-columns:minmax(0,1fr)}
-  .tarjeta-acc{justify-content:flex-end}
+
   .redondo{width:44px;height:44px}
   .prog-r{height:28px}
   .prog-r::-webkit-slider-thumb{width:16px;height:16px;margin-top:-6px}
@@ -958,8 +993,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 <input class="seccion-inp" value="{{ bl.titulo }}" onChange="{{ bl.onTitulo }}" aria-label="Nombre de la sección">
                 <span class="seccion-n">{{ bl.cuenta }}</span>
               </div>
-              <sc-for list="{{ bl.items }}" as="cn" hint-placeholder-count="2">
-                <sc-if value="{{ cn.esForm }}" hint-placeholder-val="{{ true }}">
+              <sc-for list="{{ bl.nuevas }}" as="cn" hint-placeholder-count="1">
                   <div class="{{ cn.formClase }}">
                     <span class="can-kicker">{{ cn.formTitulo }}</span>
                     <div class="can-g1">
@@ -1017,43 +1051,134 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                       <button type="button" class="btn-pri btn-ac" onClick="{{ cn.onPri }}" disabled="{{ cn.priDeshabilitado }}">{{ cn.priLabel }}</button>
                     </div>
                   </div>
-                </sc-if>
-                <sc-if value="{{ cn.esTarjeta }}" hint-placeholder-val="{{ false }}">
-                  <div class="tarjeta">
-                    <div class="tarjeta-info">
-                      <div class="tarjeta-nom">
-                        <span>{{ cn.nombre }}</span>
-                        <sc-if value="{{ cn.tono }}" hint-placeholder-val="{{ true }}"><span class="tono">{{ cn.tono }}</span></sc-if>
-                      </div>
-                      <sc-for list="{{ cn.nombreExtra }}" as="linea" hint-placeholder-count="0">
-                        <div class="tarjeta-sub">{{ linea }}</div>
-                      </sc-for>
-                      <sc-if value="{{ cn.sub }}" hint-placeholder-val="{{ true }}"><div class="tarjeta-sub">{{ cn.sub }}</div></sc-if>
-                      <sc-if value="{{ cn.avisoDup }}" hint-placeholder-val="{{ false }}"><div class="aviso-dup" style="margin-top:4px">{{ cn.avisoDup }}</div></sc-if>
-                    </div>
-                    <div class="tarjeta-acc">
-                      <sc-if value="{{ cn.tieneAudio }}" hint-placeholder-val="{{ true }}">
-                        <button type="button" class="{{ cn.playClase }}" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}">{{ cn.playIcon }}</button>
-                      </sc-if>
-                      <sc-if value="{{ cn.tieneEnlace }}" hint-placeholder-val="{{ false }}">
-                        <a class="redondo" href="{{ cn.enlace }}" target="_blank" rel="noopener" aria-label="Abrir enlace" title="Abrir enlace">↗</a>
-                      </sc-if>
-                      <sc-if value="{{ cn.conCif }}" hint-placeholder-val="{{ true }}">
-                        <button type="button" class="{{ cn.cifClase }}" onClick="{{ cn.onCifrado }}" aria-label="{{ cn.cifradoTitle }}" title="{{ cn.cifradoTitle }}">♪</button>
-                      </sc-if>
-                      <button type="button" class="redondo" onClick="{{ cn.onEditar }}" aria-label="Editar canción" title="Editar canción">✎</button>
-                      <button type="button" class="redondo peligro" onClick="{{ cn.onQuitar }}" aria-label="Quitar canción" title="Quitar canción">🗑</button>
-                    </div>
-                    <sc-if value="{{ cn.muestraProg }}" hint-placeholder-val="{{ false }}">
-                      <div class="can-prog">
-                        <span class="can-prog-t">{{ cn.progActual }}</span>
-                        <input type="range" class="prog-r" min="0" max="{{ cn.progMax }}" step="1" value="{{ cn.progValor }}" style="{{ cn.progStyle }}" disabled="{{ cn.progSinDur }}" onChange="{{ cn.onSeek }}" aria-label="{{ cn.progLabel }}" aria-valuetext="{{ cn.progTexto }}">
-                        <span class="can-prog-t">{{ cn.progTotal }}</span>
+              </sc-for>
+              <sc-if value="{{ bl.hayCanciones }}" hint-placeholder-val="{{ true }}">
+                <div class="lista-can">
+                  <sc-for list="{{ bl.items }}" as="cn" hint-placeholder-count="3">
+                    <sc-if value="{{ cn.esForm }}" hint-placeholder-val="{{ false }}">
+                      <div class="can-fila fila-edit">
+                        <div class="{{ cn.formClase }}">
+                          <span class="can-kicker">{{ cn.formTitulo }}</span>
+                          <div class="can-g1">
+                            <div style="position:relative">
+                              <textarea class="inp" value="{{ cn.t }}" onChange="{{ cn.onT }}" onFocus="{{ cn.onFocusT }}" onBlur="{{ cn.onBlurT }}" placeholder="Nombre de la canción" autoComplete="off" rows="1" style="font-weight:600"></textarea>
+                              <sc-if value="{{ cn.autocompleteAbierto }}" hint-placeholder-val="{{ false }}">
+                                <div class="sugerencias">
+                                  <sc-for list="{{ cn.sugerencias }}" as="sug" hint-placeholder-count="3">
+                                    <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
+                                  </sc-for>
+                                </div>
+                              </sc-if>
+                            </div>
+                            <div style="position:relative">
+                              <input class="inp" value="{{ cn.sm }}" onChange="{{ cn.onSm }}" onFocus="{{ cn.onFocusSm }}" onBlur="{{ cn.onBlurSm }}" placeholder="Salmista / artista original" autoComplete="off">
+                              <sc-if value="{{ cn.salmistaAbierto }}" hint-placeholder-val="{{ false }}">
+                                <div class="sugerencias">
+                                  <sc-for list="{{ cn.sugerenciasSm }}" as="sug" hint-placeholder-count="3">
+                                    <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
+                                  </sc-for>
+                                </div>
+                              </sc-if>
+                            </div>
+                          </div>
+                          <div class="{{ cn.g2Clase }}">
+                            <input class="inp inp-mono" value="{{ cn.u }}" onChange="{{ cn.onU }}" onBlur="{{ cn.onBlurU }}" placeholder="https://… enlace de la pista">
+                            <input class="inp inp-tono" value="{{ cn.k }}" onChange="{{ cn.onK }}" placeholder="Tono" aria-label="Tono">
+                            <sc-if value="{{ cn.conCif }}" hint-placeholder-val="{{ false }}">
+                              <button type="button" class="{{ cn.cifClase }}" onClick="{{ cn.onCifrado }}" aria-label="{{ cn.cifradoTitle }}" title="{{ cn.cifradoTitle }}"><span style="font-size:14px">♪</span><span>{{ cn.cifradoTitle }}</span></button>
+                            </sc-if>
+                            <button type="button" class="{{ cn.playClase }}" onClick="{{ cn.onPlay }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playLabel }}">{{ cn.playIcon }}</button>
+                          </div>
+                          <sc-if value="{{ cn.muestraProg }}" hint-placeholder-val="{{ false }}">
+                            <div class="can-prog">
+                              <span class="can-prog-t">{{ cn.progActual }}</span>
+                              <input type="range" class="prog-r" min="0" max="{{ cn.progMax }}" step="1" value="{{ cn.progValor }}" style="{{ cn.progStyle }}" disabled="{{ cn.progSinDur }}" onChange="{{ cn.onSeek }}" aria-label="{{ cn.progLabel }}" aria-valuetext="{{ cn.progTexto }}">
+                              <span class="can-prog-t">{{ cn.progTotal }}</span>
+                            </div>
+                          </sc-if>
+                          <div style="position:relative">
+                            <input class="inp" value="{{ cn.d }}" onChange="{{ cn.onD }}" onFocus="{{ cn.onFocusD }}" onBlur="{{ cn.onBlurD }}" placeholder="Quién dirige" autoComplete="off">
+                            <sc-if value="{{ cn.dirigeAbierto }}" hint-placeholder-val="{{ false }}">
+                              <div class="sugerencias">
+                                <sc-for list="{{ cn.sugerenciasD }}" as="sug" hint-placeholder-count="3">
+                                  <button type="button" onMouseDown="{{ sug.onPick }}">{{ sug.nombre }}</button>
+                                </sc-for>
+                              </div>
+                            </sc-if>
+                          </div>
+                          <div class="can-pie">
+                            <sc-if value="{{ cn.avisoDup }}" hint-placeholder-val="{{ false }}"><span class="aviso-dup can-pie-aviso">{{ cn.avisoDup }}</span></sc-if>
+                            <sc-if value="{{ cn.muestraSec }}" hint-placeholder-val="{{ false }}">
+                              <button type="button" class="btn-sec" onClick="{{ cn.onSec }}">{{ cn.secLabel }}</button>
+                            </sc-if>
+                            <button type="button" class="btn-pri btn-ac" onClick="{{ cn.onPri }}" disabled="{{ cn.priDeshabilitado }}">{{ cn.priLabel }}</button>
+                          </div>
+                        </div>
                       </div>
                     </sc-if>
-                  </div>
-                </sc-if>
-              </sc-for>
+                    <sc-if value="{{ cn.esTarjeta }}" hint-placeholder-val="{{ true }}">
+                      <div class="{{ cn.filaClase }}">
+                        <div class="fila-main">
+                          <span class="fila-n">{{ cn.orden }}</span>
+                          <button type="button" class="fila-play" onClick="{{ cn.onPlay }}" disabled="{{ cn.sinAudio }}" aria-label="{{ cn.playLabel }}" title="{{ cn.playTitle }}">
+                            <sc-if value="{{ cn.iconoPlay }}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9.5-5.5z" fill="currentColor"></path></svg></sc-if>
+                            <sc-if value="{{ cn.iconoPausa }}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" aria-hidden="true"><rect x="3" y="2" width="3" height="10" rx="1"></rect><rect x="8" y="2" width="3" height="10" rx="1"></rect></svg></sc-if>
+                          </button>
+                          <div class="fila-info">
+                            <span class="fila-t" title="{{ cn.nombre }}">{{ cn.nombre }}</span>
+                            <sc-if value="{{ cn.sub }}" hint-placeholder-val="{{ true }}"><span class="fila-sub">{{ cn.sub }}</span></sc-if>
+                            <sc-if value="{{ cn.avisoDup }}" hint-placeholder-val="{{ false }}"><span class="aviso-dup">{{ cn.avisoDup }}</span></sc-if>
+                          </div>
+                          <div class="seg">
+                            <span class="seg-tono">Tono <b>{{ cn.tonoTxt }}</b></span>
+                            <sc-if value="{{ cn.conCif }}" hint-placeholder-val="{{ true }}">
+                              <span class="seg-div"></span>
+                              <button type="button" class="{{ cn.cifClase }}" onClick="{{ cn.onCifrado }}" aria-label="{{ cn.cifradoTitle }}" title="{{ cn.cifradoTitle }}">
+                                <sc-if value="{{ cn.tieneCif }}" hint-placeholder-val="{{ true }}"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 1.5h5.5L11 4v8.5H3z"></path><path d="M5 7h4M5 9.5h4"></path></svg></sc-if>
+                                <span>{{ cn.cifTexto }}</span>
+                              </button>
+                            </sc-if>
+                          </div>
+                          <div class="fila-mas">
+                            <button type="button" class="mas-btn" onClick="{{ cn.onMenu }}" aria-label="Más acciones" aria-haspopup="menu" aria-expanded="{{ cn.menuAbierto }}">⋯</button>
+                            <sc-if value="{{ cn.menuAbierto }}" hint-placeholder-val="{{ false }}">
+                              <div class="menu-can" role="menu">
+                                <sc-if value="{{ cn.menuAcciones }}" hint-placeholder-val="{{ true }}">
+                                  <button type="button" role="menuitem" onClick="{{ cn.onEditar }}">Editar</button>
+                                  <button type="button" role="menuitem" onClick="{{ cn.onMover }}">Mover</button>
+                                  <sc-if value="{{ cn.tieneEnlace }}" hint-placeholder-val="{{ false }}">
+                                    <a role="menuitem" href="{{ cn.enlace }}" target="_blank" rel="noopener" onClick="{{ cn.cerrarMenu }}">Abrir enlace ↗</a>
+                                  </sc-if>
+                                  <button type="button" role="menuitem" class="peligro" onClick="{{ cn.onQuitar }}">Quitar del evento</button>
+                                </sc-if>
+                                <sc-if value="{{ cn.menuMover }}" hint-placeholder-val="{{ false }}">
+                                  <span class="menu-t">Mover</span>
+                                  <button type="button" role="menuitem" onClick="{{ cn.onSubir }}" disabled="{{ cn.noSubir }}">↑ Subir</button>
+                                  <button type="button" role="menuitem" onClick="{{ cn.onBajar }}" disabled="{{ cn.noBajar }}">↓ Bajar</button>
+                                  <sc-if value="{{ cn.hayDestinos }}" hint-placeholder-val="{{ true }}">
+                                    <span class="menu-t">A otra sección</span>
+                                    <sc-for list="{{ cn.destinos }}" as="ds" hint-placeholder-count="2">
+                                      <button type="button" role="menuitem" onClick="{{ ds.onClick }}">{{ ds.label }}</button>
+                                    </sc-for>
+                                  </sc-if>
+                                  <button type="button" class="menu-volver" onClick="{{ cn.onVolver }}">‹ Volver</button>
+                                </sc-if>
+                              </div>
+                            </sc-if>
+                          </div>
+                        </div>
+                        <sc-if value="{{ cn.muestraProg }}" hint-placeholder-val="{{ false }}">
+                          <div class="fila-prog">
+                            <span class="can-prog-t">{{ cn.progActual }}</span>
+                            <input type="range" class="prog-r" min="0" max="{{ cn.progMax }}" step="1" value="{{ cn.progValor }}" style="{{ cn.progStyle }}" disabled="{{ cn.progSinDur }}" onChange="{{ cn.onSeek }}" aria-label="{{ cn.progLabel }}" aria-valuetext="{{ cn.progTexto }}">
+                            <span class="can-prog-t">{{ cn.progTotal }}</span>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-if>
+                  </sc-for>
+                </div>
+              </sc-if>
             </div>
           </div>
         </sc-for>
@@ -1719,7 +1844,10 @@ class Component extends DCLogic {
     programaAbierto: false, generandoPdf: false,
     /* Aviso de canciones sin agregar/aplicar al salir de "Canciones", y si
        se resaltan los formularios pendientes tras elegir "Revisar". */
-    pendientesAbierto: false, marcarPendientes: false
+    pendientesAbierto: false, marcarPendientes: false,
+    /* Menú ⋯ de una canción: clave local (_k) de la fila abierta y si
+       muestra las acciones o las opciones de "Mover". */
+    menuCancion: null, menuModo: 'acciones'
   };
 
   /* Perfil de calendario de la organización activa (R.perfilOrg): tipos de
@@ -1796,7 +1924,19 @@ class Component extends DCLogic {
     });
   }
 
+  /* El menú ⋯ se cierra al tocar fuera de él o con Escape. */
+  escucharMenuCancion() {
+    if (typeof document === 'undefined' || this._menuFuera) return;
+    this._menuFuera = (e) => {
+      if (this.state.menuCancion && !(e.target.closest && e.target.closest('.fila-mas'))) this.setState({ menuCancion: null, menuModo: 'acciones' });
+    };
+    this._menuEsc = (e) => { if (e.key === 'Escape' && this.state.menuCancion) this.setState({ menuCancion: null, menuModo: 'acciones' }); };
+    document.addEventListener('click', this._menuFuera, true);
+    document.addEventListener('keydown', this._menuEsc);
+  }
+
   componentDidUpdate() {
+    this.escucharMenuCancion();
     this.modalCifrado().enganchar();
     this.sincronizarRueda();
     this.sincronizarVersiones();
@@ -1874,6 +2014,8 @@ class Component extends DCLogic {
     if (this._yt) this._yt.destroy();
     clearTimeout(this._tSeek);
     if (this._unauth) this._unauth();
+    if (this._menuFuera) document.removeEventListener('click', this._menuFuera, true);
+    if (this._menuEsc) document.removeEventListener('keydown', this._menuEsc);
   }
 
   /* Valores de la línea de tiempo para una fila (vacía si no es la que suena). */
@@ -2051,6 +2193,18 @@ class Component extends DCLogic {
       const tmp = arr[ciA];
       arr[ciA] = arr[ciB];
       arr[ciB] = tmp;
+    });
+  }
+
+  /* "Mover › A otra sección": la canción pasa al final de la otra sección
+     (conserva su clave local, así el audio que suena la sigue). */
+  moverCancionASeccion(bi, ci, biDest) {
+    this.setDraft((x) => {
+      const origen = x.bloques[bi] && x.bloques[bi].canciones;
+      const destino = x.bloques[biDest];
+      if (!origen || !destino || !origen[ci]) return;
+      destino.canciones = destino.canciones || [];
+      destino.canciones.push(origen.splice(ci, 1)[0]);
     });
   }
 
@@ -3070,6 +3224,8 @@ class Component extends DCLogic {
       const tieneTitulo = !!(datos.t || '').trim();
       return {
         conCif: !!cid || puedeCifrar,
+        tieneCif: !!cid,
+        cifTexto: cid ? 'Cifrado' : '+ Cifrado',
         cifradoTitle: cid ? 'Ver cifrado' : 'Agregar cifrado',
         cifClase: base + (cid ? ' on' : ' vacio') + (tieneTitulo ? '' : ' inactivo'),
         onCifrado: () => {
@@ -3124,36 +3280,63 @@ class Component extends DCLogic {
             onSec: () => this.setDraft((x) => { delete x.bloques[bi].canciones[ci]._edit; })
           });
         }
-        /* Tarjeta de solo lectura. */
+        /* Fila de solo lectura: ▶ al inicio, Tono | Cifrado a la derecha y
+           Editar / Mover / Quitar en el menú ⋯. */
         const lineas = (cn.t || '').trim().split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
         const u = (cn.u || '').trim();
         const videoId = R.youtubeId(u);
         const activa = s.reproduciendoKey === cn._k;
-        const enPausa = activa && s.reproduciendoPausado;
+        const sonando = activa && !s.reproduciendoPausado;
         const nombre = lineas[0] || 'Sin nombre';
+        const dirige = (cn.d || '').trim();
+        /* Un link que no es de YouTube (Drive, Spotify…) no se puede
+           reproducir aquí: ▶ queda deshabilitado y se abre desde el menú. */
+        const tieneEnlace = !videoId && /^https?:\/\//i.test(u);
+        const menuAbierto = s.menuCancion === cn._k;
+        const cerrarMenu = () => this.setState({ menuCancion: null, menuModo: 'acciones' });
+        const conMenu = (fn) => () => { cerrarMenu(); fn(); };
         return Object.assign({
           esForm: false, esTarjeta: true,
+          filaClase: 'can-fila' + (sonando ? ' sonando' : ''),
+          orden: String(ci + 1),
           nombre: nombre,
-          nombreExtra: lineas.slice(1),
-          sub: [(cn.sm || '').trim(), (cn.d || '').trim() ? 'Dirige: ' + cn.d.trim() : ''].filter(Boolean).join(' · '),
-          tono: (cn.k || '').trim(),
+          /* Las líneas extra del título (aclaraciones) van antes del artista. */
+          sub: lineas.slice(1).concat([(cn.sm || '').trim(), dirige ? 'Dirige ' + dirige : '']).filter(Boolean).join(' · '),
+          tonoTxt: (cn.k || '').trim() || '—',
           avisoDup: avisoRepetida(cn.t, cn._k, bl._k, 'También está en '),
-          tieneAudio: !!videoId,
-          playIcon: activa && !enPausa ? '❚❚' : '▶',
-          playLabel: activa && !enPausa ? 'Pausar audio' : (enPausa ? 'Reanudar audio' : 'Reproducir audio'),
-          playClase: 'redondo' + (activa ? ' on' : ''),
-          onPlay: () => this.togglePlay(cn._k, videoId),
-          /* Un link que no es de YouTube (Drive, Spotify…) no se puede
-             reproducir aquí: se ofrece abrirlo aparte. */
-          tieneEnlace: !videoId && /^https?:\/\//i.test(u),
+          sinAudio: !videoId,
+          iconoPlay: !sonando,
+          iconoPausa: sonando,
+          playLabel: sonando ? 'Pausar' : 'Reproducir',
+          playTitle: videoId ? (sonando ? 'Pausar' : 'Reproducir') : (tieneEnlace ? 'Este enlace no se reproduce aquí: ábrelo desde ⋯' : 'Sin enlace de la pista'),
+          onPlay: () => { if (videoId) this.togglePlay(cn._k, videoId); },
+          tieneEnlace: tieneEnlace,
           enlace: u,
-          onEditar: () => this.setDraft((x) => { const c2 = x.bloques[bi].canciones[ci]; c2._edit = copiaCancion(c2); }),
-          onQuitar: () => {
+          menuAbierto: menuAbierto,
+          menuAcciones: menuAbierto && s.menuModo !== 'mover',
+          menuMover: menuAbierto && s.menuModo === 'mover',
+          onMenu: () => this.setState((st) => (st.menuCancion === cn._k
+            ? { menuCancion: null, menuModo: 'acciones' }
+            : { menuCancion: cn._k, menuModo: 'acciones' })),
+          cerrarMenu: cerrarMenu,
+          onEditar: conMenu(() => this.setDraft((x) => { const c2 = x.bloques[bi].canciones[ci]; c2._edit = copiaCancion(c2); })),
+          onMover: () => this.setState({ menuModo: 'mover' }),
+          onVolver: () => this.setState({ menuModo: 'acciones' }),
+          noSubir: ci === 0,
+          noBajar: ci === canciones.length - 1,
+          onSubir: conMenu(() => { if (ci > 0) this.moverCancionResumen(bi, ci, ci - 1); }),
+          onBajar: conMenu(() => { if (ci < canciones.length - 1) this.moverCancionResumen(bi, ci, ci + 1); }),
+          hayDestinos: dr.bloques.length > 1,
+          destinos: dr.bloques.map((otro, oi) => (oi === bi ? null : {
+            label: (totalPartes > 1 ? 'Bloque ' + R.bloqueParte(otro) + ' · ' : '') + ((otro.titulo || '').trim() || 'Sección sin nombre'),
+            onClick: conMenu(() => this.moverCancionASeccion(bi, ci, oi))
+          })).filter(Boolean),
+          onQuitar: conMenu(() => {
             if (!window.confirm('¿Quitar «' + nombre + '» de ' + ((bl.titulo || '').trim() || 'esta sección') + '?')) return;
             this.pausarSiSuena(cn._k);
             this.setDraft((x) => { x.bloques[bi].canciones.splice(ci, 1); });
-          }
-        }, cifradoBoton(bi, ci, cn, 'redondo'), this.progresoFila(activa, cn._k, nombre));
+          })
+        }, cifradoBoton(bi, ci, cn, 'seg-cif'), this.progresoFila(sonando, cn._k, nombre));
       });
       return {
         mostrarParte: totalPartes > 1 && (bi === 0 || R.bloqueParte(dr.bloques[bi - 1]) !== R.bloqueParte(bl)),
@@ -3166,7 +3349,9 @@ class Component extends DCLogic {
         titulo: bl.titulo,
         onTitulo: (e) => { const v = e.target.value; this.setDraft((x) => { x.bloques[bi].titulo = v; }); },
         cuenta: canciones.length ? (canciones.length + (canciones.length > 1 ? ' canciones' : ' canción')) : '',
-        items: [itemNueva].concat(items)
+        nuevas: [itemNueva],
+        hayCanciones: items.length > 0,
+        items: items
       };
     }) : [];
 
