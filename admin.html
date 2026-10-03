@@ -659,7 +659,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   <sc-if value="{{ u.sinCorreo }}" hint-placeholder-val="{{ false }}">
                     <span class="badge b-azul" title="Sin correo: no inicia sesión, recibe sus eventos por WhatsApp">Solo WhatsApp</span>
                   </sc-if>
-                  <button type="button" class="ico" onClick="{{ u.abrirDatos }}" aria-label="Editar datos" title="Editar nombre y correo">
+                  <button type="button" class="ico solo-desk" onClick="{{ u.abrirDatos }}" aria-label="Editar datos" title="Editar nombre y correo">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
                   </button>
                   <span class="solo-desk">
@@ -686,25 +686,27 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                       </sc-for>
                     </select>
                   </sc-if>
-                  <span style="display:flex;gap:8px;flex-wrap:wrap">
+                  <span class="solo-desk" style="display:flex;gap:8px;flex-wrap:wrap">
                     <button type="button" class="btn-pri" onClick="{{ u.guardarDatos }}">Guardar</button>
                     <button type="button" class="btn-sec" onClick="{{ u.cancelarDatos }}">Cancelar</button>
                   </span>
                 </div>
               </sc-if>
-              <div class="usr-res solo-movil">
-                <div class="usr-datos">
-                  <span class="{{ u.personaResumenClase }}">{{ u.personaResumen }}</span>
-                  <span>{{ u.orgsResumen }}</span>
-                  <span>{{ u.telefonoResumen }}</span>
+              <sc-if value="{{ u.noEditandoMovil }}" hint-placeholder-val="{{ true }}">
+                <div class="usr-res solo-movil">
+                  <div class="usr-datos">
+                    <span class="{{ u.personaResumenClase }}">{{ u.personaResumen }}</span>
+                    <span>{{ u.orgsResumen }}</span>
+                    <span>{{ u.telefonoResumen }}</span>
+                  </div>
+                  <div class="usr-acc">
+                    <button type="button" class="btn-sec" onClick="{{ u.abrirEdicion }}">Editar</button>
+                    <sc-if value="{{ u.conPersona }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" class="btn-sec" onClick="{{ u.reenviar }}" disabled="{{ u.reenviarDeshabilitado }}" title="{{ u.reenviarTitulo }}">Reenviar eventos</button>
+                    </sc-if>
+                  </div>
                 </div>
-                <div class="usr-acc">
-                  <button type="button" class="btn-sec" onClick="{{ u.toggleEdit }}">{{ u.editTexto }}</button>
-                  <sc-if value="{{ u.conPersona }}" hint-placeholder-val="{{ false }}">
-                    <button type="button" class="btn-sec" onClick="{{ u.reenviar }}" disabled="{{ u.reenviarDeshabilitado }}" title="{{ u.reenviarTitulo }}">Reenviar eventos</button>
-                  </sc-if>
-                </div>
-              </div>
+              </sc-if>
               <div class="{{ u.subClase }}">
                 <select class="inp" value="{{ u.personaId }}" onChange="{{ u.onPersona }}" disabled="{{ u.personaDeshabilitada }}" aria-label="Persona vinculada" title="{{ u.personaTitulo }}" style="max-width:320px;flex:1;min-width:180px">
                   <option value="">{{ u.personaVaciaTexto }}</option>
@@ -736,9 +738,15 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   <button type="button" class="btn-sec solo-desk" onClick="{{ u.reenviar }}" disabled="{{ u.reenviarDeshabilitado }}" title="{{ u.reenviarTitulo }}">Reenviar eventos</button>
                 </sc-if>
                 <sc-if value="{{ u.hayCambios }}" hint-placeholder-val="{{ false }}">
-                  <span style="display:flex;gap:8px;flex-wrap:wrap">
+                  <span class="solo-desk" style="display:flex;gap:8px;flex-wrap:wrap">
                     <button type="button" class="btn-pri" onClick="{{ u.guardarCambios }}">Guardar cambios</button>
                     <button type="button" class="btn-sec" onClick="{{ u.descartarCambios }}">Descartar</button>
+                  </span>
+                </sc-if>
+                <sc-if value="{{ u.editandoMovil }}" hint-placeholder-val="{{ false }}">
+                  <span class="solo-movil" style="display:flex;gap:8px;flex-wrap:wrap">
+                    <button type="button" class="btn-pri" onClick="{{ u.guardarEdicion }}">Guardar</button>
+                    <button type="button" class="btn-sec" onClick="{{ u.cancelarEdicion }}">Cancelar</button>
                   </span>
                 </sc-if>
                 <sc-if value="{{ u.puedeBorrar }}" hint-placeholder-val="{{ false }}">
@@ -1810,9 +1818,9 @@ class Component extends DCLogic {
   /* Organizaciones y persona de una tarjeta quedan pendientes hasta "Guardar
      cambios": guardarlas al instante reordenaba la lista (y podía mandar la
      tarjeta a otra página) antes de terminar de configurarla. */
-  cambiosDe(u) {
+  cambiosDe(u, extraOrgIds) {
     const p = (this.state.usuarioPendiente || {})[u.uid] || {};
-    const orgIds = p.orgIds || D().userOrgIds(u);
+    const orgIds = p.orgIds ? p.orgIds.concat((extraOrgIds || []).filter((id) => p.orgIds.indexOf(id) < 0)) : D().userOrgIds(u);
     const personaActual = D().userMusicianLinks(u)[this.state.currentOrgId] || '';
     const personaId = p.personaId !== undefined ? p.personaId : personaActual;
     const mismas = (a, b) => a.length === b.length && a.every((x) => b.indexOf(x) >= 0);
@@ -1843,16 +1851,21 @@ class Component extends DCLogic {
     this.marcarPendiente(userDoc.uid, { orgIds: nuevos });
   }
 
-  guardarCambiosUsuario(u) {
+  /* opc.extraOrgIds: organizaciones que la cuenta acaba de recibir al unirse
+     con su usuario de WhatsApp (no deben perderse con la lista pendiente).
+     opc.prefijo: mensaje del paso anterior (datos) para no taparlo. */
+  guardarCambiosUsuario(u, opc) {
     const R = D();
-    const c = this.cambiosDe(u);
-    if (!c.hay) return;
+    opc = opc || {};
+    const prefijo = opc.prefijo ? opc.prefijo + ' ' : '';
+    const c = this.cambiosDe(u, opc.extraOrgIds);
+    if (!c.hay) { if (opc.prefijo) this.setState({ mensaje: opc.prefijo }); return; }
     const orgMap = {};
     c.orgIds.forEach((id) => (orgMap[id] = true));
     const conPersona = () => {
       this.descartarCambiosUsuario(u.uid);
-      if (c.personaCambio) this.vincularUsuarioAPersona(Object.assign({}, u, { organizationIds: orgMap }), c.personaId);
-      else this.setState({ mensaje: 'Cambios guardados.' });
+      if (c.personaCambio) this.vincularUsuarioAPersona(Object.assign({}, u, { organizationIds: orgMap }), c.personaId, prefijo);
+      else this.setState({ mensaje: prefijo + 'Cambios guardados.' });
     };
     if (!c.orgsCambiaron) { conPersona(); return; }
     R.setUserOrgs(u.uid, c.orgIds, (ok) => {
@@ -1877,18 +1890,19 @@ class Component extends DCLogic {
      persona): quita el vínculo anterior de esa cuenta en esta organización
      y, si la persona elegida estaba ligada a otra cuenta, también se lo
      quita a esa otra antes de vincularla aquí. */
-  vincularUsuarioAPersona(u, musicianId) {
+  vincularUsuarioAPersona(u, musicianId, prefijo) {
     const R = D();
     const orgId = this.state.currentOrgId;
+    prefijo = prefijo || '';
     if (R.userOrgIds(u).indexOf(orgId) < 0) {
-      this.setState({ mensaje: 'Primero asígnale esta organización a la cuenta para poder vincularla con una persona.' });
+      this.setState({ mensaje: prefijo + 'Primero asígnale esta organización a la cuenta para poder vincularla con una persona.' });
       return;
     }
     const musicos = this.state.musicos || [];
     const actualId = R.userMusicianLinks(u)[orgId];
     const nueva = musicos.find((m) => m.id === musicianId);
     const nombre = u.displayName || u.email;
-    const fin = (ok, texto) => this.setState({ mensaje: ok ? texto : 'No se pudo actualizar el vínculo.' });
+    const fin = (ok, texto) => this.setState({ mensaje: prefijo + (ok ? texto : 'No se pudo actualizar el vínculo.') });
     const vincular = () => {
       if (!nueva) { fin(true, 'Se quitó el vínculo de "' + nombre + '".'); return; }
       const hacer = () => R.linkMusicianToUser(nueva.id, u.uid, orgId, (ok) => fin(ok, '"' + nombre + '" quedó vinculada a "' + nueva.nombre + '".'));
@@ -1910,11 +1924,13 @@ class Component extends DCLogic {
     }));
   }
 
-  guardarDatosUsuario(u) {
+  /* siguiente(viejo, texto): en la edición del celular, después de los datos
+     se guardan persona y organizaciones (guardarEdicionUsuario). */
+  guardarDatosUsuario(u, siguiente) {
     const R = D();
     const s = this.state;
     const d = s.usuarioDatos;
-    if (!d || d.uid !== u.uid) return;
+    if (!d || d.uid !== u.uid) { if (siguiente) siguiente(null, ''); return; }
     const nombre = (d.nombre || '').trim();
     const email = R.normalizarEmail(d.email);
     const anterior = R.normalizarEmail(u.emailPendiente);
@@ -1942,20 +1958,47 @@ class Component extends DCLogic {
       const acc = (s.accesosPendientes || []).find((a) => R.normalizarEmail(a.email) === anterior);
       pasos.push((cb) => R.borrarAccesoPendiente(acc ? acc.key : null, cb, u.uid));
     }
-    if (!pasos.length) { this.setState({ usuarioDatos: null }); return; }
+    if (!pasos.length) { this.setState({ usuarioDatos: null }); if (siguiente) siguiente(null, ''); return; }
     const correr = (i) => {
       if (i >= pasos.length) {
-        this.setState({
-          usuarioDatos: null,
-          mensaje: viejo ? (nombre + ' quedó unida a su usuario de WhatsApp.') : correoNuevo
-            ? 'Correo agregado: cuando ' + nombre + ' inicie sesión con Google usando ' + email + ', su cuenta conservará sus organizaciones, personas y WhatsApp. Mientras tanto sigue recibiendo sus eventos por WhatsApp.'
-            : 'Datos de ' + nombre + ' guardados.'
-        });
+        const texto = viejo ? (nombre + ' quedó unida a su usuario de WhatsApp.') : correoNuevo
+          ? 'Correo agregado: cuando ' + nombre + ' inicie sesión con Google usando ' + email + ', su cuenta conservará sus organizaciones, personas y WhatsApp. Mientras tanto sigue recibiendo sus eventos por WhatsApp.'
+          : 'Datos de ' + nombre + ' guardados.';
+        if (siguiente) { this.setState({ usuarioDatos: null }); siguiente(viejo, texto); return; }
+        this.setState({ usuarioDatos: null, mensaje: texto });
         return;
       }
       pasos[i]((ok) => (ok ? correr(i + 1) : this.setState({ mensaje: 'No se pudieron guardar los datos: revisa tu sesión o las reglas de Firebase.' })));
     };
     correr(0);
+  }
+
+  /* --- Edición en el celular: un solo "Editar" con nombre, correo, unir con
+     WhatsApp, persona, organizaciones y teléfono, y un solo "Guardar". --- */
+
+  abrirEdicionUsuario(u) {
+    this.setState((st) => ({
+      usuarioEditAbierto: Object.assign({}, st.usuarioEditAbierto, { [u.uid]: true }),
+      usuarioDatos: { uid: u.uid, nombre: u.displayName || '', email: u.emailPendiente || '', unirCon: '' }
+    }));
+  }
+
+  cerrarEdicionUsuario(uid) {
+    this.descartarCambiosUsuario(uid);
+    this.setState((st) => ({
+      usuarioEditAbierto: Object.assign({}, st.usuarioEditAbierto, { [uid]: false }),
+      usuarioDatos: st.usuarioDatos && st.usuarioDatos.uid === uid ? null : st.usuarioDatos
+    }));
+  }
+
+  guardarEdicionUsuario(u) {
+    this.guardarDatosUsuario(u, (viejo, texto) => {
+      this.setState((st) => ({ usuarioEditAbierto: Object.assign({}, st.usuarioEditAbierto, { [u.uid]: false }) }));
+      /* Tras unirla con su usuario de WhatsApp la cuenta ya trae otras
+         organizaciones y personas: se parte de la versión actualizada. */
+      const fresco = viejo ? ((this.state.usuarios || []).find((x) => x.uid === u.uid) || u) : u;
+      this.guardarCambiosUsuario(fresco, { prefijo: texto, extraOrgIds: viejo ? D().userOrgIds(viejo) : [] });
+    });
   }
 
   /* Un usuario sin correo al que se le agregó correo ya inició sesión con
@@ -2619,8 +2662,11 @@ class Component extends DCLogic {
         telefonoResumen: u.telefono ? (AV ? AV.formatoTelefono(u.telefono) : u.telefono) : 'Sin WhatsApp',
         /* Con cambios sin guardar la edición queda abierta (en celular). */
         subClase: 'item-sub' + ((s.usuarioEditAbierto || {})[u.uid] || cambiosU.hay ? ' abierto' : ''),
-        editTexto: (s.usuarioEditAbierto || {})[u.uid] ? 'Listo' : 'Editar',
-        toggleEdit: () => this.setState((st) => ({ usuarioEditAbierto: Object.assign({}, st.usuarioEditAbierto, { [u.uid]: !(st.usuarioEditAbierto || {})[u.uid] }) })),
+        editandoMovil: !!(s.usuarioEditAbierto || {})[u.uid] || cambiosU.hay,
+        noEditandoMovil: !((s.usuarioEditAbierto || {})[u.uid] || cambiosU.hay),
+        abrirEdicion: () => this.abrirEdicionUsuario(u),
+        guardarEdicion: () => this.guardarEdicionUsuario(u),
+        cancelarEdicion: () => this.cerrarEdicionUsuario(u.uid),
         reenviarDeshabilitado: !proximos,
         reenviarTitulo: proximos ? ('Enviar por correo y WhatsApp ' + (proximos === 1 ? 'su evento publicado próximo' : 'sus ' + proximos + ' eventos publicados próximos')) : 'Sin eventos publicados próximos',
         reenviar: () => { if (proximos && AV) AV.reenviar(s.currentOrgId, u.uid); },
