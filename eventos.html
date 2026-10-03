@@ -2823,7 +2823,8 @@ class Component extends DCLogic {
            publicados; "Publicar" solo al admin y mientras sea borrador. */
         puedeEstado: puedeEstadoEv,
         puedePublicar: R.puede(s.userDoc, 'eventos.estado') && estadoEv === 'BORRADOR',
-        puedeVer: estadoEv === 'PUBLICADO',
+        /* Mismo criterio que index.html: se ve todo lo que el calendario muestra. */
+        puedeVer: R.esVisiblePublico(ev),
         /* Eliminar (borrado lógico) solo para borradores y solo el admin. */
         puedeEliminar: R.puede(s.userDoc, 'eventos.estado') && estadoEv === 'BORRADOR',
         eliminar: () => { if (R.puede(s.userDoc, 'eventos.estado') && estadoEv === 'BORRADOR') this.eliminarEvento(ev); },
