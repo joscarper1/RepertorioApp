@@ -2832,7 +2832,7 @@ class Component extends DCLogic {
         mover: () => { if (R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev, pf)) this.abrirMover(ev); },
         cancelar: () => { if (puedeEstadoEv) this.cancelarEvento(ev); },
         borrar: () => { if (puedeEstadoEv) this.archivarEvento(ev); },
-        ver: () => { if (estadoEv === 'PUBLICADO') this.verEnCalendario(ev); }
+        ver: () => { if (R.esVisiblePublico(ev)) this.verEnCalendario(ev); }
       };
     });
 
