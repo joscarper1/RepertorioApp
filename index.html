@@ -482,8 +482,9 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
      evento anterior/siguiente de esa misma lista. */
   .toast{bottom:calc(76px + env(safe-area-inset-bottom))}
   .det-barra{display:flex;align-items:center;justify-content:space-between;padding:6px 12px calc(6px + env(safe-area-inset-bottom));flex:none;border-top:1px solid rgba(0,0,0,.08);background:#fff}
-  .det-volver{display:flex;align-items:center;gap:4px;min-height:44px;padding:0 8px;background:none;border:0;font-size:15px;font-weight:600;color:var(--ac);cursor:pointer}
-  .det-volver span{font-size:24px;line-height:1}
+  .det-volver{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;min-width:72px;padding:0;background:none;border:0;font-size:10.5px;font-weight:700;letter-spacing:.02em;color:var(--ink);cursor:pointer;font-family:inherit}
+  /* Misma casita que la pestaña Inicio de la barra inferior. */
+  .det-volver-ico{width:48px;height:28px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:var(--ink);color:#fff}
   .det-nav{display:flex;align-items:center;gap:2px}
   .det-nav-btn{width:44px;height:44px;border:0;background:none;border-radius:10px;font-size:26px;line-height:1;color:var(--ac);cursor:pointer}
   .det-nav-btn:disabled{color:var(--line);cursor:default}
@@ -980,7 +981,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
             </div>
           </div>
           <div class="det-barra">
-            <button type="button" class="det-volver" onClick="{{ cerrarDetalle }}"><span aria-hidden="true">‹</span>{{ d.volverLabel }}</button>
+            <button type="button" class="det-volver" onClick="{{ cerrarDetalle }}" aria-label="Volver al inicio" title="Volver al inicio"><span class="det-volver-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg></span><span>Inicio</span></button>
             <sc-if value="{{ navHay }}" hint-placeholder-val="{{ true }}">
               <div class="det-nav">
                 <button type="button" class="det-nav-btn" onClick="{{ navAnterior }}" disabled="{{ navSinAnterior }}" aria-label="Evento anterior">‹</button>
@@ -1928,7 +1929,6 @@ class Component extends DCLogic {
       diaNombre: R.diaNombre(ev.fecha),
       diaClase: 'det-dia' + (cancelado ? ' tachado' : ''),
       fechaLarga: R.fechaLarga(ev.fecha) + ' de ' + d.getFullYear(),
-      volverLabel: 'Semana ' + R.semanaDelMes(ev.fecha),
       hora: ev.hora || '',
       gcalHref: R.googleCalendarUrl(ev, this.perfil()),
       tema: txt(ev.tema), tieneTema: !!txt(ev.tema), tieneTemaOCita: !!(txt(ev.tema) || txt(ev.cita)),
