@@ -216,7 +216,12 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
   .modal-acc .btn-pri,.modal-acc .btn-sec{flex:1;min-height:46px}
 }
 /* ---- Dashboard ---- */
-.borr-tabla-wrap{margin:-18px -20px 0}
+.borr-filtros{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.borr-todos-movil{display:none;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer}
+.borr-sel{width:1%}
+.borr-sel input,.borr-todos-movil input{width:18px;height:18px;margin:0;accent-color:var(--ac);cursor:pointer;vertical-align:middle}
+.borr-tabla tr.sel td{background:var(--ac-lt)}
+.borr-tabla-wrap{margin:0 -20px}
 .borr-tabla{width:100%;border-collapse:collapse;font-size:13px}
 .borr-tabla th{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);text-align:left;padding:8px 12px;border-bottom:1px solid rgba(0,0,0,.08)}
 .borr-tabla td{padding:11px 12px;border-top:1px solid rgba(0,0,0,.07);vertical-align:middle}
@@ -229,23 +234,27 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 /* En pantallas angostas cada fila se apila como una tarjeta: nada de
    encabezados ni scroll horizontal. */
 @media (max-width:600px){
-  .borr-tabla-wrap{margin:-14px -16px 0}
+  .borr-tabla-wrap{margin:0 -16px}
+  .borr-todos-movil{display:inline-flex}
   .borr-tabla thead{display:none}
   .borr-tabla,.borr-tabla tbody{display:block}
-  .borr-tabla tr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:3px;padding:12px 16px;border-top:1px solid rgba(0,0,0,.07)}
+  .borr-tabla tr{display:grid;grid-template-columns:auto minmax(0,1fr) auto;column-gap:12px;row-gap:3px;padding:12px 16px;border-top:1px solid rgba(0,0,0,.07)}
+  .borr-tabla tr.sel{background:var(--ac-lt)}
+  .borr-tabla tr.sel td{background:none}
   .borr-tabla tbody tr:first-child{border-top:0}
   .borr-tabla td,.borr-tabla td:first-child,.borr-tabla td:last-child{display:block;padding:0;border:0;width:auto}
-  .borr-tabla td:nth-child(1){grid-column:1;grid-row:1}
-  .borr-tabla td:nth-child(2){grid-column:1;grid-row:2}
-  .borr-tabla td:nth-child(3){grid-column:1;grid-row:3;font-size:12.5px}
-  .borr-tabla td:nth-child(4){grid-column:2;grid-row:1 / span 3;align-self:center}
+  .borr-tabla td:nth-child(1){grid-column:1;grid-row:1 / span 3;align-self:center}
+  .borr-tabla td:nth-child(2){grid-column:2;grid-row:1}
+  .borr-tabla td:nth-child(3){grid-column:2;grid-row:2}
+  .borr-tabla td:nth-child(4){grid-column:2;grid-row:3;font-size:12.5px}
+  .borr-tabla td:nth-child(5){grid-column:3;grid-row:1 / span 3;align-self:center}
   .borr-fecha-hora{display:inline;margin-left:6px}
   .borr-tipo{font-size:12.5px;font-weight:600}
 }
 .btn-ac{background:var(--ac);border-color:var(--ac)}
 .btn-ac:hover{background:var(--ac-dk);border-color:var(--ac-dk)}
 .btn-ac:disabled{background:var(--ac);border-color:var(--ac)}
-@media (min-width:601px) and (max-width:860px){ .borr-tabla-wrap{margin:-14px -16px 0} .borr-tabla th:first-child,.borr-tabla td:first-child{padding-left:16px} .borr-tabla th:last-child,.borr-tabla td:last-child{padding-right:16px} }
+@media (min-width:601px) and (max-width:860px){ .borr-tabla-wrap{margin:0 -16px} .borr-tabla th:first-child,.borr-tabla td:first-child{padding-left:16px} .borr-tabla th:last-child,.borr-tabla td:last-child{padding-right:16px} }
 .dash{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:24px;align-items:start}
 .dash-lista{display:flex;flex-direction:column;gap:10px}
 .dash-aside{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px}
@@ -401,19 +410,31 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             <sc-if value="{{ veAvisos }}" hint-placeholder-val="{{ true }}">
               <button type="button" class="btn-sec" style="min-height:40px;padding:0 14px;font-size:13px" onClick="{{ abrirAvisos }}" title="Reabre los enlaces de WhatsApp de la última publicación (el correo no se vuelve a enviar)">Avisos WhatsApp</button>
             </sc-if>
-            <button type="button" class="btn-pri btn-ac" onClick="{{ publicarTodos }}" disabled="{{ publicarTodosDeshabilitado }}" title="{{ publicarTodosTitulo }}">{{ publicarTodosTexto }}</button>
+            <button type="button" class="btn-pri btn-ac" onClick="{{ publicarSeleccionados }}" disabled="{{ publicarSelDeshabilitado }}" title="{{ publicarSelTitulo }}">{{ publicarSelTexto }}</button>
           </div>
         </div>
         <div class="panel-cuerpo">
           <sc-if value="{{ hayBorradores }}" hint-placeholder-val="{{ true }}">
+            <div class="borr-filtros">
+              <div class="chips">
+                <sc-for list="{{ borrFiltros }}" as="f" hint-placeholder-count="3">
+                  <button type="button" class="{{ f.clase }}" onClick="{{ f.onClick }}">{{ f.label }}</button>
+                </sc-for>
+              </div>
+              <sc-if value="{{ hayFiltrados }}" hint-placeholder-val="{{ true }}">
+                <label class="borr-todos-movil"><input type="checkbox" checked="{{ borrTodosSel }}" onChange="{{ onBorrTodos }}"> Seleccionar todo</label>
+              </sc-if>
+            </div>
+            <sc-if value="{{ hayFiltrados }}" hint-placeholder-val="{{ true }}">
             <div class="borr-tabla-wrap">
               <table class="borr-tabla">
                 <thead>
-                  <tr><th>Fecha</th><th>Tipo</th><th>Tema</th><th>{{ borradoresColumna }}</th></tr>
+                  <tr><th class="borr-sel"><input type="checkbox" checked="{{ borrTodosSel }}" onChange="{{ onBorrTodos }}" title="Seleccionar todos los del filtro" aria-label="Seleccionar todos los del filtro"></th><th>Fecha</th><th>Tipo</th><th>Tema</th><th>{{ borradoresColumna }}</th></tr>
                 </thead>
                 <tbody>
                   <sc-for list="{{ borradoresLista }}" as="b" hint-placeholder-count="3">
-                    <tr>
+                    <tr class="{{ b.clase }}">
+                      <td class="borr-sel"><input type="checkbox" checked="{{ b.seleccionado }}" onChange="{{ b.onSel }}" aria-label="Seleccionar evento"></td>
                       <td style="white-space:nowrap"><b>{{ b.fecha }}</b><div class="borr-fecha-hora" style="font-size:12px;color:var(--muted2)">{{ b.hora }}</div></td>
                       <td class="borr-tipo">{{ b.servicio }}</td>
                       <td style="color:var(--muted)">{{ b.tema }}</td>
@@ -430,6 +451,10 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                 </tbody>
               </table>
             </div>
+            </sc-if>
+            <sc-if value="{{ filtradosVacio }}" hint-placeholder-val="{{ false }}">
+              <p style="font-size:13px;color:var(--muted2);margin:0">Ningún evento coincide con el filtro.</p>
+            </sc-if>
             <sc-if value="{{ faltanCancionesTexto }}" hint-placeholder-val="{{ false }}">
               <p style="font-size:12.5px;color:var(--muted);margin:14px 0 0">{{ faltanCancionesTexto }}</p>
             </sc-if>
@@ -727,6 +752,7 @@ class Component extends DCLogic {
     musico: null, eventos: [], unavailableDates: [],
     nuevaDisponibilidadInicio: '', nuevaDisponibilidadFin: '', nuevaDisponibilidadMotivo: '', masAbierto: false,
     declinar: null, declinarMotivo: '', toast: '', publicando: false,
+    borrFiltro: 'todos', borrSel: {},
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
     songLikes: {}, songOverrides: {}, usuarios: {}, votosMes: null, votosTodo: false, votosAbierta: null,
     vista: 'inicio'
@@ -946,10 +972,10 @@ class Component extends DCLogic {
     this._t = setTimeout(() => this.setState({ toast: '' }), 2500);
   }
 
-  /* "Publicar todos" de la tabla de borradores. Si todos ya tienen canciones
-     listadas se publican directamente; si alguno no tiene, se pregunta antes
-     si se desea publicarlos así. Al publicar, el listener de eventos saca de
-     la tabla los que ya no son borrador. */
+  /* "Publicar seleccionados" de la tabla de borradores. Si todos ya tienen
+     canciones listadas se publican directamente; si alguno no tiene, se
+     pregunta antes si se desea publicarlos así. Al publicar, el listener de
+     eventos saca de la tabla los que ya no son borrador. */
   /* Qué se revisa en la tabla de borradores según el tipo de calendario. */
   criterioBorradores(pf) {
     const R = D();
@@ -960,7 +986,7 @@ class Component extends DCLogic {
           titulo: 'Borradores por publicar', columna: 'Servidores', vacio: 'No hay eventos en borrador.' };
   }
 
-  publicarTodos(borradores) {
+  publicarSeleccionados(borradores) {
     const R = D();
     if (!R.puede(this.state.userDoc, 'eventos.estado') || this.state.publicando) return;
     if (!borradores.length) return;
@@ -971,7 +997,7 @@ class Component extends DCLogic {
       borr.varios + ' ' + borr.listados + '. ¿Deseas publicar ' + (n === 1 ? 'el evento' : 'los ' + n + ' eventos') + ' de todas formas?')) return;
     this.setState({ publicando: true });
     R.publicarEventos(borradores.map((ev) => ev.id), (ok) => {
-      this.setState({ publicando: false });
+      this.setState(ok ? { publicando: false, borrSel: {} } : { publicando: false });
       /* Avisar al equipo es de quien gestiona Avisos (admin); un editor
          publica igual, pero sin avisos. */
       const avisa = R.puede(this.state.userDoc, 'avisos.gestionar');
@@ -1074,11 +1100,35 @@ class Component extends DCLogic {
       if (a.fecha !== b.fecha) return a.fecha < b.fecha ? -1 : 1;
       return R.horaMinutos(a.hora) - R.horaMinutos(b.hora);
     }) : [];
-    const borradoresLista = borradores.map((ev) => {
+    /* Filtro (todos / con / sin contenido) y selección por casilla. Solo
+       cuenta lo seleccionado que sigue visible con el filtro actual. */
+    const conContenido = borradores.filter((ev) => borr.contar(ev) > 0);
+    const filtro = s.borrFiltro;
+    const filtrados = filtro === 'con' ? conContenido
+      : filtro === 'sin' ? borradores.filter((ev) => borr.contar(ev) === 0) : borradores;
+    const sel = s.borrSel || {};
+    const seleccionados = filtrados.filter((ev) => sel[ev.id]);
+    const todosSel = filtrados.length > 0 && seleccionados.length === filtrados.length;
+    const faltanSel = seleccionados.filter((ev) => borr.contar(ev) === 0).length;
+    const borrFiltros = [
+      { id: 'todos', label: 'Todos', n: borradores.length },
+      { id: 'con', label: 'Con ' + borr.varios, n: conContenido.length },
+      { id: 'sin', label: 'Sin ' + borr.varios, n: borradores.length - conContenido.length }
+    ].map((f) => ({
+      label: f.label + ' (' + f.n + ')', clase: 'chip' + (f.id === filtro ? ' on' : ''),
+      onClick: () => this.setState({ borrFiltro: f.id })
+    }));
+    const borradoresLista = filtrados.map((ev) => {
       const n = borr.contar(ev);
       const dn = R.diaNombre(ev.fecha) || '';
       return {
         id: ev.id,
+        seleccionado: !!sel[ev.id],
+        clase: sel[ev.id] ? 'sel' : '',
+        onSel: (e) => {
+          const marcado = !!(e && e.target && e.target.checked);
+          this.setState((st) => ({ borrSel: Object.assign({}, st.borrSel, { [ev.id]: marcado }) }));
+        },
         fecha: dn.charAt(0).toUpperCase() + dn.slice(1, 3) + ' · ' + R.fechaLarga(ev.fecha),
         hora: ev.hora || '',
         servicio: ev.servicio,
@@ -1088,7 +1138,7 @@ class Component extends DCLogic {
         cancionesTitulo: n + ' ' + (n === 1 ? borr.uno : borr.varios)
       };
     });
-    const faltan = borradoresLista.filter((b) => b.sinCanciones).length;
+    const faltan = borradores.length - conContenido.length;
     const declinarEv = s.declinar ? s.declinar.ev : null;
     const declinarMotivoOk = !!(s.declinarMotivo || '').trim();
 
@@ -1209,15 +1259,28 @@ class Component extends DCLogic {
       declinarDeshabilitado: !declinarMotivoOk,
 
       veBorradores: veBorradores,
-      hayBorradores: borradoresLista.length > 0,
-      sinBorradores: borradoresLista.length === 0,
+      hayBorradores: borradores.length > 0,
+      sinBorradores: borradores.length === 0,
+      hayFiltrados: filtrados.length > 0,
+      filtradosVacio: borradores.length > 0 && filtrados.length === 0,
       borradoresLista: borradoresLista,
-      borradoresCuenta: borradoresLista.length ? String(borradoresLista.length) : '',
-      publicarTodosTexto: s.publicando ? 'Publicando…' : 'Publicar todos',
-      publicarTodosDeshabilitado: !borradoresLista.length || s.publicando,
-      publicarTodosTitulo: faltan ? ('Hay eventos sin ' + borr.varios + ' ' + borr.listados + ': se pedirá confirmación') : '',
+      borradoresCuenta: borradores.length ? String(borradores.length) : '',
+      borrFiltros: borrFiltros,
+      borrTodosSel: todosSel,
+      onBorrTodos: (e) => {
+        const marcado = !!(e && e.target && e.target.checked);
+        this.setState((st) => {
+          const nuevo = Object.assign({}, st.borrSel);
+          filtrados.forEach((ev) => { nuevo[ev.id] = marcado; });
+          return { borrSel: nuevo };
+        });
+      },
+      publicarSelTexto: s.publicando ? 'Publicando…' : ('Publicar seleccionados' + (seleccionados.length ? ' (' + seleccionados.length + ')' : '')),
+      publicarSelDeshabilitado: !seleccionados.length || s.publicando,
+      publicarSelTitulo: !seleccionados.length ? 'Selecciona al menos un evento'
+        : (faltanSel ? ('Hay eventos seleccionados sin ' + borr.varios + ' ' + borr.listados + ': se pedirá confirmación') : ''),
       faltanCancionesTexto: faltan ? ((faltan === 1 ? '1 evento aún no tiene ' : faltan + ' eventos aún no tienen ') + borr.varios + ' ' + borr.listados + '.') : '',
-      publicarTodos: () => this.publicarTodos(borradores),
+      publicarSeleccionados: () => this.publicarSeleccionados(seleccionados),
       veAvisos: R.puede(s.userDoc, 'avisos.gestionar') && !!window.RepertorioAvisos,
       abrirAvisos: () => window.RepertorioAvisos.abrirUltimo(s.currentOrgId),
       borradoresTitulo: borr.titulo,
