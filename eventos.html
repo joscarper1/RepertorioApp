@@ -632,10 +632,12 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         <div class="kicker">Administración</div>
         <h1 class="mes-titulo">Eventos</h1>
       </div>
-      <button type="button" class="btn-sec prog-abrir" onClick="{{ abrirPrograma }}">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M3 14h18M9 9v11"></path></svg>
-        Programa del mes
-      </button>
+      <sc-if value="{{ veGestionMes }}" hint-placeholder-val="{{ true }}">
+        <button type="button" class="btn-sec prog-abrir" onClick="{{ abrirPrograma }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M3 14h18M9 9v11"></path></svg>
+          Programa del mes
+        </button>
+      </sc-if>
     </div>
   </sc-if>
 
@@ -659,6 +661,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
   </div>
 
   <sc-if value="{{ esPaso1 }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ veGestionMes }}" hint-placeholder-val="{{ true }}">
     <div class="balance-barra" style="margin-bottom:16px">
       <details class="balance">
         <summary>Carga de {{ balanceMesCal }} <span>· {{ balanceCuentaCal }}</span></summary>
@@ -672,6 +675,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         <p class="campo-ayuda" style="margin:8px 0 0">Puestos que cada persona tiene en los eventos del mes (borradores y publicados, sin ensayos); dos puestos en un mismo evento cuentan dos.</p>
       </details>
     </div>
+    </sc-if>
     <section class="p1">
       <div class="cal">
         <div class="cal-nav">
@@ -3539,6 +3543,8 @@ class Component extends DCLogic {
       enWizard: enWizard,
       noEnWizard: !enWizard,
       mostrarTitulo: !enWizard && !s.embed,
+      /* Programa del mes y carga del mes: solo admin y editor. */
+      veGestionMes: R.puede(s.userDoc, 'eventos.todos'),
       eligiendoTipo: enWizard && paso === 1,
       viendoDia: !enWizard,
       tipoKicker: s.editId ? 'Editando evento' : 'Nuevo evento',
@@ -3704,7 +3710,7 @@ class Component extends DCLogic {
       },
 
       /* Programa del mes: solo se arma con el modal abierto. */
-      programaAbierto: !!s.programaAbierto && !enWizard,
+      programaAbierto: !!s.programaAbierto && !enWizard && R.puede(s.userDoc, 'eventos.todos'),
       abrirPrograma: () => this.setState({ programaAbierto: true }),
       cerrarPrograma: () => this.setState({ programaAbierto: false }),
       descargarPrograma: () => this.descargarProgramaPdf(),
