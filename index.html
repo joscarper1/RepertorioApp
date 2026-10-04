@@ -152,13 +152,20 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .buscar-input{display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:10px;border:1.5px solid var(--ink);color:var(--muted2)}
 .buscar-input input{flex:1;min-width:0;border:0;outline:none;font-size:14px;padding:12px 0;background:transparent;color:var(--ink)}
 .buscar-lista{max-height:380px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
-.res{cursor:pointer;display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:10px}
+.filtros-fila{display:contents}
+.res{cursor:pointer;display:flex;align-items:center;gap:12px;padding:9px 10px;border-radius:10px}
+.res-av{width:38px;height:38px;flex:none;border-radius:50%;color:#fff;font-size:12px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.res-av b{font-size:14px;font-weight:800}
+.res-av small{font-size:8.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.9;margin-top:1px}
+.res-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.res-n{font-size:14.5px;font-weight:500;line-height:1.3;overflow-wrap:anywhere}
 .res:hover{background:#f4f3ef}
 .res.sel{background:#eef6f1}
 .res.pasado{opacity:.7}
 .res-meta{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
 .res-tema{font-size:14px;font-weight:600;line-height:1.35}
-.res-sub{font-size:12px;color:var(--muted)}
+.res-sub{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);line-height:1.35}
+.res-sub .dot{width:7px;height:7px}
 .res-vacio{padding:20px;text-align:center;font-size:13px;color:var(--muted)}
 .agarre{width:40px;height:4px;border-radius:2px;background:#d4d1cb;align-self:center}
 .buscar-cab{display:flex;flex-direction:column;gap:6px}
@@ -448,7 +455,11 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .tira .dots .dot{width:5px;height:5px}
   .barra{flex-direction:column;align-items:stretch;padding:16px 0}
   .barra-izq{flex-direction:column;align-items:stretch;gap:8px}
-  .btn-buscar{width:100%;min-height:46px;padding:0 14px;border-radius:12px;border-color:rgba(0,0,0,.14);color:var(--muted2);font-size:14px;font-weight:400}
+  /* Los dos filtros comparten fila en el teléfono. */
+  .filtros-fila{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn-buscar{width:100%;min-height:46px;padding:0 12px;border-radius:12px;border-color:rgba(0,0,0,.14);color:var(--muted2);font-size:13.5px;font-weight:400;gap:7px}
+  .btn-buscar span{overflow:hidden;text-overflow:ellipsis}
+  .btn-buscar svg{flex:none}
   .btn-buscar.on{background:#fff;color:var(--muted2)}
   .rotulo-tipo{font-size:10px;padding-top:6px}
   .chips{flex-wrap:nowrap;overflow-x:auto;margin:0 -20px;padding:0 20px 4px;scrollbar-width:none}
@@ -722,6 +733,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
 
     <div class="barra">
       <div class="barra-izq">
+        <div class="filtros-fila">
         <div class="buscar-wrap">
           <button type="button" class="{{ buscarBtnClase }}" onClick="{{ toggleBuscar }}">
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></line></svg>
@@ -736,13 +748,16 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
               </div>
               <div class="buscar-input">
                 <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></line></svg>
-                <input autoFocus="{{ true }}" value="{{ buscarTexto }}" onChange="{{ onBuscarTexto }}" placeholder="Buscar por fecha, servicio o tema…" autoComplete="off">
+                <input value="{{ buscarTexto }}" onChange="{{ onBuscarTexto }}" placeholder="Buscar por fecha, servicio o tema…" autoComplete="off">
               </div>
               <div class="buscar-lista">
                 <sc-for list="{{ resultados }}" as="r" hint-placeholder-count="3">
                   <div class="{{ r.clase }}" onClick="{{ r.onClick }}">
-                    <div class="res-meta" style="{{ r.colorStyle }}"><span class="dot" style="{{ r.dotStyle }}"></span>{{ r.meta }}</div>
-                    <sc-if value="{{ r.tieneTema }}" hint-placeholder-val="{{ true }}"><div class="res-tema">{{ r.tema }}</div></sc-if>
+                    <span class="res-av" style="{{ r.avStyle }}"><b>{{ r.dia }}</b><small>{{ r.mesCorto }}</small></span>
+                    <span class="res-txt">
+                      <span class="res-n">{{ r.titulo }}</span>
+                      <span class="res-sub"><span class="dot" style="{{ r.dotStyle }}"></span>{{ r.meta }}</span>
+                    </span>
                   </div>
                 </sc-for>
                 <sc-if value="{{ sinResultados }}" hint-placeholder-val="{{ false }}">
@@ -766,13 +781,16 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
               </div>
               <div class="buscar-input">
                 <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="4.5" r="2.6" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M2 13c.6-2.8 2.6-4.3 5-4.3s4.4 1.5 5 4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>
-                <input autoFocus="{{ true }}" value="{{ participacionesBusqueda }}" onChange="{{ onParticipacionesBusqueda }}" placeholder="Buscar por nombre…" autoComplete="off">
+                <input value="{{ participacionesBusqueda }}" onChange="{{ onParticipacionesBusqueda }}" placeholder="Buscar por nombre…" autoComplete="off">
               </div>
               <div class="buscar-lista">
                 <sc-for list="{{ personasMesLista }}" as="p" hint-placeholder-count="3">
                   <div class="res" onClick="{{ p.onClick }}">
-                    <div class="res-tema">{{ p.nombre }}</div>
-                    <div class="res-sub">{{ p.resumen }}</div>
+                    <span class="res-av" style="{{ p.avStyle }}">{{ p.i }}</span>
+                    <span class="res-txt">
+                      <span class="res-n">{{ p.nombre }}</span>
+                      <span class="res-sub">{{ p.resumen }}</span>
+                    </span>
                   </div>
                 </sc-for>
                 <sc-if value="{{ personasMesVacia }}" hint-placeholder-val="{{ false }}">
@@ -781,6 +799,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
               </div>
             </div>
           </sc-if>
+        </div>
         </div>
         <sc-if value="{{ hayTipos }}" hint-placeholder-val="{{ true }}">
           <span class="sep-v solo-desk" style="margin:0 6px"></span>
@@ -2320,10 +2339,15 @@ class Component extends DCLogic {
     const resultados = delMes.filter((ev) => !q || this.normalizar([R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio, ev.tema].join(' ')).indexOf(q) >= 0)
       .map((ev) => {
         const color = this.colorTipo(ev.servicio);
+        const d = R.parse(ev.fecha);
+        const tema = (ev.tema || '').trim();
         return {
-          meta: [R.diaNombre(ev.fecha), R.fechaLarga(ev.fecha), ev.hora, ev.servicio].filter(Boolean).join(' · '),
-          tema: ev.tema || '', tieneTema: !!(ev.tema || '').trim(),
-          colorStyle: 'color:' + color, dotStyle: 'background:' + color,
+          /* Como en "quién votó": círculo con el día (color del tipo), el
+             tema como nombre y día · hora · tipo debajo. */
+          dia: d.getDate(), mesCorto: R.MESES[d.getMonth()].slice(0, 3),
+          avStyle: 'background:' + color, dotStyle: 'background:' + color,
+          titulo: tema || ev.servicio || 'Evento',
+          meta: [R.diaNombre(ev.fecha), ev.hora, tema ? ev.servicio : ''].filter(Boolean).join(' · '),
           clase: 'res' + (sel && ev.id === sel.id ? ' sel' : '') + (ev.fecha < hoyISO ? ' pasado' : ''),
           onClick: () => this.seleccionarEvento(ev, Object.assign({ semanaSel: R.semanaDelMes(ev.fecha), diaMes: ev.fecha, diaFiltro: null, tipoSel: 'all' },
             this._esTelefono() ? {} : { buscarAbierto: false, buscarTexto: '' }))
@@ -2351,6 +2375,8 @@ class Component extends DCLogic {
       .filter((x) => !qP || this.normalizar(x.nombre).indexOf(this.normalizar(qP)) >= 0)
       .map((x) => ({
         nombre: x.nombre,
+        i: this.iniciales(x.nombre) || '?',
+        avStyle: 'background:' + this.colorNombre(x.nombre),
         resumen: x.eventos.size + (x.eventos.size === 1 ? ' evento' : ' eventos') + ' este mes',
         onClick: () => this.abrirParticipaciones(x.nombre)
       }));
