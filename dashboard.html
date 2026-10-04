@@ -598,6 +598,9 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             <sc-if value="{{ sinUnavailable }}" hint-placeholder-val="{{ false }}">
               <p style="font-size:13px;color:var(--muted2);margin:0">No hay fechas marcadas.</p>
             </sc-if>
+            <sc-if value="{{ sinPerfil }}" hint-placeholder-val="{{ false }}">
+              <p style="font-size:13px;color:var(--muted2);margin:0">Podrás marcar tus fechas no disponibles cuando un administrador vincule tu cuenta a tu perfil.</p>
+            </sc-if>
 
             <sc-if value="{{ tienePerfil }}" hint-placeholder-val="{{ true }}">
               <div class="disp-form">
@@ -1239,7 +1242,7 @@ class Component extends DCLogic {
       pendientesTexto: (pendientes && !botonesDeshabilitados) ? (pendientes === 1 ? 'Tienes 1 evento esperando tu confirmación.' : 'Tienes ' + pendientes + ' eventos esperando tu confirmación.') : '',
 
       unavailableLista: unavailableLista,
-      sinUnavailable: unavailableLista.length === 0,
+      sinUnavailable: unavailableLista.length === 0 && !!s.effectiveMusicianId,
       agregarDeshabilitado: !(s.nuevaDisponibilidadInicio || '').trim(),
       nuevaDisponibilidadInicio: s.nuevaDisponibilidadInicio,
       onNuevaDisponibilidadInicio: (e) => this.setState({ nuevaDisponibilidadInicio: e.target.value }),
