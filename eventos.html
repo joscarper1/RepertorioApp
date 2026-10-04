@@ -30,7 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="menu-config.js?v=20261001a"></script>
+<script src="menu-config.js?v=20261004a"></script>
 <!-- ?v= obliga al navegador a bajar la versión que corresponde a esta
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
@@ -1899,10 +1899,16 @@ class Component extends DCLogic {
           setTimeout(() => { window.location.href = 'admin.html'; }, 1800);
           return;
         }
-        this.setState({ estadoAcceso: 'permitido', organizationId: orgId, userDoc: doc });
+        /* Admin y editor entran directo; un usuario normal solo si es
+           director (R.puedeVerEventos), lo que se sabe al tener la
+           organización, los eventos y su persona: ver verificarDirector. */
+        const directo = R.puede(doc, 'eventos.todos');
+        this.setState({ estadoAcceso: directo ? 'permitido' : 'cargando', organizationId: orgId, userDoc: doc });
+        this._musicosListos = false;
+        this._orgLista = false;
         /* Queda como la organización activa en las demás páginas. */
         R.guardarOrgPreferida(orgId);
-        R.getOrganization(orgId, (org) => this.setState({ organizacion: org }));
+        R.getOrganization(orgId, (org) => { this._orgLista = true; this.setState({ organizacion: org }, () => this.verificarDirector()); });
         const orgIds = R.userOrgIds(doc);
         this._unorgs = R.watchAllOrganizations((todas) => {
           this.setState({ orgs: todas.filter((o) => orgIds.indexOf(o.id) >= 0) });
@@ -1914,7 +1920,7 @@ class Component extends DCLogic {
              quien no edita la banda conserva la de la nube, con las
              confirmaciones que hayan llegado mientras editaba. */
           this._eventosVivos = evs;
-          this.setState((s) => (s.draft ? null : { data: { eventos: evs } }));
+          this.setState((s) => (s.draft ? null : { data: { eventos: evs } }), () => this.verificarDirector());
           /* Mantiene al día el índice ev.integrantes (ver R.integrantesEvento)
              del que dependen los permisos de quien no edita todos los
              eventos. Solo una vez por carga y solo con 'eventos.todos'. */
@@ -1924,9 +1930,28 @@ class Component extends DCLogic {
           }
         });
         this._unSongOverrides = R.watchSongCatalog(orgId, (map) => this.setState({ songOverrides: map }));
-        this._unmusicos = R.watchMusiciansForOrg(orgId, (lista) => this.setState({ musicos: lista }));
+        this._unmusicos = R.watchMusiciansForOrg(orgId, (lista) => {
+          this._musicosListos = true;
+          this.setState({ musicos: lista }, () => this.verificarDirector());
+        });
       });
     });
+  }
+
+  /* Acceso de un usuario normal: solo si es director. Se decide una vez,
+     cuando ya llegaron la organización, los eventos y las personas. */
+  verificarDirector() {
+    const R = D();
+    const s = this.state;
+    if (s.estadoAcceso !== 'cargando' || !s.userDoc || !this._orgLista || !this._eventosVivos || !this._musicosListos) return;
+    const miId = R.userMusicianLinks(s.userDoc)[s.organizationId];
+    const musico = (s.musicos || []).find((m) => m.id === miId) || null;
+    if (R.puedeVerEventos(s.userDoc, this._eventosVivos, musico, R.perfilOrg(s.organizacion))) {
+      this.setState({ estadoAcceso: 'permitido' });
+      return;
+    }
+    this.setState({ estadoAcceso: 'denegado', denegadoMotivo: 'La gestión de eventos es para administradores, editores y directores. Te llevaremos a tu dashboard…' });
+    setTimeout(() => R.redirectToUserLanding(s.userDoc), 1800);
   }
 
   /* El menú ⋯ se cierra al tocar fuera de él o con Escape. */

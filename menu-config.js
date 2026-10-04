@@ -32,8 +32,8 @@
   ];
 
   var ACCIONES_DASHBOARD = [
-    { id: 'eventos', label: 'Panel de administración', permiso: 'eventos.ver' },
-    { id: 'publicado', label: 'Ver publicado' }
+    { id: 'eventos', label: 'Editar un Evento', permiso: 'eventos.ver' },
+    { id: 'publicado', label: 'Abrir Calendario' }
   ];
 
   var ACCIONES_CALENDARIO = [
