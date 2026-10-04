@@ -7,6 +7,10 @@
    pedido solo se toman orgId + eventIds o uid, así nadie puede inyectar
    destinatarios ni texto.
 
+   Además avisa a los administradores que lo pidieron cuando alguien se une
+   solo desde un calendario (procesarNuevos: no pasa por la cola; se detecta
+   con la marca `nuevo` de /users y queda en el historial como 'nuevoUsuario').
+
    El repositorio es público y sus logs también: aquí NUNCA se imprimen
    correos, teléfonos ni nombres, solo conteos.
 
@@ -135,6 +139,70 @@ async function procesarCola(root, enviarCorreo, opciones = {}) {
   return resumen;
 }
 
+/* Reclama el aviso de un usuario nuevo (transacción en
+   users/{uid}/avisoNuevo: si dos ejecuciones coinciden, solo una envía). */
+async function reclamarNuevo(ref, ahora) {
+  const r = await ref.transaction((v) => {
+    if (v && !(v.tomado && !v.enviado && v.tomado < ahora - ABANDONO_MS)) return;
+    return { tomado: ahora };
+  });
+  return r.committed && r.snapshot.val() && r.snapshot.val().tomado === ahora;
+}
+
+/* Correo a los administradores (con el aviso activado) de cada organización
+   a la que se unió solo un usuario nuevo. */
+async function procesarNuevos(root, enviarCorreo, opciones = {}) {
+  const ahora = opciones.ahora || Date.now();
+  const prueba = !!opciones.prueba;
+  const s = await root.child('users').once('value');
+  const usuarios = [];
+  s.forEach((c) => { const v = c.val() || {}; v.uid = c.key; usuarios.push(v); });
+  const resumen = { nuevos: 0, enviados: 0, errores: 0, sinDestinatarios: 0 };
+  let credencialesMalas = false;
+  for (const u of A.nuevosPorAvisar(usuarios, ahora)) {
+    const ref = root.child('users').child(u.uid).child('avisoNuevo');
+    if (!prueba && !(await reclamarNuevo(ref, ahora))) continue;
+    resumen.nuevos++;
+    let enviados = 0, errores = 0;
+    for (const orgId of Object.keys(u.organizationIds || {}).filter((k) => u.organizationIds[k])) {
+      const admins = A.adminsParaNuevos(usuarios, orgId, u.uid);
+      if (!admins.length) { resumen.sinDestinatarios++; continue; }
+      const o = await root.child('organizations').child(orgId).once('value');
+      if (!o.val()) continue;
+      const org = Object.assign({}, o.val(), { id: orgId });
+      const aviso = A.armarAvisoNuevoUsuario(org, u);
+      let env = 0, err = 0;
+      for (const a of admins) {
+        if (credencialesMalas) { err++; continue; }
+        try {
+          if (!prueba) await enviarCorreo({ para: a.email, asunto: aviso.asunto, texto: aviso.texto, html: aviso.html, remitente: org.name || 'Repertorio' });
+          env++;
+        } catch (e) {
+          err++;
+          if (e && (e.responseCode === 535 || e.code === 'EAUTH')) credencialesMalas = true;
+          console.error('Error de envío (' + (e && (e.responseCode || e.code) || 'desconocido') + ')');
+        }
+      }
+      enviados += env; errores += err;
+      /* Queda en el historial de Administración → Avisos. */
+      if (!prueba) {
+        await root.child(A.COLA_PATH).push({
+          orgId, tipo: 'nuevoUsuario', uid: u.uid, pedidoPor: u.uid, creado: ahora, procesado: Date.now(),
+          estado: err && !env ? 'error' : 'enviado', enviados: env, errores: err,
+          fallo: credencialesMalas && err ? 'gmail-credenciales' : null
+        });
+      }
+    }
+    resumen.enviados += enviados; resumen.errores += errores;
+    if (prueba) continue;
+    /* Si todo falló se suelta para reintentar en la próxima ejecución. */
+    if (errores && !enviados) await ref.remove();
+    else await ref.set({ tomado: ahora, enviado: Date.now(), correos: enviados });
+  }
+  resumen.credencialesMalas = credencialesMalas;
+  return resumen;
+}
+
 /* Los secrets pegados en GitHub suelen traer un salto de línea o espacios
    invisibles al final, o comillas; la contraseña de aplicación se muestra
    en grupos de 4 con espacios. Gmail rechaza cualquiera de esos (535). */
@@ -183,6 +251,10 @@ async function main() {
 
   try {
     const r = await procesarCola(admin.database().ref(), enviarCorreo, { prueba });
+    const n = await procesarNuevos(admin.database().ref(), enviarCorreo, { prueba });
+    console.log('Usuarios nuevos: ' + n.nuevos + ' · avisos a administradores: ' + n.enviados + ' · errores: ' + n.errores +
+      ' · sin administrador suscrito: ' + n.sinDestinatarios);
+    r.credencialesMalas = r.credencialesMalas || n.credencialesMalas;
     console.log('Pedidos: ' + r.pedidos + ' · correos enviados: ' + r.enviados + ' · errores: ' + r.errores +
       ' · sin correo: ' + r.sinCorreo + ' · sin eventos: ' + r.sinEventos + ' · borrados de la cola: ' + r.borrados + (prueba ? ' (prueba, sin enviar)' : ''));
     if (r.credencialesMalas) console.log('::error::Gmail rechazó la credencial (535). ' + diagnosticoGmail(process.env.GMAIL_USER, process.env.GMAIL_APP_PASSWORD));
@@ -197,4 +269,4 @@ if (require.main === module) {
   main().catch((e) => { console.error(e && e.message ? e.message : 'Error'); process.exit(1); });
 }
 
-module.exports = { procesarCola, limpiarCredenciales, diagnosticoGmail };
+module.exports = { procesarCola, procesarNuevos, limpiarCredenciales, diagnosticoGmail };

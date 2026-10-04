@@ -227,6 +227,60 @@
     return filas.sort(function (a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
   }
 
+  /* --- Aviso a administradores: "usuario nuevo" ---
+     Cuando alguien inicia sesión por su cuenta desde un calendario queda en
+     esa organización con la marca `nuevo` (R.ensureUserRegistered). El
+     workflow avisa por correo a los administradores de esa organización que
+     lo activaron en Administración → Avisos (users/{uid}/avisos/nuevosUsuarios)
+     y marca users/{uid}/avisoNuevo para no repetirlo. */
+  var PREF_NUEVOS = 'nuevosUsuarios';
+  /* Solo cuentas creadas en esta ventana: al activar la función no se
+     avisa de todas las marcas "nuevo" viejas que nadie quitó. */
+  var VENTANA_NUEVOS_MS = 7 * 24 * 3600 * 1000;
+
+  function quiereAvisoNuevos(u) { return !!(u && u.avisos && u.avisos[PREF_NUEVOS] === true); }
+
+  /* Cuentas con marca "nuevo" de las que todavía no se avisó (o cuyo envío
+     quedó a medias hace más de 15 min: la ejecución anterior murió). */
+  function nuevosPorAvisar(usuarios, ahora) {
+    ahora = ahora || Date.now();
+    var desde = ahora - VENTANA_NUEVOS_MS;
+    return (usuarios || []).filter(function (u) {
+      var a = u && u.avisoNuevo;
+      var pendiente = !a || (!a.enviado && (a.tomado || 0) < ahora - 15 * 60 * 1000);
+      return u && u.uid && u.nuevo === true && pendiente && (u.createdAt || 0) >= desde && orgIdsDe(u).length > 0;
+    });
+  }
+
+  /* Administradores de la organización que quieren el aviso (con correo). */
+  function adminsParaNuevos(usuarios, orgId, excluirUid) {
+    return (usuarios || []).filter(function (u) {
+      return u && u.uid !== excluirUid && u.role === 'admin' && u.email && orgIdsDe(u).indexOf(orgId) >= 0 && quiereAvisoNuevos(u);
+    });
+  }
+
+  function urlUsuarios(org) {
+    return SITIO_URL + 'admin.html?tab=usuarios' + (org && org.id ? '&org=' + encodeURIComponent(org.id) : '');
+  }
+
+  function armarAvisoNuevoUsuario(org, nuevo) {
+    var orgNombre = (org && (org.name || org.nombre)) || 'la organización';
+    var nombre = String((nuevo && (nuevo.displayName || nuevo.email)) || 'Alguien').trim();
+    var correo = String((nuevo && nuevo.email) || '').trim();
+    var quien = nombre + (correo && correo !== nombre ? ' (' + correo + ')' : '');
+    var url = urlUsuarios(org);
+    var p1 = quien + ' inició sesión desde el calendario y se unió a ' + orgNombre + '.';
+    var p2 = 'Revisa su cuenta en Usuarios → Cuentas: confirma que es bienvenido (quita la etiqueta "Nuevo"), asígnale su rol y vincúlalo con su persona.';
+    var p3 = 'Recibes este correo porque lo activaste en Administración → Avisos; desde ahí puedes desactivarlo.';
+    return {
+      asunto: 'Nuevo usuario en ' + orgNombre + ': ' + nombre,
+      texto: p1 + '\n\n' + p2 + '\n\nVer usuarios: ' + url + '\n\n' + p3,
+      html: '<p>' + escaparHtml(p1) + '</p><p>' + escaparHtml(p2) + '</p><p><a href="' + escaparHtml(url) + '">Ver usuarios</a></p>' +
+        '<p style="color:#8a867f;font-size:12px">' + escaparHtml(p3) + '</p>',
+      url: url
+    };
+  }
+
   /* Días que faltan para `venceIso` (negativo = vencido); null sin fecha. */
   function diasParaVencer(venceIso, hoy) {
     if (!venceIso) return null;
@@ -252,7 +306,9 @@
     eventosDePersona: eventosDePersona, lineaEvento: lineaEvento, primerNombre: primerNombre,
     urlCalendario: urlCalendario, armarAviso: armarAviso, planAvisos: planAvisos,
     normalizarTelefono: normalizarTelefono, telefonoValido: telefonoValido, formatoTelefono: formatoTelefono,
-    urlWhatsApp: urlWhatsApp, diasParaVencer: diasParaVencer, escaparHtml: escaparHtml, textoFallo: textoFallo
+    urlWhatsApp: urlWhatsApp, diasParaVencer: diasParaVencer, escaparHtml: escaparHtml, textoFallo: textoFallo,
+    PREF_NUEVOS: PREF_NUEVOS, VENTANA_NUEVOS_MS: VENTANA_NUEVOS_MS, quiereAvisoNuevos: quiereAvisoNuevos,
+    nuevosPorAvisar: nuevosPorAvisar, adminsParaNuevos: adminsParaNuevos, armarAvisoNuevoUsuario: armarAvisoNuevoUsuario
   };
 
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }

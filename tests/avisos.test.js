@@ -5,7 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const A = require('../avisos.js');
-const { procesarCola } = require('../.github/avisos/enviar.js');
+const { procesarCola, procesarNuevos } = require('../.github/avisos/enviar.js');
 
 const org = { id: 'o1', name: 'Templo Betel', slug: 'templobetel' };
 const slot = (tipo, musicianId, nombre) => ({ tipo, musicianId, nombre: nombre === undefined ? 'X' : nombre });
@@ -149,6 +149,9 @@ function baseFalsa(inicial) {
     }),
     once: async () => snap(get(p), p[p.length - 1]),
     update: async (patch) => { Object.keys(patch).forEach((k) => set(p.concat(k.split('/')), patch[k])); },
+    set: async (v) => set(p, v),
+    remove: async () => set(p, null),
+    push: async (v) => { const k = 'k' + Math.random().toString(36).slice(2); set(p.concat(k), v); return ref(p.concat(k)); },
     transaction: async (fn) => {
       const r = fn(get(p) === undefined ? null : JSON.parse(JSON.stringify(get(p))));
       if (r === undefined) return { committed: false, snapshot: snap(get(p)) };
@@ -236,4 +239,73 @@ test('procesarCola: Gmail rechaza credenciales (535) → no insiste y deja el mo
   assert.equal(data.colaAvisos.p2.fallo, 'gmail-credenciales');
   assert.equal(data.colaAvisos.p2.estado, 'error');
   assert.ok(A.textoFallo('gmail-credenciales').indexOf('GMAIL_APP_PASSWORD') >= 0);
+});
+
+/* --- Aviso a administradores de un usuario nuevo --- */
+function baseNuevos(extra) {
+  const ahora = Date.now();
+  const users = {
+    nuevo: { email: 'nuevo@x.com', displayName: 'Nuevo Pérez', role: 'normal', nuevo: true, createdAt: ahora - 3600 * 1000, organizationIds: { o1: true } },
+    viejo: { email: 'viejo@x.com', role: 'normal', nuevo: true, createdAt: ahora - 30 * 24 * 3600 * 1000, organizationIds: { o1: true } },
+    adminSi: { email: 'admin1@x.com', role: 'admin', organizationIds: { o1: true }, avisos: { nuevosUsuarios: true } },
+    adminNo: { email: 'admin2@x.com', role: 'admin', organizationIds: { o1: true } },
+    adminOtra: { email: 'admin3@x.com', role: 'admin', organizationIds: { o2: true }, avisos: { nuevosUsuarios: true } },
+    editorSi: { email: 'ed@x.com', role: 'editor', organizationIds: { o1: true }, avisos: { nuevosUsuarios: true } }
+  };
+  Object.assign(users, extra || {});
+  return Object.assign(baseFalsa({ organizations: { o1: { name: org.name, slug: org.slug } }, users, colaAvisos: {} }), { ahora });
+}
+
+test('nuevosPorAvisar y adminsParaNuevos: solo nuevos recientes y admins suscritos de esa organización', () => {
+  const ahora = Date.now();
+  const us = [
+    { uid: 'n1', nuevo: true, createdAt: ahora, organizationIds: { o1: true } },
+    { uid: 'n2', nuevo: true, createdAt: ahora - 8 * 24 * 3600 * 1000, organizationIds: { o1: true } },
+    { uid: 'n3', nuevo: true, createdAt: ahora, organizationIds: { o1: true }, avisoNuevo: { tomado: ahora, enviado: ahora } },
+    { uid: 'n4', nuevo: true, createdAt: ahora, organizationIds: {} },
+    { uid: 'n5', nuevo: true, createdAt: ahora, organizationIds: { o1: true }, avisoNuevo: { tomado: ahora - 3600 * 1000 } },
+    { uid: 'a1', role: 'admin', email: 'a@x.com', organizationIds: { o1: true }, avisos: { nuevosUsuarios: true } },
+    { uid: 'a2', role: 'admin', email: '', organizationIds: { o1: true }, avisos: { nuevosUsuarios: true } }
+  ];
+  assert.deepEqual(A.nuevosPorAvisar(us, ahora).map((u) => u.uid), ['n1', 'n5']);
+  assert.deepEqual(A.adminsParaNuevos(us, 'o1', 'n1').map((u) => u.uid), ['a1']);
+  assert.deepEqual(A.adminsParaNuevos(us, 'o1', 'a1'), []);
+});
+
+test('armarAvisoNuevoUsuario: nombre, correo, organización y enlace a Usuarios', () => {
+  const a = A.armarAvisoNuevoUsuario(org, { displayName: 'Ana <b>', email: 'ana@x.com' });
+  assert.equal(a.asunto, 'Nuevo usuario en Templo Betel: Ana <b>');
+  assert.match(a.texto, /Ana <b> \(ana@x\.com\) inició sesión desde el calendario y se unió a Templo Betel\./);
+  assert.match(a.texto, /admin\.html\?tab=usuarios&org=o1/);
+  assert.match(a.html, /Ana &lt;b&gt;/);
+});
+
+test('procesarNuevos: avisa solo a admins suscritos, una sola vez, y queda en el historial', async () => {
+  const { root, data, ahora } = baseNuevos();
+  const enviados = [];
+  const r = await procesarNuevos(root, async (m) => { enviados.push(m); }, { ahora });
+  assert.equal(r.nuevos, 1);
+  assert.deepEqual(enviados.map((m) => m.para), ['admin1@x.com']);
+  assert.equal(enviados[0].remitente, 'Templo Betel');
+  assert.ok(data.users.nuevo.avisoNuevo.enviado);
+  assert.equal(data.users.viejo.avisoNuevo, undefined);
+  const hist = Object.values(data.colaAvisos);
+  assert.equal(hist.length, 1);
+  assert.equal(hist[0].tipo, 'nuevoUsuario');
+  assert.equal(hist[0].uid, 'nuevo');
+  assert.equal(hist[0].estado, 'enviado');
+  const r2 = await procesarNuevos(root, async (m) => { enviados.push(m); }, { ahora: ahora + 1000 });
+  assert.equal(r2.nuevos, 0);
+  assert.equal(enviados.length, 1);
+});
+
+test('procesarNuevos: sin admin suscrito no envía pero no vuelve a intentarlo; si todo falla, se reintenta', async () => {
+  const sin = baseNuevos({ adminSi: { email: 'admin1@x.com', role: 'admin', organizationIds: { o1: true } } });
+  const r = await procesarNuevos(sin.root, async () => { throw new Error('no debería'); }, { ahora: sin.ahora });
+  assert.equal(r.sinDestinatarios, 1);
+  assert.ok(sin.data.users.nuevo.avisoNuevo);
+  const falla = baseNuevos();
+  const r2 = await procesarNuevos(falla.root, async () => { throw Object.assign(new Error('x'), { responseCode: 550 }); }, { ahora: falla.ahora });
+  assert.equal(r2.errores, 1);
+  assert.equal(falla.data.users.nuevo.avisoNuevo, undefined);
 });

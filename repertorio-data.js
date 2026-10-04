@@ -1658,6 +1658,17 @@
 
   function esUsuarioSinCorreo(u) { return !!(u && u.sinCorreo && !u.email); }
 
+  /* Preferencias de avisos de una cuenta (users/{uid}/avisos/{clave}); por
+     ahora 'nuevosUsuarios' (ver avisos.js). false borra la clave. */
+  function setPreferenciaAviso(uid, clave, valor, cb) {
+    var root = dbRoot();
+    if (!root || !uid || !clave) { cb && cb(false); return; }
+    root.child(USERS_PATH).child(uid).child('avisos').child(clave).set(valor ? true : null).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase setPreferenciaAviso rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
   function setUserNombre(uid, nombre, cb) {
     var root = dbRoot();
     var n = String(nombre || '').trim();
@@ -3204,7 +3215,7 @@
     createOrganization: createOrganization, updateOrganization: updateOrganization, deleteOrganization: deleteOrganization,
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
-    setUserRole: setUserRole, quitarMarcaNuevo: quitarMarcaNuevo, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
+    setUserRole: setUserRole, quitarMarcaNuevo: quitarMarcaNuevo, setPreferenciaAviso: setPreferenciaAviso, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
     userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
     guardarOrgPreferida: guardarOrgPreferida, orgPreferida: orgPreferida, borrarOrgPreferida: borrarOrgPreferida,
     normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,

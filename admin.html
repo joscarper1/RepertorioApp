@@ -36,8 +36,8 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20261003a"></script>
-<script src="avisos.js?v=20261001a"></script>
+<script src="repertorio-data.js?v=20261003b"></script>
+<script src="avisos.js?v=20261003a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -941,6 +941,17 @@ a.mas-fila:hover{background:none;color:var(--ink)}
     <sc-if value="{{ tabAvisos }}" hint-placeholder-val="{{ false }}">
       <section class="adm">
         <p class="campo-ayuda" style="margin:0">Al publicar un evento (o con "Reenviar eventos" en Usuarios → Cuentas) la app deja el pedido en cola y lanza el envío de correos en GitHub Actions; WhatsApp se abre desde el panel de avisos. Aquí se monitorea ese envío.</p>
+
+        <div class="form-panel">
+          <div class="rotulo">Mis notificaciones</div>
+          <label class="check" style="align-items:flex-start">
+            <input type="checkbox" checked="{{ avisoNuevosActivo }}" onChange="{{ onAvisoNuevos }}" disabled="{{ avisoNuevosGuardando }}" style="margin-top:2px">
+            <span>
+              <span style="font-weight:600">Avisarme cuando un usuario nuevo se una</span>
+              <span class="campo-ayuda" style="display:block;margin:2px 0 0">{{ avisoNuevosAyuda }}</span>
+            </span>
+          </label>
+        </div>
 
         <div class="panel">
           <div class="panel-cab">
@@ -2927,8 +2938,10 @@ class Component extends DCLogic {
         if (h.sinEventos) partes.push(h.sinEventos + ' sin eventos próximos');
         if (h.fallo) partes.push(AV && AV.textoFallo ? AV.textoFallo(h.fallo) : 'motivo: ' + h.fallo);
       }
+      if (h.tipo === 'nuevoUsuario') partes[2] = 'aviso automático a administradores';
       return {
-        titulo: h.tipo === 'reenvio' ? 'Reenvío a ' + nombreUid(h.uid) : 'Publicación de ' + nEv + (nEv === 1 ? ' evento' : ' eventos'),
+        titulo: h.tipo === 'nuevoUsuario' ? 'Usuario nuevo: ' + nombreUid(h.uid)
+          : h.tipo === 'reenvio' ? 'Reenvío a ' + nombreUid(h.uid) : 'Publicación de ' + nEv + (nEv === 1 ? ' evento' : ' eventos'),
         badge: est[0], badgeClase: 'badge ' + est[1],
         detalle: partes.filter(Boolean).join(' · ')
       };
@@ -3019,6 +3032,28 @@ class Component extends DCLogic {
       tabUsuarios: s.activeTab === 'usuarios',
       tabRepertorio: s.activeTab === 'repertorio',
       tabAvisos: s.activeTab === 'avisos',
+      /* Preferencia propia: se lee de la lista en vivo de usuarios (s.userDoc
+         es la copia del inicio de sesión). */
+      ...(() => {
+        const yo = s.userDoc ? ((s.usuarios || []).find((u) => u.uid === s.userDoc.uid) || s.userDoc) : null;
+        const activo = s.avisoNuevosPendiente != null ? s.avisoNuevosPendiente : !!(AV && AV.quiereAvisoNuevos(yo));
+        return {
+          avisoNuevosActivo: activo,
+          avisoNuevosGuardando: s.avisoNuevosPendiente != null,
+          avisoNuevosAyuda: (yo && yo.email
+            ? 'Te llega un correo a ' + yo.email + ' cuando alguien inicia sesión por su cuenta desde el calendario y queda en una de tus organizaciones.'
+            : 'Te llega un correo cuando alguien inicia sesión por su cuenta desde el calendario y queda en una de tus organizaciones.') +
+            ' Sale con el envío automático de GitHub Actions, así que puede tardar hasta unos 30 minutos.',
+          onAvisoNuevos: (e) => {
+            if (!yo) return;
+            const v = !!e.target.checked;
+            this.setState({ avisoNuevosPendiente: v });
+            D().setPreferenciaAviso(yo.uid, AV ? AV.PREF_NUEVOS : 'nuevosUsuarios', v, (ok) => {
+              this.setState({ avisoNuevosPendiente: null, mensaje: ok ? (v ? 'Te avisaremos cuando un usuario nuevo se una.' : 'Ya no recibirás avisos de usuarios nuevos.') : 'No se pudo guardar la preferencia.' });
+            });
+          }
+        };
+      })(),
       avisoTokenGlobal: s.activeTab === 'avisos' ? '' : avisoTokenGlobal,
       irAAvisos: () => this.cambiarTab('avisos'),
       avisosWorkflows: avisosWorkflows,
