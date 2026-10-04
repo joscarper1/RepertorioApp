@@ -43,7 +43,7 @@ test('eventosDePersona: solo publicados (o sin estado), de hoy en adelante, orde
 
 test('armarAviso: saludo, viñetas con puestos y enlace al mes del último evento', () => {
   const a = A.armarAviso(org, 'Ana María López', 'ana', A.eventosDePersona(eventos, 'ana', '2026-09-28'));
-  assert.equal(a.saludo, 'Hola Ana, tienes participación en los siguientes eventos de Templo Betel:');
+  assert.equal(a.saludo, 'Hola Ana, ¡Dios te bendiga!\n\nTienes participación en los siguientes eventos de Templo Betel:');
   assert.deepEqual(a.lineas, [
     'Lun 5 oct – Cultos Dominicales (Corista)',
     'Lun 5 oct – Culto Familiar (Bajo)',
@@ -52,7 +52,9 @@ test('armarAviso: saludo, viñetas con puestos y enlace al mes del último event
   ]);
   assert.equal(a.url, 'https://joscarper1.github.io/RepertorioApp/index.html?group=templobetel&month=2026-11');
   assert.ok(a.texto.startsWith(a.saludo + '\n\n• Lun 5 oct'));
-  assert.ok(a.texto.endsWith('Ver calendario: ' + a.url));
+  assert.equal(a.urlConfirmar, 'https://joscarper1.github.io/RepertorioApp/dashboard.html?org=templobetel');
+  assert.ok(a.texto.endsWith('Confirma tu participación aquí: ' + a.urlConfirmar + '\n\nVer calendario: ' + a.url));
+  assert.ok(a.html.indexOf('Confirma tu participación aquí: <a href="' + a.urlConfirmar + '">') < a.html.indexOf('Ver calendario'));
   assert.equal(a.asunto, 'Tus próximos eventos – Templo Betel');
   assert.equal(A.armarAviso(org, 'Ana', 'ana', []), null);
 });

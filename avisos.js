@@ -133,6 +133,11 @@
     return SITIO_URL + 'index.html' + (q.length ? '?' + q.join('&') : '');
   }
 
+  /* Dashboard de la persona: abre en "Próximos eventos", donde confirma. */
+  function urlDashboard(org) {
+    return SITIO_URL + 'dashboard.html' + (org && org.slug ? '?org=' + encodeURIComponent(org.slug) : '');
+  }
+
   function escaparHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -148,11 +153,14 @@
     var saludo = 'Hola' + (primer ? ' ' + primer : '') + ', ¡Dios te bendiga!'+ '\n\n' + 'Tienes participación en los siguientes eventos de ' + orgNombre + ':';
     var lineas = eventos.map(function (ev) { return lineaEvento(ev, musicianId); });
     var url = urlCalendario(org, eventos[eventos.length - 1].fecha);
-    var texto = saludo + '\n\n' + lineas.map(function (l) { return '• ' + l; }).join('\n') + '\n\nVer calendario: ' + url;
+    var urlConfirmar = urlDashboard(org);
+    var texto = saludo + '\n\n' + lineas.map(function (l) { return '• ' + l; }).join('\n') +
+      '\n\nConfirma tu participación aquí: ' + urlConfirmar + '\n\nVer calendario: ' + url;
     var html = '<p>' + escaparHtml(saludo) + '</p><ul>' +
       lineas.map(function (l) { return '<li>' + escaparHtml(l) + '</li>'; }).join('') +
-      '</ul><p><a href="' + escaparHtml(url) + '">Ver calendario</a></p>';
-    return { asunto: 'Tus próximos eventos – ' + orgNombre, saludo: saludo, lineas: lineas, url: url, texto: texto, html: html };
+      '</ul><p>Confirma tu participación aquí: <a href="' + escaparHtml(urlConfirmar) + '">' + escaparHtml(urlConfirmar) + '</a></p>' +
+      '<p><a href="' + escaparHtml(url) + '">Ver calendario</a></p>';
+    return { asunto: 'Tus próximos eventos – ' + orgNombre, saludo: saludo, lineas: lineas, url: url, urlConfirmar: urlConfirmar, texto: texto, html: html };
   }
 
   /* Solo dígitos con código de país; 8 dígitos se toman como número local. */
