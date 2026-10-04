@@ -32,7 +32,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="menu-config.js?v=20261001a"></script>
-<script src="repertorio-data.js?v=20261003b"></script>
+<script src="repertorio-data.js?v=20261004a"></script>
 <script src="avisos.js?v=20261003b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
@@ -1153,6 +1153,9 @@ class Component extends DCLogic {
     }));
 
     const rolesBanda = ((s.musico && s.musico.rolesBanda) || []).map((tipo) => ({ tipo: tipo }));
+    /* Eventos solo para admin, editor o director (ver R.puedeVerEventos). */
+    const veEventos = R.puedeVerEventos(s.userDoc, s.eventos, s.musico, R.perfilOrg(s.org), todayIso());
+    const menuAcciones = window.RepertorioMenu.accionesDashboard(s.org, s.userDoc).filter((a) => a.id !== 'eventos' || veEventos);
     const nombre = (s.musico && s.musico.nombre) || s.usuarioNombre || '';
 
     /* Me gusta de canciones: solo admin, en su propio dashboard y en
@@ -1204,8 +1207,8 @@ class Component extends DCLogic {
       masSub: s.org ? s.org.name : '',
       /* En el teléfono la barra queda solo con las secciones (Inicio,
          Publicar, Me gusta); los enlaces a otras páginas van aquí. */
-      masItems: window.RepertorioMenu.accionesDashboard(s.org, s.userDoc).map((a) => ({
-        label: a.id === 'publicado' ? 'Calendario' : (a.id === 'eventos' ? 'Eventos' : a.label), href: a.href, onClick: () => {}
+      masItems: menuAcciones.map((a) => ({
+        label: a.id === 'publicado' ? 'Abrir Calendario' : (a.id === 'eventos' ? 'Editar un Evento' : a.label), href: a.href, onClick: () => {}
       })).concat([{ label: 'Fechas no disponibles', href: '#disponibilidad', onClick: (e) => {
         if (e && e.preventDefault) e.preventDefault();
         this.setState({ masAbierto: false, vista: 'inicio' });
@@ -1218,7 +1221,7 @@ class Component extends DCLogic {
       orgNombre: s.org ? s.org.name : '',
       orgTituloSufijo: s.org ? (' · ' + s.org.name) : '',
       /* Botones bajo el encabezado: definidos en menu-config.js. */
-      menuAcciones: window.RepertorioMenu.accionesDashboard(s.org, s.userDoc),
+      menuAcciones: menuAcciones,
 
       viewOnlyActivo: s.viewOnlyActivo,
       /* En Inicio el título es la persona; en las demás secciones, la

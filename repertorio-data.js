@@ -1266,6 +1266,25 @@
     });
   }
 
+  /* ¿Se le muestra el menú de Eventos? Admin y editor siempre; un usuario
+     normal solo si es director: su perfil tiene un rol de banda que da
+     'eventos.editar' (ej. Director de Alabanza) o lo ocupa en algún evento
+     de hoy en adelante (hoyIso; por omisión, hoy). eventos y musico son
+     los que la página ya tiene. */
+  function puedeVerEventos(userDoc, eventos, musico, perfil, hoyIso) {
+    if (!puede(userDoc, 'eventos.ver')) return false;
+    if (puede(userDoc, 'eventos.todos')) return true;
+    var porPuesto = perfilOr(perfil).permisosPorPuesto;
+    var clave = function (t) { return String(t || '').trim().toLowerCase(); };
+    var rolesDirector = Object.keys(porPuesto).filter(function (r) { return porPuesto[r].indexOf('eventos.editar') >= 0; }).map(clave);
+    if (((musico && musico.rolesBanda) || []).some(function (r) { return rolesDirector.indexOf(clave(r)) >= 0; })) return true;
+    var n = new Date();
+    var desde = hoyIso || (n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0') + '-' + String(n.getDate()).padStart(2, '0'));
+    return (eventos || []).some(function (ev) {
+      return ev && (ev.fecha || '') >= desde && puedeSobreEvento(userDoc, 'eventos.editar', ev, perfil);
+    });
+  }
+
   /* --- Usuarios --- */
 
   /* Se llama justo después de cada login. Si el usuario no tiene doc en
@@ -3218,7 +3237,7 @@
     setUserRole: setUserRole, quitarMarcaNuevo: quitarMarcaNuevo, setPreferenciaAviso: setPreferenciaAviso, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
     userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
     guardarOrgPreferida: guardarOrgPreferida, orgPreferida: orgPreferida, borrarOrgPreferida: borrarOrgPreferida,
-    normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
+    normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, puedeVerEventos: puedeVerEventos, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
     integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,
     watchAccesosPendientes: watchAccesosPendientes, crearAccesoPendiente: crearAccesoPendiente, borrarAccesoPendiente: borrarAccesoPendiente,
     crearUsuarioSinCorreo: crearUsuarioSinCorreo, esUsuarioSinCorreo: esUsuarioSinCorreo,

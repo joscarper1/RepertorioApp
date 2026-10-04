@@ -75,3 +75,19 @@ test('rolLabel y ROLES incluyen al editor', () => {
   assert.equal(R.rolLabel('editor'), 'Editor');
   assert.equal(R.rolLabel(undefined), 'Normal');
 });
+
+test('puedeVerEventos: admin y editor siempre; normal solo si es director', () => {
+  const ev = (fecha, slots) => Object.assign(evento(slots), { fecha });
+  const hoy = '2026-10-04';
+  assert.equal(R.puedeVerEventos(usuario('d', 'admin'), [], null, null, hoy), true);
+  assert.equal(R.puedeVerEventos(usuario('d', 'editor'), [], null, null, hoy), true);
+  assert.equal(R.puedeVerEventos(usuario('d'), [], null, null, hoy), false);
+  assert.equal(R.puedeVerEventos(null, [], null, null, hoy), false);
+  /* Rol de director en su perfil */
+  assert.equal(R.puedeVerEventos(usuario('d'), [], { rolesBanda: ['Director de Alabanza'] }, null, hoy), true);
+  assert.equal(R.puedeVerEventos(usuario('d'), [], { rolesBanda: ['Corista'] }, null, hoy), false);
+  /* Director en un evento próximo sí; en uno pasado o como corista, no */
+  assert.equal(R.puedeVerEventos(usuario('d'), [ev('2026-10-11', [slot('Director de Alabanza', 'd')])], null, null, hoy), true);
+  assert.equal(R.puedeVerEventos(usuario('d'), [ev('2026-09-27', [slot('Director de Alabanza', 'd')])], null, null, hoy), false);
+  assert.equal(R.puedeVerEventos(usuario('d'), [ev('2026-10-11', [slot('Corista', 'd')])], null, null, hoy), false);
+});
