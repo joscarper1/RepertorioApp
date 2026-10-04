@@ -316,9 +316,11 @@ test('procesarNuevos: sin admin suscrito no envía pero no vuelve a intentarlo; 
 const cancion = (t, sm, k) => ({ t, sm: sm || '', k: k || '' });
 const conCanciones = (lista) => ({ bloques: [{ titulo: 'Alabanza', canciones: lista }] });
 
-test('cambioRepertorio: solo si antes había más de una canción y la lista cambió', () => {
+test('cambioRepertorio: cualquier cambio en la lista, incluida la primera canción', () => {
   const dos = conCanciones([cancion('Cuán grande es Él', 'Ana', 'G'), cancion('Santo', '', 'D')]);
-  assert.equal(A.cambioRepertorio(conCanciones([cancion('Una')]), conCanciones([cancion('Otra')])), null);
+  assert.equal(A.cambioRepertorio(conCanciones([]), conCanciones([])), null);
+  const primera = A.cambioRepertorio(conCanciones([]), conCanciones([cancion('Santo', '', 'D')]));
+  assert.deepEqual([primera.agregadas, primera.quitadas, primera.ahora], [['Santo (D)'], [], ['Santo (D)']]);
   assert.equal(A.cambioRepertorio(dos, JSON.parse(JSON.stringify(dos))), null);
   const r = A.cambioRepertorio(dos, conCanciones([cancion('Cuán grande es Él', 'Ana', 'G'), cancion('Digno', '', 'E')]));
   assert.deepEqual(r.agregadas, ['Digno (E)']);

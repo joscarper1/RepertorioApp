@@ -39,8 +39,8 @@ El estado de los workflows, el token y el historial se ven en **Administración 
 Dos interruptores en Administración → Avisos (por administrador, apagados por defecto):
 **Avisarme cuando se actualice un repertorio** y **Enviarme la bitácora de cambios de eventos**.
 Al modificar, mover, cancelar o archivar un evento, `eventos.html` deja una entrada en
-`/bitacoraEventos` (acción, evento, fecha, versión, estado, y si cambió un repertorio que ya tenía
-más de una canción: agregadas/quitadas/lista actual). `enviar.js` (`procesarBitacora`) manda un
+`/bitacoraEventos` (acción, evento, fecha, versión, estado, y si cambiaron sus canciones, incluida la
+primera: agregadas/quitadas/lista actual). `enviar.js` (`procesarBitacora`) manda un
 correo de bitácora por administrador suscrito con los cambios pendientes de su organización y uno
 de repertorio por cada cambio de canciones. Si el cambio lo hace un admin el envío sale al instante;
 si lo hace un editor o director, con el cron de respaldo (~30 min).

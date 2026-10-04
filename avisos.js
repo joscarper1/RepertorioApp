@@ -327,11 +327,11 @@
   }
 
   /* Cambio de repertorio al guardar `ahora` sobre `antes` (el evento en la
-     nube): solo cuenta si antes ya tenía más de una canción y la lista
-     cambió (canciones, salmista, tono u orden). null si no aplica. */
+     nube): cualquier cambio en la lista (canciones, salmista, tono u orden),
+     incluida la primera canción de un evento vacío. null si no cambió. */
   function cambioRepertorio(antes, ahora) {
     var a = cancionesDe(antes), b = cancionesDe(ahora);
-    if (a.length < 2 || a.join('\n') === b.join('\n')) return null;
+    if (a.join('\n') === b.join('\n')) return null;
     var norm = function (s) { return s.toLowerCase(); };
     var an = a.map(norm), bn = b.map(norm);
     return {
