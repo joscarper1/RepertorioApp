@@ -321,6 +321,10 @@ test('cambioRepertorio: cualquier cambio en la lista, incluida la primera canci�
   assert.equal(A.cambioRepertorio(conCanciones([]), conCanciones([])), null);
   const primera = A.cambioRepertorio(conCanciones([]), conCanciones([cancion('Santo', '', 'D')]));
   assert.deepEqual([primera.agregadas, primera.quitadas, primera.ahora], [['Santo (D)'], [], ['Santo (D)']]);
+  const ultima = A.cambioRepertorio(conCanciones([cancion('Santo', '', 'D')]), conCanciones([]));
+  assert.deepEqual([ultima.agregadas, ultima.quitadas, ultima.ahora], [[], ['Santo (D)'], []]);
+  const correo = A.armarAvisoRepertorio(org, { eventoNombre: 'Culto', eventoFecha: '2026-10-07', autorUid: 'u', repertorio: ultima }, { u: 'Ana' });
+  assert.match(correo.texto, /Quitadas:\n• Santo \(D\)\n\nLista actual:\n• \(sin canciones\)/);
   assert.equal(A.cambioRepertorio(dos, JSON.parse(JSON.stringify(dos))), null);
   const r = A.cambioRepertorio(dos, conCanciones([cancion('Cuán grande es Él', 'Ana', 'G'), cancion('Digno', '', 'E')]));
   assert.deepEqual(r.agregadas, ['Digno (E)']);
