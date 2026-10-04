@@ -35,7 +35,7 @@
      página en vez de una copia vieja en caché: súbelo al cambiar estos
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
-<script src="repertorio-data.js?v=20261002f"></script>
+<script src="repertorio-data.js?v=20261003a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -241,6 +241,14 @@ a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .det-tema-txt{font-size:24px;font-weight:600;line-height:1.25;text-wrap:pretty;overflow-wrap:anywhere}
 .det-cita{font-size:14px;line-height:1.55;color:var(--muted);border-left:2px solid var(--ac);padding-left:12px;margin-top:6px;text-wrap:pretty;white-space:pre-line}
 .det-rep-t{margin-bottom:14px;display:block}
+/* Cabecera del repertorio: "Reproducir todo" y repetir, en el verde de los ▶. */
+.det-rep-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;min-height:34px}
+.todo-acc{display:flex;align-items:center;gap:8px}
+.todo-btn{display:flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:999px;border:1.5px solid var(--ac);background:transparent;color:var(--ac);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+.todo-btn.on{background:var(--ac);color:#fff}
+.repetir-btn{position:relative;width:34px;height:34px;border-radius:50%;border:1.5px solid rgba(0,0,0,.15);background:transparent;color:var(--muted2);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.repetir-btn.on{border-color:var(--ac);color:var(--ac)}
+.repetir-1{position:absolute;top:-4px;right:-4px;min-width:15px;height:15px;border-radius:999px;background:var(--ac);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;line-height:1}
 .bloque{margin-bottom:18px}
 .parte{display:flex;align-items:center;gap:12px;margin:4px 0 14px}
 .parte .linea{flex:1;height:2px;background:var(--ac)}
@@ -876,7 +884,22 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
                 </sc-if>
                 <sc-if value="{{ d.tieneRepertorio }}" hint-placeholder-val="{{ true }}">
                   <div class="o-3">
-                    <span class="rotulo det-rep-t">Repertorio</span>
+                    <div class="det-rep-cab">
+                      <span class="rotulo">Repertorio</span>
+                      <sc-if value="{{ d.hayReproducirTodo }}" hint-placeholder-val="{{ true }}">
+                        <div class="todo-acc">
+                          <button type="button" class="{{ d.repetirClase }}" onClick="{{ d.onRepetir }}" aria-label="{{ d.repetirLabel }}" title="{{ d.repetirLabel }}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"></path><path d="M3 11V9a3 3 0 0 1 3-3h15"></path><path d="M7 22l-4-4 4-4"></path><path d="M21 13v2a3 3 0 0 1-3 3H3"></path></svg>
+                            <sc-if value="{{ d.repetirUna }}" hint-placeholder-val="{{ false }}"><span class="repetir-1">1</span></sc-if>
+                          </button>
+                          <button type="button" class="{{ d.todoClase }}" onClick="{{ d.onReproducirTodo }}">
+                            <sc-if value="{{ d.todoParado }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><polygon points="2,1 9,5 2,9" fill="currentColor"></polygon></svg></sc-if>
+                            <sc-if value="{{ d.todoSonando }}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><rect x="1.5" y="1.5" width="7" height="7" fill="currentColor"></rect></svg></sc-if>
+                            {{ d.todoTexto }}
+                          </button>
+                        </div>
+                      </sc-if>
+                    </div>
                     <sc-for list="{{ d.bloques }}" as="b" hint-placeholder-count="3">
                       <div class="bloque">
                         <sc-if value="{{ b.mostrarParte }}" hint-placeholder-val="{{ false }}">
@@ -1170,7 +1193,10 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
 class Component extends DCLogic {
   state = {
     modo: 'cargando', org: null, eventos: [], mes: new URLSearchParams(location.search).get('month') || '', estado: '', errorLogin: '', usuarioNombre: null,
-    mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false, avisoAudio: '', avisoAudioUrl: '',
+    mesesAbierto: false, reproduciendoKey: null, reproduciendoPausado: false,
+    /* "Reproducir todo": cola = { evId, items: [{ key, videoId }] } del evento
+       que suena en secuencia; repetir = 'no' | 'todo' | 'una'. */
+    cola: null, repetir: 'no', avisoAudio: '', avisoAudioUrl: '',
     /* Línea de tiempo de la fila que suena (ver R.youtubeController):
        progArrastre guarda el segundo elegido mientras se arrastra la barra. */
     progT: 0, progD: 0, progArrastre: null,
@@ -1211,7 +1237,10 @@ class Component extends DCLogic {
       clearTimeout(this._tAudio);
       this.setState({ reproduciendoKey: key, reproduciendoPausado: paused, avisoAudio: aviso ? aviso.mensaje : '', avisoAudioUrl: (aviso && aviso.url) || '' });
       if (aviso && aviso.tipo === 'error') this._tAudio = setTimeout(() => this.setState({ avisoAudio: '', avisoAudioUrl: '' }), aviso.url ? 8000 : 5000);
-    }, (key, t, d) => this.setState({ progT: t, progD: d }));
+      /* En "Reproducir todo", un video que YouTube no puede reproducir se
+         salta (se avisa igual con el toast). */
+      if (aviso && aviso.tipo === 'error' && aviso.key) this.siguienteEnCola(aviso.key, true);
+    }, (key, t, d) => this.setState({ progT: t, progD: d }), (key) => this.siguienteEnCola(key, false));
 
     const slug = new URLSearchParams(location.search).get('group');
 
@@ -1496,8 +1525,57 @@ class Component extends DCLogic {
       window.RepertorioData.progresoAudio(s.progT, s.progD, s.progArrastre, titulo));
   }
 
+  /* Tocar el ▶ de una canción: si es de la cola que suena, la secuencia
+     sigue desde ella; si es de otro evento, la cola se cancela. */
   togglePlay(key, videoId) {
+    const cola = this.state.cola;
+    if (cola && !cola.items.some((x) => x.key === key)) this.setState({ cola: null });
+    this._ultimoVideo = { key: key, videoId: videoId };
     if (this._yt) this._yt.toggle(key, videoId);
+  }
+
+  /* "Reproducir todo" del detalle: arranca la secuencia del evento desde
+     la primera canción con audio; con la secuencia de ese evento sonando,
+     el mismo botón la detiene. */
+  reproducirTodo(evId, items) {
+    if (!this._yt || !items.length) return;
+    if (this.state.cola && this.state.cola.evId === evId) {
+      this.setState({ cola: null });
+      this._yt.detener();
+      return;
+    }
+    this._erroresCola = 0;
+    this.setState({ cola: { evId: evId, items: items } });
+    this._yt.cargar(items[0].key, items[0].videoId);
+  }
+
+  cambiarRepetir() {
+    this.setState((s) => ({ repetir: s.repetir === 'no' ? 'todo' : s.repetir === 'todo' ? 'una' : 'no' }));
+  }
+
+  /* Al terminar (o fallar) una canción: repetir la misma, pasar a la
+     siguiente de la cola, volver a la primera (repetir todo) o terminar. */
+  siguienteEnCola(key, fallo) {
+    const s = this.state;
+    const cola = s.cola;
+    if (!fallo && s.repetir === 'una') {
+      const it = cola ? cola.items.find((x) => x.key === key) : null;
+      const vid = it ? it.videoId : this._ultimoVideo && this._ultimoVideo.key === key ? this._ultimoVideo.videoId : null;
+      if (vid && this._yt) { this._yt.cargar(key, vid); return; }
+    }
+    if (!cola) return;
+    const i = cola.items.findIndex((x) => x.key === key);
+    if (i < 0) return;
+    this._erroresCola = fallo ? (this._erroresCola || 0) + 1 : 0;
+    /* Si fallaron todas seguidas no se da vueltas para siempre. */
+    if (this._erroresCola >= cola.items.length) { this.setState({ cola: null }); return; }
+    let j = i + 1;
+    if (j >= cola.items.length) {
+      if (s.repetir !== 'todo') { this.setState({ cola: null }); return; }
+      j = 0;
+    }
+    const sig = cola.items[j];
+    if (this._yt) this._yt.cargar(sig.key, sig.videoId);
   }
 
   /* Mientras se arrastra la barra solo se mueve el número; el salto real se
@@ -1858,6 +1936,7 @@ class Component extends DCLogic {
     const estado = cancelado ? ['CANCELADO', 'canc'] : dias < 0 ? ['FINALIZADO', 'fin'] : dias === 0 ? ['HOY', 'hoy']
       : [dias === 1 ? 'MAÑANA' : 'EN ' + dias + ' DÍAS', ''];
     let num = 0;
+    const conAudio = [];
     const verLista = this.puedeVerVotantes();
     const bloques = this.marcarPartes((ev.bloques || []).map((bl, blIdx) => ({
       titulo: bl.titulo,
@@ -1866,6 +1945,7 @@ class Component extends DCLogic {
         num++;
         const videoId = R.youtubeId(c.u);
         const key = ev.id + '|' + blIdx + '|' + i;
+        if (videoId) conAudio.push({ key: key, videoId: videoId });
         const activa = this.state.reproduciendoKey === key;
         const sonando = activa && !this.state.reproduciendoPausado;
         /* Un título con saltos de línea es un popurrí: la primera línea es
@@ -1917,8 +1997,20 @@ class Component extends DCLogic {
     })).filter((bl) => bl.canciones.length));
     const banda = this.bandaDetalle(ev, ctx.miMusico);
     const txt = (v) => (v && String(v).trim()) || '';
+    const colaAqui = !!(this.state.cola && this.state.cola.evId === ev.id);
+    const repetir = this.state.repetir;
     const color = this.colorTipo(ev.servicio);
     return {
+      /* "Reproducir todo" + repetir (no / toda la lista / una canción). */
+      hayReproducirTodo: conAudio.length > 0,
+      todoTexto: colaAqui ? 'Detener' : 'Reproducir todo',
+      todoClase: 'todo-btn' + (colaAqui ? ' on' : ''),
+      todoSonando: colaAqui, todoParado: !colaAqui,
+      onReproducirTodo: () => this.reproducirTodo(ev.id, conAudio),
+      repetirClase: 'repetir-btn' + (repetir !== 'no' ? ' on' : ''),
+      repetirUna: repetir === 'una',
+      repetirLabel: repetir === 'no' ? 'Repetir: desactivado' : repetir === 'todo' ? 'Repetir: toda la lista' : 'Repetir: esta canción',
+      onRepetir: () => this.cambiarRepetir(),
       tipo: ev.servicio || 'Evento',
       colorStyle: 'color:' + color,
       estado: estado[0],

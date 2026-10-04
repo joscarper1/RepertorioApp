@@ -304,10 +304,13 @@
      de la fila cargada: se consulta el reproductor cada YT_PROGRESO_MS pero
      solo se avisa cuando cambia el segundo entero o la duración, para no
      re-renderizar la página de más. duracion llega en 0 mientras YouTube no
-     la conoce (cargando o pasando un anuncio). */
+     la conoce (cargando o pasando un anuncio).
+     onFin(key) (opcional) avisa que la fila terminó de sonar sola (no por
+     pausa ni error), después del onChange(null): lo usa "Reproducir todo"
+     de index.html para pasar a la siguiente canción. */
   var YT_PROGRESO_MS = 250;
 
-  function youtubeController(elementId, onChange, onProgress) {
+  function youtubeController(elementId, onChange, onProgress, onFin) {
     var player = null, ready = false, pending = null, current = null, currentVideoId = null, paused = false;
     var lentoTimer = null, lentoAvisado = false;
     var progresoTimer = null, ultimoSeg = -1, ultimaDur = -1;
@@ -361,7 +364,12 @@
               cancelarLento();
               if (avisado && onChange) onChange(current, paused);
             }
-            if (e.data === w.YT.PlayerState.ENDED) { cancelarLento(); detenerProgreso(); current = null; currentVideoId = null; paused = false; if (onChange) onChange(null, false); }
+            if (e.data === w.YT.PlayerState.ENDED) {
+              var termino = current;
+              cancelarLento(); detenerProgreso(); current = null; currentVideoId = null; paused = false;
+              if (onChange) onChange(null, false);
+              if (onFin && termino) onFin(termino);
+            }
           },
           /* Sin esto la fila quedaba marcada como sonando aunque YouTube
              rechazara el video. Se detiene el reproductor y se libera la
@@ -405,18 +413,33 @@
       if (current === key && currentVideoId === videoId) {
         if (paused) { player.playVideo(); paused = false; } else { player.pauseVideo(); paused = true; cancelarLento(); }
         if (onChange) onChange(key, paused);
-      } else {
-        player.loadVideoById(videoId);
-        player.playVideo();
-        current = key;
-        currentVideoId = videoId;
-        paused = false;
-        vigilarInicio();
-        detenerProgreso();
-        if (onProgress) onProgress(key, 0, 0);
-        vigilarProgreso();
-        if (onChange) onChange(key, false);
-      }
+      } else cargar(key, videoId);
+    }
+
+    /* Carga y reproduce desde el inicio aunque esa fila ya esté cargada
+       (la siguiente canción de "Reproducir todo", o repetir la misma). */
+    function cargar(key, videoId) {
+      if (!videoId) return;
+      if (!ready) { pending = { key: key, videoId: videoId }; return; }
+      player.loadVideoById(videoId);
+      player.playVideo();
+      current = key;
+      currentVideoId = videoId;
+      paused = false;
+      vigilarInicio();
+      detenerProgreso();
+      if (onProgress) onProgress(key, 0, 0);
+      vigilarProgreso();
+      if (onChange) onChange(key, false);
+    }
+
+    function detener() {
+      pending = null;
+      cancelarLento(); detenerProgreso();
+      try { if (player && player.stopVideo) player.stopVideo(); } catch (x) {}
+      var habia = current;
+      current = null; currentVideoId = null; paused = false;
+      if (habia && onChange) onChange(null, false);
     }
 
     /* Salta a `segundos` del video cargado, solo si es el de esa fila (evita
@@ -429,7 +452,7 @@
 
     function destroy() { cancelarLento(); detenerProgreso(); if (player && player.destroy) player.destroy(); }
 
-    return { toggle: toggle, seek: seek, destroy: destroy };
+    return { toggle: toggle, cargar: cargar, detener: detener, seek: seek, destroy: destroy };
   }
 
   /* Las secciones arrancan sin canciones: eventos.html muestra en cada una
