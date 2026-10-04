@@ -289,6 +289,164 @@
     };
   }
 
+  /* --- Avisos a administradores: bitácora de cambios y repertorio ---
+     Cada vez que alguien modifica, mueve, cancela o archiva un evento,
+     eventos.html deja una entrada en /bitacoraEventos/{id} (ver
+     entradaBitacora). El workflow la toma y manda correo a los
+     administradores de la organización que activaron, en Administración →
+     Avisos, la bitácora (users/{uid}/avisos/bitacoraEventos) y/o el aviso de
+     repertorio actualizado (users/{uid}/avisos/repertorioActualizado). Ambos
+     interruptores vienen apagados. */
+  var BITACORA_PATH = 'bitacoraEventos';
+  var PREF_BITACORA = 'bitacoraEventos';
+  var PREF_REPERTORIO = 'repertorioActualizado';
+  var ACCIONES_BITACORA = { modificado: 'Modificado', movido: 'Movido', cancelado: 'Cancelado', archivado: 'Archivado' };
+  var ESTADOS_TXT = { BORRADOR: 'Borrador', PUBLICADO: 'Publicado', CANCELADO: 'Cancelado', ARCHIVADO: 'Archivado', ELIMINADO: 'Eliminado' };
+
+  function quierePref(u, clave) { return !!(u && u.avisos && u.avisos[clave] === true); }
+
+  /* Administradores de la organización con la preferencia activada (con correo). */
+  function adminsConPref(usuarios, orgId, clave) {
+    return (usuarios || []).filter(function (u) {
+      return u && u.uid && u.role === 'admin' && u.email && orgIdsDe(u).indexOf(orgId) >= 0 && quierePref(u, clave);
+    });
+  }
+
+  /* Canciones con título del evento: 'Título – Salmista (Tono)'. */
+  function cancionesDe(ev) {
+    var out = [];
+    ((ev && ev.bloques) || []).forEach(function (bl) {
+      ((bl && bl.canciones) || []).forEach(function (c) {
+        var t = String((c && c.t) || '').trim();
+        if (!t) return;
+        var sm = String(c.sm || '').trim(), k = String(c.k || '').trim();
+        out.push(t + (sm ? ' – ' + sm : '') + (k ? ' (' + k + ')' : ''));
+      });
+    });
+    return out;
+  }
+
+  /* Cambio de repertorio al guardar `ahora` sobre `antes` (el evento en la
+     nube): solo cuenta si antes ya tenía más de una canción y la lista
+     cambió (canciones, salmista, tono u orden). null si no aplica. */
+  function cambioRepertorio(antes, ahora) {
+    var a = cancionesDe(antes), b = cancionesDe(ahora);
+    if (a.length < 2 || a.join('\n') === b.join('\n')) return null;
+    var norm = function (s) { return s.toLowerCase(); };
+    var an = a.map(norm), bn = b.map(norm);
+    return {
+      ahora: b,
+      agregadas: b.filter(function (s) { return an.indexOf(norm(s)) < 0; }),
+      quitadas: a.filter(function (s) { return bn.indexOf(norm(s)) < 0; })
+    };
+  }
+
+  /* Entrada para /bitacoraEventos. accion: modificado | movido | cancelado |
+     archivado. anterior = el evento antes del cambio; ev = como quedó.
+     opts: {version, repertorio (cambioRepertorio)}. */
+  function entradaBitacora(accion, anterior, ev, opts) {
+    opts = opts || {};
+    ev = ev || anterior || {};
+    anterior = anterior || ev;
+    var e = {
+      orgId: ev.organizationId || anterior.organizationId || '',
+      eventId: ev.id || anterior.id || '',
+      accion: accion,
+      eventoNombre: ev.servicio || anterior.servicio || 'Evento',
+      eventoFecha: ev.fecha || anterior.fecha || '',
+      estadoAntes: estadoEvento(anterior),
+      estadoAhora: estadoEvento(ev)
+    };
+    if ((anterior.fecha || '') !== (ev.fecha || '')) e.fechaAnterior = anterior.fecha || '';
+    var v = opts.version !== undefined ? opts.version : ev.version;
+    if (v) e.version = v;
+    if (opts.repertorio) e.repertorio = opts.repertorio;
+    return e;
+  }
+
+  function entradaValida(e) {
+    return !!(e && e.orgId && e.eventId && e.autorUid && ACCIONES_BITACORA[e.accion]);
+  }
+
+  /* 'sáb 4 oct 2026, 3:15 p. m.' en la zona de la iglesia. */
+  function fechaHora(ms) {
+    var d = new Date(ms || Date.now());
+    try {
+      return new Intl.DateTimeFormat('es', { timeZone: ZONA_HORARIA, weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(d);
+    } catch (err) { return d.toISOString().replace('T', ' ').slice(0, 16) + ' UTC'; }
+  }
+
+  function textoVersion(e) { return e.version ? 'v' + e.version : (e.estadoAhora === 'PUBLICADO' ? '—' : 'sin versión (no publicado)'); }
+
+  /* Líneas de una entrada: [título, detalle…]. autores: {uid: nombre}. */
+  function lineasEntrada(e, autores) {
+    var autor = (autores && autores[e.autorUid]) || 'Alguien';
+    var accion = ACCIONES_BITACORA[e.accion] || e.accion;
+    if (e.accion === 'movido' || (e.fechaAnterior && e.fechaAnterior !== e.eventoFecha)) {
+      accion += (e.accion === 'movido' ? '' : ' y movido') + ' del ' + diaCorto(e.fechaAnterior) + ' al ' + diaCorto(e.eventoFecha);
+    }
+    if (e.accion === 'modificado' && e.estadoAntes && e.estadoAhora && e.estadoAntes !== e.estadoAhora) {
+      accion += ' · estado: ' + (ESTADOS_TXT[e.estadoAntes] || e.estadoAntes) + ' → ' + (ESTADOS_TXT[e.estadoAhora] || e.estadoAhora);
+    }
+    if (e.repertorio) accion += ' · repertorio actualizado';
+    return [
+      diaCorto(e.eventoFecha) + ' – ' + (e.eventoNombre || 'Evento'),
+      'Cambio: ' + accion,
+      'Por: ' + autor + ' · ' + fechaHora(e.creado),
+      'Versión: ' + textoVersion(e)
+    ];
+  }
+
+  var PIE_PREF = 'Recibes este correo porque lo activaste en Administración → Avisos; desde ahí puedes desactivarlo.';
+
+  /* Correo de bitácora con uno o varios cambios de la organización. */
+  function armarAvisoBitacora(org, entradas, autores) {
+    var orgNombre = (org && (org.name || org.nombre)) || 'la organización';
+    var lista = (entradas || []).slice().sort(function (a, b) { return (a.creado || 0) - (b.creado || 0); });
+    if (!lista.length) return null;
+    var bloques = lista.map(function (e) { return lineasEntrada(e, autores); });
+    var url = urlCalendario(org, lista[lista.length - 1].eventoFecha);
+    var asunto = lista.length === 1
+      ? (ACCIONES_BITACORA[lista[0].accion] || 'Cambio') + ': ' + bloques[0][0] + ' – ' + orgNombre
+      : 'Bitácora de cambios (' + lista.length + ') – ' + orgNombre;
+    var intro = lista.length === 1 ? 'Se registró este cambio en ' + orgNombre + ':' : 'Se registraron estos cambios en ' + orgNombre + ':';
+    var texto = intro + '\n\n' + bloques.map(function (b) {
+      return '• ' + b[0] + '\n' + b.slice(1).map(function (l) { return '  ' + l; }).join('\n');
+    }).join('\n\n') + '\n\nVer calendario: ' + url + '\n\n' + PIE_PREF;
+    var html = '<p>' + escaparHtml(intro) + '</p>' + bloques.map(function (b) {
+      return '<div style="margin:0 0 14px;padding:10px 12px;border-left:3px solid #0e7a3c;background:#f4f3f0">' +
+        '<div style="font-weight:700">' + escaparHtml(b[0]) + '</div>' +
+        b.slice(1).map(function (l) { return '<div style="font-size:13px">' + escaparHtml(l) + '</div>'; }).join('') + '</div>';
+    }).join('') + '<p><a href="' + escaparHtml(url) + '">Ver calendario</a></p>' +
+      '<p style="color:#8a867f;font-size:12px">' + escaparHtml(PIE_PREF) + '</p>';
+    return { asunto: asunto, texto: texto, html: html, url: url };
+  }
+
+  /* Correo de "repertorio actualizado" de una entrada con e.repertorio. */
+  function armarAvisoRepertorio(org, e, autores) {
+    if (!e || !e.repertorio) return null;
+    var orgNombre = (org && (org.name || org.nombre)) || 'la organización';
+    var r = e.repertorio;
+    var evTxt = (e.eventoNombre || 'Evento') + ' (' + diaCorto(e.eventoFecha) + ')';
+    var autor = (autores && autores[e.autorUid]) || 'Alguien';
+    var p1 = autor + ' actualizó el repertorio de ' + evTxt + ' el ' + fechaHora(e.creado) + '. Versión: ' + textoVersion(e) + '.';
+    var secciones = [];
+    if ((r.agregadas || []).length) secciones.push(['Agregadas', r.agregadas]);
+    if ((r.quitadas || []).length) secciones.push(['Quitadas', r.quitadas]);
+    if (!secciones.length) secciones.push(['Cambio', ['Se cambió el orden de las canciones']]);
+    secciones.push(['Lista actual', (r.ahora || []).length ? r.ahora : ['(sin canciones)']]);
+    var url = urlCalendario(org, e.eventoFecha);
+    var texto = p1 + '\n\n' + secciones.map(function (s) {
+      return s[0] + ':\n' + s[1].map(function (l) { return '• ' + l; }).join('\n');
+    }).join('\n\n') + '\n\nVer calendario: ' + url + '\n\n' + PIE_PREF;
+    var html = '<p>' + escaparHtml(p1) + '</p>' + secciones.map(function (s) {
+      return '<p style="margin:12px 0 4px;font-weight:700">' + escaparHtml(s[0]) + '</p><ul style="margin:0">' +
+        s[1].map(function (l) { return '<li>' + escaparHtml(l) + '</li>'; }).join('') + '</ul>';
+    }).join('') + '<p><a href="' + escaparHtml(url) + '">Ver calendario</a></p>' +
+      '<p style="color:#8a867f;font-size:12px">' + escaparHtml(PIE_PREF) + '</p>';
+    return { asunto: 'Repertorio actualizado: ' + evTxt + ' – ' + orgNombre, texto: texto, html: html, url: url };
+  }
+
   /* Días que faltan para `venceIso` (negativo = vencido); null sin fecha. */
   function diasParaVencer(venceIso, hoy) {
     if (!venceIso) return null;
@@ -316,7 +474,11 @@
     normalizarTelefono: normalizarTelefono, telefonoValido: telefonoValido, formatoTelefono: formatoTelefono,
     urlWhatsApp: urlWhatsApp, diasParaVencer: diasParaVencer, escaparHtml: escaparHtml, textoFallo: textoFallo,
     PREF_NUEVOS: PREF_NUEVOS, VENTANA_NUEVOS_MS: VENTANA_NUEVOS_MS, quiereAvisoNuevos: quiereAvisoNuevos,
-    nuevosPorAvisar: nuevosPorAvisar, adminsParaNuevos: adminsParaNuevos, armarAvisoNuevoUsuario: armarAvisoNuevoUsuario
+    nuevosPorAvisar: nuevosPorAvisar, adminsParaNuevos: adminsParaNuevos, armarAvisoNuevoUsuario: armarAvisoNuevoUsuario,
+    BITACORA_PATH: BITACORA_PATH, PREF_BITACORA: PREF_BITACORA, PREF_REPERTORIO: PREF_REPERTORIO, ACCIONES_BITACORA: ACCIONES_BITACORA,
+    quierePref: quierePref, adminsConPref: adminsConPref, cancionesDe: cancionesDe, cambioRepertorio: cambioRepertorio,
+    entradaBitacora: entradaBitacora, entradaValida: entradaValida, fechaHora: fechaHora,
+    armarAvisoBitacora: armarAvisoBitacora, armarAvisoRepertorio: armarAvisoRepertorio
   };
 
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
@@ -371,6 +533,26 @@
     } else doc.uid = pedido.uid;
     var ref = r.child(COLA_PATH).push();
     return ref.set(doc).then(function () { return ref.key; });
+  }
+
+  /* Deja un cambio de evento en /bitacoraEventos (ver entradaBitacora) e
+     intenta lanzar el envío. Solo un admin puede leer el token de GitHub; si
+     cambió un editor o director, sale con el cron de respaldo (~30 min).
+     Nunca bloquea ni avisa nada en pantalla. */
+  function registrarCambio(entrada) {
+    var r = db();
+    var uid = uidActual();
+    if (!r || !entrada || !uid) return Promise.resolve(null);
+    var doc = Object.assign({}, entrada, { autorUid: uid, creado: root.firebase.database.ServerValue.TIMESTAMP, estado: 'pendiente' });
+    if (!entradaValida(doc)) return Promise.resolve(null);
+    var ref = r.child(BITACORA_PATH).push();
+    return ref.set(doc).then(function () {
+      api.dispararEnvio().then(null, function () {});
+      return ref.key;
+    }, function (err) {
+      console.warn('No se pudo registrar el cambio en la bitácora:', err && err.code);
+      return null;
+    });
   }
 
   function leerConfig() {
@@ -713,6 +895,7 @@
 
   api.leerDatos = leerDatos;
   api.encolar = encolar;
+  api.registrarCambio = registrarCambio;
   api.leerConfig = leerConfig;
   api.guardarConfig = guardarConfig;
   api.dispararEnvio = dispararEnvio;

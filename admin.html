@@ -37,7 +37,7 @@
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
 <script src="repertorio-data.js?v=20261004a"></script>
-<script src="avisos.js?v=20261003b"></script>
+<script src="avisos.js?v=20261004a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -944,13 +944,15 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
         <div class="form-panel">
           <div class="rotulo">Mis notificaciones</div>
-          <label class="check" style="align-items:flex-start">
-            <input type="checkbox" checked="{{ avisoNuevosActivo }}" onChange="{{ onAvisoNuevos }}" disabled="{{ avisoNuevosGuardando }}" style="margin-top:2px">
-            <span>
-              <span style="font-weight:600">Avisarme cuando un usuario nuevo se una</span>
-              <span class="campo-ayuda" style="display:block;margin:2px 0 0">{{ avisoNuevosAyuda }}</span>
-            </span>
-          </label>
+          <sc-for list="{{ avisoPrefs }}" as="ap" hint-placeholder-count="3">
+            <label class="check" style="align-items:flex-start">
+              <input type="checkbox" checked="{{ ap.activo }}" onChange="{{ ap.onCambio }}" disabled="{{ ap.guardando }}" style="margin-top:2px">
+              <span>
+                <span style="font-weight:600">{{ ap.titulo }}</span>
+                <span class="campo-ayuda" style="display:block;margin:2px 0 0">{{ ap.ayuda }}</span>
+              </span>
+            </label>
+          </sc-for>
         </div>
 
         <div class="panel">
@@ -2938,9 +2940,10 @@ class Component extends DCLogic {
         if (h.sinEventos) partes.push(h.sinEventos + ' sin eventos próximos');
         if (h.fallo) partes.push(AV && AV.textoFallo ? AV.textoFallo(h.fallo) : 'motivo: ' + h.fallo);
       }
-      if (h.tipo === 'nuevoUsuario') partes[2] = 'aviso automático a administradores';
+      if (h.tipo === 'nuevoUsuario' || h.tipo === 'bitacora') partes[2] = 'aviso automático a administradores';
       return {
         titulo: h.tipo === 'nuevoUsuario' ? 'Usuario nuevo: ' + nombreUid(h.uid)
+          : h.tipo === 'bitacora' ? 'Bitácora: ' + (h.cambios || 0) + (h.cambios === 1 ? ' cambio de evento' : ' cambios de eventos')
           : h.tipo === 'reenvio' ? 'Reenvío a ' + nombreUid(h.uid) : 'Publicación de ' + nEv + (nEv === 1 ? ' evento' : ' eventos'),
         badge: est[0], badgeClase: 'badge ' + est[1],
         detalle: partes.filter(Boolean).join(' · ')
@@ -3032,27 +3035,37 @@ class Component extends DCLogic {
       tabUsuarios: s.activeTab === 'usuarios',
       tabRepertorio: s.activeTab === 'repertorio',
       tabAvisos: s.activeTab === 'avisos',
-      /* Preferencia propia: se lee de la lista en vivo de usuarios (s.userDoc
-         es la copia del inicio de sesión). */
-      ...(() => {
+      /* Preferencias propias (todas apagadas por defecto): se leen de la
+         lista en vivo de usuarios (s.userDoc es la copia del inicio de sesión). */
+      avisoPrefs: (() => {
         const yo = s.userDoc ? ((s.usuarios || []).find((u) => u.uid === s.userDoc.uid) || s.userDoc) : null;
-        const activo = s.avisoNuevosPendiente != null ? s.avisoNuevosPendiente : !!(AV && AV.quiereAvisoNuevos(yo));
-        return {
-          avisoNuevosActivo: activo,
-          avisoNuevosGuardando: s.avisoNuevosPendiente != null,
-          avisoNuevosAyuda: (yo && yo.email
-            ? 'Te llega un correo a ' + yo.email + ' cuando alguien inicia sesión por su cuenta desde el calendario y queda en una de tus organizaciones.'
-            : 'Te llega un correo cuando alguien inicia sesión por su cuenta desde el calendario y queda en una de tus organizaciones.') +
-            ' Sale con el envío automático de GitHub Actions, así que puede tardar hasta unos 30 minutos.',
-          onAvisoNuevos: (e) => {
+        const pend = s.avisoPrefPendiente || {};
+        const aTu = yo && yo.email ? 'Te llega un correo a ' + yo.email : 'Te llega un correo';
+        const demora = ' Sale con el envío automático de GitHub Actions: al instante si el cambio lo hace un admin, si no puede tardar hasta unos 30 minutos.';
+        const prefs = [
+          { clave: AV ? AV.PREF_NUEVOS : 'nuevosUsuarios', titulo: 'Avisarme cuando un usuario nuevo se una',
+            ayuda: aTu + ' cuando alguien inicia sesión por su cuenta desde el calendario y queda en una de tus organizaciones. Sale con el envío automático de GitHub Actions, así que puede tardar hasta unos 30 minutos.',
+            si: 'Te avisaremos cuando un usuario nuevo se una.', no: 'Ya no recibirás avisos de usuarios nuevos.' },
+          { clave: AV ? AV.PREF_REPERTORIO : 'repertorioActualizado', titulo: 'Avisarme cuando se actualice un repertorio',
+            ayuda: aTu + ' cuando alguien cambia las canciones de un evento con repertorio que ya tenía más de una canción guardada: qué se agregó, qué se quitó y la lista actual.' + demora,
+            si: 'Te avisaremos cuando se actualice un repertorio.', no: 'Ya no recibirás avisos de repertorio.' },
+          { clave: AV ? AV.PREF_BITACORA : 'bitacoraEventos', titulo: 'Enviarme la bitácora de cambios de eventos',
+            ayuda: aTu + ' cada vez que un evento se modifica, se mueve, se cancela o se archiva: quién lo hizo y cuándo, el día y nombre del evento y su número de versión.' + demora,
+            si: 'Te enviaremos la bitácora de cambios de eventos.', no: 'Ya no recibirás la bitácora de cambios.' }
+        ];
+        return prefs.map((p) => ({
+          titulo: p.titulo, ayuda: p.ayuda,
+          activo: pend[p.clave] != null ? pend[p.clave] : !!(yo && yo.avisos && yo.avisos[p.clave] === true),
+          guardando: pend[p.clave] != null,
+          onCambio: (e) => {
             if (!yo) return;
             const v = !!e.target.checked;
-            this.setState({ avisoNuevosPendiente: v });
-            D().setPreferenciaAviso(yo.uid, AV ? AV.PREF_NUEVOS : 'nuevosUsuarios', v, (ok) => {
-              this.setState({ avisoNuevosPendiente: null, mensaje: ok ? (v ? 'Te avisaremos cuando un usuario nuevo se una.' : 'Ya no recibirás avisos de usuarios nuevos.') : 'No se pudo guardar la preferencia.' });
+            this.setState((st) => ({ avisoPrefPendiente: Object.assign({}, st.avisoPrefPendiente, { [p.clave]: v }) }));
+            D().setPreferenciaAviso(yo.uid, p.clave, v, (ok) => {
+              this.setState((st) => ({ avisoPrefPendiente: Object.assign({}, st.avisoPrefPendiente, { [p.clave]: null }), mensaje: ok ? (v ? p.si : p.no) : 'No se pudo guardar la preferencia.' }));
             });
           }
-        };
+        }));
       })(),
       avisoTokenGlobal: s.activeTab === 'avisos' ? '' : avisoTokenGlobal,
       irAAvisos: () => this.cambiarTab('avisos'),

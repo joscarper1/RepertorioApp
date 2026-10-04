@@ -22,7 +22,28 @@ El estado de los workflows, el token y el historial se ven en **Administración 
 4. **Token para que la app dispare el envío**: GitHub → Settings → Developer settings →
    Fine-grained tokens. Solo el repositorio `joscarper1/RepertorioApp`, permiso
    *Actions: Read and write*. Pégalo en Administración → Avisos, junto con su fecha de vencimiento.
-5. **Reglas de Realtime Database**: `colaAvisos`, `config/avisos` y `users/$uid/telefono`.
+5. **Reglas de Realtime Database**: `colaAvisos`, `config/avisos`, `users/$uid/telefono` y
+   `bitacoraEventos` (cualquier miembro de la organización crea entradas a su nombre; solo admins leen):
+
+   ```json
+   "bitacoraEventos": {
+     ".read": "auth != null && root.child('users/' + auth.uid + '/role').val() === 'admin'",
+     "$id": {
+       ".write": "auth != null && !data.exists() && newData.child('autorUid').val() === auth.uid && root.child('users/' + auth.uid + '/organizationIds/' + newData.child('orgId').val()).val() === true"
+     }
+   }
+   ```
+
+## Bitácora de cambios y repertorio actualizado
+
+Dos interruptores en Administración → Avisos (por administrador, apagados por defecto):
+**Avisarme cuando se actualice un repertorio** y **Enviarme la bitácora de cambios de eventos**.
+Al modificar, mover, cancelar o archivar un evento, `eventos.html` deja una entrada en
+`/bitacoraEventos` (acción, evento, fecha, versión, estado, y si cambió un repertorio que ya tenía
+más de una canción: agregadas/quitadas/lista actual). `enviar.js` (`procesarBitacora`) manda un
+correo de bitácora por administrador suscrito con los cambios pendientes de su organización y uno
+de repertorio por cada cambio de canciones. Si el cambio lo hace un admin el envío sale al instante;
+si lo hace un editor o director, con el cron de respaldo (~30 min).
 
 ## Seguridad
 

@@ -5,7 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const A = require('../avisos.js');
-const { procesarCola, procesarNuevos } = require('../.github/avisos/enviar.js');
+const { procesarCola, procesarNuevos, procesarBitacora } = require('../.github/avisos/enviar.js');
 
 const org = { id: 'o1', name: 'Templo Betel', slug: 'templobetel' };
 const slot = (tipo, musicianId, nombre) => ({ tipo, musicianId, nombre: nombre === undefined ? 'X' : nombre });
@@ -310,4 +310,92 @@ test('procesarNuevos: sin admin suscrito no envía pero no vuelve a intentarlo; 
   const r2 = await procesarNuevos(falla.root, async () => { throw Object.assign(new Error('x'), { responseCode: 550 }); }, { ahora: falla.ahora });
   assert.equal(r2.errores, 1);
   assert.equal(falla.data.users.nuevo.avisoNuevo, undefined);
+});
+
+/* --- Bitácora de cambios y repertorio actualizado --- */
+const cancion = (t, sm, k) => ({ t, sm: sm || '', k: k || '' });
+const conCanciones = (lista) => ({ bloques: [{ titulo: 'Alabanza', canciones: lista }] });
+
+test('cambioRepertorio: solo si antes había más de una canción y la lista cambió', () => {
+  const dos = conCanciones([cancion('Cuán grande es Él', 'Ana', 'G'), cancion('Santo', '', 'D')]);
+  assert.equal(A.cambioRepertorio(conCanciones([cancion('Una')]), conCanciones([cancion('Otra')])), null);
+  assert.equal(A.cambioRepertorio(dos, JSON.parse(JSON.stringify(dos))), null);
+  const r = A.cambioRepertorio(dos, conCanciones([cancion('Cuán grande es Él', 'Ana', 'G'), cancion('Digno', '', 'E')]));
+  assert.deepEqual(r.agregadas, ['Digno (E)']);
+  assert.deepEqual(r.quitadas, ['Santo (D)']);
+  assert.deepEqual(r.ahora, ['Cuán grande es Él – Ana (G)', 'Digno (E)']);
+  const orden = A.cambioRepertorio(dos, conCanciones([cancion('Santo', '', 'D'), cancion('Cuán grande es Él', 'Ana', 'G')]));
+  assert.deepEqual([orden.agregadas, orden.quitadas], [[], []]);
+});
+
+test('entradaBitacora y armarAvisoBitacora: autor, fecha, evento, acción y versión', () => {
+  const antes = ev('e1', '2026-10-05', 'Cultos Dominicales', [], { version: 3 });
+  const e = A.entradaBitacora('movido', antes, Object.assign({}, antes, { fecha: '2026-10-12' }));
+  assert.equal(e.fechaAnterior, '2026-10-05');
+  assert.equal(e.version, 3);
+  Object.assign(e, { autorUid: 'u-ana', creado: Date.UTC(2026, 9, 4, 21, 15) });
+  assert.ok(A.entradaValida(e));
+  const a = A.armarAvisoBitacora(org, [e], { 'u-ana': 'Ana <b>' });
+  assert.match(a.asunto, /^Movido: Lun 12 oct – Cultos Dominicales – Templo Betel$/);
+  assert.match(a.texto, /Movido del Lun 5 oct al Lun 12 oct/);
+  assert.match(a.texto, /Por: Ana <b> · .*2026.*3:15/);
+  assert.match(a.texto, /Versión: v3/);
+  assert.match(a.html, /Ana &lt;b&gt;/);
+  const borrador = A.entradaBitacora('modificado', Object.assign({}, antes, { estado: 'BORRADOR', version: undefined }), Object.assign({}, antes, { version: undefined }));
+  assert.match(A.armarAvisoBitacora(org, [Object.assign(borrador, { autorUid: 'x' })], {}).texto, /estado: Borrador → Publicado[\s\S]*Versión: —/);
+});
+
+function baseBitacora(extra) {
+  const ahora = Date.UTC(2026, 9, 4, 20, 0);
+  const users = Object.assign({
+    ana: { email: 'ana@x.com', displayName: 'Ana', role: 'editor', organizationIds: { o1: true } },
+    adminBit: { email: 'bit@x.com', role: 'admin', organizationIds: { o1: true }, avisos: { bitacoraEventos: true } },
+    adminRep: { email: 'rep@x.com', role: 'admin', organizationIds: { o1: true }, avisos: { repertorioActualizado: true } },
+    adminNada: { email: 'nada@x.com', role: 'admin', organizationIds: { o1: true } },
+    adminOtra: { email: 'otra@x.com', role: 'admin', organizationIds: { o2: true }, avisos: { bitacoraEventos: true, repertorioActualizado: true } }
+  }, extra || {});
+  const events = { e1: ev('e1', '2026-10-12', 'Cultos Dominicales', []), e9: Object.assign(ev('e9', '2026-10-12', 'X', []), { organizationId: 'o2' }) };
+  const base = (accion, more) => Object.assign({ orgId: 'o1', eventId: 'e1', accion, eventoNombre: 'Cultos Dominicales', eventoFecha: '2026-10-12', autorUid: 'ana', creado: ahora - 1000, estado: 'pendiente' }, more || {});
+  const bitacoraEventos = {
+    b1: base('movido', { fechaAnterior: '2026-10-05', version: 2 }),
+    b2: base('modificado', { version: 3, repertorio: { ahora: ['Santo (D)'], agregadas: ['Santo (D)'], quitadas: ['Digno'] } }),
+    b3: base('cancelado', { eventId: 'e9' }),
+    b4: base('archivado', { estado: 'enviado', creado: ahora - 100 * 24 * 3600 * 1000 })
+  };
+  return Object.assign(baseFalsa({ organizations: { o1: { name: org.name, slug: org.slug } }, users, events, bitacoraEventos, colaAvisos: {} }), { ahora });
+}
+
+test('procesarBitacora: un correo de bitácora por admin suscrito y uno de repertorio; valida evento y limpia viejos', async () => {
+  const { root, data, ahora } = baseBitacora();
+  const enviados = [];
+  const r = await procesarBitacora(root, async (m) => { enviados.push(m); }, { ahora });
+  assert.equal(r.cambios, 2);
+  assert.equal(r.invalidos, 1);
+  const bit = enviados.filter((m) => m.para === 'bit@x.com');
+  assert.equal(bit.length, 1);
+  assert.match(bit[0].asunto, /Bitácora de cambios \(2\)/);
+  assert.match(bit[0].texto, /Por: Ana/);
+  const rep = enviados.filter((m) => m.para === 'rep@x.com');
+  assert.equal(rep.length, 1);
+  assert.match(rep[0].asunto, /^Repertorio actualizado: Cultos Dominicales/);
+  assert.match(rep[0].texto, /Agregadas:\n• Santo \(D\)[\s\S]*Quitadas:\n• Digno/);
+  assert.equal(enviados.length, 2);
+  assert.equal(data.bitacoraEventos.b1.estado, 'enviado');
+  assert.equal(data.bitacoraEventos.b3.estado, 'invalido');
+  assert.equal(data.bitacoraEventos.b4, undefined);
+  const hist = Object.values(data.colaAvisos);
+  assert.equal(hist.length, 1);
+  assert.equal(hist[0].tipo, 'bitacora');
+  assert.equal(hist[0].cambios, 2);
+  const r2 = await procesarBitacora(root, async (m) => { enviados.push(m); }, { ahora: ahora + 1000 });
+  assert.equal(r2.cambios, 0);
+  assert.equal(enviados.length, 2);
+});
+
+test('procesarBitacora: sin admins suscritos (interruptores apagados) no envía nada', async () => {
+  const { root, data, ahora } = baseBitacora({ adminBit: { email: 'bit@x.com', role: 'admin', organizationIds: { o1: true } }, adminRep: null });
+  const r = await procesarBitacora(root, async () => { throw new Error('no debería'); }, { ahora });
+  assert.equal(r.enviados, 0);
+  assert.equal(data.bitacoraEventos.b1.estado, 'sin-destinatarios');
+  assert.deepEqual(data.colaAvisos, {});
 });

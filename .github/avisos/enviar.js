@@ -9,7 +9,9 @@
 
    Además avisa a los administradores que lo pidieron cuando alguien se une
    solo desde un calendario (procesarNuevos: no pasa por la cola; se detecta
-   con la marca `nuevo` de /users y queda en el historial como 'nuevoUsuario').
+   con la marca `nuevo` de /users y queda en el historial como 'nuevoUsuario'),
+   y a los que activaron la bitácora de cambios de eventos o el aviso de
+   repertorio actualizado (procesarBitacora: lee /bitacoraEventos).
 
    El repositorio es público y sus logs también: aquí NUNCA se imprimen
    correos, teléfonos ni nombres, solo conteos.
@@ -203,6 +205,118 @@ async function procesarNuevos(root, enviarCorreo, opciones = {}) {
   return resumen;
 }
 
+/* Bitácora de cambios de eventos (/bitacoraEventos, ver A.entradaBitacora):
+   por organización, un correo de bitácora a cada admin con el interruptor
+   activado (con todos los cambios pendientes) y un correo de "repertorio
+   actualizado" por cada entrada que lo trae a los admins que lo pidieron.
+   El autor se toma de /users (no del texto de la entrada) y se comprueba que
+   el evento sea de esa organización. Cada organización con correos queda en
+   el historial de Administración → Avisos como tipo 'bitacora'. */
+async function procesarBitacora(root, enviarCorreo, opciones = {}) {
+  const ahora = opciones.ahora || Date.now();
+  const prueba = !!opciones.prueba;
+  const ref = root.child(A.BITACORA_PATH);
+  const snap = await ref.once('value');
+  const porOrg = {};
+  const viejos = [];
+  snap.forEach((c) => {
+    const v = c.val() || {};
+    if (v.estado === 'pendiente' || (v.estado === 'procesando' && (v.tomado || 0) < ahora - ABANDONO_MS)) {
+      (porOrg[v.orgId || ''] = porOrg[v.orgId || ''] || []).push({ key: c.key, v });
+    } else if ((v.creado || 0) < ahora - RETENCION_MS) viejos.push(c.key);
+  });
+  const resumen = { cambios: 0, enviados: 0, errores: 0, invalidos: 0 };
+  let credencialesMalas = false;
+  let usuarios = null;
+
+  for (const orgId of Object.keys(porOrg)) {
+    const tomadas = [];
+    for (const p of porOrg[orgId]) {
+      if (!prueba && !(await tomar(ref.child(p.key), ahora))) continue;
+      tomadas.push(p);
+    }
+    if (!tomadas.length) continue;
+    if (!usuarios) {
+      const s = await root.child('users').once('value');
+      usuarios = [];
+      s.forEach((c) => { const v = c.val() || {}; v.uid = c.key; usuarios.push(v); });
+    }
+    const o = orgId ? await root.child('organizations').child(orgId).once('value') : null;
+    const org = o && o.val() ? Object.assign({}, o.val(), { id: orgId }) : null;
+    const autores = {};
+    usuarios.forEach((u) => { autores[u.uid] = String(u.displayName || u.email || '').trim() || 'Alguien'; });
+    const validas = [];
+    const estadoDe = {};
+    for (const p of tomadas) {
+      const e = Object.assign({}, p.v, { id: p.key });
+      let ok = !!org && A.entradaValida(e);
+      if (ok) {
+        const autor = usuarios.find((u) => u.uid === e.autorUid);
+        const ev = (await root.child('events').child(e.eventId).once('value')).val();
+        ok = !!autor && Object.keys(autor.organizationIds || {}).some((k) => k === orgId && autor.organizationIds[k]) &&
+          !!ev && ev.organizationId === orgId;
+      }
+      if (ok) validas.push(e); else { estadoDe[p.key] = 'invalido'; resumen.invalidos++; }
+    }
+    resumen.cambios += validas.length;
+
+    let env = 0, err = 0;
+    const enviar = async (para, aviso) => {
+      if (credencialesMalas) { err++; return false; }
+      try {
+        if (!prueba) await enviarCorreo({ para, asunto: aviso.asunto, texto: aviso.texto, html: aviso.html, remitente: org.name || 'Repertorio' });
+        env++; return true;
+      } catch (e) {
+        err++;
+        if (e && (e.responseCode === 535 || e.code === 'EAUTH')) credencialesMalas = true;
+        console.error('Error de envío (' + (e && (e.responseCode || e.code) || 'desconocido') + ')');
+        return false;
+      }
+    };
+    const resultado = {};
+    validas.forEach((e) => { resultado[e.id] = { env: 0, err: 0 }; });
+    if (validas.length) {
+      const aviso = A.armarAvisoBitacora(org, validas, autores);
+      for (const a of A.adminsConPref(usuarios, orgId, A.PREF_BITACORA)) {
+        const okEnv = await enviar(a.email, aviso);
+        validas.forEach((e) => { resultado[e.id][okEnv ? 'env' : 'err']++; });
+      }
+      const adminsRep = A.adminsConPref(usuarios, orgId, A.PREF_REPERTORIO);
+      for (const e of validas.filter((x) => x.repertorio)) {
+        const avisoRep = A.armarAvisoRepertorio(org, e, autores);
+        for (const a of adminsRep) resultado[e.id][(await enviar(a.email, avisoRep)) ? 'env' : 'err']++;
+      }
+    }
+    resumen.enviados += env; resumen.errores += err;
+    if (prueba) continue;
+
+    const patch = {};
+    tomadas.forEach((p) => {
+      const r = resultado[p.key];
+      const estado = estadoDe[p.key] || (!r.env && !r.err ? 'sin-destinatarios' : (r.err && !r.env ? 'error' : 'enviado'));
+      patch[p.key + '/estado'] = estado;
+      patch[p.key + '/procesado'] = Date.now();
+      if (r) { patch[p.key + '/enviados'] = r.env; patch[p.key + '/errores'] = r.err; }
+    });
+    await ref.update(patch);
+    if (env || err) {
+      await root.child(A.COLA_PATH).push({
+        orgId, tipo: 'bitacora', cambios: validas.length, pedidoPor: validas[0] ? validas[0].autorUid : null,
+        creado: ahora, procesado: Date.now(), estado: err && !env ? 'error' : 'enviado', enviados: env, errores: err,
+        fallo: credencialesMalas && err ? 'gmail-credenciales' : null
+      });
+    }
+  }
+
+  if (!prueba && viejos.length) {
+    const borrar = {};
+    viejos.forEach((k) => { borrar[k] = null; });
+    await ref.update(borrar);
+  }
+  resumen.credencialesMalas = credencialesMalas;
+  return resumen;
+}
+
 /* Los secrets pegados en GitHub suelen traer un salto de línea o espacios
    invisibles al final, o comillas; la contraseña de aplicación se muestra
    en grupos de 4 con espacios. Gmail rechaza cualquiera de esos (535). */
@@ -254,7 +368,10 @@ async function main() {
     const n = await procesarNuevos(admin.database().ref(), enviarCorreo, { prueba });
     console.log('Usuarios nuevos: ' + n.nuevos + ' · avisos a administradores: ' + n.enviados + ' · errores: ' + n.errores +
       ' · sin administrador suscrito: ' + n.sinDestinatarios);
-    r.credencialesMalas = r.credencialesMalas || n.credencialesMalas;
+    const b = await procesarBitacora(admin.database().ref(), enviarCorreo, { prueba });
+    console.log('Bitácora: ' + b.cambios + ' cambios · correos a administradores: ' + b.enviados + ' · errores: ' + b.errores +
+      ' · entradas inválidas: ' + b.invalidos);
+    r.credencialesMalas = r.credencialesMalas || n.credencialesMalas || b.credencialesMalas;
     console.log('Pedidos: ' + r.pedidos + ' · correos enviados: ' + r.enviados + ' · errores: ' + r.errores +
       ' · sin correo: ' + r.sinCorreo + ' · sin eventos: ' + r.sinEventos + ' · borrados de la cola: ' + r.borrados + (prueba ? ' (prueba, sin enviar)' : ''));
     if (r.credencialesMalas) console.log('::error::Gmail rechazó la credencial (535). ' + diagnosticoGmail(process.env.GMAIL_USER, process.env.GMAIL_APP_PASSWORD));
@@ -269,4 +386,4 @@ if (require.main === module) {
   main().catch((e) => { console.error(e && e.message ? e.message : 'Error'); process.exit(1); });
 }
 
-module.exports = { procesarCola, procesarNuevos, limpiarCredenciales, diagnosticoGmail };
+module.exports = { procesarCola, procesarNuevos, procesarBitacora, limpiarCredenciales, diagnosticoGmail };

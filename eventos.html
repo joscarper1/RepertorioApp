@@ -36,7 +36,7 @@
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
 <script src="repertorio-data.js?v=20261004a"></script>
-<script src="avisos.js?v=20261003b"></script>
+<script src="avisos.js?v=20261004a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -2436,6 +2436,14 @@ class Component extends DCLogic {
       const avisarGuardado = (ok) => {
         this.avisar(ok, msg + (recienPublicado && !avisa ? ' · los avisos los envía un admin' : ''), 'No se guardó en la nube: revisa tu sesión o conexión');
         if (ok && avisa && window.RepertorioAvisos) window.RepertorioAvisos.alPublicar(orgId, [dr.id]);
+        /* Bitácora de cambios (avisos a administradores): solo si el evento
+           ya existía y algo cambió. */
+        if (ok && enNube && window.RepertorioAvisos && (!R.mismoContenidoEvento(enNube, dr)
+            || (enNube.fecha || '') !== (dr.fecha || '') || R.estadoEvento(enNube) !== R.estadoEvento(dr))) {
+          const AV = window.RepertorioAvisos;
+          const rep = R.usaRepertorio(dr.servicio, this.perfil()) && !R.esEnsayo(dr) ? AV.cambioRepertorio(enNube, dr) : null;
+          AV.registrarCambio(AV.entradaBitacora('modificado', enNube, Object.assign({}, dr, { organizationId: orgId }), { version: dr.version || null, repertorio: rep }));
+        }
         /* Los ensayos asociados a este evento reciben su lista y banda nuevas. */
         if (ok && this.perfil().ensayos && R.usaRepertorio(dr.servicio, this.perfil()) && !R.esEnsayo(dr)) {
           R.sincronizarEnsayos(dr, this._eventosVivos || this.state.data.eventos || [], puedeBanda, (okE) => {
@@ -2467,12 +2475,27 @@ class Component extends DCLogic {
 
   cancelarEvento(ev) {
     if (!confirm('¿Marcar este evento como cancelado? Seguirá visible en el calendario público, tachado y con la etiqueta "Cancelado".')) return;
-    D().setEventEstado(ev.id, 'CANCELADO', (ok) => this.avisar(ok, 'Evento cancelado', 'No se pudo cancelar: revisa tu sesión o conexión'));
+    D().setEventEstado(ev.id, 'CANCELADO', (ok) => {
+      this.avisar(ok, 'Evento cancelado', 'No se pudo cancelar: revisa tu sesión o conexión');
+      if (ok) this.registrarBitacora('cancelado', ev, { estado: 'CANCELADO' });
+    });
   }
 
   archivarEvento(ev) {
     if (!confirm('¿Archivar esta participación? Dejará de mostrarse en el calendario público; sigue disponible aquí para editarla o publicarla de nuevo.')) return;
-    D().setEventEstado(ev.id, 'ARCHIVADO', (ok) => this.avisar(ok, 'Participación archivada', 'No se pudo archivar: revisa tu sesión o conexión'));
+    D().setEventEstado(ev.id, 'ARCHIVADO', (ok) => {
+      this.avisar(ok, 'Participación archivada', 'No se pudo archivar: revisa tu sesión o conexión');
+      if (ok) this.registrarBitacora('archivado', ev, { estado: 'ARCHIVADO' });
+    });
+  }
+
+  /* Deja el cambio en la bitácora de eventos (correo a los administradores
+     que lo activaron en Administración → Avisos). cambios: lo que cambió. */
+  registrarBitacora(accion, ev, cambios) {
+    const AV = window.RepertorioAvisos;
+    if (!AV || !ev) return;
+    const antes = Object.assign({ organizationId: this.state.organizationId }, ev);
+    AV.registrarCambio(AV.entradaBitacora(accion, antes, Object.assign({}, antes, cambios)));
   }
 
   /* --- Modal "Mover evento" --- */
@@ -2625,7 +2648,11 @@ class Component extends DCLogic {
     const id = this.state.moverEventoId;
     if (!id) return;
     this.setState({ moverEventoId: null });
-    D().moveEvent(id, iso, (ok) => this.avisar(ok, 'Evento movido de fecha', 'No se pudo mover: revisa tu sesión o conexión'));
+    const ev = (this._eventosVivos || this.state.data.eventos || []).find((e) => e.id === id);
+    D().moveEvent(id, iso, (ok) => {
+      this.avisar(ok, 'Evento movido de fecha', 'No se pudo mover: revisa tu sesión o conexión');
+      if (ok && ev && ev.fecha !== iso) this.registrarBitacora('movido', ev, { fecha: iso });
+    });
   }
 
   /* --- Modal "Cifrado" (paso 4) ---
