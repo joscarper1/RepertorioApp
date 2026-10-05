@@ -1882,6 +1882,7 @@ class Component extends DCLogic {
     const params = new URLSearchParams(location.search);
     this.setState({ embed: params.get('embed') === '1' });
 
+    this._eventidPendiente = params.get('eventid') || null;
     const orgId = params.get('org');
     if (!orgId) { window.location.href = 'admin.html'; return; }
 
@@ -1970,6 +1971,7 @@ class Component extends DCLogic {
     this.modalCifrado().enganchar();
     this.sincronizarRueda();
     this.sincronizarVersiones();
+    this.sincronizarEventId();
   }
 
   /* Escucha eventVersions del evento abierto en el asistente, y deja de
@@ -2100,6 +2102,46 @@ class Component extends DCLogic {
   revisarDeclinados(fecha) {
     const R = D();
     this.setState({ mes: R.hoyKey(), fecha: fecha || '', draft: null, editId: null, paso: 1 });
+  }
+
+  /* Abre el asistente de edición de un evento. */
+  abrirEdicion(ev, extra) {
+    const R = D();
+    const s = this.state;
+    const pf = this.perfil();
+    if (!R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev, pf)) return false;
+    /* Sin 'eventos.tipo' se salta el paso 1; sub '' = primera sub-pestaña. */
+    const conTipo = R.puede(s.userDoc, 'eventos.tipo');
+    /* R.newEvento completa con valores por defecto los campos que no existían
+       cuando se creó el evento (banda, detalles, etc.). */
+    const draftEv = R.newEvento(JSON.parse(JSON.stringify(ev)), pf);
+    /* Un ensayo se abre con la lista y banda actuales de su evento. */
+    const padreEv = R.esEnsayo(draftEv) && draftEv.eventoAsociadoId
+      ? s.data.eventos.find((e) => e.id === draftEv.eventoAsociadoId) : null;
+    if (padreEv) R.heredarDeEvento(draftEv, padreEv);
+    this.irA(Object.assign({ draft: draftEv, editId: ev.id, paso: conTipo ? 1 : 2, sub: conTipo ? 'detalles' : '', fecha: ev.fecha }, extra || {}));
+    return true;
+  }
+
+  /* ?eventid= abre ese evento en edición (enlace del botón Editar de
+     index.html) y se mantiene en la URL mientras el asistente esté abierto. */
+  sincronizarEventId() {
+    const s = this.state;
+    if (typeof window === 'undefined' || s.estadoAcceso !== 'permitido') return;
+    if (this._eventidPendiente) {
+      if (!this._eventosVivos || !s.organizacion || s.draft) return;
+      const id = this._eventidPendiente;
+      this._eventidPendiente = null;
+      const ev = this._eventosVivos.find((e) => e.id === id);
+      if (ev) this.abrirEdicion(ev, { mes: D().monthKey(ev.fecha) });
+      return;
+    }
+    const params = new URLSearchParams(location.search);
+    const actual = params.get('eventid') || '';
+    const quiere = s.draft && s.editId ? s.editId : '';
+    if (actual === quiere) return;
+    if (quiere) params.set('eventid', quiere); else params.delete('eventid');
+    history.replaceState(history.state, '', location.pathname + '?' + params.toString());
   }
 
   /* Abre el calendario público (index.html) ya filtrado a este evento,
@@ -2860,19 +2902,7 @@ class Component extends DCLogic {
         resumen: ev.tema || '',
         estadoLabel: info.label,
         estadoStyle: 'font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;white-space:nowrap;background:' + info.bg + ';color:' + info.color,
-        /* R.newEvento normaliza el registro y completa con valores por defecto
-           los campos que no existían cuando se creó (banda, detalles, etc.). */
-        editar: () => {
-          if (!R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev, pf)) return;
-          /* Sin 'eventos.tipo' se salta el paso 1; sub '' = primera sub-pestaña. */
-          const conTipo = R.puede(s.userDoc, 'eventos.tipo');
-          const draftEv = R.newEvento(JSON.parse(JSON.stringify(ev)), pf);
-          /* Un ensayo se abre con la lista y banda actuales de su evento. */
-          const padreEv = R.esEnsayo(draftEv) && draftEv.eventoAsociadoId
-            ? s.data.eventos.find((e) => e.id === draftEv.eventoAsociadoId) : null;
-          if (padreEv) R.heredarDeEvento(draftEv, padreEv);
-          this.irA({ draft: draftEv, editId: ev.id, paso: conTipo ? 1 : 2, sub: conTipo ? 'detalles' : '', fecha: ev.fecha });
-        },
+        editar: () => this.abrirEdicion(ev),
         puedeEditar: R.puedeSobreEvento(s.userDoc, 'eventos.editar', ev, pf),
         puedeMover: R.puedeSobreEvento(s.userDoc, 'eventos.mover', ev, pf),
         /* Cancelar/archivar y "Ver en calendario" solo aplican a eventos ya

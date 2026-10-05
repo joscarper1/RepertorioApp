@@ -225,6 +225,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .detalle{min-width:0;background:#fff;border-radius:14px;border:1px solid var(--line)}
 .det-cab{padding:26px 32px 22px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;gap:24px;align-items:flex-end}
 .det-cab-txt{display:flex;flex-direction:column;gap:10px;min-width:0}
+.det-editar{align-self:flex-start;text-decoration:none}
 .det-pills{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .pill-tipo{font-size:11px;font-weight:800;letter-spacing:.1em;padding:4px 8px;border-radius:5px;border:1px solid currentColor;text-transform:uppercase}
 .pill-estado{font-size:11px;font-weight:800;letter-spacing:.1em;padding:4px 8px;border-radius:5px;background:var(--ac-lt);color:var(--ac)}
@@ -877,6 +878,9 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
           <div class="det-scroll" id="det-scroll">
             <div class="det-cab">
               <div class="det-cab-txt">
+                <sc-if value="{{ d.puedeEditar }}" hint-placeholder-val="{{ false }}">
+                  <a class="btn-sec det-editar" href="{{ d.editarHref }}" title="Editar este evento">Editar</a>
+                </sc-if>
                 <div class="det-pills">
                   <span class="pill-tipo" style="{{ d.colorStyle }}">{{ d.tipo }}</span>
                   <span class="{{ d.estadoClase }}">{{ d.estado }}</span>
@@ -2049,6 +2053,10 @@ class Component extends DCLogic {
       fechaLarga: R.fechaLarga(ev.fecha) + ' de ' + d.getFullYear(),
       hora: ev.hora || '',
       gcalHref: R.googleCalendarUrl(ev, this.perfil()),
+      puedeEditar: !!this.state.docUsuario && R.puede(this.state.docUsuario, 'eventos.ver') &&
+        R.userOrgIds(this.state.docUsuario).indexOf(this.state.org.id) >= 0 &&
+        R.puedeSobreEvento(this.state.docUsuario, 'eventos.editar', ev, this.perfil()),
+      editarHref: 'eventos.html?org=' + encodeURIComponent(this.state.org.id) + '&eventid=' + encodeURIComponent(ev.id),
       tema: txt(ev.tema), tieneTema: !!txt(ev.tema), tieneTemaOCita: !!(txt(ev.tema) || txt(ev.cita)),
       cita: txt(ev.cita), tieneCita: !!txt(ev.cita),
       aviso: txt(ev.avisoImportante), tieneAviso: !!txt(ev.avisoImportante),
