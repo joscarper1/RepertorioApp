@@ -811,6 +811,11 @@
     return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
   }
 
+  function hoyFecha() {
+    var n = new Date();
+    return hoyKey() + '-' + String(n.getDate()).padStart(2, '0');
+  }
+
   /* Filas del calendario para un mes: seis como máximo, la última se fusiona
      en la quinta para respetar el tope de cinco semanas. */
   function calendario(year, month) {
@@ -1600,6 +1605,35 @@
     if (!ids.length) { w.location.href = 'index.html'; return; }
     getOrganization(orgInicialDeUsuario(userDoc), function (org) {
       w.location.href = org ? ('dashboard.html?org=' + org.slug) : 'index.html';
+    });
+  }
+
+  /* Destino del root del sitio para una cuenta con sesión: el calendario del
+     mes en curso de su última organización (ver orgInicialDeUsuario) o, si
+     ese día esa organización tiene un evento visible que no esté cancelado,
+     el detalle del primero (por hora). Sin organización asignada, se queda en
+     index.html (mensaje de "esperando asignación"). */
+  function redirectToCalendarLanding(userDoc) {
+    var ids = userOrgIds(userDoc);
+    if (!ids.length) { w.location.href = 'index.html'; return; }
+    getOrganization(orgInicialDeUsuario(userDoc), function (org) {
+      if (!org) { w.location.href = 'index.html'; return; }
+      var base = 'index.html?group=' + encodeURIComponent(org.slug);
+      var hecho = false, unwatch = null;
+      var ir = function (evs) {
+        if (hecho) return;
+        hecho = true;
+        if (unwatch) unwatch();
+        var hoy = hoyFecha();
+        var delDia = (evs || []).filter(function (e) {
+          return e.fecha === hoy && esVisiblePublico(e) && estadoEvento(e) !== 'CANCELADO';
+        }).sort(function (a, b) { return horaMinutos(a.hora) - horaMinutos(b.hora); });
+        w.location.href = delDia.length
+          ? base + '&eventid=' + encodeURIComponent(delDia[0].id)
+          : base + '&month=' + hoyKey();
+      };
+      unwatch = watchEventsForOrg(org.id, ir);
+      if (hecho && unwatch) unwatch();
     });
   }
 
@@ -3218,7 +3252,7 @@
     bandaLabel: bandaLabel, puestoLabel: puestoLabel, servidoresAsignados: servidoresAsignados, bandaSiguienteNumero: bandaSiguienteNumero,
     parse: parse, iso: iso, monthKey: monthKey, monthLabel: monthLabel,
     diaNombre: diaNombre, fechaLarga: fechaLarga, semanaDelMes: semanaDelMes,
-    hoyKey: hoyKey, calendario: calendario, clone: clone,
+    hoyKey: hoyKey, hoyFecha: hoyFecha, calendario: calendario, clone: clone,
     signInWithGoogle: signInWithGoogle, signOutUser: signOutUser, onAuthChange: onAuthChange,
     eventoTitulo: eventoTitulo, eventoDescripcion: eventoDescripcion,
     icsDataHref: icsDataHref, icsFilename: icsFilename, googleCalendarUrl: googleCalendarUrl,
@@ -3235,7 +3269,7 @@
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
     setUserRole: setUserRole, quitarMarcaNuevo: quitarMarcaNuevo, setPreferenciaAviso: setPreferenciaAviso, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
-    userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, orgInicialDeUsuario: orgInicialDeUsuario,
+    userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, redirectToCalendarLanding: redirectToCalendarLanding, orgInicialDeUsuario: orgInicialDeUsuario,
     guardarOrgPreferida: guardarOrgPreferida, orgPreferida: orgPreferida, borrarOrgPreferida: borrarOrgPreferida,
     normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, puedeVerEventos: puedeVerEventos, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,
     integrantesEvento: integrantesEvento, sincronizarIntegrantes: sincronizarIntegrantes,

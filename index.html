@@ -563,17 +563,6 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   </div>
 </sc-if>
 
-<sc-if value="{{ esPendiente }}" hint-placeholder-val="{{ false }}">
-  <div class="pant">
-    <div class="pant-card">
-      <div class="pant-kicker"><span class="cuadro"></span>Cuenta creada</div>
-      <h1 class="pant-t">Un administrador te asignará pronto</h1>
-      <p class="pant-p">Tu cuenta de Google ya quedó registrada. En cuanto un administrador te vincule con tu organización, verás aquí su calendario.</p>
-      <button type="button" class="pant-btn sec" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
-    </div>
-  </div>
-</sc-if>
-
 <sc-if value="{{ esBienvenida }}" hint-placeholder-val="{{ false }}">
   <div class="pant">
     <div class="pant-card">
@@ -593,10 +582,17 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
         </label>
         <p class="pant-ayuda">Lo recordaremos en este navegador para tus próximas visitas.</p>
         <div class="pant-sep"></div>
-        <p class="pant-p" style="margin:0">¿Eres parte de un equipo? Entra para ver tus eventos.</p>
+        <sc-if value="{{ sesionInactiva }}" hint-placeholder-val="{{ true }}">
+          <p class="pant-p" style="margin:0">¿Eres parte de un equipo? Entra para ver tus eventos.</p>
+        </sc-if>
       </sc-if>
-      <button type="button" class="pant-btn" onClick="{{ iniciarSesion }}">Iniciar sesión con Google</button>
-      <div class="pant-error">{{ errorLogin }}</div>
+      <sc-if value="{{ sesionInactiva }}" hint-placeholder-val="{{ true }}">
+        <button type="button" class="pant-btn" onClick="{{ iniciarSesion }}">Iniciar sesión con Google</button>
+        <div class="pant-error">{{ errorLogin }}</div>
+      </sc-if>
+      <sc-if value="{{ sesionActiva }}" hint-placeholder-val="{{ false }}">
+        <button type="button" class="pant-btn sec" onClick="{{ cerrarSesion }}">Cerrar sesión</button>
+      </sc-if>
     </div>
   </div>
 </sc-if>
@@ -1381,8 +1377,17 @@ class Component extends DCLogic {
          sesión desde el propio calendario (ver R.ensureUserRegistered). */
       const registrar = (orgId) => R.ensureUserRegistered(user, (doc) => {
         const ids = R.userOrgIds(doc);
-        if (!ids.length) { this.setState({ modo: 'pendiente' }); return; }
-        R.redirectToUserLanding(doc);
+        if (ids.length) { R.redirectToCalendarLanding(doc); return; }
+        /* Sin organización todavía: elige un calendario de la lista y, al
+           abrirlo, queda registrado en él (ver _registrarCuenta). */
+        let un = null, listo = false;
+        un = R.watchAllOrganizations((orgs) => {
+          if (listo) return;
+          listo = true;
+          if (un) un();
+          this.setState({ modo: 'bienvenida', calendariosPublicos: orgs });
+        });
+        if (listo) un();
       }, orgId);
       const pref = R.orgPreferida();
       if (pref) { registrar(pref); return; }
@@ -2133,7 +2138,6 @@ class Component extends DCLogic {
         const slug = e.target.value;
         if (slug) window.location.href = 'index.html?group=' + encodeURIComponent(slug);
       },
-      esPendiente: s.modo === 'pendiente',
       esCalendario: s.modo === 'calendario',
       iniciarSesion: () => this.iniciarSesion(),
       cerrarSesion: () => R.signOutUser(),
