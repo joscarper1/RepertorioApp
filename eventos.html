@@ -662,6 +662,10 @@ a.mas-fila:hover{background:none;color:var(--ink)}
     </sc-for>
   </div>
 
+  <sc-if value="{{ abriendoEvento }}" hint-placeholder-val="{{ false }}">
+    <p class="campo-ayuda" style="text-align:center;padding:40px 0">Abriendo evento…</p>
+  </sc-if>
+
   <sc-if value="{{ esPaso1 }}" hint-placeholder-val="{{ true }}">
     <sc-if value="{{ veBalanceMes }}" hint-placeholder-val="{{ true }}">
     <div class="balance-barra" style="margin-bottom:16px">
@@ -1837,6 +1841,7 @@ function pendientesCanciones(dr) {
 
 class Component extends DCLogic {
   state = {
+    abriendoEvento: typeof location !== 'undefined' && !!new URLSearchParams(location.search).get('eventid'),
     estadoAcceso: 'cargando', denegadoMotivo: '', organizationId: null, organizacion: null, orgs: [],
     data: { eventos: [] }, mes: '', fecha: '', paso: 1, draft: null, editId: null, estado: '', avisoAudioMsg: '', avisoAudioUrl: '',
     autocompleteAbierto: {}, salmistaAbierto: {}, dirigeAbierto: {}, songOverrides: {},
@@ -2137,7 +2142,7 @@ class Component extends DCLogic {
       const id = this._eventidPendiente;
       this._eventidPendiente = null;
       const ev = this._eventosVivos.find((e) => e.id === id);
-      if (ev) this.abrirEdicion(ev, { mes: D().monthKey(ev.fecha) });
+      if (!ev || !this.abrirEdicion(ev, { mes: D().monthKey(ev.fecha), abriendoEvento: false })) this.setState({ abriendoEvento: false });
       return;
     }
     const params = new URLSearchParams(location.search);
@@ -3604,7 +3609,10 @@ class Component extends DCLogic {
       estado: s.estado,
       estadoUrl: s.estado && s.estado === s.avisoAudioMsg ? (s.avisoAudioUrl || '') : '',
       pasos: pasos,
-      esPaso1: !enWizard || paso === 1,
+      esPaso1: (!enWizard || paso === 1) && !s.abriendoEvento,
+      /* Con ?eventid= en la URL no se dibuja el calendario mientras llega el
+         evento que se abrirá en edición. */
+      abriendoEvento: !!s.abriendoEvento && !enWizard,
       esPaso2: enWizard && paso === 2,
       esPaso3: enWizard && paso === 3,
       esSubDetalles: subActual === 'detalles',
