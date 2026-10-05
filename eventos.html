@@ -214,6 +214,8 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .alerta .btn-sec{border-color:var(--red);color:var(--red)}
 
 .p1{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:24px;align-items:start}
+.p1.p1-centro{display:flex;justify-content:center;padding-top:24px}
+.p1-centro .dia-panel{position:static;width:100%;max-width:560px}
 .cal{background:#fff;border-radius:14px;border:1px solid var(--line);padding:18px}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
 .cal-mes{margin:0;font-size:24px;font-weight:900;font-stretch:112%;text-transform:uppercase;letter-spacing:-.01em;text-align:center}
@@ -661,7 +663,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
   </div>
 
   <sc-if value="{{ esPaso1 }}" hint-placeholder-val="{{ true }}">
-    <sc-if value="{{ veGestionMes }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ veBalanceMes }}" hint-placeholder-val="{{ true }}">
     <div class="balance-barra" style="margin-bottom:16px">
       <details class="balance">
         <summary>Carga de {{ balanceMesCal }} <span>· {{ balanceCuentaCal }}</span></summary>
@@ -676,7 +678,8 @@ a.mas-fila:hover{background:none;color:var(--ink)}
       </details>
     </div>
     </sc-if>
-    <section class="p1">
+    <section class="{{ p1Clase }}">
+      <sc-if value="{{ mostrarCalendario }}" hint-placeholder-val="{{ true }}">
       <div class="cal">
         <div class="cal-nav">
           <button type="button" class="flecha-nav" onClick="{{ mesAnterior }}" aria-label="Mes anterior">‹</button>
@@ -696,6 +699,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
           </sc-for>
         </div>
       </div>
+      </sc-if>
 
       <div class="dia-panel">
         <sc-if value="{{ eligiendoTipo }}" hint-placeholder-val="{{ false }}">
@@ -2119,7 +2123,7 @@ class Component extends DCLogic {
     const padreEv = R.esEnsayo(draftEv) && draftEv.eventoAsociadoId
       ? s.data.eventos.find((e) => e.id === draftEv.eventoAsociadoId) : null;
     if (padreEv) R.heredarDeEvento(draftEv, padreEv);
-    this.irA(Object.assign({ draft: draftEv, editId: ev.id, paso: conTipo ? 1 : 2, sub: conTipo ? 'detalles' : '', fecha: ev.fecha }, extra || {}));
+    this.irA(Object.assign({ draft: draftEv, editId: ev.id, paso: conTipo ? 1 : 2, sub: conTipo ? 'detalles' : '', fecha: ev.fecha, mes: R.monthKey(ev.fecha) }, extra || {}));
     return true;
   }
 
@@ -3628,6 +3632,11 @@ class Component extends DCLogic {
       /* Programa del mes y carga del mes: solo admin y editor. */
       veGestionMes: R.puede(s.userDoc, 'eventos.todos'),
       eligiendoTipo: enWizard && paso === 1,
+      /* En el primer paso (evento nuevo con fecha ya elegida, o en edición)
+         solo queda la pregunta del tipo, centrada y sin calendario. */
+      mostrarCalendario: !(enWizard && paso === 1),
+      p1Clase: 'p1' + (enWizard && paso === 1 ? ' p1-centro' : ''),
+      veBalanceMes: R.puede(s.userDoc, 'eventos.todos') && !(enWizard && paso === 1),
       viendoDia: !enWizard,
       tipoKicker: s.editId ? 'Editando evento' : 'Nuevo evento',
       tiposEvento: dr ? pf.serviciosCon(dr.servicio).map((label) => ({
