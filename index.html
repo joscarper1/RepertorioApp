@@ -222,6 +222,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .leyenda{display:flex;flex-direction:column;gap:8px;padding:10px 4px 0}
 .leyenda-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 
+.detalle-vacio{min-width:0}
 .detalle{min-width:0;background:#fff;border-radius:14px;border:1px solid var(--line)}
 .det-cab{position:relative;padding:26px 32px 22px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;gap:24px;align-items:flex-end}
 .det-cab-txt{display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -240,9 +241,10 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .det-dia.tachado{text-decoration:line-through}
 .det-fecha{font-size:15px;color:var(--muted)}
 .det-fecha strong{color:var(--ink)}
-a.btn-cal{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:13px;font-weight:700;flex:none;white-space:nowrap}
-a.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn-cal{font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:13px;font-weight:700;flex:none;white-space:nowrap}
+.btn-cal:hover{background:var(--ac);border-color:var(--ac);color:#fff}
 .btn-cal .mas{font-size:16px;line-height:1}
+.det-acciones{display:flex;gap:8px;flex:none;align-items:stretch}
 .det-grid{padding:24px 32px 32px;display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:24px}
 .det-main,.det-aside{min-width:0}
 .det-aside{display:flex;flex-direction:column;gap:18px}
@@ -520,7 +522,8 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .pill-tipo,.pill-estado,.pill-pub{font-size:10px;padding:4px 7px}
   .det-dia{font-size:38px}
   .det-fecha{font-size:14px}
-  a.btn-cal{justify-content:center;min-height:46px;border-radius:10px;font-size:14px}
+  .det-acciones{width:100%}
+  .det-acciones .btn-cal{flex:1;justify-content:center;min-height:46px;border-radius:10px;font-size:14px}
   .det-grid{padding:0;display:flex;flex-direction:column;gap:12px}
   .det-main,.det-aside{display:contents}
   .det-tema{order:1;background:#fff;border-radius:14px;padding:16px;margin:0}
@@ -893,7 +896,10 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
                 <h2 class="{{ d.diaClase }}">{{ d.diaNombre }}</h2>
                 <div class="det-fecha">{{ d.fechaLarga }} · <strong>{{ d.hora }}</strong></div>
               </div>
-              <a class="btn-cal" href="{{ d.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar"><span class="mas">+</span>Añadir a calendario</a>
+              <div class="det-acciones">
+                <a class="btn-cal" href="{{ d.gcalHref }}" target="_blank" rel="noopener" title="Guardar en Google Calendar"><span class="mas">+</span>Google Calendar</a>
+                <button type="button" class="btn-cal" onClick="{{ copiarEnlaceEvento }}" title="Copiar el enlace de este evento">Copiar Enlace</button>
+              </div>
             </div>
             <div class="{{ d.gridClase }}">
               <div class="det-main">
@@ -1038,6 +1044,9 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
             </sc-if>
           </div>
         </section>
+      </sc-if>
+      <sc-if value="{{ sinDetalle }}" hint-placeholder-val="{{ false }}">
+        <div class="detalle-vacio"><div class="vacio-caja" style="padding:20px">No hay detalle de evento para mostrar.</div></div>
       </sc-if>
     </div>
   </sc-if>
@@ -1741,6 +1750,29 @@ class Component extends DCLogic {
     return out;
   }
 
+  /* Copia al portapapeles el enlace directo al evento abierto (la URL ya
+     lleva ?group= y ?eventid=) y lo avisa con el toast flotante. */
+  copiarEnlaceEvento() {
+    const params = new URLSearchParams(location.search);
+    if (this.state.eventoSel) params.set('eventid', this.state.eventoSel);
+    const url = location.origin + location.pathname + '?' + params.toString();
+    const avisar = () => {
+      this.setState({ avisoAudio: '¡Enlace copiado!', avisoAudioUrl: '' });
+      clearTimeout(this._tAudio);
+      this._tAudio = setTimeout(() => this.setState({ avisoAudio: '', avisoAudioUrl: '' }), 2500);
+    };
+    const respaldo = () => {
+      const ta = document.createElement('textarea');
+      ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) { /* sin permiso */ }
+      document.body.removeChild(ta);
+      avisar();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(avisar, respaldo);
+    else respaldo();
+  }
+
   flash(msg) {
     this.setState({ estado: msg });
     clearTimeout(this._t);
@@ -2252,6 +2284,10 @@ class Component extends DCLogic {
       sel = candidatos.find((e) => e.fecha >= hoyISO) || candidatos[0] || sel || (grupos[semana] || [])[0] || null;
     }
 
+    /* Escritorio, vista Mes, día sin eventos: no se deja un detalle ajeno. */
+    const sinDetalle = !this._esTelefono() && (vista === 'mes' ? !listaDia.length : !!diaFiltro && !listaSemana.length);
+    if (sinDetalle) sel = null;
+
     const ctx = { hoyISO: hoyISO, sel: sel, miMusico: miMusico };
 
     /* ‹ › del detalle (teléfono): recorren las mismas tarjetas de la semana
@@ -2524,6 +2560,7 @@ class Component extends DCLogic {
       })),
 
       hayDetalle: !!sel,
+      sinDetalle: sinDetalle,
       d: sel ? this.detalle(sel, ctx) : {},
       detalleClase: 'detalle' + (s.detalleAbierto ? ' abierto' : ''),
       cerrarDetalle: () => this.cerrarDetalle(),
@@ -2536,6 +2573,7 @@ class Component extends DCLogic {
 
       detenerPropagacion: (e) => this.detenerPropagacion(e),
       ...this.valoresVotos(),
+      copiarEnlaceEvento: () => this.copiarEnlaceEvento(),
       copiarWa: () => {
         const text = this.textoWhatsApp(delMes);
         const done = () => this.flash('Copiado');
