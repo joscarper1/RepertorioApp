@@ -1331,10 +1331,10 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         <div class="caja" style="background:var(--ac-lt);border:0">
           <span class="rotulo" style="color:var(--ac-dk)">Antes de guardar</span>
           <sc-if value="{{ publicarCompleto }}" hint-placeholder-val="{{ true }}">
-            <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--ac-dk)">“Publicar” lo muestra de inmediato en el calendario. “Borrador” lo guarda sin que el equipo lo vea.</p>
+            <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--ac-dk)">Al “Publicar” notificarás a toda la banda. En “Borrador” solo lo guarda sin notificar al equipo, pero los dos mostrarán el evento en el calendario.</p>
           </sc-if>
           <sc-if value="{{ publicarSinCanciones }}" hint-placeholder-val="{{ false }}">
-            <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--ac-dk)">Este evento todavía no tiene lista de repertorio. “Publicar como borrador” lo guarda sin que el equipo lo vea; “Publicar” lo muestra de inmediato aunque esté incompleto.</p>
+            <p style="margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--ac-dk)">Este evento todavía no tiene lista de repertorio. “Publicar como borrador” lo guarda sin notificar al equipo; “Publicar” lo muestra de inmediato aunque esté incompleto.</p>
           </sc-if>
         </div>
       </aside>
