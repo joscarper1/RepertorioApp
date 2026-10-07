@@ -673,6 +673,7 @@
     '.av-btn.wa{background:#1f9d55;border-color:#1f9d55;color:#fff}' +
     '.av-btn.hecho{background:var(--ac-lt,#e2f0e7);border-color:transparent;color:var(--ac-dk,#095a2c)}' +
     '.av-btn[disabled]{opacity:.5;cursor:default}' +
+    '.av-est{cursor:default}' +
     '.av-pre{white-space:pre-wrap;font-size:13px;line-height:1.5;background:#f4f3f0;border-radius:10px;padding:12px;margin:0;font-family:inherit}' +
     '.av-acc{display:flex;gap:8px;flex-wrap:wrap}';
 
@@ -727,10 +728,14 @@
     if (opts.vistaPrevia && filas[0] && filas[0].aviso) cuerpo.appendChild(el('pre', 'av-pre', filas[0].aviso.texto));
 
     var conAviso = filas.filter(function (f) { return f.aviso; });
-    if (conAviso.length) {
+    /* Con correo, el aviso sale por correo y WhatsApp solo queda para quien no
+       tiene; en "Reenviar eventos" (whatsappSiempre) WhatsApp está siempre. */
+    var porCorreo = opts.whatsappSiempre ? [] : conAviso.filter(function (f) { return f.email; });
+    var porWhatsApp = opts.whatsappSiempre ? conAviso : conAviso.filter(function (f) { return !f.email; });
+    if (porWhatsApp.length) {
       cuerpo.appendChild(el('div', 'av-rot', 'WhatsApp'));
       var cont = el('div');
-      conAviso.forEach(function (f) {
+      porWhatsApp.forEach(function (f) {
         var fila = el('div', 'av-fila');
         var info = el('div');
         info.style.minWidth = '0';
@@ -755,6 +760,21 @@
         cont.appendChild(fila);
       });
       cuerpo.appendChild(cont);
+    }
+    if (porCorreo.length) {
+      cuerpo.appendChild(el('div', 'av-rot', 'Avisados por correo'));
+      var contC = el('div');
+      porCorreo.forEach(function (f) {
+        var fila = el('div', 'av-fila');
+        var info = el('div');
+        info.style.minWidth = '0';
+        info.appendChild(el('div', 'av-nom', f.nombre || f.email));
+        info.appendChild(el('div', 'av-sub', f.aviso.lineas.length + (f.aviso.lineas.length === 1 ? ' evento' : ' eventos') + ' · ' + f.email));
+        fila.appendChild(info);
+        fila.appendChild(el('span', 'av-btn hecho av-est', '✓ Avisado por Correo'));
+        contC.appendChild(fila);
+      });
+      cuerpo.appendChild(contC);
     }
     var sinEventos = filas.filter(function (f) { return !f.aviso; });
     if (sinEventos.length) {
@@ -849,7 +869,7 @@
     return api.leerDatos(orgId).then(function (datos) {
       var filas = planAvisos(pedido, datos);
       var f = filas[0];
-      var panel = abrirPanel({ kicker: 'Reenviar eventos', titulo: f ? (f.nombre || f.email) : 'Sin persona vinculada', filas: filas, vistaPrevia: true });
+      var panel = abrirPanel({ kicker: 'Reenviar eventos', titulo: f ? (f.nombre || f.email) : 'Sin persona vinculada', filas: filas, vistaPrevia: true, whatsappSiempre: true });
       if (!f) { panel.correo('Esta cuenta no tiene persona vinculada en la organización.', 'err'); return; }
       if (!f.aviso) { panel.correo('No tiene eventos publicados próximos.', ''); return; }
       lanzar(pedido, filas, panel);

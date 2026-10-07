@@ -37,7 +37,7 @@ function lista(snap) {
 }
 
 /* Datos de una organización para planAvisos (con caché por ejecución). */
-function crearLector(root) {
+function crearLector(root, hoy) {
   let usuarios = null;
   const porOrg = {};
   return async function datosDe(orgId) {
@@ -55,7 +55,7 @@ function crearLector(root) {
       const org = o.val();
       porOrg[orgId] = org ? { org: Object.assign({}, org, { id: orgId }), musicos: lista(m), eventos: lista(e) } : null;
     }
-    return porOrg[orgId] && Object.assign({ usuarios, hoy: A.hoyIso() }, porOrg[orgId]);
+    return porOrg[orgId] && Object.assign({ usuarios, hoy: hoy || A.hoyIso() }, porOrg[orgId]);
   };
 }
 
@@ -76,7 +76,7 @@ async function tomar(ref, ahora) {
 async function procesarCola(root, enviarCorreo, opciones = {}) {
   const ahora = opciones.ahora || Date.now();
   const prueba = !!opciones.prueba;
-  const datosDe = crearLector(root);
+  const datosDe = crearLector(root, opciones.hoy);
   const cola = root.child(A.COLA_PATH);
   const snap = await cola.once('value');
   const pedidos = [];

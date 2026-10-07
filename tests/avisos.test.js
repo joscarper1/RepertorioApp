@@ -182,7 +182,7 @@ test('procesarCola: envía, marca resultados y no repite pedidos ya enviados', a
     viejo: { orgId: 'o1', tipo: 'reenvio', uid: 'u-ana', estado: 'enviado', creado: ahora - 100 * 24 * 3600 * 1000 }
   });
   const enviados = [];
-  const r = await procesarCola(root, async (m) => { enviados.push(m); }, { ahora });
+  const r = await procesarCola(root, async (m) => { enviados.push(m); }, { ahora, hoy: datos.hoy });
   assert.equal(r.pedidos, 1);
   assert.equal(enviados.length, 1);
   assert.equal(enviados[0].para, 'ana@x.com');
@@ -195,7 +195,7 @@ test('procesarCola: envía, marca resultados y no repite pedidos ya enviados', a
   assert.deepEqual(p1.resultados, { 'u-ana': 'enviado', 'u-beto': 'sin_correo' });
   assert.equal(data.colaAvisos.viejo, undefined, 'los pedidos viejos se borran');
   /* Segunda corrida: nada pendiente */
-  const r2 = await procesarCola(root, async (m) => { enviados.push(m); }, { ahora });
+  const r2 = await procesarCola(root, async (m) => { enviados.push(m); }, { ahora, hoy: datos.hoy });
   assert.equal(r2.pedidos, 0);
   assert.equal(enviados.length, 1);
 });
@@ -208,7 +208,7 @@ test('procesarCola: error de envío queda registrado y el pedido inválido no ro
     p3: { orgId: 'o1', tipo: 'reenvio', uid: 'u-ana', estado: 'procesando', tomado: ahora - 60 * 60 * 1000, creado: ahora }
   });
   let intentos = 0;
-  const r = await procesarCola(root, async () => { intentos++; throw Object.assign(new Error('x'), { responseCode: 550 }); }, { ahora });
+  const r = await procesarCola(root, async () => { intentos++; throw Object.assign(new Error('x'), { responseCode: 550 }); }, { ahora, hoy: datos.hoy });
   assert.equal(r.pedidos, 3, 'incluye el procesando abandonado');
   assert.equal(intentos, 2);
   assert.equal(data.colaAvisos.p1.estado, 'error');
@@ -222,7 +222,7 @@ test('procesarCola en modo prueba no envía ni toca la cola', async () => {
   const ahora = Date.now();
   const { root, data } = baseDePrueba({ p1: { orgId: 'o1', tipo: 'reenvio', uid: 'u-ana', estado: 'pendiente', creado: ahora } });
   let llamadas = 0;
-  const r = await procesarCola(root, async () => { llamadas++; }, { ahora, prueba: true });
+  const r = await procesarCola(root, async () => { llamadas++; }, { ahora, hoy: datos.hoy, prueba: true });
   assert.equal(llamadas, 0);
   assert.equal(r.enviados, 1);
   assert.equal(data.colaAvisos.p1.estado, 'pendiente');
@@ -235,7 +235,7 @@ test('procesarCola: Gmail rechaza credenciales (535) → no insiste y deja el mo
     p2: { orgId: 'o1', tipo: 'reenvio', uid: 'u-ana', estado: 'pendiente', creado: ahora }
   });
   let intentos = 0;
-  await procesarCola(root, async () => { intentos++; throw Object.assign(new Error('auth'), { responseCode: 535, code: 'EAUTH' }); }, { ahora });
+  await procesarCola(root, async () => { intentos++; throw Object.assign(new Error('auth'), { responseCode: 535, code: 'EAUTH' }); }, { ahora, hoy: datos.hoy });
   assert.equal(intentos, 1, 'tras el 535 no se intenta con los demás');
   assert.equal(data.colaAvisos.p1.fallo, 'gmail-credenciales');
   assert.equal(data.colaAvisos.p2.fallo, 'gmail-credenciales');
@@ -255,7 +255,7 @@ function baseNuevos(extra) {
     editorSi: { email: 'ed@x.com', role: 'editor', organizationIds: { o1: true }, avisos: { nuevosUsuarios: true } }
   };
   Object.assign(users, extra || {});
-  return Object.assign(baseFalsa({ organizations: { o1: { name: org.name, slug: org.slug } }, users, colaAvisos: {} }), { ahora });
+  return Object.assign(baseFalsa({ organizations: { o1: { name: org.name, slug: org.slug } }, users, colaAvisos: {} }), { ahora, hoy: datos.hoy });
 }
 
 test('nuevosPorAvisar y adminsParaNuevos: solo nuevos recientes y admins suscritos de esa organización', () => {
@@ -285,7 +285,7 @@ test('armarAvisoNuevoUsuario: nombre, correo, organización y enlace a Usuarios'
 test('procesarNuevos: avisa solo a admins suscritos, una sola vez, y queda en el historial', async () => {
   const { root, data, ahora } = baseNuevos();
   const enviados = [];
-  const r = await procesarNuevos(root, async (m) => { enviados.push(m); }, { ahora });
+  const r = await procesarNuevos(root, async (m) => { enviados.push(m); }, { ahora, hoy: datos.hoy });
   assert.equal(r.nuevos, 1);
   assert.deepEqual(enviados.map((m) => m.para), ['admin1@x.com']);
   assert.equal(enviados[0].remitente, 'Templo Betel');
@@ -368,13 +368,13 @@ function baseBitacora(extra) {
     b3: base('cancelado', { eventId: 'e9' }),
     b4: base('archivado', { estado: 'enviado', creado: ahora - 100 * 24 * 3600 * 1000 })
   };
-  return Object.assign(baseFalsa({ organizations: { o1: { name: org.name, slug: org.slug } }, users, events, bitacoraEventos, colaAvisos: {} }), { ahora });
+  return Object.assign(baseFalsa({ organizations: { o1: { name: org.name, slug: org.slug } }, users, events, bitacoraEventos, colaAvisos: {} }), { ahora, hoy: datos.hoy });
 }
 
 test('procesarBitacora: un correo de bitácora por admin suscrito y uno de repertorio; valida evento y limpia viejos', async () => {
   const { root, data, ahora } = baseBitacora();
   const enviados = [];
-  const r = await procesarBitacora(root, async (m) => { enviados.push(m); }, { ahora });
+  const r = await procesarBitacora(root, async (m) => { enviados.push(m); }, { ahora, hoy: datos.hoy });
   assert.equal(r.cambios, 2);
   assert.equal(r.invalidos, 1);
   const bit = enviados.filter((m) => m.para === 'bit@x.com');
@@ -400,7 +400,7 @@ test('procesarBitacora: un correo de bitácora por admin suscrito y uno de reper
 
 test('procesarBitacora: sin admins suscritos (interruptores apagados) no envía nada', async () => {
   const { root, data, ahora } = baseBitacora({ adminBit: { email: 'bit@x.com', role: 'admin', organizationIds: { o1: true } }, adminRep: null });
-  const r = await procesarBitacora(root, async () => { throw new Error('no debería'); }, { ahora });
+  const r = await procesarBitacora(root, async () => { throw new Error('no debería'); }, { ahora, hoy: datos.hoy });
   assert.equal(r.enviados, 0);
   assert.equal(data.bitacoraEventos.b1.estado, 'sin-destinatarios');
   assert.deepEqual(data.colaAvisos, {});
