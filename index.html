@@ -223,7 +223,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .leyenda-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
 
 .detalle-vacio{min-width:0}
-.detalle{min-width:0;background:#fff;border-radius:14px;border:1px solid var(--line)}
+.detalle{min-width:0;background:var(--bg);border-radius:14px;border:1px solid var(--line)}
 .det-cab{position:relative;padding:26px 32px 22px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;gap:24px;align-items:flex-end}
 .det-cab-txt{display:flex;flex-direction:column;gap:10px;min-width:0}
 .det-editar{position:absolute;top:14px;right:20px;z-index:1;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:12px;font-weight:700;white-space:nowrap}
@@ -248,7 +248,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .det-grid{padding:24px 32px 32px;display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:24px}
 .det-main,.det-aside{min-width:0}
 .det-aside{display:flex;flex-direction:column;gap:18px}
-.det-tema{display:flex;flex-direction:column;gap:6px;margin-bottom:28px}
+.det-tema{display:flex;flex-direction:column;gap:6px;margin-bottom:28px;background:#fff;border-radius:12px;padding:18px 20px}
 .det-tema-txt{font-size:24px;font-weight:600;line-height:1.25;text-wrap:pretty;overflow-wrap:anywhere}
 .det-cita{font-size:14px;line-height:1.55;color:var(--muted);border-left:2px solid var(--ac);padding-left:12px;margin-top:6px;text-wrap:pretty;white-space:pre-line}
 .det-rep-t{margin-bottom:14px;display:block}
@@ -266,9 +266,18 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .parte-t{font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--ac-dk)}
 .bloque-t{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:10px}
 .bloque-t .linea{flex:1;height:1px;background:rgba(0,0,0,.12)}
-.bloque-lista{display:flex;flex-direction:column;border:1px solid rgba(0,0,0,.09);border-radius:10px;overflow:hidden}
-.can{display:grid;grid-template-columns:22px minmax(0,1fr) auto 32px 66px;gap:12px;align-items:center;padding:12px 14px;background:#fff;border-top:1px solid rgba(0,0,0,.07);transition:background .15s}
-.can:first-child{border-top:0}
+/* Una tarjeta blanca por canción sobre el fondo de la página. Escritorio, en
+   dos filas: nº · título y artista · me gusta arriba; tono y reproducir
+   debajo, a lo ancho. */
+.bloque-lista{display:flex;flex-direction:column;gap:8px}
+.can{display:grid;grid-template-columns:26px minmax(0,1fr) minmax(0,1fr);gap:12px 8px;align-items:center;padding:14px 16px;background:#fff;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.05);transition:background .15s}
+.can-num{grid-column:1;grid-row:1;align-self:start;padding-top:3px}
+.can-info{grid-column:2/-1;grid-row:1;padding-right:68px}
+.can .like{grid-column:3;grid-row:1;justify-self:end;align-self:start;min-width:56px}
+.can .tono{grid-column:2;grid-row:2}
+.can .play{grid-column:3;grid-row:2}
+.can.sin-play .tono{grid-column:2/-1}
+.play.oculto{display:none}
 .can.sonando{background:#eef6f1}
 .can-num{font-size:12px;font-weight:700;color:var(--muted3);font-variant-numeric:tabular-nums}
 .can-info{min-width:0}
@@ -278,10 +287,10 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .avatar-xs{width:18px;height:18px;flex:none;border-radius:50%;color:#fff;font-size:7.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
 .medley{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:8px}
 .medley-chip{font-size:11.5px;padding:3px 8px;border-radius:999px;background:var(--soft);color:#3d3a36}
-.tono{justify-self:start;font-size:12px;font-weight:800;padding:4px 8px;border-radius:5px;background:var(--ac-lt);color:var(--ac);white-space:nowrap;border:1.5px solid transparent}
+.tono{display:flex;align-items:center;justify-content:center;gap:4px;min-height:36px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:800;background:var(--ac-lt);color:var(--ac);white-space:nowrap;border:1.5px solid transparent;font-family:inherit}
 .tono-btn{cursor:pointer;border-color:var(--ac)}
 .tono-btn:hover{background:var(--ac);color:#fff}
-.play{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--ac);background:transparent;color:var(--ac);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.play{display:flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:0 10px;border-radius:8px;border:1.5px solid var(--ac);background:transparent;color:var(--ac);font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;font-family:inherit}
 .play.on{background:var(--ac);color:#fff}
 .play.oculto{visibility:hidden;pointer-events:none}
 /* Me gusta: corazón vacío sin votos, rojo con votos; el número va debajo. */
@@ -311,7 +320,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .votante-n{flex:1;min-width:0;font-size:14.5px;font-weight:500;overflow-wrap:anywhere}
 .votante svg{flex:none;color:#e0245e}
 /* Línea de tiempo de la canción que suena: solo aparece en esa fila. */
-.can-prog{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:-2px}
+.can-prog{grid-column:1/-1;grid-row:2;display:flex;align-items:center;gap:10px;margin-top:-2px}
 .can-prog-t{font-size:11.5px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;min-width:32px}
 .can-prog-t:last-child{text-align:right}
 .prog-r{-webkit-appearance:none;appearance:none;flex:1;min-width:0;height:18px;margin:0;background:transparent;cursor:pointer}
@@ -358,7 +367,7 @@ button:focus-visible,a:focus-visible,select:focus-visible{outline:2px solid var(
 .aviso-sem-meta{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
 .aviso-sem-txt{font-size:15px;font-weight:700;line-height:1.4;white-space:pre-line;text-wrap:pretty}
 .aviso-sem:hover .aviso-sem-txt{text-decoration:underline}
-.caja{border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.caja{background:#fff;border-radius:12px;padding:16px 18px}
 .caja p{margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--muted);white-space:pre-line}
 .caja-banda{padding-bottom:8px}
 .caja-banda .rotulo{display:block;margin-bottom:8px}
@@ -514,21 +523,31 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .det-nav-btn{width:44px;height:44px;border:0;background:none;border-radius:10px;font-size:26px;line-height:1;color:var(--ac);cursor:pointer}
   .det-nav-btn:disabled{color:var(--line);cursor:default}
   .det-nav-pos{min-width:40px;text-align:center;font-size:12px;font-weight:700;color:var(--muted)}
-  .det-scroll{flex:1;overflow-y:auto;padding:18px 20px 28px}
-  .det-cab{padding:0;border:0;flex-direction:column;align-items:stretch;gap:14px;margin-bottom:20px}
+  /* Menú ⋮ del detalle: Editar y, debajo, las acciones secundarias. */
+  .det-mas{position:relative;min-width:72px;display:flex;justify-content:flex-end}
+  .det-mas-btn{width:44px;height:44px;border-radius:50%;border:1px solid rgba(0,0,0,.15);background:#fff;color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+  .det-menu-velo{position:fixed;inset:0;z-index:1;background:none;border:0;padding:0}
+  .det-menu{position:absolute;right:0;bottom:54px;z-index:2;min-width:200px;background:#fff;border:1px solid rgba(0,0,0,.12);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.2);overflow:hidden;display:flex;flex-direction:column}
+  .det-menu a,.det-menu button{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 16px;border:0;border-bottom:1px solid rgba(0,0,0,.06);background:none;font-family:inherit;font-size:14px;font-weight:600;color:var(--ink);text-align:left;cursor:pointer;text-decoration:none;width:100%}
+  .det-menu a:hover{background:none;color:var(--ink)}
+  .det-menu>:last-child{border-bottom:0}
+  .det-menu .sec{font-weight:500;color:var(--muted)}
+  .det-scroll{flex:1;overflow-y:auto;padding:16px 12px 24px}
+  .det-cab{padding:0 4px;border:0;flex-direction:column;align-items:stretch;gap:14px;margin-bottom:16px}
   .det-cab-txt{gap:8px}
-  .det-editar{top:0;right:0;min-height:40px;padding:0 14px;font-size:13px;border-radius:10px}
+  /* Editar y las acciones secundarias van en el menú ⋮ de la barra de abajo;
+     "Publicado/Borrador" ocupa la esquina donde estaba Editar. */
+  .det-editar,.det-acciones{display:none}
+  .det-cab .pill-pub{position:absolute;top:0;right:4px}
   .det-pills{padding-right:96px}
   .pill-tipo,.pill-estado,.pill-pub{font-size:10px;padding:4px 7px}
-  .det-dia{font-size:38px}
+  .det-dia{font-size:32px;line-height:1}
   .det-fecha{font-size:14px}
-  .det-acciones{width:100%}
-  .det-acciones .btn-cal{flex:1;justify-content:center;min-height:46px;border-radius:10px;font-size:14px}
   .det-grid{padding:0;display:flex;flex-direction:column;gap:12px}
   .det-main,.det-aside{display:contents}
-  .det-tema{order:1;background:#fff;border-radius:14px;padding:16px;margin:0}
-  .det-tema-txt{font-size:19px;line-height:1.3}
-  .det-cita{font-size:13px;margin-top:10px}
+  .det-tema{order:1;background:#fff;border-radius:14px;padding:14px 16px;margin:0}
+  .det-tema-txt{font-size:18px;line-height:1.3}
+  .det-cita{font-size:13px;margin-top:8px}
   .o-2{order:2}
   .o-3{order:3;margin-top:8px}
   .o-4{order:4}
@@ -537,14 +556,20 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
   .caja{background:#fff;border:0;border-radius:14px;padding:14px 16px}
   .caja-banda{padding-bottom:6px}
   .bloque{margin-bottom:16px}
-  .bloque-t{font-size:10px;gap:8px}
-  .bloque-lista{background:#fff;border:0;border-radius:12px}
-  .can{grid-template-columns:minmax(0,1fr) auto 40px 66px;gap:10px;padding:11px 12px 11px 14px}
-  .can-t{font-size:14.5px}
-  .can-meta{font-size:12px;margin-top:2px;gap:4px}
+  .bloque-t{font-size:10px;gap:8px;margin:4px 4px 8px}
+  /* Tarjeta de canción: título y me gusta arriba; tono y Reproducir abajo, a
+     lo ancho. */
+  .can{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 8px;padding:14px;border-radius:14px}
+  .can-info{grid-column:1/-1;grid-row:1;padding-right:68px}
+  .can .like{grid-column:2;grid-row:1;justify-self:end;align-self:start;min-width:56px}
+  .can .tono{grid-column:1;grid-row:2;min-height:40px}
+  .can .play{grid-column:2;grid-row:2;min-height:40px}
+  .can.sin-play .tono{grid-column:1/-1}
+  .play.oculto{display:none}
+  .can-t{font-size:16px}
+  .can-meta{font-size:13px;margin-top:3px;gap:4px}
   .medley-chip{font-size:11px;padding:3px 7px}
-  .tono{font-size:11.5px;padding:4px 7px}
-  .play{width:40px;height:40px}
+  .can-prog{grid-row:3}
   .prog-r{height:28px}
   .prog-r::-webkit-slider-thumb{width:16px;height:16px;margin-top:-6px}
   .prog-r::-moz-range-thumb{width:16px;height:16px}
@@ -964,6 +989,7 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
                               <button type="button" class="{{ s.playClase }}" onClick="{{ s.onPlay }}" aria-label="{{ s.playLabel }}" title="{{ s.playLabel }}">
                                 <sc-if value="{{ s.muestraPlay }}" hint-placeholder-val="{{ true }}"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><polygon points="2,1 9,5 2,9" fill="currentColor"></polygon></svg></sc-if>
                                 <sc-if value="{{ s.muestraPausa }}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 10 10" aria-hidden="true"><rect x="1.5" y="1" width="2.5" height="8" fill="currentColor"></rect><rect x="6" y="1" width="2.5" height="8" fill="currentColor"></rect></svg></sc-if>
+                                <span>{{ s.playTexto }}</span>
                               </button>
                               <div class="{{ s.likeClase }}">
                                 <button type="button" class="like-btn" onClick="{{ s.onLike }}" onDoubleClick="{{ s.likeDetener }}" aria-pressed="{{ s.likeMio }}" aria-label="{{ s.likeLabel }}" title="{{ s.likeLabel }}">
@@ -1042,6 +1068,19 @@ a.cifrado-fuente{font-size:12px;border-bottom:1px solid var(--ac)}
                 <button type="button" class="det-nav-btn" onClick="{{ navSiguiente }}" disabled="{{ navSinSiguiente }}" aria-label="Evento siguiente">›</button>
               </div>
             </sc-if>
+            <div class="det-mas">
+              <button type="button" class="det-mas-btn" onClick="{{ toggleMenuDetalle }}" aria-label="Más opciones" aria-expanded="{{ menuDetalleAbierto }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="12" cy="19" r="2"></circle></svg></button>
+              <sc-if value="{{ menuDetalleAbierto }}" hint-placeholder-val="{{ false }}">
+                <button type="button" class="det-menu-velo" onClick="{{ cerrarMenuDetalle }}" aria-label="Cerrar menú"></button>
+                <div class="det-menu">
+                  <sc-if value="{{ d.puedeEditar }}" hint-placeholder-val="{{ false }}">
+                    <a href="{{ d.editarHref }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>Editar</a>
+                  </sc-if>
+                  <a class="sec" href="{{ d.gcalHref }}" target="_blank" rel="noopener" onClick="{{ cerrarMenuDetalle }}">+ Google Calendar</a>
+                  <button type="button" class="sec" onClick="{{ copiarEnlaceDesdeMenu }}">Copiar Enlace</button>
+                </div>
+              </sc-if>
+            </div>
           </div>
         </section>
       </sc-if>
@@ -1255,7 +1294,7 @@ class Component extends DCLogic {
        ({key, titulo} de la canción, o null = cerrado). */
     votantes: {}, votosVer: null, docUsuario: null,
     /* Banner "Importante": mes|semana en que está desplegado (null = colapsado). */
-    avisosAbiertosEn: null, avisoDetalleAbierto: null
+    avisosAbiertosEn: null, avisoDetalleAbierto: null, menuDetalleAbierto: false
   };
 
   componentDidMount() {
@@ -1598,7 +1637,9 @@ class Component extends DCLogic {
   siguienteEnCola(key, fallo) {
     const s = this.state;
     const cola = s.cola;
-    if (!fallo && s.repetir === 'una') {
+    /* Sin secuencia (una canción tocada sola), "repetir toda la lista" también
+       la repite: la lista es esa canción. */
+    if (!fallo && (s.repetir === 'una' || (s.repetir === 'todo' && !cola))) {
       const it = cola ? cola.items.find((x) => x.key === key) : null;
       const vid = it ? it.videoId : this._ultimoVideo && this._ultimoVideo.key === key ? this._ultimoVideo.videoId : null;
       if (vid && this._yt) { this._yt.cargar(key, vid); return; }
@@ -1873,7 +1914,7 @@ class Component extends DCLogic {
   }
 
   _cerrarDetalleSinHistorial() {
-    this.setState({ detalleAbierto: false });
+    this.setState({ detalleAbierto: false, menuDetalleAbierto: false });
     if (!this.state.cifradoVer) document.body.style.overflow = '';
   }
 
@@ -2029,13 +2070,14 @@ class Component extends DCLogic {
           tieneArtista: !!artista, tieneDirige: !!dirige, ambos: !!artista && !!dirige, tieneMeta: !!artista || !!dirige,
           medley: medley, tieneMedley: medley.length > 0,
           k: c.k || '—',
-          clase: 'can' + (activa ? ' sonando' : ''),
+          clase: 'can' + (activa ? ' sonando' : '') + (videoId ? '' : ' sin-play'),
           rowTitle: c.u && c.u.trim() ? 'Doble click para abrir el enlace' : '',
           onOpen: () => { if (c.u && c.u.trim()) window.open(c.u, '_blank', 'noopener'); },
           /* El botón siempre ocupa su columna; sin video solo se oculta. */
           playClase: 'play' + (activa ? ' on' : '') + (videoId ? '' : ' oculto'),
           muestraPlay: !sonando, muestraPausa: sonando,
           playLabel: sonando ? 'Pausar audio' : (activa ? 'Reanudar audio' : 'Reproducir audio'),
+          playTexto: sonando ? 'Pausar' : (activa ? 'Reanudar' : 'Reproducir'),
           onPlay: () => this.togglePlay(key, videoId),
           ...this.progresoFila(activa, key, titulo),
           tieneCifrado: !!cid, sinCifrado: !cid,
@@ -2574,6 +2616,10 @@ class Component extends DCLogic {
       detenerPropagacion: (e) => this.detenerPropagacion(e),
       ...this.valoresVotos(),
       copiarEnlaceEvento: () => this.copiarEnlaceEvento(),
+      menuDetalleAbierto: !!s.menuDetalleAbierto,
+      toggleMenuDetalle: () => this.setState((st) => ({ menuDetalleAbierto: !st.menuDetalleAbierto })),
+      cerrarMenuDetalle: () => this.setState({ menuDetalleAbierto: false }),
+      copiarEnlaceDesdeMenu: () => { this.setState({ menuDetalleAbierto: false }); this.copiarEnlaceEvento(); },
       copiarWa: () => {
         const text = this.textoWhatsApp(delMes);
         const done = () => this.flash('Copiado');
