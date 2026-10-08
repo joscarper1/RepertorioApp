@@ -32,8 +32,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="menu-config.js?v=20261004a"></script>
-<script src="repertorio-data.js?v=20261004b"></script>
-<script src="avisos.js?v=20261004b"></script>
+<script src="repertorio-data.js?v=20261008a"></script>
+<script src="avisos.js?v=20261008a"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -466,6 +466,26 @@ a.mas-fila:hover{background:none;color:var(--ink)}
       </section>
     </sc-if>
 
+    <sc-if value="{{ muestraNotificaciones }}" hint-placeholder-val="{{ false }}">
+      <section class="panel" style="margin-bottom:24px;max-width:640px">
+        <div class="panel-cab">
+          <div>
+            <div class="rotulo">Notificaciones</div>
+            <div style="font-size:17px;font-weight:800;margin-top:4px">Recordatorio de un evento</div>
+          </div>
+        </div>
+        <div class="panel-cuerpo">
+          <p style="font-size:13px;color:var(--muted);margin:0 0 12px">Te enviamos un correo recordándote cada evento en el que participas. Elige cuándo (puedes marcar varias opciones); lo enviamos a las 7:00 a. m.</p>
+          <sc-for list="{{ recordatorioOpciones }}" as="ro" hint-placeholder-count="4">
+            <label class="check">
+              <input type="checkbox" checked="{{ ro.marcada }}" onChange="{{ ro.onChange }}" disabled="{{ ro.deshabilitada }}">
+              {{ ro.etiqueta }}
+            </label>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
     <sc-if value="{{ muestraVotos }}" hint-placeholder-val="{{ false }}">
       <section class="panel" style="margin-bottom:24px">
         <div class="panel-cab">
@@ -640,6 +660,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
           <sc-if value="{{ t.icoInicio }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"></path></svg></sc-if>
           <sc-if value="{{ t.icoPublicar }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2l-7 20-4-9-9-4z"></path></svg></sc-if>
           <sc-if value="{{ t.icoMeGusta }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-9-8.8C1.6 7.9 3.6 4.5 7 4.5c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.4 0 5.4 3.4 4 6.7C19 15.6 12 20 12 20z"></path></svg></sc-if>
+          <sc-if value="{{ t.icoNotificaciones }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></sc-if>
           <sc-if value="{{ t.icoCalendario }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></sc-if>
         </span>
         <span>{{ t.label }}</span>
@@ -741,6 +762,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 </script>
 <script type="text/x-dc" data-dc-script data-props="{}">
 const D = () => window.RepertorioData;
+const A = () => window.RepertorioAvisos;
 
 function todayIso() {
   const n = new Date();
@@ -758,7 +780,7 @@ class Component extends DCLogic {
     borrFiltro: 'todos', borrSel: {},
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
     songLikes: {}, songOverrides: {}, usuarios: {}, votosMes: null, votosTodo: false, votosAbierta: null,
-    vista: 'inicio'
+    vista: 'inicio', recordatorios: null
   };
 
   componentDidMount() {
@@ -787,7 +809,7 @@ class Component extends DCLogic {
           const miId = (R.userMusicianLinks(doc) || {})[orgId] || null;
           const effectiveId = viewOnlyActivo ? (viewOnlyMusico ? viewOnlyMusico.id : miId) : miId;
           this.setState({
-            estadoAuth: 'listo', userDoc: doc, currentOrgId: orgId,
+            estadoAuth: 'listo', userDoc: doc, currentOrgId: orgId, recordatorios: A().recordatoriosDe(doc),
             miMusicianId: miId, effectiveMusicianId: effectiveId,
             viewOnlyActivo: viewOnlyActivo && !!viewOnlyMusico,
             musico: viewOnlyActivo && viewOnlyMusico ? viewOnlyMusico : null
@@ -850,6 +872,22 @@ class Component extends DCLogic {
   irAVista(id) {
     this.setState({ vista: id, masAbierto: false });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* Marca o desmarca una opción de recordatorio y la guarda en la cuenta. */
+  cambiarRecordatorio(id, marcado) {
+    const R = D();
+    const s = this.state;
+    const uid = s.userDoc && (s.userDoc.uid || s.userDoc.id);
+    const antes = s.recordatorios || A().recordatoriosDe(s.userDoc);
+    const nuevo = A().alternarRecordatorio(antes, id, marcado);
+    this.setState({ recordatorios: nuevo });
+    R.setRecordatorios(uid, nuevo, (ok) => {
+      if (ok) return;
+      this.setState({ recordatorios: antes, toast: 'No se pudo guardar tu preferencia. Intenta de nuevo.' });
+      clearTimeout(this._t);
+      this._t = setTimeout(() => this.setState({ toast: '' }), 3500);
+    });
   }
 
   /* Panel de "Me gusta": por mes, el top 10 de canciones con más votos
@@ -1161,9 +1199,13 @@ class Component extends DCLogic {
     /* Me gusta de canciones: solo admin, en su propio dashboard y en
        calendarios con canciones. */
     const veVotos = !!(s.userDoc && s.userDoc.role === 'admin') && !s.viewOnlyActivo && !!pf.tieneCanciones;
+    /* Recordatorios: cada persona en su propio dashboard (no viendo el de otra). */
+    const veNotificaciones = !s.viewOnlyActivo && !!window.RepertorioAvisos && !!s.userDoc;
+    const recs = s.recordatorios || A().recordatoriosDe(s.userDoc);
     const vistas = [{ id: 'inicio', label: 'Próximos eventos', corto: 'Inicio' }]
       .concat(veBorradores ? [{ id: 'publicar', label: 'Por publicar', corto: 'Publicar' }] : [])
-      .concat(veVotos ? [{ id: 'megusta', label: 'Me gusta', corto: 'Me gusta' }] : []);
+      .concat(veVotos ? [{ id: 'megusta', label: 'Me gusta', corto: 'Me gusta' }] : [])
+      .concat(veNotificaciones ? [{ id: 'notificaciones', label: 'Notificaciones', corto: 'Avisos' }] : []);
     const vistaActual = vistas.find((v) => v.id === s.vista) || vistas[0];
     const vista = vistaActual.id;
 
@@ -1189,7 +1231,7 @@ class Component extends DCLogic {
       tabsMovil: vistas.map((v) => ({
         label: v.corto, href: '#', clase: 'tab' + (v.id === vista ? ' on' : ''),
         icoEventos: false, icoUsuarios: false, icoRepertorio: false, icoCalendario: false,
-        icoInicio: v.id === 'inicio', icoPublicar: v.id === 'publicar', icoMeGusta: v.id === 'megusta',
+        icoInicio: v.id === 'inicio', icoPublicar: v.id === 'publicar', icoMeGusta: v.id === 'megusta', icoNotificaciones: v.id === 'notificaciones',
         onClick: (e) => { if (e && e.preventDefault) e.preventDefault(); this.irAVista(v.id); }
       })),
       hayVistas: vistas.length > 1,
@@ -1200,6 +1242,14 @@ class Component extends DCLogic {
       vistaInicio: vista === 'inicio',
       muestraBorradores: veBorradores && vista === 'publicar',
       muestraVotos: veVotos && vista === 'megusta',
+      muestraNotificaciones: veNotificaciones && vista === 'notificaciones',
+      recordatorioOpciones: [{ id: 'nunca', etiqueta: 'Nunca' }].concat(A().OPCIONES_RECORDATORIO).map((o) => ({
+        etiqueta: o.etiqueta || o.id,
+        marcada: o.id === 'nunca' ? A().sinRecordatorios(recs) : !!recs[o.id],
+        /* "Nunca" ya marcado no se puede desmarcar: se elige otra opción. */
+        deshabilitada: o.id === 'nunca' && A().sinRecordatorios(recs),
+        onChange: (e) => this.cambiarRecordatorio(o.id, !!(e && e.target && e.target.checked))
+      })),
       masAbierto: s.masAbierto,
       masClase: 'tab' + (s.masAbierto ? ' on' : ''),
       toggleMas: () => this.setState((st) => ({ masAbierto: !st.masAbierto })),

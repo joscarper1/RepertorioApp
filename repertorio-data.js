@@ -1722,6 +1722,19 @@
     });
   }
 
+  /* Recordatorios de eventos de una cuenta (users/{uid}/recordatorios =
+     {semana, dia, mismo}; ver avisos.js). Siempre se guardan las tres
+     claves: todas en false es "Nunca". */
+  function setRecordatorios(uid, valores, cb) {
+    var root = dbRoot();
+    if (!root || !uid || !valores) { cb && cb(false); return; }
+    var v = { semana: !!valores.semana, dia: !!valores.dia, mismo: !!valores.mismo };
+    root.child(USERS_PATH).child(uid).child('recordatorios').set(v).then(function () { cb && cb(true); }, function (err) {
+      console.error('Firebase setRecordatorios rechazado:', err && err.code, err && err.message, err);
+      cb && cb(false);
+    });
+  }
+
   function setUserNombre(uid, nombre, cb) {
     var root = dbRoot();
     var n = String(nombre || '').trim();
@@ -3268,7 +3281,7 @@
     createOrganization: createOrganization, updateOrganization: updateOrganization, deleteOrganization: deleteOrganization,
     countEventsForOrg: countEventsForOrg, countUsersForOrg: countUsersForOrg,
     ensureUserRegistered: ensureUserRegistered, watchUser: watchUser, watchAllUsers: watchAllUsers,
-    setUserRole: setUserRole, quitarMarcaNuevo: quitarMarcaNuevo, setPreferenciaAviso: setPreferenciaAviso, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
+    setUserRole: setUserRole, quitarMarcaNuevo: quitarMarcaNuevo, setPreferenciaAviso: setPreferenciaAviso, setRecordatorios: setRecordatorios, setUserOrgs: setUserOrgs, setUserTelefono: setUserTelefono, deleteUser: deleteUser, userOrgIds: userOrgIds,
     userMusicianLinks: userMusicianLinks, redirectToUserLanding: redirectToUserLanding, redirectToCalendarLanding: redirectToCalendarLanding, orgInicialDeUsuario: orgInicialDeUsuario,
     guardarOrgPreferida: guardarOrgPreferida, orgPreferida: orgPreferida, borrarOrgPreferida: borrarOrgPreferida,
     normalizarEmail: normalizarEmail, emailKey: emailKey, puede: puede, puedeSobreEvento: puedeSobreEvento, puedeVerEventos: puedeVerEventos, PERMISOS_POR_ROL: PERMISOS_POR_ROL, ROLES: ROLES, rolLabel: rolLabel, PERMISOS_POR_ROL_BANDA: PERMISOS_POR_ROL_BANDA,

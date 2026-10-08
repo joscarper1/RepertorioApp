@@ -464,7 +464,143 @@
   };
   function textoFallo(f) { return f ? (FALLOS[f] || f) : ''; }
 
+  /* --- Recordatorios de eventos ---
+     Cada persona elige en Dashboard → Notificaciones cuándo recibir el
+     recordatorio de cada evento en que participa (users/{uid}/recordatorios
+     = {semana, dia, mismo}; "Nunca" = las tres en false; sin elegir nada rige
+     RECORDATORIOS_DEFECTO). El workflow los envía a las 7:00 a. m. (hora de
+     El Salvador) del día que corresponde y deja constancia en
+     /recordatoriosEnviados/{eventId}/{uid}/{opcion} para no repetirlos.
+     Cada opción calcula su momento de envío respecto del evento (hoy por
+     días; una opción "2 horas antes" se calcularía con inicioEvento). */
+  var RECORDATORIOS_PATH = 'recordatoriosEnviados';
+  var HORA_RECORDATORIO = 7;
+  var OFFSET_ZONA_H = 6; /* El Salvador es UTC-6 todo el año */
+  /* Pasado este margen desde su momento, un recordatorio ya no se envía
+     (p. ej. el evento se publicó o la opción se activó tarde). */
+  var GRACIA_RECORDATORIO_MS = 6 * 3600 * 1000;
+  var OPCIONES_RECORDATORIO = [
+    { id: 'semana', etiqueta: 'Una semana antes', dias: 7, cuando: 'Faltan 7 días.' },
+    { id: 'dia', etiqueta: 'Un día antes', dias: 1, cuando: 'Es mañana.' },
+    { id: 'mismo', etiqueta: 'Mismo día', dias: 0, cuando: 'Es hoy.' }
+  ];
+  var RECORDATORIOS_DEFECTO = { semana: false, dia: true, mismo: false };
+
+  /* Opciones activas de una cuenta: {semana, dia, mismo} en booleanos. */
+  function recordatoriosDe(u) {
+    var r = u && u.recordatorios;
+    if (!r || typeof r !== 'object') return Object.assign({}, RECORDATORIOS_DEFECTO);
+    var out = {};
+    OPCIONES_RECORDATORIO.forEach(function (o) { out[o.id] = r[o.id] === true; });
+    return out;
+  }
+
+  /* Estado tras marcar o desmarcar una casilla ("nunca" desmarca el resto;
+     cualquier otra opción deja de ser "nunca"). */
+  function alternarRecordatorio(actual, id, marcado) {
+    var out = {};
+    OPCIONES_RECORDATORIO.forEach(function (o) { out[o.id] = !!(actual && actual[o.id]); });
+    if (id === 'nunca') {
+      if (marcado) OPCIONES_RECORDATORIO.forEach(function (o) { out[o.id] = false; });
+    } else if (out.hasOwnProperty(id)) out[id] = !!marcado;
+    return out;
+  }
+
+  function sinRecordatorios(r) { return !OPCIONES_RECORDATORIO.some(function (o) { return r && r[o.id]; }); }
+
+  /* Instante (ms) en que empieza el evento, en hora de El Salvador. */
+  function inicioEvento(ev) {
+    var p = String((ev && ev.fecha) || '').split('-');
+    var min = minutosHora(ev && ev.hora);
+    return Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]), OFFSET_ZONA_H, min);
+  }
+
+  /* Instante (ms) en que toca enviar la opción: a las 7:00 a. m. (hora de El
+     Salvador) del día que corresponde. */
+  function momentoRecordatorio(ev, opcion) {
+    var p = String((ev && ev.fecha) || '').split('-');
+    return Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]) - opcion.dias, OFFSET_ZONA_H + HORA_RECORDATORIO);
+  }
+
+  /* ¿Puede haber algo por enviar a esta hora? (de 7:00 a. m. hasta que vence
+     la gracia). Evita leer la base en las demás corridas del cron. */
+  function enVentanaRecordatorios(ahora) {
+    var t = (ahora || Date.now());
+    var h = ((t / 3600000 - OFFSET_ZONA_H) % 24 + 24) % 24;
+    return h >= HORA_RECORDATORIO && h < HORA_RECORDATORIO + GRACIA_RECORDATORIO_MS / 3600000;
+  }
+
+  /* La persona declinó todos sus puestos del evento: no se le recuerda. */
+  function declinoEvento(ev, musicianId) {
+    var slots = ((ev && ev.banda) || []).filter(function (s) { return s && s.musicianId === musicianId && nombreValido(s); });
+    return slots.length > 0 && slots.every(function (s) { return s.estadoConfirmacion === 'rechazado'; });
+  }
+
+  /* Recordatorios que toca enviar ahora. datos: {org, usuarios, musicos,
+     eventos}. Una fila por (cuenta, evento, opción):
+     {uid, email, musicianId, nombre, ev, opcion, aviso}. */
+  function planRecordatorios(datos, ahora) {
+    ahora = ahora || Date.now();
+    var org = datos.org || {};
+    var orgId = org.id;
+    var musicoPorId = {};
+    (datos.musicos || []).forEach(function (m) { if (m && m.id) musicoPorId[m.id] = m; });
+    var eventos = (datos.eventos || []).filter(function (ev) {
+      return ev && estadoEvento(ev) === 'PUBLICADO' && ev.fecha && (!ev.organizationId || ev.organizationId === orgId);
+    });
+    var filas = [];
+    (datos.usuarios || []).forEach(function (u) {
+      if (!u || !u.uid || !u.email) return;
+      if (orgIdsDe(u).indexOf(orgId) < 0) return;
+      var mid = ((u.musicianLinks || {})[orgId]) || '';
+      if (!mid) return;
+      var pref = recordatoriosDe(u);
+      var m = musicoPorId[mid];
+      var nombre = (m && m.nombre) || u.displayName || '';
+      eventos.forEach(function (ev) {
+        if (!participa(ev, mid) || declinoEvento(ev, mid)) return;
+        var inicio = inicioEvento(ev);
+        OPCIONES_RECORDATORIO.forEach(function (o) {
+          if (!pref[o.id]) return;
+          var momento = momentoRecordatorio(ev, o);
+          if (ahora < momento || ahora - momento > GRACIA_RECORDATORIO_MS || ahora >= inicio) return;
+          filas.push({
+            uid: u.uid, email: u.email, musicianId: mid, nombre: nombre, ev: ev, opcion: o.id,
+            aviso: armarRecordatorio(org, nombre, mid, ev, o)
+          });
+        });
+      });
+    });
+    return filas;
+  }
+
+  /* Correo de recordatorio de un evento (mismo saludo que el aviso de
+     participación). */
+  function armarRecordatorio(org, nombre, musicianId, ev, opcion) {
+    var orgNombre = (org && (org.name || org.nombre)) || 'la organización';
+    var primer = primerNombre(nombre);
+    var saludo = 'Hola' + (primer ? ' ' + primer : '') + ', ¡Dios te bendiga!' + '\n\n' + 'Te recordamos que tienes participación en el siguiente evento de ' + orgNombre + ':';
+    var puestos = puestosDePersona(ev, musicianId);
+    var linea = diaCorto(ev.fecha) + (ev.hora ? ', ' + ev.hora : '') + ' – ' + (ev.servicio || 'Evento') + (puestos.length ? ' (' + puestos.join(', ') + ')' : '');
+    var cuando = opcion && opcion.cuando ? opcion.cuando : '';
+    var url = urlCalendario(org, ev.fecha);
+    var urlConfirmar = urlDashboard(org);
+    var pie = 'Recibes este correo porque se activaron los recordatorios. Puedes cambiarlo en Dashboard → Notificaciones.';
+    var texto = saludo + '\n\n• ' + linea + (cuando ? '\n\n' + cuando : '') +
+      '\n\nSi aún no has confirmado tu participación, puedes hacerlo desde aquí: ' + urlConfirmar + '\n\nVer calendario: ' + url + '\n\n' + pie;
+    var html = '<p>' + escaparHtml(saludo).replace(/\n\n/g, '</p><p>') + '</p><ul><li>' + escaparHtml(linea) + '</li></ul>' +
+      (cuando ? '<p>' + escaparHtml(cuando) + '</p>' : '') +
+      '<p>Si aún no has confirmado tu participación, puedes hacerlo desde aquí: <a href="' + escaparHtml(urlConfirmar) + '">' + escaparHtml(urlConfirmar) + '</a></p>' +
+      '<p><a href="' + escaparHtml(url) + '">Ver calendario</a></p>' +
+      '<p style="color:#8a867f;font-size:12px">' + escaparHtml(pie) + '</p>';
+    return { asunto: 'Recordatorio: ' + (ev.servicio || 'Evento'), texto: texto, html: html, linea: linea, url: url, urlConfirmar: urlConfirmar };
+  }
+
   var api = {
+    RECORDATORIOS_PATH: RECORDATORIOS_PATH, OPCIONES_RECORDATORIO: OPCIONES_RECORDATORIO, RECORDATORIOS_DEFECTO: RECORDATORIOS_DEFECTO,
+    recordatoriosDe: recordatoriosDe, alternarRecordatorio: alternarRecordatorio, sinRecordatorios: sinRecordatorios,
+    inicioEvento: inicioEvento, momentoRecordatorio: momentoRecordatorio, enVentanaRecordatorios: enVentanaRecordatorios,
+    planRecordatorios: planRecordatorios, armarRecordatorio: armarRecordatorio, orgIdsDe: orgIdsDe,
     SITIO_URL: SITIO_URL, REPO: REPO, RAMA: RAMA, WORKFLOW_ENVIO: WORKFLOW_ENVIO, WORKFLOW_RESPALDO: WORKFLOW_RESPALDO,
     COLA_PATH: COLA_PATH, CONFIG_PATH: CONFIG_PATH, DIAS_AVISO_TOKEN: DIAS_AVISO_TOKEN,
     estadoEvento: estadoEvento, hoyIso: hoyIso, diaCorto: diaCorto, minutosHora: minutosHora,

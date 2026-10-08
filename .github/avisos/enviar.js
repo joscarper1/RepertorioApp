@@ -11,7 +11,9 @@
    solo desde un calendario (procesarNuevos: no pasa por la cola; se detecta
    con la marca `nuevo` de /users y queda en el historial como 'nuevoUsuario'),
    y a los que activaron la bitácora de cambios de eventos o el aviso de
-   repertorio actualizado (procesarBitacora: lee /bitacoraEventos).
+   repertorio actualizado (procesarBitacora: lee /bitacoraEventos), y manda
+   los recordatorios de eventos a quien los activó en Dashboard →
+   Notificaciones (procesarRecordatorios: 7:00 a. m., hora de El Salvador).
 
    El repositorio es público y sus logs también: aquí NUNCA se imprimen
    correos, teléfonos ni nombres, solo conteos.
@@ -317,6 +319,67 @@ async function procesarBitacora(root, enviarCorreo, opciones = {}) {
   return resumen;
 }
 
+/* Reclama un recordatorio (transacción en
+   recordatoriosEnviados/{eventId}/{uid}/{opcion}: si dos ejecuciones
+   coinciden, solo una envía; un reclamo a medias de hace más de 15 min se
+   da por abandonado). */
+async function reclamarRecordatorio(ref, ahora) {
+  const r = await ref.transaction((v) => {
+    if (v && !(v.tomado && !v.enviado && v.tomado < ahora - ABANDONO_MS)) return;
+    return { tomado: ahora };
+  });
+  return r.committed && r.snapshot.val() && r.snapshot.val().tomado === ahora;
+}
+
+/* Recordatorios de eventos (ver A.planRecordatorios): a las 7:00 a. m. de
+   El Salvador, a cada persona con la opción activada en Dashboard →
+   Notificaciones. Solo trabaja en la ventana de envío del día; fuera de ella
+   no lee la base. */
+async function procesarRecordatorios(root, enviarCorreo, opciones = {}) {
+  const ahora = opciones.ahora || Date.now();
+  const prueba = !!opciones.prueba;
+  const resumen = { candidatos: 0, enviados: 0, errores: 0, omitidos: 0, credencialesMalas: false };
+  if (!A.enVentanaRecordatorios(ahora)) return resumen;
+  const orgs = [];
+  (await root.child('organizations').once('value')).forEach((c) => { orgs.push(c.key); });
+  if (!orgs.length) return resumen;
+  const s = await root.child('users').once('value');
+  const usuarios = [];
+  s.forEach((c) => { const v = c.val() || {}; v.uid = c.key; usuarios.push(v); });
+
+  for (const orgId of orgs) {
+    if (resumen.credencialesMalas) break;
+    /* Sin nadie con recordatorios y vínculo en esta organización no se leen sus eventos. */
+    if (!usuarios.some((u) => u.email && A.orgIdsDe(u).indexOf(orgId) >= 0 && ((u.musicianLinks || {})[orgId]) &&
+      !A.sinRecordatorios(A.recordatoriosDe(u)))) continue;
+    const [o, m, e] = await Promise.all([
+      root.child('organizations').child(orgId).once('value'),
+      root.child('musicians').orderByChild('organizationId').equalTo(orgId).once('value'),
+      root.child('events').orderByChild('organizationId').equalTo(orgId).once('value')
+    ]);
+    const org = Object.assign({}, o.val(), { id: orgId });
+    for (const f of A.planRecordatorios({ org, usuarios, musicos: lista(m), eventos: lista(e) }, ahora)) {
+      resumen.candidatos++;
+      const ref = root.child(A.RECORDATORIOS_PATH).child(f.ev.id).child(f.uid).child(f.opcion);
+      if (prueba) continue;
+      if (!(await reclamarRecordatorio(ref, ahora))) { resumen.omitidos++; continue; }
+      if (resumen.credencialesMalas) { await ref.remove(); resumen.errores++; continue; }
+      try {
+        await enviarCorreo({ para: f.email, asunto: f.aviso.asunto, texto: f.aviso.texto, html: f.aviso.html, remitente: org.name || 'Repertorio' });
+        await ref.set({ tomado: ahora, enviado: Date.now() });
+        resumen.enviados++;
+      } catch (err) {
+        /* Se suelta para reintentar en la próxima corrida (mientras dure la gracia). */
+        await ref.remove();
+        resumen.errores++;
+        if (err && (err.responseCode === 535 || err.code === 'EAUTH')) resumen.credencialesMalas = true;
+        console.error('Error de envío (' + (err && (err.responseCode || err.code) || 'desconocido') + ')');
+      }
+    }
+  }
+  return resumen;
+}
+
 /* Los secrets pegados en GitHub suelen traer un salto de línea o espacios
    invisibles al final, o comillas; la contraseña de aplicación se muestra
    en grupos de 4 con espacios. Gmail rechaza cualquiera de esos (535). */
@@ -371,7 +434,9 @@ async function main() {
     const b = await procesarBitacora(admin.database().ref(), enviarCorreo, { prueba });
     console.log('Bitácora: ' + b.cambios + ' cambios · correos a administradores: ' + b.enviados + ' · errores: ' + b.errores +
       ' · entradas inválidas: ' + b.invalidos);
-    r.credencialesMalas = r.credencialesMalas || n.credencialesMalas || b.credencialesMalas;
+    const rec = await procesarRecordatorios(admin.database().ref(), enviarCorreo, { prueba });
+    console.log('Recordatorios: ' + rec.candidatos + ' por enviar · enviados: ' + rec.enviados + ' · ya enviados: ' + rec.omitidos + ' · errores: ' + rec.errores);
+    r.credencialesMalas = r.credencialesMalas || n.credencialesMalas || b.credencialesMalas || rec.credencialesMalas;
     console.log('Pedidos: ' + r.pedidos + ' · correos enviados: ' + r.enviados + ' · errores: ' + r.errores +
       ' · sin correo: ' + r.sinCorreo + ' · sin eventos: ' + r.sinEventos + ' · borrados de la cola: ' + r.borrados + (prueba ? ' (prueba, sin enviar)' : ''));
     if (r.credencialesMalas) console.log('::error::Gmail rechazó la credencial (535). ' + diagnosticoGmail(process.env.GMAIL_USER, process.env.GMAIL_APP_PASSWORD));
@@ -386,4 +451,4 @@ if (require.main === module) {
   main().catch((e) => { console.error(e && e.message ? e.message : 'Error'); process.exit(1); });
 }
 
-module.exports = { procesarCola, procesarNuevos, procesarBitacora, limpiarCredenciales, diagnosticoGmail };
+module.exports = { procesarCola, procesarNuevos, procesarBitacora, procesarRecordatorios, limpiarCredenciales, diagnosticoGmail };

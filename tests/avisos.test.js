@@ -5,7 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const A = require('../avisos.js');
-const { procesarCola, procesarNuevos, procesarBitacora } = require('../.github/avisos/enviar.js');
+const { procesarCola, procesarNuevos, procesarBitacora, procesarRecordatorios } = require('../.github/avisos/enviar.js');
 
 const org = { id: 'o1', name: 'Templo Betel', slug: 'templobetel' };
 const slot = (tipo, musicianId, nombre) => ({ tipo, musicianId, nombre: nombre === undefined ? 'X' : nombre });
@@ -404,4 +404,88 @@ test('procesarBitacora: sin admins suscritos (interruptores apagados) no envía 
   assert.equal(r.enviados, 0);
   assert.equal(data.bitacoraEventos.b1.estado, 'sin-destinatarios');
   assert.deepEqual(data.colaAvisos, {});
+});
+
+
+/* --- Recordatorios de eventos --- */
+const SV = (y, m, d, h, mi) => Date.UTC(y, m - 1, d, h + 6, mi || 0); /* hora de El Salvador */
+const evRec = ev('r1', '2026-10-12', 'Servicio Dominical', [slot('Guitarra', 'ana'), slot('Piano', 'beto')], { hora: '9:00 am' });
+const datosRec = (usr, evs) => ({ org, usuarios: usr, musicos, eventos: evs || [evRec] });
+const ana = (extra) => Object.assign({ uid: 'u-ana', email: 'ana@x.com', organizationIds: { o1: true }, musicianLinks: { o1: 'ana' } }, extra);
+
+test('recordatorios: preferencias, "Nunca" excluyente y valor por defecto', () => {
+  assert.deepEqual(A.recordatoriosDe(ana()), { semana: false, dia: true, mismo: false });
+  assert.deepEqual(A.recordatoriosDe(ana({ recordatorios: { semana: true, dia: false, mismo: true } })), { semana: true, dia: false, mismo: true });
+  assert.equal(A.sinRecordatorios(A.recordatoriosDe(ana({ recordatorios: { semana: false, dia: false, mismo: false } }))), true);
+  let r = A.alternarRecordatorio({ semana: true, dia: true, mismo: false }, 'nunca', true);
+  assert.deepEqual(r, { semana: false, dia: false, mismo: false });
+  r = A.alternarRecordatorio(r, 'mismo', true);
+  assert.deepEqual(r, { semana: false, dia: false, mismo: true });
+  r = A.alternarRecordatorio(r, 'semana', true);
+  assert.deepEqual(r, { semana: true, dia: false, mismo: true });
+});
+
+test('recordatorios: cada opción sale a las 7:00 a. m. de su día, una sola vez en la ventana', () => {
+  const todas = ana({ recordatorios: { semana: true, dia: true, mismo: true } });
+  const opc = (t) => A.planRecordatorios(datosRec([todas]), t).map((f) => f.opcion);
+  assert.deepEqual(opc(SV(2026, 10, 5, 6, 59)), []);
+  assert.deepEqual(opc(SV(2026, 10, 5, 7, 0)), ['semana']);
+  assert.deepEqual(opc(SV(2026, 10, 11, 7, 30)), ['dia']);
+  assert.deepEqual(opc(SV(2026, 10, 12, 7, 0)), ['mismo']);
+  /* Pasada la gracia ya no se envía, y tampoco con el evento empezado. */
+  assert.deepEqual(opc(SV(2026, 10, 11, 13, 1)), []);
+  assert.deepEqual(opc(SV(2026, 10, 12, 9, 0)), []);
+  assert.equal(A.enVentanaRecordatorios(SV(2026, 10, 11, 7, 0)), true);
+  assert.equal(A.enVentanaRecordatorios(SV(2026, 10, 11, 6, 59)), false);
+  assert.equal(A.enVentanaRecordatorios(SV(2026, 10, 11, 13, 0)), false);
+});
+
+test('recordatorios: Nunca, borradores, quien declinó y quien no participa no reciben', () => {
+  const t = SV(2026, 10, 11, 7, 30);
+  assert.equal(A.planRecordatorios(datosRec([ana({ recordatorios: { semana: false, dia: false, mismo: false } })]), t).length, 0);
+  assert.equal(A.planRecordatorios(datosRec([ana()], [Object.assign({}, evRec, { estado: 'BORRADOR' })]), t).length, 0);
+  const declino = Object.assign({}, evRec, { banda: [Object.assign(slot('Guitarra', 'ana'), { estadoConfirmacion: 'rechazado' })] });
+  assert.equal(A.planRecordatorios(datosRec([ana()], [declino]), t).length, 0);
+  assert.equal(A.planRecordatorios(datosRec([ana({ musicianLinks: { o1: 'otro' } })]), t).length, 0);
+  assert.equal(A.planRecordatorios(datosRec([ana({ email: '' })]), t).length, 0);
+  assert.equal(A.planRecordatorios(datosRec([ana()]), t).length, 1);
+});
+
+test('recordatorios: redacción del correo', () => {
+  const f = A.planRecordatorios(datosRec([ana()]), SV(2026, 10, 11, 7, 30))[0];
+  assert.equal(f.aviso.asunto, 'Recordatorio: Servicio Dominical');
+  assert.ok(f.aviso.texto.startsWith('Hola Ana, ¡Dios te bendiga!\n\nTe recordamos que tienes participación en el siguiente evento de Templo Betel:'));
+  assert.ok(f.aviso.texto.includes('• Lun 12 oct, 9:00 am – Servicio Dominical (Guitarra)'));
+  assert.ok(f.aviso.texto.includes('Es mañana.'));
+  assert.ok(f.aviso.texto.includes('Si aún no has confirmado tu participación, puedes hacerlo desde aquí: https://'));
+  assert.ok(f.aviso.texto.endsWith('Recibes este correo porque se activaron los recordatorios. Puedes cambiarlo en Dashboard → Notificaciones.'));
+});
+
+test('procesarRecordatorios: envía una vez, no repite y suelta el reclamo si falla', async () => {
+  const mk = () => {
+    const b = baseDePrueba({});
+    b.data.events.r1 = Object.assign({}, evRec, { organizationId: 'o1' });
+    return b;
+  };
+  const ahora = SV(2026, 10, 11, 7, 30);
+  const enviados = [];
+  const ok = async (m) => { enviados.push(m); };
+  const { root, data } = mk();
+  let r = await procesarRecordatorios(root, ok, { ahora });
+  assert.equal(r.enviados, 1);
+  assert.equal(enviados[0].para, 'ana@x.com');
+  assert.equal(enviados[0].asunto, 'Recordatorio: Servicio Dominical');
+  assert.ok(data.recordatoriosEnviados.r1['u-ana'].dia.enviado);
+  r = await procesarRecordatorios(root, ok, { ahora: ahora + 30 * 60 * 1000 });
+  assert.equal(r.enviados, 0);
+  assert.equal(enviados.length, 1);
+  /* Fuera de la ventana no hace nada. */
+  assert.equal((await procesarRecordatorios(root, ok, { ahora: SV(2026, 10, 11, 14, 0) })).candidatos, 0);
+  /* Si el envío falla, se reintenta en la siguiente corrida. */
+  const b2 = mk();
+  r = await procesarRecordatorios(b2.root, async () => { throw new Error('x'); }, { ahora });
+  assert.equal(r.errores, 1);
+  assert.equal(b2.data.recordatoriosEnviados && b2.data.recordatoriosEnviados.r1 && b2.data.recordatoriosEnviados.r1['u-ana'] && b2.data.recordatoriosEnviados.r1['u-ana'].dia, undefined);
+  r = await procesarRecordatorios(b2.root, ok, { ahora: ahora + 30 * 60 * 1000 });
+  assert.equal(r.enviados, 1);
 });
