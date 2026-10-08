@@ -312,7 +312,42 @@ a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-c
   .item.usr .item-sub:not(.abierto){display:none}
   .item.usr .item-sub > .inp{max-width:none !important;flex:1 1 100% !important}
   .item.usr .item-sub > .btn-sec{min-height:40px}
+  /* Personas en teléfono: igual que Cuentas (nombre y vínculo en una fila,
+     botones en su propia fila y roles alineados bajo el nombre). */
+  .item.per{gap:10px;padding-top:14px;padding-bottom:14px}
+  .item.per .item-fila{flex-wrap:nowrap}
+  .item.per .item-t,.item.per .item-s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .item.per .item-sub:not(.abierto){padding-left:48px}
+  .item.per .usr-res{padding-left:48px}
+  /* Orden en teléfono: nombre y correo, etiquetas de roles, botones y, al
+     editar, el campo del nombre. */
+  .item.per > .item-sub:not(.abierto){order:1}
+  .item.per > .usr-res{order:2}
+  .item.per > .item-sub.abierto{order:3}
+  .per-etq{display:none}
+  .item.per.editando .item-t{display:none}
+  .item.per.editando .per-nombre-hd{display:block;width:100%;min-height:44px;font-size:15px;font-weight:700;margin:0 0 6px}
+  /* Editando: solo lo editable (nombre y roles) y Guardar / Cancelar. Los
+     botones de la tarjeta se ocultan y el panel del nombre se reparte en la
+     columna de la tarjeta para ordenarlo: nombre (con su ayuda), roles, botones. */
+  .item.per.editando > .usr-res{display:none}
+  .item.per.editando > .item-sub.abierto{display:contents}
+  /* El nombre se edita en el propio encabezado: el campo del panel sobra. */
+  .item.per.editando .per-etq,.item.per.editando .per-nombre{display:none}
+  .item.per.editando > .item-sub:not(.abierto){order:2;padding-left:0;gap:8px}
+  .item.per.editando > .item-sub:not(.abierto)::before{content:'Ministerios y roles';flex:1 1 100%;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted2)}
+  .item.per.editando .sel-mini{flex:1 1 100%;min-height:44px;font-size:13px}
+  .item.per.editando .rol-tag{font-size:13px;padding:6px 6px 6px 12px}
+  .item.per.editando .per-ayuda{order:1}
+  .item.per.editando .per-botones{order:4;width:100%;flex-wrap:nowrap !important;margin-top:6px}
+  .item.per.editando .per-botones .btn-pri,.item.per.editando .per-botones .btn-sec{flex:1;min-height:44px}
+  /* Agregar o quitar ministerios/roles solo al tocar "Editar" (como en
+     Cuentas); fuera de la edición los roles se ven como etiquetas. */
+  .item.per:not(.editando) .rol-tag button,.item.per:not(.editando) .sel-mini{display:none}
+  .item.per:not(.editando) .rol-tag{padding-right:10px}
+  .item.per.sin-roles:not(.editando) .item-sub:not(.abierto){display:none}
 }
+.per-nombre-hd{display:none}
 .usr-id{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
 .usr-res{display:flex;flex-direction:column;gap:10px;padding-left:48px}
 .usr-datos{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12.5px;color:var(--muted);min-width:0}
@@ -895,16 +930,17 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
         <div class="panel lista">
           <sc-for list="{{ musicosLista }}" as="m" hint-placeholder-count="3">
-            <div class="item">
+            <div class="{{ m.itemClase }}">
               <div class="item-fila">
-                <div style="display:flex;align-items:center;gap:12px;min-width:0">
+                <div class="usr-id">
                   <span class="ini">{{ m.inicial }}</span>
                   <div style="min-width:0">
                     <div class="item-t">{{ m.nombre }}</div>
-                    <div style="{{ m.vinculoStyle }}">{{ m.vinculoTexto }}</div>
+                    <input class="inp per-nombre-hd" value="{{ m.datosNombre }}" onChange="{{ m.onDatosNombre }}" placeholder="Nombre completo" aria-label="Nombre" autoComplete="off">
+                    <div class="item-s" style="{{ m.vinculoStyle }}">{{ m.vinculoTexto }}</div>
                   </div>
                 </div>
-                <div class="item-acc" style="width:auto">
+                <div class="item-acc solo-desk" style="width:auto">
                   <button type="button" class="btn-sec" onClick="{{ m.verDashboard }}">Ver dashboard</button>
                   <button type="button" class="ico" onClick="{{ m.abrirDatos }}" aria-label="Editar persona" title="Editar nombre">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
@@ -914,14 +950,22 @@ a.mas-fila:hover{background:none;color:var(--ink)}
                   </button>
                 </div>
               </div>
+              <div class="usr-res solo-movil">
+                <div class="usr-acc">
+                  <button type="button" class="btn-sec" onClick="{{ m.verDashboard }}">Ver dashboard</button>
+                  <button type="button" class="btn-sec" onClick="{{ m.abrirDatos }}">Editar</button>
+                  <button type="button" class="btn-sec" onClick="{{ m.eliminar }}" style="color:var(--red)">Eliminar</button>
+                </div>
+              </div>
               <sc-if value="{{ m.editandoDatos }}" hint-placeholder-val="{{ false }}">
                 <div class="item-sub abierto" style="padding:10px 0">
-                  <input class="inp" value="{{ m.datosNombre }}" onChange="{{ m.onDatosNombre }}" placeholder="Nombre completo" aria-label="Nombre" autoComplete="off" style="max-width:320px;flex:1;min-width:180px">
-                  <span style="display:flex;gap:8px;flex-wrap:wrap">
+                  <span class="campo-l per-etq">Nombre</span>
+                  <input class="inp per-nombre" value="{{ m.datosNombre }}" onChange="{{ m.onDatosNombre }}" placeholder="Nombre completo" aria-label="Nombre" autoComplete="off" style="max-width:320px;flex:1;min-width:180px">
+                  <span class="per-botones" style="display:flex;gap:8px;flex-wrap:wrap">
                     <button type="button" class="btn-pri" onClick="{{ m.guardarDatos }}">Guardar</button>
                     <button type="button" class="btn-sec" onClick="{{ m.cancelarDatos }}">Cancelar</button>
                   </span>
-                  <span class="campo-ayuda" style="flex:1 1 100%">El nombre se actualiza también en todos los eventos (pasados y futuros) donde aparece esta persona.</span>
+                  <span class="campo-ayuda per-ayuda" style="flex:1 1 100%">El nombre se actualiza también en todos los eventos (pasados y futuros) donde aparece esta persona.</span>
                 </div>
               </sc-if>
               <div class="item-sub">
@@ -1358,6 +1402,13 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 <script type="text/x-dc" data-dc-script data-props="{}">
 const D = () => window.RepertorioData;
 
+/* Subpestañas (el primer valor es el inicial): viajan en la URL (?sub=) para
+   que al recargar se abra la misma. */
+const SUBTABS = {
+  usuarios: { estado: 'subUsuarios', valores: ['usuarios', 'personas'] },
+  avisos: { estado: 'subAvisos', valores: ['notificaciones', 'github', 'historial'] }
+};
+
 class Component extends DCLogic {
   state = {
     estadoAuth: 'cargando', usuarioNombre: null, userDoc: null,
@@ -1469,7 +1520,7 @@ class Component extends DCLogic {
            confirmado del lado del servidor. */
         const tabInicial = new URLSearchParams(location.search).get('tab');
         if (tabInicial === 'usuarios' || tabInicial === 'organizaciones' || tabInicial === 'repertorio' || tabInicial === 'avisos') {
-          this.cambiarTab(tabInicial);
+          this.cambiarTab(tabInicial, new URLSearchParams(location.search).get('sub'));
         } else {
           /* Eventos es el módulo de entrada: sin ?tab explícito se salta
              directo al Formulario en cuanto se conoce la organización activa
@@ -1510,19 +1561,36 @@ class Component extends DCLogic {
     return permitidas.indexOf(tab) >= 0 ? tab : (permitidas[0] || tab);
   }
 
-  cambiarTab(tab) {
-    tab = this.tabPermitida(tab, this.state.userDoc);
-    this.setState((s) => ({ activeTab: tab, repertorioPagina: tab === 'repertorio' ? 1 : s.repertorioPagina }));
-    this.cerrarSidebarSiMovil();
-    /* La pestaña queda en la URL (?tab=) para que al recargar se vuelva a
-       abrir la misma. replaceState: no suma entradas al botón Atrás. */
+  /* ?tab= y ?sub= quedan en la URL para que al recargar se vuelva a abrir la
+     misma vista. replaceState: no suma entradas al botón Atrás. El valor
+     inicial de la subpestaña no se escribe. */
+  escribirUrl(tab, sub) {
     try {
       const params = new URLSearchParams(location.search);
-      if (params.get('tab') !== tab) {
-        params.set('tab', tab);
-        history.replaceState(history.state, '', location.pathname + '?' + params.toString() + location.hash);
-      }
+      params.set('tab', tab);
+      const def = SUBTABS[tab] && SUBTABS[tab].valores[0];
+      if (sub && sub !== def) params.set('sub', sub); else params.delete('sub');
+      const nueva = location.pathname + '?' + params.toString() + location.hash;
+      if (nueva !== location.pathname + location.search + location.hash) history.replaceState(history.state, '', nueva);
     } catch (e) { /* sin history (vista previa): se ignora */ }
+  }
+
+  /* Cambia de subpestaña (Cuentas/Personas, secciones de Avisos) y lo deja en la URL. */
+  irASub(tab, sub) {
+    const cfg = SUBTABS[tab];
+    if (!cfg || cfg.valores.indexOf(sub) < 0) return;
+    this.setState({ [cfg.estado]: sub });
+    this.escribirUrl(tab, sub);
+  }
+
+  cambiarTab(tab, sub) {
+    tab = this.tabPermitida(tab, this.state.userDoc);
+    const cfg = SUBTABS[tab];
+    /* Subpestaña pedida (carga con ?sub=) o la que ya estaba en esa pestaña. */
+    const subValida = cfg ? (cfg.valores.indexOf(sub) >= 0 ? sub : this.state[cfg.estado]) : null;
+    this.setState((s) => Object.assign({ activeTab: tab, repertorioPagina: tab === 'repertorio' ? 1 : s.repertorioPagina }, cfg ? { [cfg.estado]: subValida } : {}));
+    this.cerrarSidebarSiMovil();
+    this.escribirUrl(tab, subValida);
     if ((tab === 'usuarios' || tab === 'avisos') && !this._unusers) {
       this._unusers = D().watchAllUsers((lista) => { this.setState({ usuarios: lista }); this.fusionarReemplazadas(lista); });
       if (this._unaccesos) this._unaccesos();
@@ -2149,6 +2217,11 @@ class Component extends DCLogic {
     this.setState((s) => ({
       musicoDatos: s.musicoDatos && s.musicoDatos.id === musico.id ? null : { id: musico.id, nombre: musico.nombre || '' }
     }));
+    /* En teléfono el nombre se edita en el encabezado de la tarjeta: queda listo para escribir. */
+    setTimeout(() => {
+      const campo = document.querySelector('.item.per.editando .per-nombre-hd');
+      if (campo && campo.offsetParent) campo.focus();
+    }, 50);
   }
 
   /* El nombre se reescribe también en los puestos de todos los eventos de la
@@ -2799,6 +2872,7 @@ class Component extends DCLogic {
         verDashboard: () => this.verDashboardMusico(m, orgActual ? orgActual.slug : null),
         abrirDatos: () => this.abrirDatosMusico(m),
         editandoDatos: !!(s.musicoDatos && s.musicoDatos.id === m.id),
+        itemClase: 'item per' + (s.musicoDatos && s.musicoDatos.id === m.id ? ' editando' : '') + (rolesActuales.length ? '' : ' sin-roles'),
         datosNombre: s.musicoDatos && s.musicoDatos.id === m.id ? s.musicoDatos.nombre : '',
         onDatosNombre: (e) => { const v = e.target.value; this.setState((st) => ({ musicoDatos: Object.assign({}, st.musicoDatos, { nombre: v }) })); },
         guardarDatos: () => this.guardarDatosMusico(m),
@@ -3030,16 +3104,16 @@ class Component extends DCLogic {
       subAvisosNotifClase: s.subAvisos !== 'github' && s.subAvisos !== 'historial' ? 'on' : '',
       subAvisosGithubClase: s.subAvisos === 'github' ? 'on' : '',
       subAvisosHistClase: s.subAvisos === 'historial' ? 'on' : '',
-      verSubAvisosNotif: () => this.setState({ subAvisos: 'notificaciones' }),
-      verSubAvisosGithub: () => this.setState({ subAvisos: 'github' }),
-      verSubAvisosHist: () => this.setState({ subAvisos: 'historial' }),
+      verSubAvisosNotif: () => this.irASub('avisos', 'notificaciones'),
+      verSubAvisosGithub: () => this.irASub('avisos', 'github'),
+      verSubAvisosHist: () => this.irASub('avisos', 'historial'),
       avisosVerNotif: s.subAvisos !== 'github' && s.subAvisos !== 'historial',
       avisosVerGithub: s.subAvisos === 'github',
       avisosVerHist: s.subAvisos === 'historial',
       subUsuariosClase: s.subUsuarios !== 'personas' ? 'on' : '',
       subPersonasClase: s.subUsuarios === 'personas' ? 'on' : '',
-      verSubUsuarios: () => this.setState({ subUsuarios: 'usuarios' }),
-      verSubPersonas: () => this.setState({ subUsuarios: 'personas' }),
+      verSubUsuarios: () => this.irASub('usuarios', 'usuarios'),
+      verSubPersonas: () => this.irASub('usuarios', 'personas'),
       tabUsuariosCuentas: s.activeTab === 'usuarios' && s.subUsuarios !== 'personas',
       tabUsuariosPersonas: s.activeTab === 'usuarios' && s.subUsuarios === 'personas',
       cerrarMensaje: () => this.setState({ mensaje: '' }),

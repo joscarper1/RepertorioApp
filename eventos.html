@@ -2134,7 +2134,9 @@ class Component extends DCLogic {
   }
 
   /* ?eventid= abre ese evento en edición (enlace del botón Editar de
-     index.html) y se mantiene en la URL mientras el asistente esté abierto. */
+     index.html) y se mantiene en la URL mientras el asistente esté abierto;
+     en el paso 2 también ?sub= (Banda, Canciones, Detalles…), para que un
+     refresh vuelva a la misma sub-pestaña. */
   sincronizarEventId() {
     const s = this.state;
     if (typeof window === 'undefined' || s.estadoAcceso !== 'permitido') return;
@@ -2143,14 +2145,22 @@ class Component extends DCLogic {
       const id = this._eventidPendiente;
       this._eventidPendiente = null;
       const ev = this._eventosVivos.find((e) => e.id === id);
-      if (!ev || !this.abrirEdicion(ev, { mes: D().monthKey(ev.fecha), abriendoEvento: false })) this.setState({ abriendoEvento: false });
+      /* Con ?sub= válido se abre directo en esa sub-pestaña del paso 2 (si no
+         está disponible para el evento, el asistente cae a la primera). */
+      const subUrl = new URLSearchParams(location.search).get('sub');
+      const extra = { mes: ev ? D().monthKey(ev.fecha) : '', abriendoEvento: false };
+      if (['detalles', 'asociado', 'banda', 'repertorio'].indexOf(subUrl) >= 0) Object.assign(extra, { paso: 2, sub: subUrl });
+      if (!ev || !this.abrirEdicion(ev, extra)) this.setState({ abriendoEvento: false });
       return;
     }
     const params = new URLSearchParams(location.search);
     const actual = params.get('eventid') || '';
     const quiere = s.draft && s.editId ? s.editId : '';
-    if (actual === quiere) return;
+    const subActualUrl = params.get('sub') || '';
+    const subQuiere = quiere && s.paso === 2 && s.sub ? s.sub : '';
+    if (actual === quiere && subActualUrl === subQuiere) return;
     if (quiere) params.set('eventid', quiere); else params.delete('eventid');
+    if (subQuiere) params.set('sub', subQuiere); else params.delete('sub');
     history.replaceState(history.state, '', location.pathname + '?' + params.toString());
   }
 

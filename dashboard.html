@@ -765,6 +765,17 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 const D = () => window.RepertorioData;
 const A = () => window.RepertorioAvisos;
 
+/* Secciones del dashboard: viajan en la URL (?sub=) para que al recargar se
+   abra la misma. 'inicio' es la inicial y no se escribe. Si la sección no
+   está disponible para la cuenta, cae a Inicio (ver vistaActual). */
+const VISTAS = ['inicio', 'publicar', 'megusta', 'notificaciones'];
+function vistaDeUrl() {
+  try {
+    const v = new URLSearchParams(location.search).get('sub');
+    return VISTAS.indexOf(v) >= 0 ? v : 'inicio';
+  } catch (e) { return 'inicio'; }
+}
+
 function todayIso() {
   const n = new Date();
   return D().iso(n.getFullYear(), n.getMonth(), n.getDate());
@@ -781,7 +792,7 @@ class Component extends DCLogic {
     borrFiltro: 'todos', borrSel: {},
     misOrgs: [], orgSwitcherAbierto: false, orgSwitcherBusqueda: '',
     songLikes: {}, songOverrides: {}, usuarios: {}, votosMes: null, votosTodo: false, votosAbierta: null,
-    vista: 'inicio', recordatorios: null
+    vista: vistaDeUrl(), recordatorios: null
   };
 
   componentDidMount() {
@@ -870,8 +881,19 @@ class Component extends DCLogic {
   /* Secciones del dashboard (menú bajo el título y barra inferior en el
      teléfono): Inicio = próximos eventos + disponibilidad, siempre la
      primera; las de admin muestran solo su tabla. */
+  /* La sección activa queda en ?sub=. replaceState: no suma entradas al botón Atrás. */
+  escribirSub(id) {
+    try {
+      const params = new URLSearchParams(location.search);
+      if (id && id !== 'inicio') params.set('sub', id); else params.delete('sub');
+      const q = params.toString();
+      history.replaceState(history.state, '', location.pathname + (q ? '?' + q : '') + location.hash);
+    } catch (e) { /* sin history (vista previa): se ignora */ }
+  }
+
   irAVista(id) {
     this.setState({ vista: id, masAbierto: false });
+    this.escribirSub(id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -1263,6 +1285,7 @@ class Component extends DCLogic {
       })).concat([{ label: 'Fechas no disponibles', href: '#disponibilidad', onClick: (e) => {
         if (e && e.preventDefault) e.preventDefault();
         this.setState({ masAbierto: false, vista: 'inicio' });
+        this.escribirSub('inicio');
         setTimeout(() => {
           const el = document.getElementById('disponibilidad');
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
