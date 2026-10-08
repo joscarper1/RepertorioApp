@@ -5,7 +5,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const A = require('../avisos.js');
-const { procesarCola, procesarNuevos, procesarBitacora, procesarRecordatorios } = require('../.github/avisos/enviar.js');
+const { procesarCola, procesarNuevos, procesarBitacora, procesarRecordatorios, procesarDeclinaciones } = require('../.github/avisos/enviar.js');
 
 const org = { id: 'o1', name: 'Templo Betel', slug: 'templobetel' };
 const slot = (tipo, musicianId, nombre) => ({ tipo, musicianId, nombre: nombre === undefined ? 'X' : nombre });
@@ -140,6 +140,17 @@ function baseFalsa(inicial) {
   const ref = (p) => ({
     child: (k) => ref(p.concat(String(k).split('/'))),
     orderByChild: (campo) => ({
+      startAt: (desde) => {
+        const rango = (hasta) => ({
+          once: async () => {
+            const v = get(p) || {};
+            const f = {};
+            Object.keys(v).forEach((k) => { const x = v[k] && v[k][campo]; if (x !== undefined && x >= desde && (hasta === undefined || x <= hasta)) f[k] = v[k]; });
+            return snap(f, p[p.length - 1]);
+          }
+        });
+        return Object.assign(rango(undefined), { endAt: (hasta) => rango(hasta) });
+      },
       equalTo: (val) => ({
         once: async () => {
           const v = get(p) || {};
@@ -488,4 +499,77 @@ test('procesarRecordatorios: envía una vez, no repite y suelta el reclamo si fa
   assert.equal(b2.data.recordatoriosEnviados && b2.data.recordatoriosEnviados.r1 && b2.data.recordatoriosEnviados.r1['u-ana'] && b2.data.recordatoriosEnviados.r1['u-ana'].dia, undefined);
   r = await procesarRecordatorios(b2.root, ok, { ahora: ahora + 30 * 60 * 1000 });
   assert.equal(r.enviados, 1);
+});
+
+
+/* --- Declinaciones (aviso a administradores) --- */
+const dec = (tipo, musicianId, nombre, motivo) => Object.assign(slot(tipo, musicianId, nombre), { estadoConfirmacion: 'rechazado', motivoDeclinacion: motivo });
+const evDec = (id, fecha, banda, extra) => Object.assign({ id, fecha, hora: '9:00 am', servicio: 'Servicio Dominical', organizationId: 'o1', estado: 'PUBLICADO', banda }, extra || {});
+
+test('declinaciones: solo publicados de hoy en adelante con persona asignada', () => {
+  const evs = [
+    evDec('d1', '2026-10-12', [dec('Guitarra', 'ana', 'Ana López', 'Viaje'), slot('Piano', 'beto')]),
+    evDec('d2', '2026-10-01', [dec('Bajo', 'ana', 'Ana López')]),
+    evDec('d3', '2026-10-13', [dec('Bajo', 'ana', 'Ana López')], { estado: 'BORRADOR' }),
+    evDec('d4', '2026-10-14', [Object.assign(dec('Voz', 'x', ''), { nombre: '' })])
+  ];
+  const r = A.declinacionesActuales(evs, '2026-10-08');
+  assert.deepEqual(r.map((d) => d.ev.id + ':' + d.clave), ['d1:0_ana']);
+});
+
+test('declinaciones: un correo agrupado, con urgencia y motivo', () => {
+  const evs = [
+    evDec('d1', '2026-10-10', [dec('Guitarra', 'ana', 'Ana López', 'Estaré de viaje')]),
+    evDec('d2', '2026-11-20', [dec('Bajo', 'beto', 'Beto Ruiz', '')])
+  ];
+  const items = A.declinacionesActuales(evs, '2026-10-08');
+  const uno = A.armarAvisoDeclinaciones(org, items.slice(0, 1), '2026-10-08');
+  assert.equal(uno.asunto, '⚠ Declinó: Servicio Dominical (Sáb 10 oct) – Faltan 2 días – Templo Betel');
+  assert.ok(uno.texto.startsWith('Ana López declinó su participación en Servicio Dominical (Sáb 10 oct, 9:00 am).'));
+  assert.ok(uno.texto.includes('Puesto: Guitarra\nMotivo: Estaré de viaje\n⚠ Faltan 2 días'));
+  assert.ok(uno.texto.includes('group=templobetel&eventid=d1'));
+  assert.ok(uno.texto.endsWith('desde ahí puedes desactivarlo.'));
+  const varios = A.armarAvisoDeclinaciones(org, items, '2026-10-08');
+  assert.equal(varios.asunto, '⚠ 2 declinaciones de participación – Templo Betel');
+  assert.ok(varios.texto.includes('• Beto Ruiz – Servicio Dominical (Vie 20 nov, 9:00 am)'));
+  const lejos = A.armarAvisoDeclinaciones(org, items.slice(1), '2026-10-08');
+  assert.ok(lejos.asunto.startsWith('Declinó: ') && !lejos.urgente);
+});
+
+test('declinaciones: activada por defecto, solo la apaga un false; las demás siguen apagadas', () => {
+  assert.equal(A.prefActiva({ avisos: {} }, 'declinaciones'), true);
+  assert.equal(A.prefActiva({}, 'declinaciones'), true);
+  assert.equal(A.prefActiva({ avisos: { declinaciones: false } }, 'declinaciones'), false);
+  assert.equal(A.prefActiva({ avisos: {} }, 'bitacoraEventos'), false);
+  assert.equal(A.prefActiva({ avisos: { bitacoraEventos: true } }, 'bitacoraEventos'), true);
+});
+
+test('procesarDeclinaciones: avisa a admins que no la apagaron, una vez, y de nuevo si vuelve a declinar', async () => {
+  const b = baseFalsa({
+    organizations: { o1: { name: org.name, slug: org.slug } },
+    users: {
+      a1: { email: 'a1@x.com', role: 'admin', organizationIds: { o1: true } },
+      a2: { email: 'a2@x.com', role: 'admin', organizationIds: { o1: true }, avisos: { declinaciones: false } },
+      a3: { email: 'a3@x.com', role: 'admin', organizationIds: { o2: true }, avisos: { declinaciones: true } }
+    },
+    events: { d1: evDec('d1', '2026-10-12', [dec('Guitarra', 'ana', 'Ana López', 'Viaje')]) }
+  });
+  const enviados = [];
+  const ok = async (m) => { enviados.push(m); };
+  const ahora = SV(2026, 10, 8, 10, 0);
+  let r = await procesarDeclinaciones(b.root, ok, { ahora, hoy: '2026-10-08' });
+  assert.equal(r.declinaciones, 1);
+  assert.deepEqual(enviados.map((m) => m.para), ['a1@x.com']);
+  assert.ok(Object.values(b.data.colaAvisos).some((h) => h.tipo === 'declinacion' && h.cambios === 1 && h.enviados === 1));
+  r = await procesarDeclinaciones(b.root, ok, { ahora: ahora + 1800000, hoy: '2026-10-08' });
+  assert.equal(r.declinaciones, 0);
+  assert.equal(enviados.length, 1);
+  /* Cambia a "Sí": se borra la marca; si vuelve a declinar, avisa otra vez. */
+  b.data.events.d1.banda[0].estadoConfirmacion = 'aceptado';
+  await procesarDeclinaciones(b.root, ok, { ahora: ahora + 3600000, hoy: '2026-10-08' });
+  assert.equal(b.data.declinacionesAvisadas && b.data.declinacionesAvisadas.d1 && b.data.declinacionesAvisadas.d1['0_ana'], undefined);
+  b.data.events.d1.banda[0].estadoConfirmacion = 'rechazado';
+  r = await procesarDeclinaciones(b.root, ok, { ahora: ahora + 5400000, hoy: '2026-10-08' });
+  assert.equal(r.declinaciones, 1);
+  assert.equal(enviados.length, 2);
 });

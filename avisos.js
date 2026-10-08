@@ -305,10 +305,18 @@
 
   function quierePref(u, clave) { return !!(u && u.avisos && u.avisos[clave] === true); }
 
+  /* Preferencias que nacen activadas: rigen mientras la cuenta no las haya
+     apagado (se guarda un false explícito, ver R.setPreferenciaAviso). */
+  var PREFS_ACTIVAS_POR_DEFECTO = { declinaciones: true };
+  function prefActiva(u, clave) {
+    var v = u && u.avisos ? u.avisos[clave] : undefined;
+    return PREFS_ACTIVAS_POR_DEFECTO[clave] ? v !== false : v === true;
+  }
+
   /* Administradores de la organización con la preferencia activada (con correo). */
   function adminsConPref(usuarios, orgId, clave) {
     return (usuarios || []).filter(function (u) {
-      return u && u.uid && u.role === 'admin' && u.email && orgIdsDe(u).indexOf(orgId) >= 0 && quierePref(u, clave);
+      return u && u.uid && u.role === 'admin' && u.email && orgIdsDe(u).indexOf(orgId) >= 0 && prefActiva(u, clave);
     });
   }
 
@@ -596,7 +604,97 @@
     return { asunto: 'Recordatorio: ' + (ev.servicio || 'Evento'), texto: texto, html: html, linea: linea, url: url, urlConfirmar: urlConfirmar };
   }
 
+  /* --- Aviso a administradores: declinaciones ---
+     Cuando alguien declina un evento publicado en el que sigue asignado
+     (puesto con estadoConfirmacion 'rechazado'), el workflow avisa por correo
+     a los administradores de la organización que activaron la preferencia
+     'declinaciones' (users/{uid}/avisos/declinaciones; activada por defecto,
+     solo la apaga un false explícito). Un correo por corrida
+     con todas las declinaciones nuevas. Lo avisado queda en
+     /declinacionesAvisadas/{eventId}/{clave}; si la persona vuelve a "Sí" o
+     la reemplazan, la marca se borra y una nueva declinación avisa otra vez. */
+  var DECLINACIONES_PATH = 'declinacionesAvisadas';
+  var PREF_DECLINACIONES = 'declinaciones';
+  /* Eventos a menos de estos días se marcan como urgentes. */
+  var DIAS_URGENTE = 7;
+
+  function claveDeclinacion(slot, idx) {
+    return idx + '_' + String((slot && (slot.musicianId || slot.nombre)) || '').trim().replace(/[.$#\[\]\/\s]/g, '_');
+  }
+
+  /* Puestos con nombre que declinaron en eventos PUBLICADOS de `hoy` en
+     adelante: [{ev, slot, clave}]. */
+  function declinacionesActuales(eventos, hoy) {
+    var out = [];
+    (eventos || []).forEach(function (ev) {
+      if (!ev || estadoEvento(ev) !== 'PUBLICADO' || (ev.fecha || '') < (hoy || '')) return;
+      (ev.banda || []).forEach(function (slot, idx) {
+        if (slot && nombreValido(slot) && slot.estadoConfirmacion === 'rechazado') out.push({ ev: ev, slot: slot, clave: claveDeclinacion(slot, idx) });
+      });
+    });
+    return out.sort(function (a, b) { return ordenEventos(a.ev, b.ev); });
+  }
+
+  function textoFaltan(dias) {
+    return dias <= 0 ? 'Es hoy' : (dias === 1 ? 'Es mañana' : 'Faltan ' + dias + ' días');
+  }
+
+  /* Correo con una o varias declinaciones nuevas. items: [{ev, slot}]. */
+  function armarAvisoDeclinaciones(org, items, hoy) {
+    if (!items || !items.length) return null;
+    hoy = hoy || hoyIso();
+    var orgNombre = (org && (org.name || org.nombre)) || 'la organización';
+    var filas = items.map(function (it) {
+      var dias = diasParaVencer(it.ev.fecha, hoy);
+      var motivo = String(it.slot.motivoDeclinacion || '').trim();
+      return {
+        persona: String(it.slot.nombre || '').trim(),
+        evento: (it.ev.servicio || 'Evento') + ' (' + diaCorto(it.ev.fecha) + (it.ev.hora ? ', ' + it.ev.hora : '') + ')',
+        puesto: it.slot.rol ? it.slot.tipo + ' · ' + it.slot.rol : (it.slot.tipo || ''),
+        motivo: motivo, dias: dias,
+        urgente: dias !== null && dias <= DIAS_URGENTE,
+        url: SITIO_URL + 'index.html?group=' + encodeURIComponent((org && org.slug) || '') + '&eventid=' + encodeURIComponent(it.ev.id)
+      };
+    });
+    var urgente = filas.some(function (f) { return f.urgente; });
+    var unica = filas.length === 1;
+    var asunto;
+    if (unica) {
+      var f0 = filas[0];
+      asunto = (f0.urgente ? '⚠ ' : '') + 'Declinó: ' + f0.evento.replace(/, [^)]*\)$/, ')') + (f0.urgente ? ' – ' + textoFaltan(f0.dias) : '') + ' – ' + orgNombre;
+    } else {
+      asunto = (urgente ? '⚠ ' : '') + filas.length + ' declinaciones de participación – ' + orgNombre;
+    }
+    var intro = unica
+      ? filas[0].persona + ' declinó su participación en ' + filas[0].evento + '.'
+      : 'Estas personas declinaron su participación en eventos de ' + orgNombre + ':';
+    var cierre = unica
+      ? 'El puesto sigue asignado a ' + filas[0].persona + '. Revisa el evento y asigna un reemplazo si es necesario.'
+      : 'Los puestos siguen asignados a quienes declinaron. Revisa los eventos y asigna reemplazos si es necesario.';
+    var url = urlCalendario(org, items[0].ev.fecha);
+    var lineasTxt = filas.map(function (f) {
+      var l = unica ? [] : ['• ' + f.persona + ' – ' + f.evento];
+      l.push((unica ? '' : '  ') + 'Puesto: ' + f.puesto);
+      if (f.motivo) l.push((unica ? '' : '  ') + 'Motivo: ' + f.motivo);
+      if (f.urgente) l.push((unica ? '' : '  ') + '⚠ ' + textoFaltan(f.dias) + ': hay que cubrirlo pronto');
+      l.push((unica ? '' : '  ') + 'Revisar evento: ' + f.url);
+      return l.join('\n');
+    });
+    var texto = intro + '\n\n' + lineasTxt.join('\n\n') + '\n\n' + cierre + '\n\nVer calendario: ' + url + '\n\n' + PIE_PREF;
+    var html = '<p>' + escaparHtml(intro) + '</p>' + filas.map(function (f) {
+      return '<div style="margin:0 0 14px">' + (unica ? '' : '<p style="margin:0 0 2px;font-weight:700">' + escaparHtml(f.persona + ' – ' + f.evento) + '</p>') +
+        '<p style="margin:0">Puesto: ' + escaparHtml(f.puesto) + '</p>' +
+        (f.motivo ? '<p style="margin:0">Motivo: ' + escaparHtml(f.motivo) + '</p>' : '') +
+        (f.urgente ? '<p style="margin:0;color:#b3261e;font-weight:700">⚠ ' + escaparHtml(textoFaltan(f.dias)) + ': hay que cubrirlo pronto</p>' : '') +
+        '<p style="margin:0"><a href="' + escaparHtml(f.url) + '">Revisar evento</a></p></div>';
+    }).join('') + '<p>' + escaparHtml(cierre) + '</p><p><a href="' + escaparHtml(url) + '">Ver calendario</a></p>' +
+      '<p style="color:#8a867f;font-size:12px">' + escaparHtml(PIE_PREF) + '</p>';
+    return { asunto: asunto, texto: texto, html: html, url: url, urgente: urgente, filas: filas };
+  }
+
   var api = {
+    DECLINACIONES_PATH: DECLINACIONES_PATH, PREF_DECLINACIONES: PREF_DECLINACIONES, DIAS_URGENTE: DIAS_URGENTE,
+    claveDeclinacion: claveDeclinacion, declinacionesActuales: declinacionesActuales, armarAvisoDeclinaciones: armarAvisoDeclinaciones,
     RECORDATORIOS_PATH: RECORDATORIOS_PATH, OPCIONES_RECORDATORIO: OPCIONES_RECORDATORIO, RECORDATORIOS_DEFECTO: RECORDATORIOS_DEFECTO,
     recordatoriosDe: recordatoriosDe, alternarRecordatorio: alternarRecordatorio, sinRecordatorios: sinRecordatorios,
     inicioEvento: inicioEvento, momentoRecordatorio: momentoRecordatorio, enVentanaRecordatorios: enVentanaRecordatorios,
@@ -612,7 +710,7 @@
     PREF_NUEVOS: PREF_NUEVOS, VENTANA_NUEVOS_MS: VENTANA_NUEVOS_MS, quiereAvisoNuevos: quiereAvisoNuevos,
     nuevosPorAvisar: nuevosPorAvisar, adminsParaNuevos: adminsParaNuevos, armarAvisoNuevoUsuario: armarAvisoNuevoUsuario,
     BITACORA_PATH: BITACORA_PATH, PREF_BITACORA: PREF_BITACORA, PREF_REPERTORIO: PREF_REPERTORIO, ACCIONES_BITACORA: ACCIONES_BITACORA,
-    quierePref: quierePref, adminsConPref: adminsConPref, cancionesDe: cancionesDe, cambioRepertorio: cambioRepertorio,
+    quierePref: quierePref, prefActiva: prefActiva, PREFS_ACTIVAS_POR_DEFECTO: PREFS_ACTIVAS_POR_DEFECTO, adminsConPref: adminsConPref, cancionesDe: cancionesDe, cambioRepertorio: cambioRepertorio,
     entradaBitacora: entradaBitacora, entradaValida: entradaValida, fechaHora: fechaHora,
     armarAvisoBitacora: armarAvisoBitacora, armarAvisoRepertorio: armarAvisoRepertorio
   };

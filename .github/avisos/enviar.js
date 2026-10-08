@@ -13,7 +13,9 @@
    y a los que activaron la bitácora de cambios de eventos o el aviso de
    repertorio actualizado (procesarBitacora: lee /bitacoraEventos), y manda
    los recordatorios de eventos a quien los activó en Dashboard →
-   Notificaciones (procesarRecordatorios: 7:00 a. m., hora de El Salvador).
+   Notificaciones (procesarRecordatorios: 7:00 a. m., hora de El Salvador),
+   y avisa a los administradores que lo pidieron cuando alguien declina un
+   evento (procesarDeclinaciones).
 
    El repositorio es público y sus logs también: aquí NUNCA se imprimen
    correos, teléfonos ni nombres, solo conteos.
@@ -59,6 +61,24 @@ function crearLector(root, hoy) {
     }
     return porOrg[orgId] && Object.assign({ usuarios, hoy: hoy || A.hoyIso() }, porOrg[orgId]);
   };
+}
+
+/* Eventos de `desde` en adelante (hasta `hasta`, si se da), de todas las
+   organizaciones y agrupados por organización: [orgId] → [evento]. Pide
+   solo ese rango con el índice de `fecha` (.indexOn de events), para no
+   descargar todo el histórico. */
+async function eventosDesde(root, desde, hasta) {
+  let q = root.child('events').orderByChild('fecha').startAt(desde);
+  if (hasta) q = q.endAt(hasta);
+  const porOrg = {};
+  lista(await q.once('value')).forEach((ev) => { (porOrg[ev.organizationId] = porOrg[ev.organizationId] || []).push(ev); });
+  return porOrg;
+}
+
+function sumarDias(iso, n) {
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 /* Toma el pedido para esta ejecución (transacción: si dos ejecuciones
@@ -347,18 +367,21 @@ async function procesarRecordatorios(root, enviarCorreo, opciones = {}) {
   const usuarios = [];
   s.forEach((c) => { const v = c.val() || {}; v.uid = c.key; usuarios.push(v); });
 
+  /* Una sola lectura de los eventos de los próximos días (el más lejano es el de "una semana antes"). */
+  const hoy = A.hoyIso(new Date(ahora));
+  const eventosPorOrg = await eventosDesde(root, hoy, sumarDias(hoy, 8));
   for (const orgId of orgs) {
     if (resumen.credencialesMalas) break;
+    if (!(eventosPorOrg[orgId] || []).length) continue;
     /* Sin nadie con recordatorios y vínculo en esta organización no se leen sus eventos. */
     if (!usuarios.some((u) => u.email && A.orgIdsDe(u).indexOf(orgId) >= 0 && ((u.musicianLinks || {})[orgId]) &&
       !A.sinRecordatorios(A.recordatoriosDe(u)))) continue;
-    const [o, m, e] = await Promise.all([
+    const [o, m] = await Promise.all([
       root.child('organizations').child(orgId).once('value'),
-      root.child('musicians').orderByChild('organizationId').equalTo(orgId).once('value'),
-      root.child('events').orderByChild('organizationId').equalTo(orgId).once('value')
+      root.child('musicians').orderByChild('organizationId').equalTo(orgId).once('value')
     ]);
     const org = Object.assign({}, o.val(), { id: orgId });
-    for (const f of A.planRecordatorios({ org, usuarios, musicos: lista(m), eventos: lista(e) }, ahora)) {
+    for (const f of A.planRecordatorios({ org, usuarios, musicos: lista(m), eventos: eventosPorOrg[orgId] }, ahora)) {
       resumen.candidatos++;
       const ref = root.child(A.RECORDATORIOS_PATH).child(f.ev.id).child(f.uid).child(f.opcion);
       if (prueba) continue;
@@ -376,6 +399,82 @@ async function procesarRecordatorios(root, enviarCorreo, opciones = {}) {
         console.error('Error de envío (' + (err && (err.responseCode || err.code) || 'desconocido') + ')');
       }
     }
+  }
+  return resumen;
+}
+
+/* Declinaciones de participación (ver A.declinacionesActuales): un correo
+   por organización con todas las declinaciones nuevas a los administradores
+   que activaron el aviso. Lo ya avisado se anota en
+   declinacionesAvisadas/{eventId}/{clave}; la marca se borra cuando el
+   puesto deja de estar declinado (la persona cambió a "Sí" o la
+   reemplazaron), para que una nueva declinación vuelva a avisar. */
+async function procesarDeclinaciones(root, enviarCorreo, opciones = {}) {
+  const ahora = opciones.ahora || Date.now();
+  const prueba = !!opciones.prueba;
+  const hoy = opciones.hoy || A.hoyIso(new Date(ahora));
+  const resumen = { declinaciones: 0, enviados: 0, errores: 0, credencialesMalas: false };
+  const s = await root.child('users').once('value');
+  const usuarios = [];
+  s.forEach((c) => { const v = c.val() || {}; v.uid = c.key; usuarios.push(v); });
+  const orgIds = new Set();
+  usuarios.forEach((u) => { if (u.role === 'admin' && u.email && A.prefActiva(u, A.PREF_DECLINACIONES)) A.orgIdsDe(u).forEach((k) => orgIds.add(k)); });
+
+  if (!orgIds.size) return resumen;
+  /* Solo eventos de hoy en adelante, en una sola lectura (los pasados ya no se revisan). */
+  const eventosPorOrg = await eventosDesde(root, hoy);
+  for (const orgId of orgIds) {
+    if (resumen.credencialesMalas) break;
+    const admins = A.adminsConPref(usuarios, orgId, A.PREF_DECLINACIONES);
+    if (!admins.length) continue;
+    const eventos = eventosPorOrg[orgId] || [];
+    const o = await root.child('organizations').child(orgId).once('value');
+    if (!o.val()) continue;
+    const org = Object.assign({}, o.val(), { id: orgId });
+    const actuales = A.declinacionesActuales(eventos, hoy);
+    const vigentes = {};
+    actuales.forEach((d) => { vigentes[d.ev.id + '/' + d.clave] = true; });
+    const reg = root.child(A.DECLINACIONES_PATH);
+    const nuevas = [];
+    /* Una sola lectura de las marcas; se borran las de puestos que ya no están declinados. */
+    const marcasTodas = (await reg.once('value')).val() || {};
+    for (const ev of eventos) {
+      for (const k of Object.keys(marcasTodas[ev.id] || {})) {
+        if (!vigentes[ev.id + '/' + k] && !prueba) await reg.child(ev.id).child(k).remove();
+      }
+    }
+    for (const d of actuales) {
+      const ref = reg.child(d.ev.id).child(d.clave);
+      if (prueba) { const m = (await ref.once('value')).val(); if (!m) nuevas.push(d); continue; }
+      if (await reclamarRecordatorio(ref, ahora)) nuevas.push(d);
+    }
+    if (!nuevas.length) continue;
+    resumen.declinaciones += nuevas.length;
+    const aviso = A.armarAvisoDeclinaciones(org, nuevas, hoy);
+    let env = 0, err = 0;
+    for (const a of admins) {
+      if (resumen.credencialesMalas) { err++; continue; }
+      try {
+        if (!prueba) await enviarCorreo({ para: a.email, asunto: aviso.asunto, texto: aviso.texto, html: aviso.html, remitente: org.name || 'Repertorio' });
+        env++;
+      } catch (ex) {
+        err++;
+        if (ex && (ex.responseCode === 535 || ex.code === 'EAUTH')) resumen.credencialesMalas = true;
+        console.error('Error de envío (' + (ex && (ex.responseCode || ex.code) || 'desconocido') + ')');
+      }
+    }
+    resumen.enviados += env; resumen.errores += err;
+    if (prueba) continue;
+    for (const d of nuevas) {
+      const ref = reg.child(d.ev.id).child(d.clave);
+      /* Si no llegó a nadie se suelta para reintentar en la próxima corrida. */
+      if (err && !env) await ref.remove(); else await ref.set({ tomado: ahora, enviado: Date.now() });
+    }
+    await root.child(A.COLA_PATH).push({
+      orgId, tipo: 'declinacion', cambios: nuevas.length, pedidoPor: null, creado: ahora, procesado: Date.now(),
+      estado: err && !env ? 'error' : 'enviado', enviados: env, errores: err,
+      fallo: resumen.credencialesMalas && err ? 'gmail-credenciales' : null
+    });
   }
   return resumen;
 }
@@ -436,7 +535,9 @@ async function main() {
       ' · entradas inválidas: ' + b.invalidos);
     const rec = await procesarRecordatorios(admin.database().ref(), enviarCorreo, { prueba });
     console.log('Recordatorios: ' + rec.candidatos + ' por enviar · enviados: ' + rec.enviados + ' · ya enviados: ' + rec.omitidos + ' · errores: ' + rec.errores);
-    r.credencialesMalas = r.credencialesMalas || n.credencialesMalas || b.credencialesMalas || rec.credencialesMalas;
+    const dec = await procesarDeclinaciones(admin.database().ref(), enviarCorreo, { prueba });
+    console.log('Declinaciones nuevas: ' + dec.declinaciones + ' · correos a administradores: ' + dec.enviados + ' · errores: ' + dec.errores);
+    r.credencialesMalas = r.credencialesMalas || n.credencialesMalas || b.credencialesMalas || rec.credencialesMalas || dec.credencialesMalas;
     console.log('Pedidos: ' + r.pedidos + ' · correos enviados: ' + r.enviados + ' · errores: ' + r.errores +
       ' · sin correo: ' + r.sinCorreo + ' · sin eventos: ' + r.sinEventos + ' · borrados de la cola: ' + r.borrados + (prueba ? ' (prueba, sin enviar)' : ''));
     if (r.credencialesMalas) console.log('::error::Gmail rechazó la credencial (535). ' + diagnosticoGmail(process.env.GMAIL_USER, process.env.GMAIL_APP_PASSWORD));
@@ -451,4 +552,4 @@ if (require.main === module) {
   main().catch((e) => { console.error(e && e.message ? e.message : 'Error'); process.exit(1); });
 }
 
-module.exports = { procesarCola, procesarNuevos, procesarBitacora, procesarRecordatorios, limpiarCredenciales, diagnosticoGmail };
+module.exports = { procesarCola, procesarNuevos, procesarBitacora, procesarRecordatorios, procesarDeclinaciones, limpiarCredenciales, diagnosticoGmail };

@@ -37,7 +37,7 @@
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
 <script src="repertorio-data.js?v=20261008a"></script>
-<script src="avisos.js?v=20261008a"></script>
+<script src="avisos.js?v=20261008b"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -2940,10 +2940,11 @@ class Component extends DCLogic {
         if (h.sinEventos) partes.push(h.sinEventos + ' sin eventos próximos');
         if (h.fallo) partes.push(AV && AV.textoFallo ? AV.textoFallo(h.fallo) : 'motivo: ' + h.fallo);
       }
-      if (h.tipo === 'nuevoUsuario' || h.tipo === 'bitacora') partes[2] = 'aviso automático a administradores';
+      if (h.tipo === 'nuevoUsuario' || h.tipo === 'bitacora' || h.tipo === 'declinacion') partes[2] = 'aviso automático a administradores';
       return {
         titulo: h.tipo === 'nuevoUsuario' ? 'Usuario nuevo: ' + nombreUid(h.uid)
           : h.tipo === 'bitacora' ? 'Bitácora: ' + (h.cambios || 0) + (h.cambios === 1 ? ' cambio de evento' : ' cambios de eventos')
+          : h.tipo === 'declinacion' ? 'Declinaciones: ' + (h.cambios || 0) + (h.cambios === 1 ? ' persona declinó' : ' personas declinaron')
           : h.tipo === 'reenvio' ? 'Reenvío a ' + nombreUid(h.uid) : 'Publicación de ' + nEv + (nEv === 1 ? ' evento' : ' eventos'),
         badge: est[0], badgeClase: 'badge ' + est[1],
         detalle: partes.filter(Boolean).join(' · ')
@@ -3035,7 +3036,7 @@ class Component extends DCLogic {
       tabUsuarios: s.activeTab === 'usuarios',
       tabRepertorio: s.activeTab === 'repertorio',
       tabAvisos: s.activeTab === 'avisos',
-      /* Preferencias propias (todas apagadas por defecto): se leen de la
+      /* Preferencias propias (apagadas por defecto, salvo "declinaciones"): se leen de la
          lista en vivo de usuarios (s.userDoc es la copia del inicio de sesión). */
       avisoPrefs: (() => {
         const yo = s.userDoc ? ((s.usuarios || []).find((u) => u.uid === s.userDoc.uid) || s.userDoc) : null;
@@ -3051,11 +3052,14 @@ class Component extends DCLogic {
             si: 'Te avisaremos cuando se actualice un repertorio.', no: 'Ya no recibirás avisos de repertorio.' },
           { clave: AV ? AV.PREF_BITACORA : 'bitacoraEventos', titulo: 'Enviarme la bitácora de cambios de eventos',
             ayuda: aTu + ' cada vez que un evento se modifica, se mueve, se cancela o se archiva: quién lo hizo y cuándo, el día y nombre del evento y su número de versión.' + demora,
-            si: 'Te enviaremos la bitácora de cambios de eventos.', no: 'Ya no recibirás la bitácora de cambios.' }
+            si: 'Te enviaremos la bitácora de cambios de eventos.', no: 'Ya no recibirás la bitácora de cambios.' },
+          { clave: AV ? AV.PREF_DECLINACIONES : 'declinaciones', titulo: 'Avisarme cuando alguien declina su participación',
+            ayuda: aTu + ' cuando una persona declina un evento publicado en el que sigue asignada: quién, qué evento, su motivo y el puesto que queda por cubrir (con urgencia si faltan menos de 7 días). Si varias personas declinan, llega un solo correo con todas. Viene activado por defecto. Sale con el envío automático de GitHub Actions, así que puede tardar hasta unos 30 minutos.',
+            si: 'Te avisaremos cuando alguien declina su participación.', no: 'Ya no recibirás avisos de declinaciones.' }
         ];
         return prefs.map((p) => ({
           titulo: p.titulo, ayuda: p.ayuda,
-          activo: pend[p.clave] != null ? pend[p.clave] : !!(yo && yo.avisos && yo.avisos[p.clave] === true),
+          activo: pend[p.clave] != null ? pend[p.clave] : (AV && AV.prefActiva ? AV.prefActiva(yo, p.clave) : !!(yo && yo.avisos && yo.avisos[p.clave] === true)),
           guardando: pend[p.clave] != null,
           onCambio: (e) => {
             if (!yo) return;

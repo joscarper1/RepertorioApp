@@ -1711,12 +1711,13 @@
 
   function esUsuarioSinCorreo(u) { return !!(u && u.sinCorreo && !u.email); }
 
-  /* Preferencias de avisos de una cuenta (users/{uid}/avisos/{clave}); por
-     ahora 'nuevosUsuarios' (ver avisos.js). false borra la clave. */
+  /* Preferencias de avisos de una cuenta (users/{uid}/avisos/{clave}), ver
+     avisos.js. false borra la clave, salvo en las que nacen activadas
+     ('declinaciones'): ahí se guarda el false para que quede apagada. */
   function setPreferenciaAviso(uid, clave, valor, cb) {
     var root = dbRoot();
     if (!root || !uid || !clave) { cb && cb(false); return; }
-    root.child(USERS_PATH).child(uid).child('avisos').child(clave).set(valor ? true : null).then(function () { cb && cb(true); }, function (err) {
+    root.child(USERS_PATH).child(uid).child('avisos').child(clave).set(valor ? true : (clave === 'declinaciones' ? false : null)).then(function () { cb && cb(true); }, function (err) {
       console.error('Firebase setPreferenciaAviso rechazado:', err && err.code, err && err.message, err);
       cb && cb(false);
     });
