@@ -123,7 +123,7 @@ async function procesarCola(root, enviarCorreo, opciones = {}) {
       const datos = valido ? await datosDe(p.v.orgId) : null;
       if (!datos) fallo = valido ? 'organizacion-inexistente' : 'pedido-invalido';
       else {
-        const filas = A.planAvisos({ tipo: p.v.tipo, eventIds: p.v.eventIds, uid: p.v.uid, orgId: p.v.orgId }, datos);
+        const filas = A.planAvisos({ tipo: p.v.tipo, eventIds: p.v.eventIds, musicianIds: p.v.musicianIds, uid: p.v.uid, orgId: p.v.orgId }, datos);
         for (const f of filas) {
           if (!f.aviso) { res.sinEventos++; res.resultados[f.uid] = 'sin_eventos'; continue; }
           if (!f.email) { res.sinCorreo++; res.resultados[f.uid] = 'sin_correo'; continue; }

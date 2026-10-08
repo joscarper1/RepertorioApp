@@ -104,6 +104,13 @@
     return out;
   }
 
+  /* musicianId de quienes están en `despues` y no estaban en `antes` (una
+     persona nueva o un reemplazo en un evento ya publicado). */
+  function nuevosIntegrantes(antes, despues) {
+    var previos = integrantesDe(antes);
+    return Object.keys(integrantesDe(despues)).filter(function (mid) { return !previos[mid]; });
+  }
+
   function ordenEventos(a, b) {
     if ((a.fecha || '') !== (b.fecha || '')) return (a.fecha || '') < (b.fecha || '') ? -1 : 1;
     return minutosHora(a.hora) - minutosHora(b.hora);
@@ -208,6 +215,10 @@
         if (ids.indexOf(ev.id) < 0 || estadoEvento(ev) !== 'PUBLICADO') return;
         Object.keys(integrantesDe(ev)).forEach(function (mid) { personas[mid] = true; });
       });
+      /* Un evento ya publicado que cambió de integrantes avisa solo a quienes
+         se sumaron (pedido.musicianIds), no a todo el equipo. */
+      var soloEstos = pedido.musicianIds && (Array.isArray(pedido.musicianIds) ? pedido.musicianIds : Object.keys(pedido.musicianIds));
+      if (soloEstos) Object.keys(personas).forEach(function (mid) { if (soloEstos.indexOf(mid) < 0) delete personas[mid]; });
     }
     var musicoPorId = {};
     (datos.musicos || []).forEach(function (m) { if (m && m.id) musicoPorId[m.id] = m; });
@@ -702,7 +713,7 @@
     SITIO_URL: SITIO_URL, REPO: REPO, RAMA: RAMA, WORKFLOW_ENVIO: WORKFLOW_ENVIO, WORKFLOW_RESPALDO: WORKFLOW_RESPALDO,
     COLA_PATH: COLA_PATH, CONFIG_PATH: CONFIG_PATH, DIAS_AVISO_TOKEN: DIAS_AVISO_TOKEN,
     estadoEvento: estadoEvento, hoyIso: hoyIso, diaCorto: diaCorto, minutosHora: minutosHora,
-    puestosDePersona: puestosDePersona, participa: participa, integrantesDe: integrantesDe,
+    puestosDePersona: puestosDePersona, participa: participa, integrantesDe: integrantesDe, nuevosIntegrantes: nuevosIntegrantes,
     eventosDePersona: eventosDePersona, lineaEvento: lineaEvento, primerNombre: primerNombre,
     urlCalendario: urlCalendario, armarAviso: armarAviso, planAvisos: planAvisos,
     normalizarTelefono: normalizarTelefono, telefonoValido: telefonoValido, formatoTelefono: formatoTelefono,
@@ -764,6 +775,10 @@
     if (pedido.tipo === 'publicacion') {
       doc.eventIds = {};
       pedido.eventIds.forEach(function (id) { doc.eventIds[id] = true; });
+      if (pedido.musicianIds && pedido.musicianIds.length) {
+        doc.musicianIds = {};
+        pedido.musicianIds.forEach(function (id) { doc.musicianIds[id] = true; });
+      }
     } else doc.uid = pedido.uid;
     var ref = r.child(COLA_PATH).push();
     return ref.set(doc).then(function () { return ref.key; });
@@ -1078,9 +1093,11 @@
   }
 
   /* Tras publicar: eventIds son solo los que pasaron a PUBLICADO. */
-  function alPublicar(orgId, eventIds) {
+  function alPublicar(orgId, eventIds, musicianIds) {
     if (!orgId || !eventIds || !eventIds.length) return Promise.resolve();
     var pedido = { orgId: orgId, tipo: 'publicacion', eventIds: eventIds };
+    /* Con musicianIds: evento ya publicado que sumó personas; solo a ellas. */
+    if (musicianIds && musicianIds.length) pedido.musicianIds = musicianIds;
     return api.leerDatos(orgId).then(function (datos) {
       /* La lectura puede llegar antes de que el listener vea el cambio de
          estado: los recién publicados cuentan como PUBLICADO. */
@@ -1089,12 +1106,27 @@
       if (!filas.length) return;
       var n = eventIds.length;
       var panel = abrirPanel({
-        kicker: n === 1 ? 'Evento publicado' : n + ' eventos publicados',
-        titulo: 'Avisar al equipo (' + filas.length + ')',
+        kicker: pedido.musicianIds ? 'Evento actualizado' : (n === 1 ? 'Evento publicado' : n + ' eventos publicados'),
+        titulo: pedido.musicianIds ? (filas.length === 1 ? 'Avisar a la persona nueva' : 'Avisar a las personas nuevas (' + filas.length + ')') : 'Avisar al equipo (' + filas.length + ')',
         filas: filas
       });
       lanzar(pedido, filas, panel);
     }).catch(function (err) { console.error('Avisos al publicar:', err); });
+  }
+
+  /* Quien edita pero no gestiona avisos (editor) no puede leer las cuentas ni
+     armar el panel: solo deja el pedido en la cola (las reglas se lo permiten
+     únicamente para musicianIds) y el cron de respaldo lo envía en unos 30
+     min. Promise<boolean>. */
+  function alSumarPersonasSinPanel(orgId, eventIds, musicianIds) {
+    if (!orgId || !eventIds || !eventIds.length || !musicianIds || !musicianIds.length) return Promise.resolve(false);
+    return api.encolar({ orgId: orgId, tipo: 'publicacion', eventIds: eventIds, musicianIds: musicianIds }).then(function () {
+      api.dispararEnvio().then(null, function () {});
+      return true;
+    }, function (err) {
+      console.error('No se pudo encolar el aviso a la persona nueva:', err && err.code);
+      return false;
+    });
   }
 
   /* "Reenviar eventos" de una cuenta (Usuarios → Cuentas). */
@@ -1159,6 +1191,7 @@
   api.probarToken = probarToken;
   api.historial = historial;
   api.alPublicar = alPublicar;
+  api.alSumarPersonasSinPanel = alSumarPersonasSinPanel;
   api.reenviar = reenviar;
   api.abrirUltimo = abrirUltimo;
   api.cerrarPanel = cerrarPanel;

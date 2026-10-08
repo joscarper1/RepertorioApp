@@ -36,7 +36,7 @@
      archivos junto con funciones nuevas que la página use. -->
 <script src="cifrado.js?v=20260923e"></script>
 <script src="repertorio-data.js?v=20261008a"></script>
-<script src="avisos.js?v=20261008b"></script>
+<script src="avisos.js?v=20261008d"></script>
 <style>
 :root{--ac:#0e7a3c;--ac-dk:#095a2c;--ac-lt:#e2f0e7;--gold:#c99a1e;--gold-dk:#7a5a00;--gold-lt:#f7efd6;--bg:#efeeeb;--sf:#e2e0db;--ink:#1d1b19;--muted:#5d5a55;--muted2:#8a867f;--muted3:#a09c95;--line:rgba(0,0,0,.1);--soft:#f2f1ee;--red:#b00020;--red-lt:#fbe4e7;--blue:#2c5fa6;--blue-lt:#e4ecf7}
 *{box-sizing:border-box}
@@ -2487,6 +2487,21 @@ class Component extends DCLogic {
       const avisarGuardado = (ok) => {
         this.avisar(ok, msg + (recienPublicado && !avisa ? ' · los avisos los envía un admin' : ''), 'No se guardó en la nube: revisa tu sesión o conexión');
         if (ok && avisa && window.RepertorioAvisos) window.RepertorioAvisos.alPublicar(orgId, [dr.id]);
+        /* Evento que ya estaba publicado y sumó personas (nueva o reemplazo):
+           el aviso va solo a ellas, no a todo el equipo. */
+        if (ok && !recienPublicado && enNube && dr.estado === 'PUBLICADO' && R.estadoEvento(enNube) === 'PUBLICADO'
+            && puedeBanda && window.RepertorioAvisos) {
+          const AV = window.RepertorioAvisos;
+          const nuevos = AV.nuevosIntegrantes(enNube, dr);
+          if (nuevos.length && R.puede(userDoc, 'avisos.gestionar')) AV.alPublicar(orgId, [dr.id], nuevos);
+          /* Un editor no abre el panel: el pedido queda en cola y sale con el
+             envío automático (hasta ~30 min). */
+          else if (nuevos.length) {
+            AV.alSumarPersonasSinPanel(orgId, [dr.id], nuevos).then((queda) => {
+              if (queda) this.avisar(true, nuevos.length === 1 ? 'Se avisará por correo a la persona nueva (puede tardar ~30 min)' : 'Se avisará por correo a las personas nuevas (puede tardar ~30 min)', '');
+            });
+          }
+        }
         /* Bitácora de cambios (avisos a administradores): solo si el evento
            ya existía y algo cambió. */
         if (ok && enNube && window.RepertorioAvisos && (!R.mismoContenidoEvento(enNube, dr)

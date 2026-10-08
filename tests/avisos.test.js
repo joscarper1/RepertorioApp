@@ -573,3 +573,38 @@ test('procesarDeclinaciones: avisa a admins que no la apagaron, una vez, y de nu
   assert.equal(r.declinaciones, 1);
   assert.equal(enviados.length, 2);
 });
+
+
+/* --- Persona nueva en un evento ya publicado --- */
+test('nuevosIntegrantes: una persona nueva o un reemplazo, no quien ya estaba', () => {
+  const antes = ev('n1', '2026-10-12', 'Servicio', [slot('Guitarra', 'ana'), slot('Piano', 'beto')]);
+  const nuevo = ev('n1', '2026-10-12', 'Servicio', [slot('Guitarra', 'ana'), slot('Piano', 'beto'), slot('Bajo', 'cris')]);
+  const reemplazo = ev('n1', '2026-10-12', 'Servicio', [slot('Guitarra', 'ana'), slot('Piano', 'cris')]);
+  assert.deepEqual(A.nuevosIntegrantes(antes, nuevo), ['cris']);
+  assert.deepEqual(A.nuevosIntegrantes(antes, reemplazo), ['cris']);
+  assert.deepEqual(A.nuevosIntegrantes(antes, antes), []);
+  /* Un puesto sin nombre no cuenta. */
+  assert.deepEqual(A.nuevosIntegrantes(antes, ev('n1', '2026-10-12', 'S', [slot('Guitarra', 'ana'), slot('Bajo', 'cris', '')])), []);
+});
+
+test('planAvisos con musicianIds avisa solo a la persona nueva', () => {
+  const e = ev('n1', '2026-10-12', 'Servicio', [slot('Guitarra', 'ana'), slot('Piano', 'beto')]);
+  const us = [
+    { uid: 'u-ana', email: 'ana@x.com', organizationIds: { o1: true }, musicianLinks: { o1: 'ana' } },
+    { uid: 'u-beto', email: 'beto@x.com', organizationIds: { o1: true }, musicianLinks: { o1: 'beto' } }
+  ];
+  const d = { org, usuarios: us, musicos, eventos: [e], hoy: '2026-10-08' };
+  assert.equal(A.planAvisos({ tipo: 'publicacion', eventIds: ['n1'] }, d).length, 2);
+  const solo = A.planAvisos({ tipo: 'publicacion', eventIds: ['n1'], musicianIds: { beto: true } }, d);
+  assert.deepEqual(solo.map((f) => f.uid), ['u-beto']);
+  assert.deepEqual(A.planAvisos({ tipo: 'publicacion', eventIds: ['n1'], musicianIds: ['beto'] }, d).map((f) => f.uid), ['u-beto']);
+});
+
+test('procesarCola respeta musicianIds del pedido', async () => {
+  const b = baseDePrueba({ p1: { orgId: 'o1', tipo: 'publicacion', eventIds: { e1: true }, musicianIds: { beto: true }, estado: 'pendiente', creado: 1 } });
+  /* beto no tiene correo en los datos de prueba: se cuenta como sin correo y ana no recibe nada. */
+  const enviados = [];
+  const r = await procesarCola(b.root, async (m) => { enviados.push(m.para); }, { hoy: '2026-09-28' });
+  assert.deepEqual(enviados, []);
+  assert.equal(r.sinCorreo, 1);
+});
