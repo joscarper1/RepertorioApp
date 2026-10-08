@@ -299,6 +299,9 @@ a.cifrado-btn:hover,.cifrado-btn:hover{background:#fff;color:var(--ink);border-c
      "Cuentas"/"Personas" (anchos distintos) las hacen saltar de línea. */
   .titulo-fila > .seg{flex:1 1 100%}
   .titulo-fila > .seg button{flex:1}
+  /* Tres opciones (Avisos): en 343 px no caben en una línea; los textos
+     pasan a dos líneas y los botones se reparten el ancho. */
+  .seg-3 button{min-width:0;padding:8px 6px;white-space:normal;line-height:1.2}
   /* Cuentas en teléfono: tarjeta compacta (nombre, correo, rol en una fila
      + resumen); los controles de edición aparecen al tocar "Editar". */
   .item.usr{gap:10px;padding-top:14px;padding-bottom:14px}
@@ -415,6 +418,13 @@ a.mas-fila:hover{background:none;color:var(--ink)}
         <div class="kicker">{{ tabKicker }}</div>
         <h1 class="mes-titulo">{{ tabTitulo }}</h1>
       </div>
+      <sc-if value="{{ tabAvisos }}" hint-placeholder-val="{{ false }}">
+        <div class="seg seg-3">
+          <button type="button" class="{{ subAvisosNotifClase }}" onClick="{{ verSubAvisosNotif }}">Mis notificaciones</button>
+          <button type="button" class="{{ subAvisosGithubClase }}" onClick="{{ verSubAvisosGithub }}">GitHub Actions</button>
+          <button type="button" class="{{ subAvisosHistClase }}" onClick="{{ verSubAvisosHist }}">Últimos avisos</button>
+        </div>
+      </sc-if>
       <sc-if value="{{ tabUsuarios }}" hint-placeholder-val="{{ false }}">
         <div class="seg">
           <button type="button" class="{{ subUsuariosClase }}" onClick="{{ verSubUsuarios }}">Cuentas</button>
@@ -940,8 +950,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
 
     <sc-if value="{{ tabAvisos }}" hint-placeholder-val="{{ false }}">
       <section class="adm">
-        <p class="campo-ayuda" style="margin:0">Al publicar un evento (o con "Reenviar eventos" en Usuarios → Cuentas) la app deja el pedido en cola y lanza el envío de correos en GitHub Actions; WhatsApp se abre desde el panel de avisos. Aquí se monitorea ese envío.</p>
-
+        <sc-if value="{{ avisosVerNotif }}" hint-placeholder-val="{{ true }}">
         <div class="form-panel">
           <div class="rotulo">Mis notificaciones</div>
           <sc-for list="{{ avisoPrefs }}" as="ap" hint-placeholder-count="3">
@@ -954,6 +963,11 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             </label>
           </sc-for>
         </div>
+        </sc-if>
+
+        <sc-if value="{{ avisosVerGithub }}" hint-placeholder-val="{{ false }}">
+        <p class="campo-ayuda" style="margin:0">Al publicar un evento (o con "Reenviar eventos" en Usuarios → Cuentas) la app deja el pedido en cola y lanza el envío de correos en GitHub Actions; WhatsApp se abre desde el panel de avisos. Aquí se monitorea ese envío.</p>
+
 
         <div class="panel">
           <div class="panel-cab">
@@ -1009,7 +1023,9 @@ a.mas-fila:hover{background:none;color:var(--ink)}
             <button type="button" class="btn-pri btn-ac" onClick="{{ avisosGuardarToken }}" disabled="{{ avisosGuardando }}">Probar y guardar</button>
           </div>
         </div>
+        </sc-if>
 
+        <sc-if value="{{ avisosVerHist }}" hint-placeholder-val="{{ false }}">
         <div class="panel lista">
           <div class="panel-cab"><div class="rotulo">Últimos avisos</div></div>
           <sc-for list="{{ avisosHistorial }}" as="h" hint-placeholder-count="3">
@@ -1027,6 +1043,7 @@ a.mas-fila:hover{background:none;color:var(--ink)}
           </sc-for>
           <p style="{{ avisosHistorialVacioStyle }}">Todavía no se ha enviado ningún aviso.</p>
         </div>
+        </sc-if>
       </section>
     </sc-if>
 
@@ -1343,7 +1360,7 @@ const D = () => window.RepertorioData;
 class Component extends DCLogic {
   state = {
     estadoAuth: 'cargando', usuarioNombre: null, userDoc: null,
-    todasOrgs: [], currentOrgId: null, activeTab: 'organizaciones', subUsuarios: 'usuarios', masAbierto: false,
+    todasOrgs: [], currentOrgId: null, activeTab: 'organizaciones', subUsuarios: 'usuarios', subAvisos: 'notificaciones', masAbierto: false,
     nuevoOrgNombre: '', nuevoOrgTipo: 'repertorio', editandoOrgId: null,
     /* Ministerios de la organización de servicio en edición: [{tipo,
        cantidad (texto del input), rolesBanda}] (ver R.normalizarMinisterios). */
@@ -3003,11 +3020,21 @@ class Component extends DCLogic {
       usuarioIniciales: ((s.usuarioNombre || '').trim().split(/\s+/).slice(0, 2).map((p) => p.charAt(0)).join('') || '?').toUpperCase(),
       tabKicker: s.activeTab === 'organizaciones' || s.activeTab === 'avisos' ? 'Administración' : ((orgActual ? orgActual.name + ' · ' : '') + (s.activeTab === 'usuarios' ? 'Usuarios' : 'Administración')),
       tabTitulo: s.activeTab === 'usuarios' ? (s.subUsuarios === 'personas' ? 'Personas' : 'Cuentas')
+        : s.activeTab === 'avisos' ? (({ github: 'GitHub Actions', historial: 'Últimos avisos' })[s.subAvisos] || 'Mis notificaciones')
         : (({ organizaciones: 'Organizaciones', repertorio: 'Repertorio', avisos: 'Avisos' })[s.activeTab] || 'Administración'),
       nuevaCifClase: 'cif-btn' + (s.nuevaCancionCifradoId ? ' on' : ' vacio') + ((s.nuevaCancionTitulo || '').trim() ? '' : ' inactivo'),
       nuevaCifLabel: s.nuevaCancionCifradoId ? 'Ver cifrado' : 'Agregar cifrado',
       puedeCifrarNueva: R.puede(s.userDoc, 'cifrados.editar'),
       abrirCifradoNueva: () => this.abrirCifradoNueva(),
+      subAvisosNotifClase: s.subAvisos !== 'github' && s.subAvisos !== 'historial' ? 'on' : '',
+      subAvisosGithubClase: s.subAvisos === 'github' ? 'on' : '',
+      subAvisosHistClase: s.subAvisos === 'historial' ? 'on' : '',
+      verSubAvisosNotif: () => this.setState({ subAvisos: 'notificaciones' }),
+      verSubAvisosGithub: () => this.setState({ subAvisos: 'github' }),
+      verSubAvisosHist: () => this.setState({ subAvisos: 'historial' }),
+      avisosVerNotif: s.subAvisos !== 'github' && s.subAvisos !== 'historial',
+      avisosVerGithub: s.subAvisos === 'github',
+      avisosVerHist: s.subAvisos === 'historial',
       subUsuariosClase: s.subUsuarios !== 'personas' ? 'on' : '',
       subPersonasClase: s.subUsuarios === 'personas' ? 'on' : '',
       verSubUsuarios: () => this.setState({ subUsuarios: 'usuarios' }),
@@ -3071,7 +3098,7 @@ class Component extends DCLogic {
           }
         }));
       })(),
-      avisoTokenGlobal: s.activeTab === 'avisos' ? '' : avisoTokenGlobal,
+      avisoTokenGlobal: s.activeTab === 'avisos' && s.subAvisos === 'github' ? '' : avisoTokenGlobal,
       irAAvisos: () => this.cambiarTab('avisos'),
       avisosWorkflows: avisosWorkflows,
       avisosWfError: s.avisosWfError,
