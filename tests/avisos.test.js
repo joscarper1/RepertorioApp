@@ -443,12 +443,18 @@ test('recordatorios: cada opción sale a las 7:00 a. m. de su día, una sola vez
   assert.deepEqual(opc(SV(2026, 10, 5, 7, 0)), ['semana']);
   assert.deepEqual(opc(SV(2026, 10, 11, 7, 30)), ['dia']);
   assert.deepEqual(opc(SV(2026, 10, 12, 7, 0)), ['mismo']);
-  /* Pasada la gracia ya no se envía, y tampoco con el evento empezado. */
-  assert.deepEqual(opc(SV(2026, 10, 11, 13, 1)), []);
+  /* El cron deja huecos de horas: se sigue enviando durante el día (hasta las 9 p. m.), y no después. */
+  assert.deepEqual(opc(SV(2026, 10, 11, 12, 40)), ['dia']);
+  assert.deepEqual(opc(SV(2026, 10, 11, 20, 59)), ['dia']);
+  assert.deepEqual(opc(SV(2026, 10, 11, 21, 0)), []);
+  assert.deepEqual(opc(SV(2026, 10, 5, 21, 0)), []);
+  /* Mismo día: hasta que el evento empiece. */
+  assert.deepEqual(opc(SV(2026, 10, 12, 8, 59)), ['mismo']);
   assert.deepEqual(opc(SV(2026, 10, 12, 9, 0)), []);
   assert.equal(A.enVentanaRecordatorios(SV(2026, 10, 11, 7, 0)), true);
   assert.equal(A.enVentanaRecordatorios(SV(2026, 10, 11, 6, 59)), false);
-  assert.equal(A.enVentanaRecordatorios(SV(2026, 10, 11, 13, 0)), false);
+  assert.equal(A.enVentanaRecordatorios(SV(2026, 10, 11, 20, 59)), true);
+  assert.equal(A.enVentanaRecordatorios(SV(2026, 10, 11, 21, 0)), false);
 });
 
 test('recordatorios: Nunca, borradores, quien declinó y quien no participa no reciben', () => {
@@ -491,7 +497,7 @@ test('procesarRecordatorios: envía una vez, no repite y suelta el reclamo si fa
   assert.equal(r.enviados, 0);
   assert.equal(enviados.length, 1);
   /* Fuera de la ventana no hace nada. */
-  assert.equal((await procesarRecordatorios(root, ok, { ahora: SV(2026, 10, 11, 14, 0) })).candidatos, 0);
+  assert.equal((await procesarRecordatorios(root, ok, { ahora: SV(2026, 10, 11, 21, 30) })).candidatos, 0);
   /* Si el envío falla, se reintenta en la siguiente corrida. */
   const b2 = mk();
   r = await procesarRecordatorios(b2.root, async () => { throw new Error('x'); }, { ahora });

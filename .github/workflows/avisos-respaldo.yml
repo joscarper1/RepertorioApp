@@ -10,6 +10,15 @@ name: Avisos (respaldo programado)
 on:
   schedule:
     - cron: '*/30 * * * *'
+    # GitHub corre los `schedule` "cuando puede": en la práctica deja huecos
+    # de varias horas. Estas corridas extra, repartidas entre las 7:00 a. m. y
+    # las 9:00 p. m. de El Salvador (UTC-6), le dan más oportunidades a los
+    # recordatorios de eventos, que salen en la primera corrida de ese día.
+    - cron: '23 13 * * *'
+    - cron: '23 15 * * *'
+    - cron: '23 17 * * *'
+    - cron: '23 19 * * *'
+    - cron: '23 22 * * *'
   workflow_dispatch:
 
 permissions:

@@ -495,9 +495,12 @@
   var RECORDATORIOS_PATH = 'recordatoriosEnviados';
   var HORA_RECORDATORIO = 7;
   var OFFSET_ZONA_H = 6; /* El Salvador es UTC-6 todo el año */
-  /* Pasado este margen desde su momento, un recordatorio ya no se envía
-     (p. ej. el evento se publicó o la opción se activó tarde). */
-  var GRACIA_RECORDATORIO_MS = 6 * 3600 * 1000;
+  /* El cron de GitHub Actions no corre cada 30 min como se pide: en la práctica
+     deja huecos de varias horas. Por eso el recordatorio de "una semana" y
+     "un día antes" se puede enviar en cualquier corrida de ese día hasta las
+     9:00 p. m. (hora de El Salvador); el de "mismo día", hasta que el evento
+     empiece. Pasado eso ya no se envía (p. ej. la opción se activó tarde). */
+  var HORA_LIMITE_RECORDATORIO = 21;
   var OPCIONES_RECORDATORIO = [
     { id: 'semana', etiqueta: 'Una semana antes', dias: 7, cuando: 'Faltan 7 días.' },
     { id: 'dia', etiqueta: 'Un día antes', dias: 1, cuando: 'Es mañana.' },
@@ -541,12 +544,19 @@
     return Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]) - opcion.dias, OFFSET_ZONA_H + HORA_RECORDATORIO);
   }
 
-  /* ¿Puede haber algo por enviar a esta hora? (de 7:00 a. m. hasta que vence
-     la gracia). Evita leer la base en las demás corridas del cron. */
+  /* Instante (ms) después del cual la opción ya no se envía. */
+  function limiteRecordatorio(ev, opcion) {
+    if (opcion.dias <= 0) return inicioEvento(ev);
+    var p = String((ev && ev.fecha) || '').split('-');
+    return Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]) - opcion.dias, OFFSET_ZONA_H + HORA_LIMITE_RECORDATORIO);
+  }
+
+  /* ¿Puede haber algo por enviar a esta hora? (de 7:00 a. m. a 9:00 p. m.).
+     Evita leer la base en las demás corridas del cron. */
   function enVentanaRecordatorios(ahora) {
     var t = (ahora || Date.now());
     var h = ((t / 3600000 - OFFSET_ZONA_H) % 24 + 24) % 24;
-    return h >= HORA_RECORDATORIO && h < HORA_RECORDATORIO + GRACIA_RECORDATORIO_MS / 3600000;
+    return h >= HORA_RECORDATORIO && h < HORA_LIMITE_RECORDATORIO;
   }
 
   /* La persona declinó todos sus puestos del evento: no se le recuerda. */
@@ -582,7 +592,7 @@
         OPCIONES_RECORDATORIO.forEach(function (o) {
           if (!pref[o.id]) return;
           var momento = momentoRecordatorio(ev, o);
-          if (ahora < momento || ahora - momento > GRACIA_RECORDATORIO_MS || ahora >= inicio) return;
+          if (ahora < momento || ahora >= limiteRecordatorio(ev, o) || ahora >= inicio) return;
           filas.push({
             uid: u.uid, email: u.email, musicianId: mid, nombre: nombre, ev: ev, opcion: o.id,
             aviso: armarRecordatorio(org, nombre, mid, ev, o)
